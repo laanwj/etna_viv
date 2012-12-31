@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright (c) 2012 The Etnaviv Project
+
+ Permission is hereby granted, free of charge, to any person obtaining a
+ copy of this software and associated documentation files (the "Software"),
+ to deal in the Software without restriction, including without limitation
+ the rights to use, copy, modify, merge, publish, distribute, sub license,
+ and/or sell copies of the Software, and to permit persons to whom the
+ Software is furnished to do so, subject to the following conditions:
+
+ The above copyright notice and this permission notice (including the
+ next paragraph) shall be included in all copies or substantial portions
+ of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL
+ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ DEALINGS IN THE SOFTWARE.
+-->
+<database xmlns="http://nouveau.freedesktop.org/"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
+<!-- Vivante GCxxxx instruction set overview  -->
+<domain name="VIVANTE_ISA">
+<!-- XXX still unsure if rules-ng is a suitable format for ISA descriptions,
+ I don't really think so, but it will initially help to put notes in a more structured format.
+
+ Anyone know an description format better suited, and which 
+ allows automatic generation of assemblers/disassemblers/code generators if possible?
+ (LLVM tblgen maybe?).
+
+ The Envytools disassembler is table-based and could be adopted,
+ it would have to be modified to support 128-bit instructions.
+
+ -->
+
+<enum name="INST_OPCODE" brief="Main opcode table">
+    <!-- TODO: match against TGSI instructions 
+         http://people.freedesktop.org/~csimpson/gallium-docs/tgsi.html 
+     -->
+    <value value="0x00" name="NOP" brief="No operation"/>
+    <value value="0x01" name="ADD" brief="Add"/>
+    <value value="0x02" name="MAD" brief="Multiply add"/>
+    <value value="0x03" name="MUL" brief="Multiply"/>
+    <value value="0x04" name="DST"/>
+    <value value="0x05" name="DP3" brief="3-component dot product"/>
+    <value value="0x06" name="DP4" brief="4-component dot product"/>
+    <value value="0x07" name="DSX" brief="Compute derivative relative to X"/>
+    <value value="0x08" name="DSY" brief="Compute derivative relative to Y"/>
+    <value value="0x09" name="MOV" brief="Move to temporary register"/>
+    <value value="0x0A" name="MOVAR" brief="Move address to address register"/>
+    <value value="0x0B" name="MOVAF" brief="Move float to address register"/>
+    <value value="0x0C" name="RCP" brief="Reciprocal"/>
+    <value value="0x0D" name="RSQ" brief="Reciprocal square root"/>
+    <value value="0x0E" name="LITP"/>
+    <value value="0x0F" name="SELECT" brief="Choose input based on condition"/>
+    <value value="0x10" name="SET"/>
+    <value value="0x11" name="EXP" brief="2^x"/>
+    <value value="0x12" name="LOG" brief="log2"/>
+    <value value="0x13" name="FRC" brief="Return fractional portion"/>
+    <value value="0x14" name="CALL" brief="Function call"/>
+    <value value="0x15" name="RET" brief="Return from function"/>
+    <value value="0x16" name="BRANCH" brief="Jump to address"/>
+    <value value="0x17" name="TEXKILL" brief="Cancels rendering of the current fragment"/>
+    <value value="0x18" name="TEXLD" brief="Texture load"/>
+    <value value="0x19" name="TEXLDB" brief="Texture load (biased)"/>
+    <value value="0x1A" name="TEXLDD" brief="Texture load (manually specified gradients)"/>
+    <value value="0x1B" name="TEXLDL" brief="Texture load (at particular LOD)"/>
+    <value value="0x1C" name="TEXLDPCF" brief="Texture load"/>
+    <value value="0x1D" name="REP" brief="Begins a REPEAT block"/>
+    <value value="0x1E" name="ENDREP" brief="Ends a REPEAT block"/>
+    <value value="0x1F" name="LOOP" brief="Begins a LOOP block"/>
+    <value value="0x20" name="ENDLOOP" brief="Ends a LOOP block"/>
+    <value value="0x21" name="SQRT" brief="Square root"/> <!-- HAS_SQRT_TRIG -->
+    <value value="0x22" name="SIN" brief="Sine"/> <!-- HAS_SQRT_TRIG -->
+    <value value="0x23" name="COS" brief="Cosine"/> <!-- HAS_SQRT_TRIG -->
+    <value value="0x24" name="POLY"/>
+    <value value="0x25" name="FLOOR" brief="Largest integral value not greater than the argument"/> <!-- HAS_SIGN_FLOOR_CEIL -->
+    <value value="0x26" name="CEIL" brief="Smallest integral value not less than the argument"/> <!-- HAS_SIGN_FLOOR_CEIL -->
+    <value value="0x27" name="SIGN" brief="Return sign of the argument"/> <!-- HAS_SIGN_FLOOR_CEIL -->
+    <value value="0x28" name="ADDLO"/>
+    <value value="0x29" name="MULLO"/>
+    <value value="0x2A" name="BARRIER" brief="Thread barrier"/>
+    <value value="0x2B" name="SWIZZLE"/>
+    <value value="0x2C" name="I2I"/> <!-- OpenCL -->
+    <value value="0x2D" name="I2F"/> <!-- OpenCL -->
+    <value value="0x2E" name="F2I"/> <!-- OpenCL -->
+    <value value="0x2F" name="F2IRND"/>  <!-- OpenCL -->
+    <value value="0x30" name="F2I7"/>
+    <value value="0x31" name="CMP" brief="Compare"/>
+    <value value="0x32" name="LOAD"/>
+    <value value="0x33" name="STORE"/>
+    <value value="0x34" name="COPYSIGN"/>
+    <value value="0x35" name="GETEXP"/>
+    <value value="0x36" name="GETMANT"/>
+    <value value="0x37" name="NAN"/>
+    <value value="0x38" name="NEXTAFTER"/>
+    <value value="0x39" name="ROUNDEVEN"/>
+    <value value="0x3A" name="ROUNDAWAY"/>
+    <value value="0x3B" name="IADDSAT"/>
+    <value value="0x3C" name="IMULLO0"/>
+    <value value="0x3D" name="IMULLO1"/>
+    <value value="0x3E" name="IMULLOSAT0"/>
+    <value value="0x3F" name="IMULLOSAT1"/>
+    <value value="0x40" name="IMULHI0"/>
+    <value value="0x41" name="IMULHI1"/>
+    <value value="0x42" name="IMUL0"/>
+    <value value="0x43" name="IMUL1"/>
+    <value value="0x44" name="IDIV0"/>
+    <value value="0x45" name="IDIV1"/>
+    <value value="0x46" name="IDIV2"/>
+    <value value="0x47" name="IDIV3"/>
+    <value value="0x48" name="IMOD0"/>
+    <value value="0x49" name="IMOD1"/>
+    <value value="0x4A" name="IMOD2"/>
+    <value value="0x4B" name="IMOD3"/>
+    <value value="0x4C" name="IMADLO0"/>
+    <value value="0x4D" name="IMADLO1"/>
+    <value value="0x4E" name="IMADLOSAT0"/>
+    <value value="0x4F" name="IMADLOSAT1"/>
+    <value value="0x50" name="IMADHI0"/>
+    <value value="0x51" name="IMADHI1"/>
+    <value value="0x52" name="IMADHISAT0"/>
+    <value value="0x53" name="IMADHISAT1"/>
+    <value value="0x54" name="HALFADD"/>
+    <value value="0x55" name="HALFADDINC"/>
+    <value value="0x56" name="MOVAI" brief="Move int to address register"/>
+    <value value="0x57" name="IABS"/>
+    <value value="0x58" name="LEADZERO" brief="Count leading zeros"/>
+    <value value="0x59" name="LSHIFT" brief="Bitwise left shift"/> <!-- OpenCL -->
+    <value value="0x5A" name="RSHIFT" brief="Bitwise right shift"/> <!-- OpenCL -->
+    <value value="0x5B" name="ROTATE" brief="Bitwise rotate"/> <!-- OpenCL -->
+    <value value="0x5C" name="OR" brief="Bitwise or"/> <!-- OpenCL -->
+    <value value="0x5D" name="AND" brief="Bitwise and"/> <!-- OpenCL -->
+    <value value="0x5E" name="XOR" brief="Bitwise xor"/> <!-- OpenCL -->
+    <value value="0x5F" name="NOT" brief="Bitwise not"/> <!-- OpenCL -->
+    <value value="0x60" name="BITSELECT"/>
+    <value value="0x61" name="POPCOUNT"/>
+</enum>
+
+<enum name="INST_OPERAND" brief="Operand data type">
+    <value value="0x00" name="F32" brief="32-bit float"/>
+    <value value="0x01" name="F16" brief="16-bit float"/>
+    <value value="0x02" name="S32" brief="32-bit signed int"/>
+    <value value="0x03" name="S16" brief="16-bit signed int"/>
+    <value value="0x04" name="S8" brief="8-bit signed int"/>
+    <value value="0x05" name="U32" brief="32-bit unsigned int"/>
+    <value value="0x06" name="U16" brief="16-bit unsigned int"/>
+    <value value="0x07" name="U8" brief="8-bit unsigned int"/>
+</enum>
+
+<enum name="INST_CONDITION" brief="Condition code">
+    <value value="0x00" name="TRUE"/>
+    <value value="0x01" name="GT"/>
+    <value value="0x02" name="LT"/>
+    <value value="0x03" name="GE"/>
+    <value value="0x04" name="LE"/>
+    <value value="0x05" name="EQ"/>
+    <value value="0x06" name="NE"/>
+    <value value="0x07" name="AND"/>
+    <value value="0x08" name="OR"/>
+    <value value="0x09" name="XOR"/>
+    <value value="0x0A" name="NOT"/>
+    <value value="0x0B" name="NZ"/>
+    <value value="0x0C" name="GEZ"/>
+    <value value="0x0D" name="GZ"/>
+    <value value="0x0E" name="LEZ"/>
+    <value value="0x0F" name="LZ"/>
+</enum>
+
+<bitset name="INST_COMPS" brief="Vector components">
+    <bitfield pos="0" name="X" brief="Component 0"/>
+    <bitfield pos="1" name="Y" brief="Component 1"/>
+    <bitfield pos="2" name="Z" brief="Component 2"/>
+    <bitfield pos="3" name="W" brief="Component 3"/>
+</bitset>
+
+<enum name="INST_RGROUP" brief="Register group">
+    <value value="0" name="TEMP" brief="Temporary"/>
+    <value value="1" name="UNK1"/>
+    <value value="2" name="UNIFORM_0" brief="Uniforms 0"/>
+    <value value="3" name="UNIFORM_1" brief="Uniforms 1"/>
+    <!-- more values, it's 3 bits? -->
+</enum>
+
+<enum name="INST_AMODE" brief="Addressing mode">
+    <value value="0" name="DIRECT"/>
+    <value value="1" name="INDEXED_X"/>
+    <value value="1" name="INDEXED_Y"/>
+    <value value="2" name="INDEXED_Z"/>
+    <value value="3" name="INDEXED_W"/>
+</enum>
+
+<enum name="INST_SWIZ_COMP" brief="Swizzle source component">
+    <value value="0" name="X" brief="Component 0"/>
+    <value value="1" name="Y" brief="Component 1"/>
+    <value value="2" name="Z" brief="Component 2"/>
+    <value value="3" name="W" brief="Component 3"/>
+</enum>
+<bitset name="INST_SWIZ" brief="Swizzling mode">
+    <bitfield high="1" low="0" name="X" type="INST_SWIZ_COMP" brief="Source for component 0"/>
+    <bitfield high="3" low="2" name="Y" type="INST_SWIZ_COMP" brief="Source for component 1"/>
+    <bitfield high="5" low="4" name="Z" type="INST_SWIZ_COMP" brief="Source for component 2"/>
+    <bitfield high="7" low="6" name="W" type="INST_SWIZ_COMP" brief="Source for component 3"/>
+</bitset>
+
+<!-- The four instruction words. Vivante has a fixed-size, predictable instruction format
+     with explicit inputs and outputs. This does simplify code generation,
+     compared to a weird flow pipe system like the Mali 200/400.
+  -->
+<reg32 offset="0x00000" name="WORD_0">
+    <bitfield high="5" low="0" name="OPCODE" type="INST_OPCODE"/>
+    <bitfield high="10" low="6" name="COND" type="INST_CONDITION"/>
+    <bitfield high="11" low="11" name="SAT" brief="Saturate"/>
+    <bitfield high="12" low="12" name="DST_USE" brief="Destination used"/>
+    <bitfield high="15" low="13" name="DST_AMODE" brief="Destination addressing mode"/>
+    <bitfield high="22" low="16" name="DST_REG" brief="Destination register"/>
+    <bitfield high="26" low="23" name="DST_COMPS" type="INST_COMPS" brief="Destination components"/>
+    <bitfield high="31" low="27" name="TEX_ID" brief="Texture sampler id"/>
+</reg32>
+<reg32 offset="0x00004" name="WORD_1">
+    <bitfield high="2" low="0" name="TEX_AMODE" type="INST_AMODE" brief="Texture addressing mode"/>
+    <bitfield high="10" low="3" name="TEX_SWIZ" type="INST_SWIZ" brief="Texture swizzle"/>
+    <!-- operand 0 -->
+    <bitfield high="11" low="11" name="SRC0_USE" brief="Source operand 0 used"/>
+    <bitfield high="20" low="12" name="SRC0_REG" brief="Source operand 0 register"/>
+    <!-- bit 21? -->
+    <bitfield high="29" low="22" name="SRC0_SWIZ" type="INST_SWIZ" brief="Source operand 0 swizzle"/>
+    <bitfield high="30" low="30" name="SRC0_NEG" brief="Source operand 0 negate"/>
+    <bitfield high="31" low="31" name="SRC0_ABS" brief="Source operand 0 absolute"/>
+</reg32>
+<reg32 offset="0x00008" name="WORD_2">
+    <bitfield high="2" low="0" name="SRC0_AMODE" type="INST_AMODE" brief="Source operand 0 addressing mode"/>
+    <bitfield high="5" low="3" name="SRC0_RGROUP" type="INST_RGROUP" brief="Source operand 0 register group"/>
+    <!-- operand 1 -->
+    <bitfield high="6" low="6" name="SRC1_USE" brief="Source operand 1 used"/>
+    <bitfield high="15" low="7" name="SRC1_REG" brief="Source operand 1 register"/>
+    <!-- bit 16? -->
+    <bitfield high="24" low="17" name="SRC1_SWIZ" type="INST_SWIZ" brief="Source operand 1 swizzle"/>
+    <bitfield high="25" low="25" name="SRC1_NEG" brief="Source operand 1 negate"/>
+    <bitfield high="26" low="26" name="SRC1_ABS" brief="Source operand 1 absolute"/>
+    <bitfield high="29" low="27" name="SRC1_AMODE" type="INST_AMODE" brief="Source operand 1 addressing mode"/>
+    <!-- bit 30,31? -->
+</reg32>
+<reg32 offset="0x0000C" name="WORD_3">
+    <bitfield high="2" low="0" name="SRC1_RGROUP" type="INST_RGROUP" brief="Source operand 1 register group"/>
+    <!-- operand 2 --> 
+    <bitfield high="3" low="3" name="SRC2_USE" brief="Source operand 2 used"/>
+    <bitfield high="12" low="4" name="SRC2_REG" brief="Source operand 2 register"/>
+    <!-- bit 13? -->
+    <bitfield high="21" low="14" name="SRC2_SWIZ" type="INST_SWIZ" brief="Source operand 2 swizzle"/>
+    <bitfield high="22" low="22" name="SRC2_NEG" brief="Source operand 2 negate"/>
+    <bitfield high="23" low="23" name="SRC2_ABS" brief="Source operand 2 absolute"/>
+    <!-- bit 24? -->
+    <bitfield high="27" low="25" name="SRC2_AMODE" type="INST_AMODE" brief="Source operand 2 addressing mode"/>
+    <bitfield high="30" low="28" name="SRC2_RGROUP" type="INST_RGROUP" brief="Source operand 2 register group"/>
+    <!-- bit 31? -->
+</reg32>
+
+</domain>
+</database>
+

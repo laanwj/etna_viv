@@ -1,0 +1,2 @@
+obj-$(CONFIG_GPU_VIVANTE_V2) += v2/
+obj-$(CONFIG_GPU_VIVANTE_V4) += v4/

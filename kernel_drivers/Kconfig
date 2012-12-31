@@ -1,0 +1,17 @@
+choice
+	prompt "Vivante GPUs"
+	depends on ARCH_DMW
+	default GPU_VIVANTE_V4
+	optional
+
+config GPU_VIVANTE_V2
+	boolean "Version 2.x"
+
+config GPU_VIVANTE_V4
+	boolean "Version 4.x"
+
+endchoice
+
+source "drivers/gpu/vivante/v2/Kconfig"
+source "drivers/gpu/vivante/v4/Kconfig"
+

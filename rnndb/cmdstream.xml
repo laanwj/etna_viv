@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright (c) 2012 The Etnaviv Project
+
+ Permission is hereby granted, free of charge, to any person obtaining a
+ copy of this software and associated documentation files (the "Software"),
+ to deal in the Software without restriction, including without limitation
+ the rights to use, copy, modify, merge, publish, distribute, sub license,
+ and/or sell copies of the Software, and to permit persons to whom the
+ Software is furnished to do so, subject to the following conditions:
+
+ The above copyright notice and this permission notice (including the
+ next paragraph) shall be included in all copies or substantial portions
+ of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL
+ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ DEALINGS IN THE SOFTWARE.
+-->
+<database xmlns="http://nouveau.freedesktop.org/"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
+<!-- Vivante GCxxxx FE command stream format -->
+
+<enum name="FE_OPCODE">
+    <value value="1" name="LOAD_STATE" brief="Load GPU state"/>
+    <value value="2" name="END" brief="Stop command stream"/>
+    <value value="3" name="NOP" brief="No operation"/>
+    <value value="4" name="DRAW_2D" brief="Draw 2D"/>
+    <value value="5" name="DRAW_PRIMITIVES" brief="Draw 3D primitives"/>
+    <value value="6" name="DRAW_INDEXED_PRIMITIVES" brief="Draw 3D indexed primitives"/>
+    <value value="7" name="WAIT"/>
+    <value value="8" name="LINK" brief="Transfer control flow"/>
+    <value value="9" name="STALL" brief="Stall command queue"/>
+    <value value="10" name="CALL"/>
+    <value value="11" name="RETURN"/>
+    <value value="13" name="CHIP_SELECT" brief="Chip select mask"/>
+</enum>
+
+<enum name="PRIMITIVE_TYPE">
+    <value value="1" name="POINTS" brief="Points (GL_POINTS)"/>
+    <value value="2" name="LINES" brief="Lines (GL_LINES)"/>
+    <value value="3" name="LINE_STRIP" brief="Line strip (GL_LINE_STRIP)"/>
+    <value value="4" name="TRIANGLES" brief="Triangles (GL_TRIANGLES)"/>
+    <value value="5" name="TRIANGLE_STRIP" brief="Triangle strip (GL_TRIANGLE_STRIP)"/>
+    <value value="6" name="TRIANGLE_FAN" brief="Triangle fan (GL_TRIANGLE_FAN)"/>
+    <value value="7" name="LINE_LOOP" brief="Line loop (GL_LINE_LOOP)"/>
+</enum>
+<domain name="VIVANTE_STATE">
+    <!-- should be import... -->
+</domain>
+
+<domain name="VIVANTE_FE">
+    <!-- A stripe for each command follows. 
+         The different commands are distinguished by the OP field. 
+     -->
+    <stripe name="LOAD_STATE" varset="FE_OPCODE" variants="LOAD_STATE">
+        <reg32 offset="0x00000" name="HEADER">
+            <bitfield high="31" low="27" name="OP" type="FE_OPCODE"/>
+            <bitfield pos="26" name="FIXP" brief="Convert loaded values from 16.16 fixed point to float32"/>
+            <bitfield pos="25" low="16" name="COUNT" brief="Number of state words to load"/>
+            <bitfield pos="15" low="0" name="OFFSET" shr="2" brief="State load starting offset" type="VIVANTE_STATE"/>
+        </reg32>
+        <doc>COUNT state words follow. These are literally written to state space at
+             the provided offset, after which the offset is increased.
+             If the FIXP bit is set, a conversion from 16.16 fixed-point to 32-bit floating point will happen.
+             If COUNT is zero, it is interpreted as 1024 (the maximum value + 1).
+         </doc>
+    </stripe>
+
+    <stripe name="END" varset="FE_OPCODE" variants="END"> <!-- size="4" -->
+        <reg32 offset="0x00000" name="HEADER">
+            <bitfield high="31" low="27" name="OP" type="FE_OPCODE"/>
+        </reg32>
+        <!-- END has no arguments -->
+    </stripe>
+
+    <stripe name="NOP" varset="FE_OPCODE" variants="NOP"> <!-- size="4" -->
+        <reg32 offset="0x00000" name="HEADER">
+            <bitfield high="31" low="27" name="OP" type="FE_OPCODE"/>
+        </reg32>
+        <!-- NOP has no arguments -->
+    </stripe>
+
+    <stripe name="DRAW_2D" varset="FE_OPCODE" variants="DRAW_2D">
+        <reg32 offset="0x00000" name="HEADER">
+            <bitfield high="31" low="27" name="OP" type="FE_OPCODE"/>
+            <bitfield high="15" low="8" name="NUM_RECT"/>
+        </reg32>
+        <reg32 offset="0x00004" name="PAD"/>
+        <!-- 2 words per rectangle follow -->
+    </stripe>
+
+    <stripe name="DRAW_PRIMITIVES" varset="FE_OPCODE" variants="DRAW_PRIMITIVES"> <!-- size="16" -->
+        <reg32 offset="0x00000" name="HEADER">
+            <bitfield high="31" low="27" name="OP" type="FE_OPCODE"/>
+        </reg32>
+        <reg32 offset="0x00004" name="COMMAND" brief="Primitive type">
+            <bitfield high="7" low="0" name="TYPE" type="PRIMITIVE_TYPE"/>
+        </reg32>
+        <reg32 offset="0x00008" name="START" brief="Index of the first vertex to load">
+        </reg32>
+        <reg32 offset="0x0000C" name="COUNT" brief="Number of primitives to render">
+            <doc>
+            In case of a triangle strip or other concatenated primitive, this is the actual number of lines
+            or triangles to render.
+            </doc>
+        </reg32>
+    </stripe>
+
+    <stripe name="DRAW_INDEXED_PRIMITIVES" varset="FE_OPCODE" variants="DRAW_INDEXED_PRIMITIVES"> <!-- size="20" -->
+        <reg32 offset="0x00000" name="HEADER">
+            <bitfield high="31" low="27" name="OP" type="FE_OPCODE"/>
+        </reg32>
+        <reg32 offset="0x00004" name="COMMAND">
+            <bitfield high="7" low="0" name="TYPE" type="PRIMITIVE_TYPE"/>
+        </reg32>
+        <reg32 offset="0x00008" name="START" brief="Index of the first index to load">
+        </reg32>
+        <reg32 offset="0x0000C" name="COUNT" brief="Number of primitives to render">
+        </reg32>
+        <reg32 offset="0x00010" name="OFFSET" brief="Offset added to the retrieved indices">
+        </reg32>
+    </stripe>
+
+    <stripe name="WAIT" varset="FE_OPCODE" variants="WAIT"> <!-- size="4" -->
+        <reg32 offset="0x00000" name="HEADER">
+            <bitfield high="31" low="27" name="OP" type="FE_OPCODE"/>
+        </reg32>
+        <!-- WAIT has no arguments -->
+    </stripe>
+
+    <stripe name="LINK" varset="FE_OPCODE" variants="LINK"> <!-- size="8" -->
+        <reg32 offset="0x00000" name="HEADER">
+            <bitfield high="31" low="27" name="OP" type="FE_OPCODE"/>
+        </reg32>
+        <reg32 offset="0x00004" name="ARG1">
+        </reg32>
+    </stripe>
+
+    <stripe name="STALL" varset="FE_OPCODE" variants="STALL"> <!-- size="8" -->
+        <reg32 offset="0x00000" name="HEADER">
+            <bitfield high="31" low="27" name="OP" type="FE_OPCODE"/>
+        </reg32>
+        <reg32 offset="0x00004" name="TOKEN">
+            <bitfield high="4" low="0" name="FROM" type="SYNC_RECEPIENT"/>
+            <bitfield high="12" low="8" name="TO" type="SYNC_RECEPIENT"/>
+        </reg32>
+    </stripe>
+
+    <stripe name="CALL" varset="FE_OPCODE" variants="CALL"> <!-- size="8" -->
+        <reg32 offset="0x00000" name="HEADER">
+            <bitfield high="31" low="27" name="OP" type="FE_OPCODE"/>
+        </reg32>
+        <reg32 offset="0x00004" name="ARG1">
+        </reg32>
+    </stripe>
+
+    <stripe name="RETURN" varset="FE_OPCODE" variants="RETURN"> <!-- size="4" -->
+        <reg32 offset="0x00000" name="HEADER">
+            <bitfield high="31" low="27" name="OP" type="FE_OPCODE"/>
+        </reg32>
+        <!-- RETURN has no arguments -->
+    </stripe>
+
+    <!-- GC6000 only -->
+    <stripe name="CHIP_SELECT" varset="FE_OPCODE" variants="CHIP_SELECT"> <!-- size="4" -->
+        <reg32 offset="0x00000" name="HEADER">
+            <bitfield high="31" low="27" name="OP" type="FE_OPCODE"/>
+            <bitfield pos="15" name="ENABLE_CHIP15"/>
+            <bitfield pos="14" name="ENABLE_CHIP14"/>
+            <bitfield pos="13" name="ENABLE_CHIP13"/>
+            <bitfield pos="12" name="ENABLE_CHIP12"/>
+            <bitfield pos="11" name="ENABLE_CHIP11"/>
+            <bitfield pos="10" name="ENABLE_CHIP10"/>
+            <bitfield pos="9" name="ENABLE_CHIP9"/>
+            <bitfield pos="8" name="ENABLE_CHIP8"/>
+            <bitfield pos="7" name="ENABLE_CHIP7"/>
+            <bitfield pos="6" name="ENABLE_CHIP6"/>
+            <bitfield pos="5" name="ENABLE_CHIP5"/>
+            <bitfield pos="4" name="ENABLE_CHIP4"/>
+            <bitfield pos="3" name="ENABLE_CHIP3"/>
+            <bitfield pos="2" name="ENABLE_CHIP2"/>
+            <bitfield pos="1" name="ENABLE_CHIP1"/>
+            <bitfield pos="0" name="ENABLE_CHIP0"/>
+        </reg32>
+        <!-- CHIP_SELECT has no arguments -->
+    </stripe>
+</domain>
+
+</database>
+
