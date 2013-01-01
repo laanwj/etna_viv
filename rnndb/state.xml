@@ -269,6 +269,30 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="6" name="GEQUAL"/>
         <value value="7" name="ALWAYS"/>
     </enum>
+    <enum name="BLEND_EQ" brief="glBlendEquation">
+        <value value="0" name="ADD"/>
+        <value value="1" name="SUBTRACT"/>
+        <value value="2" name="REVERSE_SUBTRACT"/>
+        <value value="3" name="MIN"/>
+        <value value="4" name="MAX"/>
+    </enum>
+    <enum name="BLEND_FUNC" brief="glBlendFunc">
+        <value value="0" name="ZERO"/>
+        <value value="1" name="ONE"/>
+        <value value="2" name="SRC_COLOR"/>
+        <value value="3" name="ONE_MINUS_SRC_COLOR"/>
+        <value value="4" name="SRC_ALPHA"/>
+        <value value="5" name="ONE_MINUS_SRC_ALPHA"/>
+        <value value="6" name="DST_ALPHA"/>
+        <value value="7" name="ONE_MINUS_DST_ALPHA"/>
+        <value value="8" name="DST_COLOR"/>
+        <value value="9" name="ONE_MINUS_DST_COLOR"/>
+        <value value="10" name="SRC_ALPHA_SATURATE"/>
+        <value value="11" name="CONSTANT_ALPHA"/>
+        <value value="12" name="ONE_MINUS_CONSTANT_ALPHA"/>
+        <value value="13" name="CONSTANT_COLOR"/>
+        <value value="14" name="ONE_MINUS_CONSTANT_COLOR"/>
+    </enum>
     <enum name="RS_FORMAT" brief="Resolve pixel format">
         <value value="0" name="X4R4G4B4"/>
         <value value="1" name="A4R4G4B4"/>
@@ -845,10 +869,33 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x01424" name="ALPHA_BLEND_COLOR" value="0x00000000"/>
         <reg32 offset="0x01428" name="ALPHA_CONFIG" value="0x00000000">
-            <doc>
-            </doc>
+            <bitfield pos="0" name="BLEND_ENABLE_COLOR" brief="Enable alpha blending"/>
+            <bitfield pos="1" name="BLEND_ENABLE_COLOR_MASK"/>
+            <bitfield pos="2" name="SRC_FUNC_COLOR_MASK"/>
+            <bitfield pos="3" name="DST_FUNC_COLOR_MASK"/>
+            <bitfield high="7" low="4" name="SRC_FUNC_COLOR" type="BLEND_FUNC"/>
+            <bitfield high="11" low="8" name="DST_FUNC_COLOR" type="BLEND_FUNC"/>
+            <bitfield high="14" low="12" name="EQ_COLOR" type="BLEND_EQ"/>
+            <bitfield pos="15" name="EQ_COLOR_MASK"/>
+            <bitfield pos="16" name="BLEND_ENABLE_ALPHA" brief="Enable alpha blending for alpha?">
+                <doc>Always enabled together with BLEND_ENABLE_COLOR</doc>
+            </bitfield>
+            <bitfield pos="17" name="BLEND_ENABLE_ALPHA_MASK"/>
+            <bitfield pos="18" name="SRC_FUNC_ALPHA_MASK"/>
+            <bitfield pos="19" name="DST_FUNC_ALPHA_MASK"/>
+            <bitfield high="23" low="20" name="SRC_FUNC_ALPHA" type="BLEND_FUNC"/>
+            <bitfield high="27" low="24" name="DST_FUNC_ALPHA" type="BLEND_FUNC"/>
+            <bitfield high="30" low="28" name="EQ_ALPHA" type="BLEND_EQ"/>
+            <bitfield pos="31" name="EQ_ALPHA_MASK"/>
         </reg32>
-        <reg32 offset="0x0142C" name="COLOR_FORMAT" value="0x00000000"/>
+        <reg32 offset="0x0142C" name="COLOR_FORMAT" value="0x00000000">
+            <bitfield high="3" low="0" name="FORMAT" type="RS_FORMAT"/>
+            <bitfield pos="4" name="FORMAT_MASK"/>
+            <bitfield high="11" low="8" name="UNK8"/>
+            <bitfield pos="12" name="UNK8_MASK"/>
+            <bitfield pos="16" name="UNK16" brief="Set when alpha blending enabled or otherwise not the full destination is written"/>
+            <bitfield pos="17" name="UNK16_MASK"/>
+        </reg32>
         <reg32 offset="0x01430" name="COLOR_ADDR" value="0x00000000" type="VIVANTE_MEM"/> <!-- pixelPipes == 1 -->
         <reg32 offset="0x01434" name="COLOR_STRIDE" value="0x00000000"/>
         <reg32 offset="0x01454" name="UNK01454" value="0x00000000"/>
@@ -924,7 +971,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="31" name="TILING" brief="Source is tiled"/>
         </reg32>
         <reg32 offset="0x01610" name="DEST_ADDR" value="0x00000000" type="VIVANTE_MEM"/>
-        <reg32 offset="0x01614" name="DEST_STRIDE" value="0x00000000"/>
+        <reg32 offset="0x01614" name="DEST_STRIDE" value="0x00000000">
+            <bitfield high="17" low="0" name="STRIDE" brief="Destination stride"/>
+            <bitfield pos="31" name="TILING" brief="Destination is tiled"/>
+        </reg32>
         <reg32 offset="0x01620" name="WINDOW_SIZE" value="0x00000000">
             <bitfield high="31" low="16" name="HEIGHT" type="uint"/>
             <bitfield high="15" low="0" name="WIDTH" type="uint"/>

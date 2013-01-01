@@ -89,8 +89,8 @@ Decodes and dumps the intercepted command stream in human readable format, makin
 
 Helps extract areas of video memory and command buffers at certain points of execution.
 
-Replay example
----------------
+Replay test
+--------------
 
 ![Example output](https://raw.github.com/laanwj/etna_viv/master/native/replay/cube_replay.png)
 
@@ -98,7 +98,7 @@ Replay example
 
 Replays the command stream and ioctl commands of the EGL demos, to get the same output. 
 
-Currently this is available for the `cube` example, that renders a smoothed cube.
+Currently this is available for the `cube` example that renders a smoothed cube.
 
 
 Vivante GPL kernel driver

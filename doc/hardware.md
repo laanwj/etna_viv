@@ -224,4 +224,17 @@ Programming pecularities
   in the `LOAD_STATE` command.
 
 
+Masked state
+-------------
+
+Many groups of state bits, especially in the PE, have mask bits. These have been named `*_MASK`.
+When the mask bit belonging to a group of state bits is set on a state write, the accompanying
+state bits will be unaffected. If the mask bit is unset, the state bits will be written.
+
+This allows setting state either per group of bits, or all at once. For example, it allows setting only
+the destination alpha function (`ALPHA_CONFIG.DST_FUNC_ALPHA`) without affecting the 
+other bits in that state word.
+
+If masking functionality is not desired, as it is often practical to simply write all bits at once, simply keep all the `_MASK`
+bits at zero.
 
