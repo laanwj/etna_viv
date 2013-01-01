@@ -997,9 +997,15 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <doc>Texture sampling, filtering, LOD, etc</doc>
         <stripe name="SAMPLER" length="12" stride="4"> 
             <reg32 offset="0x2000" name="CONFIG_1" value="0x00000000"/>
-            <reg32 offset="0x2040" name="SIZE" value="0x00000000"/>
-            <reg32 offset="0x2080" name="LOG_SIZE" value="0x00000000"/>
-            <reg32 offset="0x20C0" name="LOD" value="0x00000000"/>
+            <reg32 offset="0x2040" name="SIZE" value="0x00000000">
+                <bitfield high="15" low="0" name="WIDTH" type="uint"/>
+                <bitfield high="31" low="16" name="HEIGHT" type="uint"/>
+            </reg32>
+            <reg32 offset="0x2080" name="LOG_SIZE" value="0x00000000">
+                <bitfield high="9" low="0" name="WIDTH" type="fixedp"/>
+                <bitfield high="19" low="10" name="HEIGHT" type="fixedp"/>
+            </reg32>
+            <reg32 offset="0x20C0" name="LOD_CONFIG" value="0x00000000"/>
             <reg32 offset="0x2100" name="UNK02100" value="0x00000000"/>
             <reg32 offset="0x2140" name="UNK02140" value="0x00000000"/>
             <reg32 offset="0x2180" name="UNK02180" value="0x00000000"/>
