@@ -2,7 +2,7 @@
 '''
 Print memory contents as C99 structure initializer
 '''
-# Copyright (c) 2012 Wladimir J. van der Laan
+# Copyright (c) 2012-2013 Wladimir J. van der Laan
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),

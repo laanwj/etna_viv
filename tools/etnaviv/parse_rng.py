@@ -3,7 +3,7 @@ Parse rules-ng-ng XML format.
 
 See rules-ng-ng.xsd and rules-ng-ng.xml for documentation of the format.
 '''
-# Copyright (c) 2012 Wladimir J. van der Laan
+# Copyright (c) 2012-2013 Wladimir J. van der Laan
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),

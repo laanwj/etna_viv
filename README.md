@@ -41,7 +41,7 @@ Other scattered bits of documentation about the hardware and ISA can be found in
 ISA documentation
 ------------------
     
-Shader ISA in rules-ng-ng format can be found here: 
+Shader instruction set description in rules-ng-ng format can be found here: 
 
     rnndb/isa.xml
 
@@ -54,7 +54,7 @@ An assembler and disassembler still need to be written.
 Command stream format
 -----------------------
     
-Command stream format represented in rules-ng-ng XML: format. 
+Command stream format represented in rules-ng-ng XML format. 
 
     rnndb/cmdstream.xml
 
