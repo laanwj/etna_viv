@@ -26,6 +26,7 @@ from __future__ import print_function, division, unicode_literals
 import argparse
 import os, sys, struct
 import json
+from collections import defaultdict
 
 from binascii import b2a_hex
 
@@ -56,6 +57,10 @@ CMDS_NO_OUTPUT = [
 'gcvHAL_COMMIT',
 'gcvHAL_EVENT_COMMIT'
 ]
+
+# Number of words to ignore at start of command buffer
+# A PIPE3D command will be inserted here by the kernel if necessary
+CMDBUF_IGNORE_INITIAL = 8
 
 class HalResolver(ResolverBase):
     '''
@@ -108,6 +113,21 @@ class HalResolver(ResolverBase):
                 fields_in.difference_update(['manualReset','wait','state'])
 
         return fields_in
+
+class Counter(object):
+    '''Count unique values'''
+    def __init__(self):
+        self.d = {}
+        self.c = 0
+
+    def __getitem__(self, key):
+        try:
+            return self.d[key]
+        except KeyError:
+            rv = self.c
+            self.d[key] = rv
+            self.c += 1
+            return rv
 
 def int_as_float(i):
     '''Return float with binary representation of unsigned int i'''
@@ -198,7 +218,12 @@ def format_state(pos, value, fixp, state_map):
         elif (pos >= 0x05000 and pos < 0x06000) or (pos >= 0x07000 and pos < 0x08000):
             desc += ' := %f' % int_as_float(value)
         elif path is not None:
-            desc += ' := ' + path[-1][0].describe(value)
+            register = path[-1][0]
+            desc += ' := '
+            if isinstance(register.type, Domain):
+                desc += format_addr(value)
+            else:
+                desc += register.describe(value)
     return desc
 
 def dump_command_buffer(f, mem, addr, end_addr, depth, state_map):
@@ -211,7 +236,7 @@ def dump_command_buffer(f, mem, addr, end_addr, depth, state_map):
     state_base = 0
     state_count = 0
     state_format = 0
-    next_cmd = 0
+    next_cmd = CMDBUF_IGNORE_INITIAL
     payload_start_ptr = 0
     payload_end_ptr = 0
     op = 0
@@ -283,7 +308,8 @@ def dump_command_buffer(f, mem, addr, end_addr, depth, state_map):
     f.write(indent + '}')
     if options.list_address_states:
         # Print addresses; useful for making a re-play program
-        f.write('\n' + indent + 'GPU addresses {\n')
+        #f.write('\n' + indent + 'GPU addresses {\n')
+        uniqaddr = defaultdict(list)
         for (ptr, pos, state_format, value) in states:
             try:
                 path = state_map.lookup_address(pos)
@@ -291,8 +317,17 @@ def dump_command_buffer(f, mem, addr, end_addr, depth, state_map):
                 continue
             type = path[-1][0].type
             if isinstance(type, Domain): # type Domain refers to another memory space
-                f.write(indent)
-                f.write('    {0x%x,0x%05X}, /* %s = 0x%08x */\n' % (ptr, pos, format_path(path), value))
+                #f.write(indent)
+                addrname = format_addr(value)
+                #f.write('    {0x%x,0x%05X}, /* %s = 0x%08x (%s) */\n' % (ptr, pos, format_path(path), value, addrname))
+                uniqaddr[value].append(ptr)
+
+        #f.write(indent + '},')
+        f.write('\n' + indent + 'Grouped GPU addresses {\n')
+        for (value, ptrs) in uniqaddr.iteritems():
+            lvalues = ' = '.join([('cmdbuf[0x%x]' % ptr) for ptr in ptrs])
+            f.write(indent + '    ' + lvalues + ' = ' + format_addr(value) + ('; /* 0x%x */' % value) + '\n')
+
         f.write(indent + '}')
 
 def dump_context_map(f, mem, addr, end_addr, depth, state_map):
@@ -361,20 +396,19 @@ def load_data_definitions(struct_file):
     with open(struct_file, 'r') as f:
         return json.load(f)
 
-class Counter(object):
-    '''Count unique values'''
-    def __init__(self):
-        self.d = {}
-        self.c = 0
+vidmem_addr = Counter() # Keep track of video memories
 
-    def __getitem__(self, key):
-        try:
-            return self.d[key]
-        except KeyError:
-            rv = self.c
-            self.d[key] = rv
-            self.c += 1
-            return rv
+def format_addr(value):
+    '''
+    Return unique identifier for an address.
+    '''
+    # XXX this only works if exact addresses are used; offsets into buffers
+    # are not currently recognized as such but labeled as unique new addresses
+    id = vidmem_addr[value]
+    if id < 26:
+        return 'ADDR_'+chr(65 + id)
+    else:
+        return 'ADDR_%i' % id
 
 def main():
     args = parse_arguments()
@@ -402,6 +436,9 @@ def main():
                 feat = state_xml.types[field]
                 active_feat = [bit.name for bit in feat.bitfields if bit.extract(val.value)]
                 return ' '.join(active_feat)
+        elif parent_type == '_gcsHAL_LOCK_VIDEO_MEMORY':
+            if field == 'address': # annotate addresses with unique identifier
+                return format_addr(val.value)
 
     def handle_pointer(f, ptr, depth):
         parent = depth[-1][0]
