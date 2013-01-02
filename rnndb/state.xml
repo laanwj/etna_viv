@@ -261,7 +261,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="2" name="POINTCOORD_X" brief="glPointCoord.x"/>
         <value value="3" name="POINTCOORD_Y" brief="glPointCoord.y"/>
     </enum>
-    <enum name="COMPARE_FUNC">
+    <enum name="COMPARE_FUNC" brief="Compare function (for glStencilFunc and glFepthFunc)">
         <value value="0" name="NEVER"/>
         <value value="1" name="LESS"/>
         <value value="2" name="EQUAL"/>
@@ -270,6 +270,16 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="5" name="NOTEQUAL"/>
         <value value="6" name="GEQUAL"/>
         <value value="7" name="ALWAYS"/>
+    </enum>
+    <enum name="STENCIL_OP" brief="glStencilOp">
+        <value value="0" name="KEEP" brief="Keeps the current value"/>
+        <value value="1" name="ZERO" brief="Sets the stencil buffer value to 0"/>
+        <value value="2" name="REPLACE" brief="Sets the stencil value to ref"/>
+        <value value="3" name="INCR" brief="Increments stencil buffer value, clamps to max"/>
+        <value value="4" name="DECR" brief="Descrements stencil buffer value, clamps to min"/>
+        <value value="5" name="INVERT" brief="Bitwise inverts the current stencil buffer value"/>
+        <value value="6" name="INCR_WRAP" brief="Increments stencil buffer value, wraps around"/>
+        <value value="7" name="DECR_WRAP" brief="Decrements stencil buffer value, wraps around"/>
     </enum>
     <enum name="BLEND_EQ" brief="glBlendEquation">
         <value value="0" name="ADD"/>
@@ -347,6 +357,12 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="7" name="PE" brief="Pixel Engine"/>
         <value value="11" name="DE" brief="Drawing Engine"/>
     </enum>
+    <bitset name="RGBA_BITS" brief="RGBA bits">
+        <bitfield pos="0" name="R"/>
+        <bitfield pos="1" name="G"/>
+        <bitfield pos="2" name="B"/>
+        <bitfield pos="3" name="A"/>
+    </bitset>
 
     <!-- State ranges -->
     <stripe name="HI" brief="Host Interface">
@@ -419,7 +435,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     </stripe>
 
     <stripe name="MMUv2" brief="Memory Management Unit v2">
-        <doc>New MMU unit. Only exists on some new hardware.</doc>
+        <doc>New MMU unit. Only exists on more recent hardware.</doc>
         <reg32 offset="0x00180" name="SAFE_ADDRESS"/>
         <reg32 offset="0x00184" name="CONFIG"/>
         <reg32 offset="0x00188" name="STATUS"/>
@@ -876,12 +892,22 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <doc>The Pixel Engine takes care of fragment (pixel) processing.
 
             Some flags can be set either per group of bits, or all at once, by using masking flags.
-            Each group of state flags has a masking flag that prevents overwriting the flags in that group.
+            Each group of state flags has a masking flag that when set prevents overwriting the flags in that group.
             These will be called FOO_MASK if the state to be masked is called FOO.
         </doc>
         <reg32 offset="0x01400" name="DEPTH_CONFIG" value="0x00000000">
-            <bitfield high="10" low="8" name="DEPTH_FUNC" type="COMPARE_FUNC"/>
+            <bitfield high="2" low="0" name="UNK0"/>
+            <bitfield pos="3" name="UNK0_MASK"/>
+            <bitfield pos="4" name="UNK4"/>
+            <bitfield pos="5" name="UNK4_MASK"/>
+            <bitfield high="10" low="8" name="DEPTH_FUNC" type="COMPARE_FUNC" brief="glDepthFunc"/>
             <bitfield pos="11" name="DEPTH_FUNC_MASK"/>
+            <bitfield pos="12" name="WRITE_ENABLE" brief="glDepthMask"/>
+            <bitfield pos="13" name="WRITE_ENABLE_MASK"/>
+            <bitfield pos="16" name="UNK16"/>
+            <bitfield pos="17" name="UNK16_MASK"/>
+            <bitfield pos="20" name="UNK20"/>
+            <bitfield pos="21" name="UNK20_MASK"/>
         </reg32>
         <reg32 offset="0x01404" name="DEPTH_NEAR" value="0x00000000" type="float"/>
         <reg32 offset="0x01408" name="DEPTH_FAR" value="0x00000000" type="float"/>
@@ -889,12 +915,43 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x01410" name="DEPTH_ADDR" value="0x00000000" type="VIVANTE_MEM"/> <!-- pixelPipes == 1 -->
         <reg32 offset="0x01414" name="DEPTH_STRIDE" value="0x00000000"/>
         <reg32 offset="0x01418" name="STENCIL_OP" value="0x00000000">
-            <bitfield high="2" low="0" name="STENCIL_FUNC_FRONT" type="COMPARE_FUNC"/>
+            <bitfield high="2" low="0" name="STENCIL_FUNC_FRONT" type="COMPARE_FUNC" brief="glStencilFunc func (GL_FRONT)"/>
             <bitfield pos="3" name="STENCIL_FUNC_FRONT_MASK"/>
-            <bitfield high="18" low="16" name="STENCIL_FUNC_BACK" type="COMPARE_FUNC"/>
+            <bitfield high="6" low="4" name="PASS_FRONT" type="STENCIL_OP" brief="glStencilOp dppass (GL_FRONT)"/>
+            <bitfield pos="7" name="PASS_FRONT_MASK"/>
+            <bitfield high="10" low="8" name="FAIL_FRONT" type="STENCIL_OP" brief="glStencilOp sfail (GL_FRONT)"/>
+            <bitfield pos="11" name="FAIL_FRONT_MASK"/>
+            <bitfield high="14" low="12" name="DEPTH_FAIL_FRONT" type="STENCIL_OP" brief="glStencilOp dpfail (GL_FRONT)"/>
+            <bitfield pos="15" name="DEPTH_FAIL_FRONT_MASK"/>
+            <bitfield high="18" low="16" name="STENCIL_FUNC_BACK" type="COMPARE_FUNC" brief="glStencilFunc func (GL_BACK)"/>
             <bitfield pos="19" name="STENCIL_FUNC_BACK_MASK"/>
+            <bitfield high="22" low="20" name="PASS_BACK" type="STENCIL_OP" brief="glStencilOp dppass (GL_BACK)"/>
+            <bitfield pos="23" name="PASS_BACK_MASK"/>
+            <bitfield high="26" low="24" name="FAIL_BACK" type="STENCIL_OP" brief="glStencilOp sfail (GL_BACK)"/>
+            <bitfield pos="27" name="FAIL_BACK_MASK"/>
+            <bitfield high="30" low="28" name="DEPTH_FAIL_BACK" type="STENCIL_OP" brief="glStencilOp dpfail (GL_BACK)"/>
+            <bitfield pos="31" name="DEPTH_FAIL_BACK_MASK"/>
         </reg32>
-        <reg32 offset="0x0141C" name="STENCIL_CONFIG" value="0x00000000"/>
+        <reg32 offset="0x0141C" name="STENCIL_CONFIG" value="0x00000000">
+            <doc>Warning: confusing terminology. WRITE_MASK is the stencil write mask,
+                the state bits can be masked with WRITE_MASK_MASK.</doc>
+            <bitfield high="1" low="0" name="MODE">
+                <value value="0" name="DISABLED" brief="Stencil disabled"/>
+                <value value="1" name="ONE_SIDED" brief="Stencil enabled in one-sided mode"/>
+                <value value="2" name="TWO_SIDED" brief="Stencil enabled in two-sided mode"/>
+            </bitfield>
+            <bitfield pos="4" name="MODE_MASK"/>
+            <bitfield pos="5" name="REF_FRONT_MASK"/>
+            <bitfield pos="6" name="MASK_FRONT_MASK"/>
+            <bitfield pos="7" name="WRITE_MASK_MASK"/>
+            <bitfield high="15" low="8" name="REF_FRONT" brief="glStencilFunc ref (GL_FRONT)">
+                <doc>REF_BACK is in register STENCIL_CONFIG_EXT.</doc>
+            </bitfield>
+            <bitfield high="23" low="16" name="MASK_FRONT" brief="glStencilFunc mask">
+                <doc>XXX there appears to be no specific MASK_BACK, this state is used for both front and back?</doc>
+            </bitfield>
+            <bitfield high="31" low="24" name="WRITE_MASK" brief="glStencilMask"/>
+        </reg32>
         <reg32 offset="0x01420" name="ALPHA_OP" value="0x00000000">
             <bitfield pos="0" name="ALPHA_TEST"/>
             <bitfield pos="1" name="ALPHA_TEST_MASK"/>
@@ -925,15 +982,21 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x0142C" name="COLOR_FORMAT" value="0x00000000">
             <bitfield high="3" low="0" name="FORMAT" type="RS_FORMAT"/>
             <bitfield pos="4" name="FORMAT_MASK"/>
-            <bitfield high="11" low="8" name="UNK8"/>
-            <bitfield pos="12" name="UNK8_MASK"/>
+            <bitfield high="11" low="8" name="COMPONENTS" type="RGBA_BITS" brief="glColorMask"/>
+            <bitfield pos="12" name="COMPONENTS_MASK"/>
             <bitfield pos="16" name="UNK16" brief="Set when alpha blending enabled or otherwise not the full destination is written"/>
             <bitfield pos="17" name="UNK16_MASK"/>
         </reg32>
         <reg32 offset="0x01430" name="COLOR_ADDR" value="0x00000000" type="VIVANTE_MEM"/> <!-- pixelPipes == 1 -->
         <reg32 offset="0x01434" name="COLOR_STRIDE" value="0x00000000"/>
-        <reg32 offset="0x01454" name="UNK01454" value="0x00000000"/>
-        <reg32 offset="0x01458" name="UNK01458" value="0x00000000" type="VIVANTE_MEM"/>
+        <reg32 offset="0x01454" name="HDEPTH_CONTROL" value="0x00000000">
+            <bitfield high="3" low="0" name="FORMAT">
+                <value value="0" name="DISABLED" brief="Hierarchical Z disabled"/>
+                <value value="5" name="D16" brief="16 bit depth"/>
+                <value value="8" name="D24S8" brief="24 bit depth (+8 bit stencil or padding)"/>
+            </bitfield>
+        </reg32>
+        <reg32 offset="0x01458" name="HDEPTH_ADDR" value="0x00000000" type="VIVANTE_MEM"/>
         <reg32 offset="0x0145C" name="UNK0145C" value="0x00000010"/>
         <stripe name="UNK01460" length="8" stride="4"> <!-- pixelPipes != 1 -->
             <!-- length="pixelPipes" -->
@@ -942,7 +1005,12 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <reg32 offset="0x1500" name="ADDR_UNK01500" value="0x00000000" type="VIVANTE_MEM"/>
             <reg32 offset="0x1520" name="ADDR_UNK01520" value="0x00000000" type="VIVANTE_MEM"/>
         </stripe>
-        <reg32 offset="0x014A0" name="STENCIL_UNK014A0" value="0x00000000"/>
+        <reg32 offset="0x014A0" name="STENCIL_CONFIG_EXT" value="0x00000000">
+            <bitfield high="7" low="0" name="REF_BACK" brief="glStencilFunc ref (GL_BACK)"/>
+            <bitfield pos="8" name="REF_BACK_MASK"/>
+            <bitfield pos="9" name="UNK16_MASK"/>
+            <bitfield high="31" low="16" name="UNK16"/>
+        </reg32>
         <reg32 offset="0x014A4" name="LOGIC_OP" value="0x000E400C"/>
         <reg32 offset="0x014A8" name="DITHER" value="0xFFFFFFFF" length="2"/>
         <reg32 offset="0x014B0" name="UNK014B0" value="0x00000000"/>
