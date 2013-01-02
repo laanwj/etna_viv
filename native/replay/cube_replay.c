@@ -564,7 +564,7 @@ int main(int argc, char **argv)
     
     viv_addr_t aux_rt_physical = 0;
     void *aux_rt_logical = 0;
-    if(viv_lock_vidmem(rt_node, &aux_rt_physical, &aux_rt_logical)!=0)
+    if(viv_lock_vidmem(aux_rt_node, &aux_rt_physical, &aux_rt_logical)!=0)
     {
         fprintf(stderr, "Error locking aux render target memory\n");
         exit(1);
@@ -685,8 +685,8 @@ int main(int argc, char **argv)
         = cmdbuf1[0x259] = cmdbuf1[0x27b] = cmdbuf1[0x29d] = vtx_physical;
 
     /* Submit first command buffer */
-    memcpy((void*)((size_t)commandBuffer.logical + commandBuffer.offset), cmdbuf1, sizeof(cmdbuf1));
     commandBuffer.startOffset = 0;
+    memcpy((void*)((size_t)commandBuffer.logical + commandBuffer.startOffset), cmdbuf1, sizeof(cmdbuf1));
     commandBuffer.offset = commandBuffer.startOffset + sizeof(cmdbuf1);
     commandBuffer.free -= sizeof(cmdbuf1) + 0x18;
     printf("[1] startOffset=%08x, offset=%08x, free=%08x\n", (uint32_t)commandBuffer.startOffset, (uint32_t)commandBuffer.offset, (uint32_t)commandBuffer.free);
@@ -714,7 +714,9 @@ int main(int argc, char **argv)
     contextBuffer.link = ((uint32_t*)cbuf0_logical) + contextBuffer.linkIndex;
     contextBuffer.inUse = (gctBOOL*)(((uint32_t*)cbuf0_logical) + contextBuffer.inUseIndex);
 
-    /* Submit second command buffer, with updated context */
+    /* Submit second command buffer, with updated context.
+     * Second command buffer fills the background.
+     */
     cmdbuf2[0x1d] = cmdbuf2[0x1f] = rt_physical;
     commandBuffer.startOffset = commandBuffer.offset + 0x18; /* Make space for LINK */
     memcpy((void*)((size_t)commandBuffer.logical + commandBuffer.startOffset), cmdbuf2, sizeof(cmdbuf2));
@@ -727,7 +729,9 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    /* Submit third command buffer, with updated context */
+    /* Submit third command buffer, with updated context
+     * Third command buffer messes up the background?!?
+     **/
     cmdbuf3[0x9] = aux_rt_ts_physical;
     cmdbuf3[0xb] = cmdbuf3[0x11] = cmdbuf3[0x15] = aux_rt_physical;
     cmdbuf3[0x1f] = rt_ts_physical;

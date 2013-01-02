@@ -814,11 +814,11 @@ uint32_t cmdbuf3[] = { /* seq 91 */
     0x08010581, /* LOAD_STATE (1) Base: 0x01604 Size: 1 Fixp: 0 */
     0x00004486, /*   RS.CONFIG := SOURCE_FORMAT=A8R8G8B8,UNK7=1,DEST_FORMAT=R5G6B5,UNK14=1,SWAP_RB=0 */
     0x08010582, /* LOAD_STATE (1) Base: 0x01608 Size: 1 Fixp: 0 */
-    0x7f284000, /*   RS.SOURCE_ADDR := *aux_ts_physical */
+    0x7f284000, /*   RS.SOURCE_ADDR := *aux_rt_physical */
     0x08010583, /* LOAD_STATE (1) Base: 0x0160C Size: 1 Fixp: 0 */
     0x00000400, /*   RS.SOURCE_STRIDE := 0x400 */
     0x08010584, /* LOAD_STATE (1) Base: 0x01610 Size: 1 Fixp: 0 */
-    0x7f284000, /*   RS.DEST_ADDR := *aux_ts_physical */
+    0x7f284000, /*   RS.DEST_ADDR := *aux_rt_physical */
     0x08010585, /* LOAD_STATE (1) Base: 0x01614 Size: 1 Fixp: 0 */
     0x00000400, /*   RS.DEST_STRIDE := 0x400 */
     0x08010588, /* LOAD_STATE (1) Base: 0x01620 Size: 1 Fixp: 0 */
