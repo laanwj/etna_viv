@@ -73,6 +73,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 
     <stripe name="END" varset="FE_OPCODE" variants="END"> <!-- size="4" -->
         <reg32 offset="0x00000" name="HEADER">
+            <bitfield high="4" low="0" brief="Event ID to be send"/>
+            <bitfield pos="8" name="EVENT_ENABLE" brief="Send event when END is completed"/>
             <bitfield high="31" low="27" name="OP" type="FE_OPCODE"/>
         </reg32>
         <!-- END has no arguments -->
@@ -87,11 +89,20 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 
     <stripe name="DRAW_2D" varset="FE_OPCODE" variants="DRAW_2D">
         <reg32 offset="0x00000" name="HEADER">
+            <bitfield high="15" low="8" name="COUNT" brief="Number of rectangles to send"/>
+            <bitfield high="26" low="16" name="DATA_COUNT" brief="Number of 32-bit data words to send"/>
             <bitfield high="31" low="27" name="OP" type="FE_OPCODE"/>
-            <bitfield high="15" low="8" name="NUM_RECT"/>
         </reg32>
-        <reg32 offset="0x00004" name="PAD"/>
-        <!-- 2 words per rectangle follow -->
+        <!-- 2 words per rectangle follow, aligned to 64 bit -->
+        <reg32 offset="0x00004" name="TOP_LEFT">
+            <bitfield high="15" low="0" name="X"/>
+            <bitfield high="31" low="16" name="Y"/>
+        </reg32>
+        <reg32 offset="0x00008" name="BOTTOM_RIGHT">
+            <bitfield high="15" low="0" name="X"/>
+            <bitfield high="31" low="16" name="Y"/>
+        </reg32>
+        <!-- Data words follow, aligned to 64 bit -->
     </stripe>
 
     <stripe name="DRAW_PRIMITIVES" varset="FE_OPCODE" variants="DRAW_PRIMITIVES"> <!-- size="16" -->
@@ -128,6 +139,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 
     <stripe name="WAIT" varset="FE_OPCODE" variants="WAIT"> <!-- size="4" -->
         <reg32 offset="0x00000" name="HEADER">
+            <bitfield high="15" low="0" name="DELAY" brief="Number of cycles to wait until the next command gets fetched"/>
             <bitfield high="31" low="27" name="OP" type="FE_OPCODE"/>
         </reg32>
         <!-- WAIT has no arguments -->
@@ -135,9 +147,15 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 
     <stripe name="LINK" varset="FE_OPCODE" variants="LINK"> <!-- size="8" -->
         <reg32 offset="0x00000" name="HEADER">
+            <bitfield high="15" low="0" name="PREFETCH" brief="Number of 64-bit words to fetch">
+                <doc>Make sure this number is not too low,
+                nothing else will be fetched.  So, make sure that the last command in the
+                new command buffer is either an END, a LINK, a CALL, or a RETURN.
+                </doc>
+            </bitfield>
             <bitfield high="31" low="27" name="OP" type="FE_OPCODE"/>
         </reg32>
-        <reg32 offset="0x00004" name="ARG1">
+        <reg32 offset="0x00004" name="ADDRESS">
         </reg32>
     </stripe>
 
@@ -151,12 +169,19 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
     </stripe>
 
-    <stripe name="CALL" varset="FE_OPCODE" variants="CALL"> <!-- size="8" -->
+    <stripe name="CALL" varset="FE_OPCODE" variants="CALL"> <!-- size="16" -->
         <reg32 offset="0x00000" name="HEADER">
+            <bitfield high="15" low="0" name="PREFETCH" brief="Number of 64-bit words to fetch">
+                <doc>Make sure this number is not too low,
+                nothing else will be fetched.  So, make sure that the last command in the
+                new command buffer is either an END, a LINK, a CALL, or a RETURN.
+                </doc>
+            </bitfield>
             <bitfield high="31" low="27" name="OP" type="FE_OPCODE"/>
         </reg32>
-        <reg32 offset="0x00004" name="ARG1">
-        </reg32>
+        <reg32 offset="0x00004" name="ADDRESS"/>
+        <reg32 offset="0x00008" name="RETURN_PREFETCH" brief="Number of 64-bit words to fetch after a Return has been issued"/>
+        <reg32 offset="0x0000C" name="RETURN_ADDRESS"/>
     </stripe>
 
     <stripe name="RETURN" varset="FE_OPCODE" variants="RETURN"> <!-- size="4" -->

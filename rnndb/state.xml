@@ -79,105 +79,107 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="0x4000" name="GC4000"/> <!-- 3D graphics, 8 cores -->
     </enum>
     <bitset name="chipFeatures">
-        <bitfield pos="0" name="FAST_CLEAR"/>
+        <bitfield pos="0" name="FAST_CLEAR" brief="Fast clear available"/>
         <bitfield pos="1" name="SPECIAL_ANTI_ALIASING" brief="Special AA (FSAA)"/>
         <bitfield pos="2" name="PIPE_3D" brief="3D engine is present"/>
-        <bitfield pos="3" name="DXT_TEXTURE_COMPRESSION"/>
-        <bitfield pos="4" name="DEBUG_MODE"/>
-        <bitfield pos="5" name="Z_COMPRESSION"/>
-        <bitfield pos="6" name="YUV420_SCALER"/>
+        <bitfield pos="3" name="DXT_TEXTURE_COMPRESSION" brief="DXT texture compression"/>
+        <bitfield pos="4" name="DEBUG_MODE" brief="Debug registers present"/>
+        <bitfield pos="5" name="Z_COMPRESSION" brief="Depth and color compression"/>
+        <bitfield pos="6" name="YUV420_SCALER" brief="YUV 4:2:0 support in filter blit"/>
         <bitfield pos="7" name="MSAA" brief="Multi Sample Anti-Aliasing"/>
         <bitfield pos="8" name="DC" brief="Display controller"/>
         <bitfield pos="9" name="PIPE_2D" brief="2D engine is present"/>
         <bitfield pos="10" name="ETC1_TEXTURE_COMPRESSION" brief="Ericcson texture compression"/>
-        <bitfield pos="11" name="FAST_SCALER"/>
-        <bitfield pos="12" name="HIGH_DYNAMIC_RANGE"/>
-        <bitfield pos="13" name="YUV420_TILER"/>
-        <bitfield pos="14" name="MODULE_CG"/>
-        <bitfield pos="15" name="MIN_AREA"/>
-        <bitfield pos="16" name="EARLY_Z"/>
-        <bitfield pos="17" name="422_TEXTURE_COMPRESSION"/>
-        <bitfield pos="18" name="BUFFER_INTERLEAVING"/>
-        <bitfield pos="19" name="BYTE_WRITE_2D"/>
-        <bitfield pos="20" name="SCALER"/>
-        <bitfield pos="21" name="YUY2_AVERAGING"/>
-        <bitfield pos="22" name="UNK22"/>
-        <bitfield pos="23" name="UNK23"/>
-        <bitfield pos="24" name="YUY2_RENDER_TARGET"/>
-        <bitfield pos="25" name="UNK25"/>
+        <bitfield pos="11" name="FAST_SCALER" brief="HD scaler present"/>
+        <bitfield pos="12" name="HIGH_DYNAMIC_RANGE" brief="High dynamic range support"/>
+        <bitfield pos="13" name="YUV420_TILER" brief="YUV 4:2:0 tiler is available"/>
+        <bitfield pos="14" name="MODULE_CG" brief="Second-level clock gating available"/>
+        <bitfield pos="15" name="MIN_AREA" brief="Optimized for minimum area"/>
+        <bitfield pos="16" name="NO_EARLY_Z" brief="No early-Z"/>
+        <bitfield pos="17" name="NO_422_TEXTURE" brief="No 4:2:2 YUV texture input format"/>
+        <bitfield pos="18" name="BUFFER_INTERLEAVING" brief="Supports interleaving depth and color buffers"/>
+        <bitfield pos="19" name="BYTE_WRITE_2D" brief="Supports byte write in 2D"/>
+        <bitfield pos="20" name="NO_SCALER" brief="No 2D scaler"/>
+        <bitfield pos="21" name="YUY2_AVERAGING" brief="YUY2 averaging support in resolve"/>
+        <bitfield pos="22" name="HALF_PE_CACHE" brief="PE cache is half"/>
+        <bitfield pos="23" name="HALF_TX_CACHE" brief="TX cache is half"/>
+        <bitfield pos="24" name="YUY2_RENDER_TARGET" brief="YUY2 support in PE and YUY2 to RGB conversion in resolve"/>
+        <bitfield pos="25" name="MEM32" brief="32 bit memory address support"/>
         <bitfield pos="26" name="PIPE_VG" brief="OpenVG engine is present"/>
-        <bitfield pos="27" name="UNK27"/>
-        <bitfield pos="28" name="UNK28"/>
-        <bitfield pos="29" name="UNK29"/>
-        <bitfield pos="30" name="UNK30"/>
+        <bitfield pos="27" name="VGTS" brief="VG tesselator is present"/>
+        <bitfield pos="28" name="FE20" brief="FE 2.0 is present"/>
+        <bitfield pos="29" name="BYTE_WRITE_3D" brief="3D PE has byte write capability"/>
+        <bitfield pos="30" name="RS_YUV_TARGET" brief="Supports resolveing into YUV target"/>
         <bitfield pos="31" name="32_BIT_INDICES" brief="32 bit indices can be used with indexed drawing"/>
     </bitset>
     <bitset name="chipMinorFeatures0">
-        <bitfield pos="0" name="FLIP_Y"/>
-        <bitfield pos="1" name="DUAL_RETURN_BUS"/>
-        <bitfield pos="2" name="ENDIANNESS_CONFIG"/>
-        <bitfield pos="3" name="TEXTURE_8K" brief="Large (8K) texture support"/>
-        <bitfield pos="4" name="CORRECT_TEXTURE_CONVERTER"/>
-        <bitfield pos="5" name="SPECIAL_MSAA_LOD"/>
-        <bitfield pos="6" name="FAST_CLEAR_FLUSH"/>
+        <bitfield pos="0" name="FLIP_Y" brief="Y flipping capability is added to resolve"/>
+        <bitfield pos="1" name="DUAL_RETURN_BUS" brief="Dual Return Bus from HI to clients"/>
+        <bitfield pos="2" name="ENDIANNESS_CONFIG" brief="Configurable endianness support"/>
+        <bitfield pos="3" name="TEXTURE_8K" brief="Large (8Kx8K) texture support"/>
+        <bitfield pos="4" name="CORRECT_TEXTURE_CONVERTER" brief="Driver hack is not needed"/>
+        <bitfield pos="5" name="SPECIAL_MSAA_LOD" brief="Special LOD calculation when MSAA is on"/>
+        <bitfield pos="6" name="FAST_CLEAR_FLUSH" brief="Proper flush is done in fast clear cache"/>
         <bitfield pos="7" name="2DPE20" brief="Pixel Engine 2.0"/>
-        <bitfield pos="8" name="UNK8"/>
+        <bitfield pos="8" name="CORRECT_AUTO_DISABLE" brief="Reserved"/>
         <bitfield pos="9" name="RENDERTARGET_8K" brief="Large (8K) render target support"/>
         <bitfield pos="10" name="2BITPERTILE" brief="Two status bits per tile (instead of four)"/>
-        <bitfield pos="11" name="UNK11"/>
-        <bitfield pos="12" name="SUPER_TILED"/>
-        <bitfield pos="13" name="UNK13"/>
-        <bitfield pos="14" name="UNK14"/>
-        <bitfield pos="15" name="UNK15"/>
+        <bitfield pos="11" name="SEPARATE_TILE_STATUS_WHEN_INTERLEAVED" brief="Use 2 separate tile status buffers in interleaved mode"/>
+        <bitfield pos="12" name="SUPER_TILED" brief="32x32 super tile is available"/>
+        <bitfield pos="13" name="VG_20" brief="Major updates to VG pipe (TS buffer tiling, state masking)"/>
+        <bitfield pos="14" name="TS_EXTENDED_COMMANDS" brief="New commands added to the VG tessellator"/>
+        <bitfield pos="15" name="COMPRESSION_FIFO_FIXED"/>
         <bitfield pos="16" name="HAS_SIGN_FLOOR_CEIL" brief="Has SIGN, FLOOR and CEIL shader instructions"/>
-        <bitfield pos="17" name="UNK17"/>
-        <bitfield pos="18" name="UNK18"/>
-        <bitfield pos="19" name="SHADER_HAS_W"/>
+        <bitfield pos="17" name="VG_FILTER" brief="VG filter is available"/>
+        <bitfield pos="18" name="VG_21" brief="Minor updates to VG pipe (Event generation from VG, TS, PE, tiled image support)"/>
+        <bitfield pos="19" name="SHADER_HAS_W" brief="W is sent to SH from RA"/>
         <bitfield pos="20" name="HAS_SQRT_TRIG" brief="Has SQRT, SIN, COS instructions"/>
-        <bitfield pos="21" name="MORE_MINOR_FEATURES" brief="Chip has CHIP_MINOR_FEATURE_(1|2|3)"/>
-        <bitfield pos="22" name="MC20" brief="Memory Controller 2.0"/>
-        <bitfield pos="23" name="UNK23"/>
-        <bitfield pos="24" name="UNK24"/>
+        <bitfield pos="21" name="MORE_MINOR_FEATURES" brief="Chip has CHIP_MINOR_FEATURE_(1|2|3)">
+            <doc>Also, in the shader unavailable registers will return 0</doc>
+        </bitfield>
+        <bitfield pos="22" name="MC20" brief="New style MC with separate paths for color and depth"/>
+        <bitfield pos="23" name="MSAA_SIDEBAND" brief="Put the MSAA data into sideband fifo"/>
+        <bitfield pos="24" name="BUG_FIXES0"/>
         <bitfield pos="25" name="VAA" brief="Coverage anti-aliasing"/>
-        <bitfield pos="26" name="UNK26"/>
+        <bitfield pos="26" name="BYPASS_IN_MSAA" brief="Shader supports bypass mode when MSAA is enabled"/>
         <bitfield pos="27" name="HZ" brief="Hierarchical Z-buffer"/>
-        <bitfield pos="28" name="UNK28"/>
-        <bitfield pos="29" name="2D_A8_TARGET"/>
-        <bitfield pos="30" name="CORRECT_STENCIL"/>
-        <bitfield pos="31" name="FLUSH_FIXED"/>
+        <bitfield pos="28" name="NEW_TEXTURE" brief="New texture unit is available"/>
+        <bitfield pos="29" name="2D_A8_TARGET" brief="2D engine supports A8 target"/>
+        <bitfield pos="30" name="CORRECT_STENCIL" brief="Correct stencil behavior in depth only"/>
+        <bitfield pos="31" name="ENHANCE_VR" brief="Enhance video rasterizer"/>
     </bitset>
     <bitset name="chipMinorFeatures1">
-        <bitfield pos="0" name="UNK0"/>
-        <bitfield pos="1" name="UNK1"/>
-        <bitfield pos="2" name="UNK2"/>
+        <bitfield pos="0" name="RSUV_SWIZZLE" brief="Resolve UV swizzle"/>
+        <bitfield pos="1" name="V2_COMPRESSION" brief="V2 compression"/>
+        <bitfield pos="2" name="VG_DOUBLE_BUFFER" brief="Double buffering support for VG (second TS-->VG semaphore is present)"/>
         <bitfield pos="3" name="EXTRA_EVENT_STATES"/>
         <bitfield pos="4" name="NO_STRIPING_NEEDED"/>
-        <bitfield pos="5" name="UNK5"/>
-        <bitfield pos="6" name="UNK6"/>
+        <bitfield pos="5" name="TEXTURE_STRIDE" brief="Texture has stride and memory addressing"/>
+        <bitfield pos="6" name="BUG_FIXES3"/>
         <bitfield pos="7" name="AUTO_DISABLE"/>
-        <bitfield pos="8" name="UNK8"/>
+        <bitfield pos="8" name="AUTO_RESTART_TS"/>
         <bitfield pos="9" name="DISABLE_PE_GATING"/>
-        <bitfield pos="10" name="UNK10"/>
+        <bitfield pos="10" name="L2_WINDOWING"/>
         <bitfield pos="11" name="HALF_FLOAT" brief="Supports 16-bit floating point type"/>
-        <bitfield pos="12" name="UNK12"/>
-        <bitfield pos="13" name="UNK13"/>
-        <bitfield pos="14" name="UNK14"/>
-        <bitfield pos="15" name="UNK15"/>
-        <bitfield pos="16" name="2D_DITHER"/>
-        <bitfield pos="17" name="UNK17"/>
-        <bitfield pos="18" name="MIRROR_EXTENSION"/>
-        <bitfield pos="19" name="UNK19"/>
+        <bitfield pos="12" name="PIXEL_DITHER"/>
+        <bitfield pos="13" name="TWO_STENCIL_REFERENCE"/>
+        <bitfield pos="14" name="EXTENDED_PIXEL_FORMAT"/>
+        <bitfield pos="15" name="CORRECT_MIN_MAX_DEPTH" brief="EEZ and HZ are correct"/>
+        <bitfield pos="16" name="2D_DITHER" brief="2D dither and filter+alpha available"/>
+        <bitfield pos="17" name="BUG_FIXES5"/>
+        <bitfield pos="18" name="NEW_2D" brief="Mirror extension available"/>
+        <bitfield pos="19" name="NEW_FP" brief="New floating point arithmetic"/>
         <bitfield pos="20" name="TEXTURE_ALIGN_4" brief="Textures can be aligned to 4 instead of 16"/>
         <bitfield pos="21" name="NON_POWER_OF_TWO" brief="Non power-of-two texture support"/>
-        <bitfield pos="22" name="UNK22"/>
+        <bitfield pos="22" name="LINEAR_TEXTURE_SUPPORT"/>
         <bitfield pos="23" name="TEXTURE_ARRAY" brief="16 attr per vertex i.s.o. 10, and 12 varyings i.s.o. 8"/>
-        <bitfield pos="24" name="UNK24"/>
-        <bitfield pos="25" name="UNK25"/>
-        <bitfield pos="26" name="UNK26"/>
-        <bitfield pos="27" name="UNK27"/>
+        <bitfield pos="24" name="CORRECT_OVERFLOW_VG"/>
+        <bitfield pos="25" name="NEGATIVE_LOG_FIX"/>
+        <bitfield pos="26" name="RESOLVE_OFFSET"/>
+        <bitfield pos="27" name="OK_TO_GATE_AXI_CLOCK"/>
         <bitfield pos="28" name="MMU_VERSION"/>
         <bitfield pos="29" name="WIDE_LINE"/>
-        <bitfield pos="30" name="UNK30"/>
+        <bitfield pos="30" name="BUG_FIXES6"/>
         <bitfield pos="31" name="FC_FLUSH_STALL"/>
     </bitset>
     <bitset name="chipMinorFeatures2">
@@ -343,6 +345,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="1" name="FE" brief="Front End"/>
         <value value="5" name="RA" brief="Raster"/>
         <value value="7" name="PE" brief="Pixel Engine"/>
+        <value value="11" name="DE" brief="Drawing Engine"/>
     </enum>
 
     <!-- State ranges -->
@@ -380,16 +383,27 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00034" name="CHIP_MINOR_FEATURE_0" type="chipMinorFeatures0" brief="Chip minor features 0"/>
         <reg32 offset="0x00038" name="CACHE_CONTROL"/>
         <reg32 offset="0x0003C" name="MEMORY_COUNTER_RESET"/>
-
-        <reg32 offset="0x00040" name="PROFILE_READ_BYTES8"/>
-        <reg32 offset="0x00044" name="PROFILE_WRITE_BYTES8"/>
+        <reg32 offset="0x00040" name="PROFILE_READ_BYTES8" brief="Total reads in terms of 64bits"/>
+        <reg32 offset="0x00044" name="PROFILE_WRITE_BYTES8" brief="Total writes in terms of 64bits"/>
         <reg32 offset="0x00048" name="CHIP_SPECS" brief="Chip specifications"/>
-        <reg32 offset="0x00050" name="PROFILE_WRITE_REQUESTS"/>
-        <reg32 offset="0x0005C" name="PROFILE_READ_REQUESTS"/>
-
+        <reg32 offset="0x0004C" name="PROFILE_WRITE_BURSTS" brief="Total write Data Count in terms of 64bits value"/>
+        <reg32 offset="0x00050" name="PROFILE_WRITE_REQUESTS" brief="Total write Request Count"/>
+        <reg32 offset="0x00058" name="PROFILE_READ_BURSTS" brief="Total Read Data Count in terms of 64bits"/>
+        <reg32 offset="0x0005C" name="PROFILE_READ_REQUESTS" brief="Total Read Request Count"/>
+        <reg32 offset="0x00060" name="PROFILE_READ_LASTS" brief="Total RLAST Count"/>
+        <reg32 offset="0x00064" name="GP_OUT0" brief="General Purpose output register0. R/W but not connected to anywhere"/>
+        <reg32 offset="0x00068" name="GP_OUT1" brief="General Purpose output register1. R/W but not connected to anywhere"/>
+        <reg32 offset="0x0006C" name="GP_OUT2" brief="General Purpose output register2. R/W but not connected to anywhere"/>
+        <reg32 offset="0x00070" name="AXI_CONTROL" brief="Special Handling on AXI Bus"/>
         <reg32 offset="0x00074" name="CHIP_MINOR_FEATURE_1" type="chipMinorFeatures1" brief="Chip minor features 1"/>
-        <reg32 offset="0x00078" name="PROFILE_CYCLES"/>
-        <reg32 offset="0x0007C" name="PROFILE_IDLE_CYCLES"/>
+        <reg32 offset="0x00078" name="PROFILE_TOTAL_CYCLES" brief="Total cycles">
+            <doc>This register is a free running counter.  It can be reset by writing 0 to it.</doc>
+        </reg32>
+        <reg32 offset="0x0007C" name="PROFILE_IDLE_CYCLES" brief="Total cycles where the GPU is idle">
+            <doc>It is reset when PROFILE_TOTAL_CYCLES register is written to. It looks at all the blocks but FE when determining the IP is
+            idle.
+            </doc>
+        </reg32>
         <reg32 offset="0x00080" name="CHIP_SPECS_2" brief="Chip specifications 2"/>
         <reg32 offset="0x00084" name="CHIP_MINOR_FEATURE_2" type="chipMinorFeatures2" brief="Chip minor features 2"/>
         <reg32 offset="0x00088" name="CHIP_MINOR_FEATURE_3" type="chipMinorFeatures3" brief="Chip minor features 3"/>
@@ -406,9 +420,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 
     <stripe name="MMUv2" brief="Memory Management Unit v2">
         <doc>New MMU unit. Only exists on some new hardware.</doc>
-        <reg32 offset="0x00180" name="MMU_ADDRESS"/>
-        <reg32 offset="0x00184" name="MMU_CONFIG"/>
-        <reg32 offset="0x0018C" name="MMU_CONTROL"/>
+        <reg32 offset="0x00180" name="SAFE_ADDRESS"/>
+        <reg32 offset="0x00184" name="CONFIG"/>
+        <reg32 offset="0x00188" name="STATUS"/>
+        <reg32 offset="0x0018C" name="CONTROL"/>
+        <reg32 offset="0x00190" name="EXCEPTION_ADDR"/>
     </stripe>
 
     <stripe name="MC" brief="Memory Controller">
@@ -490,11 +506,23 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00650" name="VERTEX_STREAM_CONTROL" value="0x00000000"> <!-- vertex stream 0 -->
             <bitfield high="7" low="0" name="VERTEX_STRIDE"/>
         </reg32>
-        <reg32 offset="0x00654" name="COMMAND_ADDRESS"/>
-        <reg32 offset="0x00658" name="COMMAND_CONTROL"/>
+        <reg32 offset="0x00654" name="COMMAND_ADDRESS" brief="Base address for the command buffer">
+            <doc>The address must be 64-bit aligned and it is always physical. This register cannot be read.</doc>
+        </reg32>
+        <reg32 offset="0x00658" name="COMMAND_CONTROL">
+            <bitfield high="15" low="0" name="PREFETCH" brief="Number of 64-bit words to fetch from the command buffer"/>
+            <bitfield pos="16" name="ENABLE" brief="Enable the command parser"/>
+        </reg32>
         <reg32 offset="0x0065C" name="DMA_STATUS"/>
-        <reg32 offset="0x00660" name="DMA_DEBUG_STATE"/>
-        <reg32 offset="0x00664" name="DMA_ADDRESS"/>
+        <reg32 offset="0x00660" name="DMA_DEBUG_STATE">
+            <bitfield high="4" low="0" name="CMD_STATE"/>
+            <bitfield high="9" low="8" name="CMD_DMA_STATE"/>
+            <bitfield high="11" low="10" name="CMD_FETCH_STATE"/>
+            <bitfield high="13" low="12" name="REQ_DMA_STATE"/>
+            <bitfield high="15" low="14" name="CAL_STATE"/>
+            <bitfield high="17" low="16" name="VE_REQ_STATE"/>
+        </reg32>
+        <reg32 offset="0x00664" name="DMA_ADDRESS" brief="The current command decoder address (r/o)"/>
         <reg32 offset="0x00668" name="DMA_LOW"/>
         <reg32 offset="0x0066C" name="DMA_HIGH"/>
         <reg32 offset="0x00670" name="AUTO_FLUSH" value="0x00000000" brief="Auto flush cycles"/>
@@ -507,6 +535,95 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00700" name="UNK00700" value="0x00000000" length="16" stride="4"/>
         <reg32 offset="0x00740" name="UNK00740" value="0x00000000" length="16" stride="4"/>
         <reg32 offset="0x00780" name="UNK00780" value="0x3F800000" length="16" stride="4"/>
+    </stripe>
+
+    <stripe name="GLOBAL" doc="Global states">
+        <doc>Global device control states. Here is configured what pipe to use (2D or 3D),
+            when to send event, when to wait on semaphores and the API mode (OGL or D3D).
+        </doc>
+        <reg32 offset="0x03800" name="PIPE_SELECT" brief="Select the current graphics pipe">
+            <bitfield pos="0" name="PIPE" type="PIPE_ID"/>
+        </reg32>
+        <reg32 offset="0x03804" name="EVENT" brief="Send an event">
+            <bitfield high="4" low="0" name="EVENT_ID"/>
+            <bitfield pos="5" name="FROM_FE"/>
+            <bitfield pos="6" name="FROM_PE"/>
+        </reg32>
+        <reg32 offset="0x03808" name="SEMAPHORE_TOKEN" brief="A sempahore state arms the semaphore in the destination">
+            <bitfield high="4" low="0" name="FROM" type="SYNC_RECIPIENT"/>
+            <bitfield high="12" low="8" name="TO" type="SYNC_RECIPIENT"/>
+        </reg32>
+        <reg32 offset="0x0380C" name="FLUSH_CACHE" brief="Flush the current pipe">
+            <bitfield pos="0" name="DEPTH"/>
+            <bitfield pos="1" name="COLOR"/>
+            <bitfield pos="2" name="3D_TEXTURE"/>
+            <bitfield pos="3" name="2D"/>
+            <bitfield pos="4" name="UNK4"/>
+            <bitfield pos="5" name="SHADER_L1"/>
+            <bitfield pos="6" name="SHADER_L2"/>
+        </reg32>
+        <reg32 offset="0x03810" name="FLUSH_MMU" brief="Flush the virtual addrses lookup cache inside the MC">
+            <bitfield pos="0" name="FLUSH_FEMMU" brief="Flush the FE address translation caches"/>
+            <bitfield pos="1" name="FLUSH_PEMMU" brief="Flush the PE render target address translation caches"/>
+        </reg32>
+        <reg32 offset="0x03814" name="VERTEX_ELEMENT_CONFIG" value="0x00000001"/>
+        <reg32 offset="0x03818" name="MULTI_SAMPLE_CONFIG" value="0x00000000"/>
+        <reg32 offset="0x0381C" name="VS_VARYING_NUM_COMPONENTS" brief="Number of components in varyings (VS)" value="0x00000000">
+            <doc>Number of components per varying (VS).</doc>
+            <bitfield high="2" low="0" name="VAR0"/>
+            <bitfield high="6" low="4" name="VAR1"/>
+            <bitfield high="10" low="8" name="VAR2"/>
+            <bitfield high="14" low="12" name="VAR3"/>
+            <bitfield high="18" low="16" name="VAR4"/>
+            <bitfield high="22" low="20" name="VAR5"/>
+            <bitfield high="26" low="24" name="VAR6"/>
+            <bitfield high="30" low="28" name="VAR7"/>
+        </reg32>
+        <reg32 offset="0x03820" name="PS_VARYING_NUM_COMPONENTS" brief="Number of components in varyings (PS)" value="0x00000000">
+            <doc>Number of components per varying (PS).</doc>
+            <bitfield high="2" low="0" name="VAR0"/>
+            <bitfield high="6" low="4" name="VAR1"/>
+            <bitfield high="10" low="8" name="VAR2"/>
+            <bitfield high="14" low="12" name="VAR3"/>
+            <bitfield high="18" low="16" name="VAR4"/>
+            <bitfield high="22" low="20" name="VAR5"/>
+            <bitfield high="26" low="24" name="VAR6"/>
+            <bitfield high="30" low="28" name="VAR7"/>
+        </reg32>
+        <reg32 offset="0x03828" name="PS_VARYING_COMPONENT_USE" brief="Varying component usage (PS)" value="0x00000000" length="2" stride="4">
+            <doc>2 bits per varying component, 16 components per 32-bit word.</doc>
+            <bitfield high="1" low="0" name="COMP0" type="VARYING_COMPONENT_USE"/> 
+            <bitfield high="3" low="2" name="COMP1" type="VARYING_COMPONENT_USE"/>
+            <bitfield high="5" low="4" name="COMP2" type="VARYING_COMPONENT_USE"/>
+            <bitfield high="7" low="6" name="COMP3" type="VARYING_COMPONENT_USE"/>
+            <bitfield high="9" low="8" name="COMP4" type="VARYING_COMPONENT_USE"/>
+            <bitfield high="11" low="10" name="COMP5" type="VARYING_COMPONENT_USE"/>
+            <bitfield high="13" low="12" name="COMP6" type="VARYING_COMPONENT_USE"/>
+            <bitfield high="15" low="14" name="COMP7" type="VARYING_COMPONENT_USE"/>
+            <bitfield high="17" low="16" name="COMP8" type="VARYING_COMPONENT_USE"/>
+            <bitfield high="19" low="18" name="COMP9" type="VARYING_COMPONENT_USE"/>
+            <bitfield high="21" low="20" name="COMP10" type="VARYING_COMPONENT_USE"/>
+            <bitfield high="23" low="22" name="COMP11" type="VARYING_COMPONENT_USE"/>
+            <bitfield high="25" low="24" name="COMP12" type="VARYING_COMPONENT_USE"/>
+            <bitfield high="27" low="26" name="COMP13" type="VARYING_COMPONENT_USE"/>
+            <bitfield high="29" low="28" name="COMP14" type="VARYING_COMPONENT_USE"/>
+            <bitfield high="31" low="30" name="COMP15" type="VARYING_COMPONENT_USE"/>
+        </reg32>
+        <reg32 offset="0x03834" name="UNK03834" value="0x00000000"/>
+        <reg32 offset="0x03838" name="UNK03838" value="0x00000000"/>
+        <reg32 offset="0x0384C" name="API_MODE" brief="API mode" value="0x00000000">
+            <value value="0" name="OPENGL"/>
+            <value value="1" name="OPENVG"/>
+            <value value="2" name="OPENCL"/>
+        </reg32>
+        <reg32 offset="0x03850" name="CONTEXT_POINTER"/> <!-- DEBUG -->
+        <reg32 offset="0x03A00" name="UNK03A00"/>
+        <reg32 offset="0x03C00" name="STALL_TOKEN">
+            <bitfield high="4" low="0" name="FROM" type="SYNC_RECIPIENT"/>
+            <bitfield high="12" low="8" name="TO" type="SYNC_RECIPIENT"/>
+            <bitfield pos="30" name="FLIP0"/>
+            <bitfield pos="31" name="FLIP1"/>
+        </reg32>
     </stripe>
 
     <!-- PIPE_2D states -->
@@ -606,89 +723,6 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     </stripe>
 
     <!-- PIPE_3D states -->
-    <stripe name="GLOBAL" doc="Global states">
-        <doc>Global device control states. Here is configured what pipe to use (2D or 3D),
-        when to send event, when to wait on semaphores and the API mode (OGL or D3D).</doc>
-        <reg32 offset="0x03800" name="PIPE_SELECT">
-            <bitfield pos="0" name="PIPE" type="PIPE_ID"/>
-        </reg32>
-        <reg32 offset="0x03804" name="EVENT">
-            <bitfield high="4" low="0" name="EVENT_ID"/>
-            <bitfield pos="5" name="FROM_FE"/>
-            <bitfield pos="6" name="FROM_PE"/>
-        </reg32>
-        <reg32 offset="0x03808" name="SEMAPHORE_TOKEN">
-            <bitfield high="4" low="0" name="FROM" type="SYNC_RECIPIENT"/>
-            <bitfield high="12" low="8" name="TO" type="SYNC_RECIPIENT"/>
-        </reg32>
-        <reg32 offset="0x0380C" name="FLUSH_CACHE">
-            <bitfield pos="0" name="DEPTH"/>
-            <bitfield pos="1" name="COLOR"/>
-            <bitfield pos="2" name="3D_TEXTURE"/>
-            <bitfield pos="3" name="2D"/>
-            <bitfield pos="4" name="UNK4"/>
-            <bitfield pos="5" name="SHADER_L1"/>
-            <bitfield pos="6" name="SHADER_L2"/>
-        </reg32>
-        <reg32 offset="0x03810" name="MEMORY_CONTROL"/>
-        <reg32 offset="0x03814" name="VERTEX_ELEMENT_CONFIG" value="0x00000001"/>
-        <reg32 offset="0x03818" name="MULTI_SAMPLE_CONFIG" value="0x00000000"/>
-        <reg32 offset="0x0381C" name="VS_VARYING_NUM_COMPONENTS" brief="Number of components in varyings (VS)" value="0x00000000">
-            <doc>Number of components per varying (VS).</doc>
-            <bitfield high="2" low="0" name="VAR0"/>
-            <bitfield high="6" low="4" name="VAR1"/>
-            <bitfield high="10" low="8" name="VAR2"/>
-            <bitfield high="14" low="12" name="VAR3"/>
-            <bitfield high="18" low="16" name="VAR4"/>
-            <bitfield high="22" low="20" name="VAR5"/>
-            <bitfield high="26" low="24" name="VAR6"/>
-            <bitfield high="30" low="28" name="VAR7"/>
-        </reg32>
-        <reg32 offset="0x03820" name="PS_VARYING_NUM_COMPONENTS" brief="Number of components in varyings (PS)" value="0x00000000">
-            <doc>Number of components per varying (PS).</doc>
-            <bitfield high="2" low="0" name="VAR0"/>
-            <bitfield high="6" low="4" name="VAR1"/>
-            <bitfield high="10" low="8" name="VAR2"/>
-            <bitfield high="14" low="12" name="VAR3"/>
-            <bitfield high="18" low="16" name="VAR4"/>
-            <bitfield high="22" low="20" name="VAR5"/>
-            <bitfield high="26" low="24" name="VAR6"/>
-            <bitfield high="30" low="28" name="VAR7"/>
-        </reg32>
-        <reg32 offset="0x03828" name="PS_VARYING_COMPONENT_USE" brief="Varying component usage (PS)" value="0x00000000" length="2" stride="4">
-            <doc>2 bits per varying component, 16 components per 32-bit word.</doc>
-            <bitfield high="1" low="0" name="COMP0" type="VARYING_COMPONENT_USE"/> 
-            <bitfield high="3" low="2" name="COMP1" type="VARYING_COMPONENT_USE"/>
-            <bitfield high="5" low="4" name="COMP2" type="VARYING_COMPONENT_USE"/>
-            <bitfield high="7" low="6" name="COMP3" type="VARYING_COMPONENT_USE"/>
-            <bitfield high="9" low="8" name="COMP4" type="VARYING_COMPONENT_USE"/>
-            <bitfield high="11" low="10" name="COMP5" type="VARYING_COMPONENT_USE"/>
-            <bitfield high="13" low="12" name="COMP6" type="VARYING_COMPONENT_USE"/>
-            <bitfield high="15" low="14" name="COMP7" type="VARYING_COMPONENT_USE"/>
-            <bitfield high="17" low="16" name="COMP8" type="VARYING_COMPONENT_USE"/>
-            <bitfield high="19" low="18" name="COMP9" type="VARYING_COMPONENT_USE"/>
-            <bitfield high="21" low="20" name="COMP10" type="VARYING_COMPONENT_USE"/>
-            <bitfield high="23" low="22" name="COMP11" type="VARYING_COMPONENT_USE"/>
-            <bitfield high="25" low="24" name="COMP12" type="VARYING_COMPONENT_USE"/>
-            <bitfield high="27" low="26" name="COMP13" type="VARYING_COMPONENT_USE"/>
-            <bitfield high="29" low="28" name="COMP14" type="VARYING_COMPONENT_USE"/>
-            <bitfield high="31" low="30" name="COMP15" type="VARYING_COMPONENT_USE"/>
-        </reg32>
-        <reg32 offset="0x03834" name="UNK03834" value="0x00000000"/>
-        <reg32 offset="0x03838" name="UNK03838" value="0x00000000"/>
-        <reg32 offset="0x0384C" name="API_MODE" brief="API mode" value="0x00000000">
-            <value value="0" name="OPENGL"/>
-            <value value="1" name="OPENVG"/>
-            <value value="2" name="OPENCL"/>
-        </reg32>
-        <reg32 offset="0x03850" name="CONTEXT_POINTER"/> <!-- DEBUG -->
-        <reg32 offset="0x03A00" name="UNK03A00"/>
-        <reg32 offset="0x03C00" name="STALL_TOKEN">
-            <bitfield high="4" low="0" name="FROM" type="SYNC_RECIPIENT"/>
-            <bitfield high="12" low="8" name="TO" type="SYNC_RECIPIENT"/>
-        </reg32>
-    </stripe>
-    
     <stripe name="VS" doc="Vertex shader states">
         <doc>The vertex shader to use is configured here.</doc>
         <reg32 offset="0x00800" name="END_PC" value="0x00000000" desc="End instruction number">
