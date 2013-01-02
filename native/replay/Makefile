@@ -17,7 +17,7 @@ clean:
 	rm -f *.o ../lib/*.o
 	rm -f $(TARGETS)
 
-cube_replay: cube_replay.o ../lib/write_bmp.o
+cube_replay: cube_replay.o ../lib/write_bmp.o viv.o
 	$(CC) $(CFLAGS) -o $@ $^  $(GL_LIBS) $(LDFLAGS)
 
 
