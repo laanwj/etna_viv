@@ -706,43 +706,6 @@ uint32_t cmdbuf1[] = { /* seq 85 */
     0x08010e03, /* LOAD_STATE (1) Base: 0x0380C Size: 1 Fixp: 0 */
     0x00000003  /*   GLOBAL.FLUSH_CACHE := DEPTH=1,COLOR=1,3D_TEXTURE=0,2D=0,UNK4=0,SHADER_L1=0,SHADER_L2=0 */
 };
-#if 0 /* HARDCODED */
-address_index_t cmdbuf1_addr[] = {
-    {0x57,0x01430}, /* PE.COLOR_ADDR = 0x7f2c8700 */
-    {0x65,0x01658}, /* TS.COLOR_STATUS_BASE = 0x7a003200 */
-    {0x67,0x0165C}, /* TS.COLOR_SURFACE_BASE = 0x7f2c8700 */
-    {0x6d,0x01410}, /* PE.DEPTH_ADDR = 0x7e6a0000 */
-    {0x7d,0x01664}, /* TS.DEPTH_STATUS_BASE = 0x7a003900 */
-    {0x7f,0x01668}, /* TS.DEPTH_SURFACE_BASE = 0x7e6a0000 */
-    {0x87,0x01658}, /* TS.COLOR_STATUS_BASE = 0x7a002a00 */
-    {0x89,0x0165C}, /* TS.COLOR_SURFACE_BASE = 0x7f284000 */
-    {0x8f,0x01608}, /* RS.SOURCE_ADDR = 0x7f284000 */
-    {0x93,0x01610}, /* RS.DEST_ADDR = 0x7f284000 */
-    {0x9d,0x01658}, /* TS.COLOR_STATUS_BASE = 0x7a003200 */
-    {0x9f,0x0165C}, /* TS.COLOR_SURFACE_BASE = 0x7f2c8700 */
-    {0xa3,0x01658}, /* TS.COLOR_STATUS_BASE = 0x7a002a00 */
-    {0xa5,0x0165C}, /* TS.COLOR_SURFACE_BASE = 0x7f284000 */
-    {0xab,0x01608}, /* RS.SOURCE_ADDR = 0x7f284000 */
-    {0xaf,0x01610}, /* RS.DEST_ADDR = 0x7f284000 */
-    {0xb9,0x01658}, /* TS.COLOR_STATUS_BASE = 0x7a003200 */
-    {0xbb,0x0165C}, /* TS.COLOR_SURFACE_BASE = 0x7f2c8700 */
-    {0xc1,0x01658}, /* TS.COLOR_STATUS_BASE = 0x7a002a00 */
-    {0xc3,0x0165C}, /* TS.COLOR_SURFACE_BASE = 0x7f284000 */
-    {0xc9,0x01608}, /* RS.SOURCE_ADDR = 0x7f284000 */
-    {0xcd,0x01610}, /* RS.DEST_ADDR = 0x7f284000 */
-    {0xd7,0x01658}, /* TS.COLOR_STATUS_BASE = 0x7a003200 */
-    {0xd9,0x0165C}, /* TS.COLOR_SURFACE_BASE = 0x7f2c8700 */
-    {0xe5,0x01610}, /* RS.DEST_ADDR = 0x7a003200 */
-    {0xf9,0x01658}, /* TS.COLOR_STATUS_BASE = 0x7a003200 */
-    {0xfb,0x0165C}, /* TS.COLOR_SURFACE_BASE = 0x7f2c8700 */
-    {0x1f3,0x0064C}, /* FE.VERTEX_STREAM_BASE_ADDR = 0x7c24de80 */
-    {0x215,0x0064C}, /* FE.VERTEX_STREAM_BASE_ADDR = 0x7c24df10 */
-    {0x237,0x0064C}, /* FE.VERTEX_STREAM_BASE_ADDR = 0x7c24e030 */
-    {0x259,0x0064C}, /* FE.VERTEX_STREAM_BASE_ADDR = 0x7c24e1e0 */
-    {0x27b,0x0064C}, /* FE.VERTEX_STREAM_BASE_ADDR = 0x7c24e420 */
-    {0x29d,0x0064C}, /* FE.VERTEX_STREAM_BASE_ADDR = 0x7c24e6f0 */
-};
-#endif
 
 uint32_t cmdbuf2[] = { /* seq 89 */
     0x18000000, /* NOP (make space for PIPE switch) */
@@ -786,13 +749,6 @@ uint32_t cmdbuf2[] = { /* seq 89 */
     0x08010580, /* LOAD_STATE (1) Base: 0x01600 Size: 1 Fixp: 0 */
     0xbeebbeeb  /*   RS.KICKER := 0xbeebbeeb */
 };
-
-#if 0 /* HARDCODED */
-address_index_t cmdbuf2_addr[] = {
-    {0x1d,0x01608}, /* RS.SOURCE_ADDR = 0x7f2c8700 */
-    {0x1f,0x01610}, /* RS.DEST_ADDR = 0x7f2c8700 */
-};
-#endif
 
 uint32_t cmdbuf3[] = { /* seq 91 */
     0x18000000, /* NOP (make space for PIPE switch) */
@@ -843,17 +799,6 @@ uint32_t cmdbuf3[] = { /* seq 91 */
     0xfffcffff  /*   PE.COLOR_FORMAT := 0xfffcffff */
 };
 
-#if 0 /* HARDCODED */
-address_index_t cmdbuf3_addr[] = {
-    {0x9,0x01658}, /* TS.COLOR_STATUS_BASE = 0x7a002a00 */
-    {0xb,0x0165C}, /* TS.COLOR_SURFACE_BASE = 0x7f284000 */
-    {0x11,0x01608}, /* RS.SOURCE_ADDR = 0x7f284000 */
-    {0x15,0x01610}, /* RS.DEST_ADDR = 0x7f284000 */
-    {0x1f,0x01658}, /* TS.COLOR_STATUS_BASE = 0x7a003200 */
-    {0x21,0x0165C}, /* TS.COLOR_SURFACE_BASE = 0x7f2c8700 */
-};
-#endif
-
 uint32_t cmdbuf4[] = { /* seq 101 */
     0x18000000, /* NOP (make space for PIPE switch) */
     0x00000000,
@@ -864,6 +809,7 @@ uint32_t cmdbuf4[] = { /* seq 101 */
     0x18000000,
     0x00000000,
 
+    /* copy pixels from render target to output bitmap */
     0x08010e03, /* LOAD_STATE (1) Base: 0x0380C Size: 1 Fixp: 0 */
     0x00000003, /*   GLOBAL.FLUSH_CACHE := DEPTH=1,COLOR=1,3D_TEXTURE=0,2D=0,UNK4=0,SHADER_L1=0,SHADER_L2=0 */
     0x08010581, /* LOAD_STATE (1) Base: 0x01604 Size: 1 Fixp: 0 */
@@ -889,11 +835,4 @@ uint32_t cmdbuf4[] = { /* seq 101 */
     0x08010580, /* LOAD_STATE (1) Base: 0x01600 Size: 1 Fixp: 0 */
     0xbeebbeeb  /*   RS.KICKER := 0xbeebbeeb */
 };
-
-#if 0 /* HARDCODED */
-address_index_t cmdbuf4_addr[] = {
-    {0x19,0x01608}, /* RS.SOURCE_ADDR = 0x7f2c8700 */
-    {0x1b,0x01610}, /* RS.DEST_ADDR = 0x7f338700 */
-};
-#endif
 

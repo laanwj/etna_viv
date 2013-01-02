@@ -583,7 +583,16 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="1" name="FLUSH_PEMMU" brief="Flush the PE render target address translation caches"/>
         </reg32>
         <reg32 offset="0x03814" name="VERTEX_ELEMENT_CONFIG" value="0x00000001"/>
-        <reg32 offset="0x03818" name="MULTI_SAMPLE_CONFIG" value="0x00000000"/>
+        <reg32 offset="0x03818" name="MULTI_SAMPLE_CONFIG" value="0x00000000">
+            <bitfield high="1" low="0" name="UNK0"/>
+            <bitfield pos="3" name="UNK0_MASK"/>
+            <bitfield high="7" low="4" name="UNK4"/>
+            <bitfield pos="8" name="UNK4_MASK"/>
+            <bitfield high="14" low="12" name="UNK12"/>
+            <bitfield pos="15" name="UNK12_MASK"/>
+            <bitfield high="17" low="16" name="UNK16"/>
+            <bitfield pos="19" name="UNK16_MASK"/>
+        </reg32>
         <reg32 offset="0x0381C" name="VS_VARYING_NUM_COMPONENTS" brief="Number of components in varyings (VS)" value="0x00000000">
             <doc>Number of components per varying (VS).</doc>
             <bitfield high="2" low="0" name="VAR0"/>
@@ -746,11 +755,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x00804" name="OUTPUT_COUNT" value="0x00000000"/>
         <reg32 offset="0x00808" name="INPUT_COUNT" value="0x00000000">
-            <bitfield high="3" low="0" name="COUNT"/>
-            <bitfield high="12" low="8" name="COUNT2"/>
+            <bitfield high="3" low="0" name="COUNT" type="uint"/>
+            <bitfield high="12" low="8" name="COUNT2" type="uint"/>
         </reg32>
         <reg32 offset="0x0080C" name="TEMP_REGISTER_CONTROL" brief="Temporary register control" value="0x00000000">
-            <bitfield high="5" low="0" name="NUM_TEMPS"/>
+            <bitfield high="5" low="0" name="NUM_TEMPS" type="uint"/>
         </reg32>
         <reg32 offset="0x00810" name="OUTPUT" value="0x00000000" length="4" stride="4"/>
         <reg32 offset="0x00820" name="INPUT" value="0x00000000" length="4" stride="4"/>
@@ -871,13 +880,16 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x01000" name="END_PC" value="0x00000000"/>
         <reg32 offset="0x01004" name="OUTPUT_REG" value="0x00000000" brief="Register that will contain output color"/>
         <reg32 offset="0x01008" name="INPUT_COUNT" value="0x00000000">
-            <bitfield high="3" low="0" name="COUNT"/>
-            <bitfield high="12" low="8" name="COUNT2"/>
+            <bitfield high="3" low="0" name="COUNT" type="uint"/>
+            <bitfield high="12" low="8" name="COUNT2" type="uint"/>
         </reg32>
         <reg32 offset="0x0100C" name="TEMP_REGISTER_CONTROL" brief="Temporary register control" value="0x00000000">
-            <bitfield high="5" low="0" name="NUM_TEMPS"/>
+            <bitfield high="5" low="0" name="NUM_TEMPS" type="uint"/>
         </reg32>
-        <reg32 offset="0x01010" name="CONTROL" value="0x00000000"/>
+        <reg32 offset="0x01010" name="CONTROL" value="0x00000000">
+            <bitfield pos="0" name="UNK0"/>
+            <bitfield pos="1" name="UNK1"/>
+        </reg32>
         <reg32 offset="0x01014" name="PERF_COUNTER" brief="Performance counter control"/>
         <reg32 offset="0x01018" name="START_PC" value="0x01000000"/>
         <reg32 offset="0x06000" name="INST_MEM" value="0x00000000" length="1024" stride="4"> <!-- instructionCount <= 256 -->
@@ -958,7 +970,12 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="6" low="4" name="ALPHA_FUNC" type="COMPARE_FUNC"/>
             <bitfield pos="7" name="ALPHA_FUNC_MASK"/>
         </reg32>
-        <reg32 offset="0x01424" name="ALPHA_BLEND_COLOR" value="0x00000000"/>
+        <reg32 offset="0x01424" name="ALPHA_BLEND_COLOR" value="0x00000000">
+            <bitfield high="7" low="0" name="B"/>
+            <bitfield high="15" low="8" name="G"/>
+            <bitfield high="23" low="16" name="R"/>
+            <bitfield high="31" low="24" name="A"/>
+        </reg32>
         <reg32 offset="0x01428" name="ALPHA_CONFIG" value="0x00000000">
             <bitfield pos="0" name="BLEND_ENABLE_COLOR" brief="Enable alpha blending"/>
             <bitfield pos="1" name="BLEND_ENABLE_COLOR_MASK"/>
@@ -1066,6 +1083,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="12" low="8" name="DEST_FORMAT" type="RS_FORMAT" brief="Destination color format"/>
             <bitfield pos="14" name="UNK14"/>
             <bitfield pos="29" name="SWAP_RB" brief="Swap red and blue"/>
+            <bitfield pos="30" name="FLIP" brief="Flip image in Y direction"/>
         </reg32>
         <reg32 offset="0x01608" name="SOURCE_ADDR" value="0x00000000" type="VIVANTE_MEM"/>
         <reg32 offset="0x0160C" name="SOURCE_STRIDE" value="0x00000000">
@@ -1083,11 +1101,18 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x01630" name="DITHER" value="0x00000000" length="2" stride="4"/>
         <reg32 offset="0x0163C" name="CLEAR_CONTROL" value="0x00000000">
-            <bitfield high="15" low="0" name="BITS"/>
-            <bitfield high="17" low="16" name="MODE"/>
+            <bitfield high="15" low="0" name="BITS" brief="Affects which channels of which tiles are cleared"/>
+            <bitfield high="17" low="16" name="MODE">
+                <value value="0" name="DISABLED"/>
+                <value value="1" name="ENABLED"/> <!-- is there difference between these modes? -->
+                <value value="2" name="ENABLED2"/>
+                <value value="3" name="ENABLED3"/>
+            </bitfield>
         </reg32>
         <reg32 offset="0x01640" name="FILL_VALUE" value="0x00000000" length="4" stride="4"/>
-        <reg32 offset="0x01650" name="FLUSH_CACHE" brief="Flush resolve cache" value="0x00000000"/>
+        <reg32 offset="0x01650" name="FLUSH_CACHE" brief="Flush resolve cache" value="0x00000000">
+            <bitfield pos="0" name="FLUSH"/>
+        </reg32>
         <reg32 offset="0x016A0" name="EXTRA_CONFIG" value="0x00000000">
             <bitfield high="1" low="0" name="AA" brief="Anti-aliasing mode"/>
             <bitfield high="9" low="8" name="ENDIAN" type="ENDIAN_MODE"/>

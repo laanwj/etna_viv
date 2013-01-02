@@ -10,6 +10,7 @@
 
 #include "write_bmp.h"
 #include "viv.h"
+#include "companion.h"
 
 /* "relocation" */
 typedef struct
@@ -18,113 +19,12 @@ typedef struct
     uint32_t address; /* state address */
 } address_index_t;
 
-#include "cube_cmd.h"
+#include "companion_cmd.h"
 /* TODO: should actually update context as we go,
    a context switch would currently revert state and likely result in corrupted rendering.
  */
 #include "context_cmd.h"
 
-float vVertices[] = {
-  // front
-  -1.0f, -1.0f, +1.0f, // point blue
-  //-0.5f, -0.6f, +0.5f, // point blue
-  +1.0f, -1.0f, +1.0f, // point magenta
-  -1.0f, +1.0f, +1.0f, // point cyan
-  +1.0f, +1.0f, +1.0f, // point white
-  // back
-  +1.0f, -1.0f, -1.0f, // point red
-  -1.0f, -1.0f, -1.0f, // point black
-  +1.0f, +1.0f, -1.0f, // point yellow
-  -1.0f, +1.0f, -1.0f, // point green
-  // right
-  +1.0f, -1.0f, +1.0f, // point magenta
-  +1.0f, -1.0f, -1.0f, // point red
-  +1.0f, +1.0f, +1.0f, // point white
-  +1.0f, +1.0f, -1.0f, // point yellow
-  // left
-  -1.0f, -1.0f, -1.0f, // point black
-  -1.0f, -1.0f, +1.0f, // point blue
-  -1.0f, +1.0f, -1.0f, // point green
-  -1.0f, +1.0f, +1.0f, // point cyan
-  // top
-  -1.0f, +1.0f, +1.0f, // point cyan
-  +1.0f, +1.0f, +1.0f, // point white
-  -1.0f, +1.0f, -1.0f, // point green
-  +1.0f, +1.0f, -1.0f, // point yellow
-  // bottom
-  -1.0f, -1.0f, -1.0f, // point black
-  +1.0f, -1.0f, -1.0f, // point red
-  -1.0f, -1.0f, +1.0f, // point blue
-  +1.0f, -1.0f, +1.0f  // point magenta
-};
-
-float vColors[] = {
-  // front
-  0.0f,  0.0f,  1.0f, // blue
-  1.0f,  0.0f,  1.0f, // magenta
-  0.0f,  1.0f,  1.0f, // cyan
-  1.0f,  1.0f,  1.0f, // white
-  // back
-  1.0f,  0.0f,  0.0f, // red
-  0.0f,  0.0f,  0.0f, // black
-  1.0f,  1.0f,  0.0f, // yellow
-  0.0f,  1.0f,  0.0f, // green
-  // right
-  1.0f,  0.0f,  1.0f, // magenta
-  1.0f,  0.0f,  0.0f, // red
-  1.0f,  1.0f,  1.0f, // white
-  1.0f,  1.0f,  0.0f, // yellow
-  // left
-  0.0f,  0.0f,  0.0f, // black
-  0.0f,  0.0f,  1.0f, // blue
-  0.0f,  1.0f,  0.0f, // green
-  0.0f,  1.0f,  1.0f, // cyan
-  // top
-  0.0f,  1.0f,  1.0f, // cyan
-  1.0f,  1.0f,  1.0f, // white
-  0.0f,  1.0f,  0.0f, // green
-  1.0f,  1.0f,  0.0f, // yellow
-  // bottom
-  0.0f,  0.0f,  0.0f, // black
-  1.0f,  0.0f,  0.0f, // red
-  0.0f,  0.0f,  1.0f, // blue
-  1.0f,  0.0f,  1.0f  // magenta
-};
-
-float vNormals[] = {
-  // front
-  +0.0f, +0.0f, +1.0f, // forward
-  +0.0f, +0.0f, +1.0f, // forward
-  +0.0f, +0.0f, +1.0f, // forward
-  +0.0f, +0.0f, +1.0f, // forward
-  // back
-  +0.0f, +0.0f, -1.0f, // backbard
-  +0.0f, +0.0f, -1.0f, // backbard
-  +0.0f, +0.0f, -1.0f, // backbard
-  +0.0f, +0.0f, -1.0f, // backbard
-  // right
-  +1.0f, +0.0f, +0.0f, // right
-  +1.0f, +0.0f, +0.0f, // right
-  +1.0f, +0.0f, +0.0f, // right
-  +1.0f, +0.0f, +0.0f, // right
-  // left
-  -1.0f, +0.0f, +0.0f, // left
-  -1.0f, +0.0f, +0.0f, // left
-  -1.0f, +0.0f, +0.0f, // left
-  -1.0f, +0.0f, +0.0f, // left
-  // top
-  +0.0f, +1.0f, +0.0f, // up
-  +0.0f, +1.0f, +0.0f, // up
-  +0.0f, +1.0f, +0.0f, // up
-  +0.0f, +1.0f, +0.0f, // up
-  // bottom
-  +0.0f, -1.0f, +0.0f, // down
-  +0.0f, -1.0f, +0.0f, // down
-  +0.0f, -1.0f, +0.0f, // down
-  +0.0f, -1.0f, +0.0f  // down
-};
-#define COMPONENTS_PER_VERTEX (3)
-#define NUM_VERTICES (6*4)
 
 int main(int argc, char **argv)
 {
@@ -150,14 +50,13 @@ int main(int argc, char **argv)
 
     /* allocate main render target */
     gcuVIDMEM_NODE_PTR rt_node = 0;
-    if(viv_alloc_linear_vidmem(0x70000, 0x40, gcvSURF_RENDER_TARGET, gcvPOOL_DEFAULT, &rt_node)!=0)
+    if(viv_alloc_linear_vidmem(0x1a0000, 0x40, gcvSURF_RENDER_TARGET, gcvPOOL_DEFAULT, &rt_node)!=0)
     {
         fprintf(stderr, "Error allocating render target buffer memory\n");
         exit(1);
     }
     printf("Allocated render target node: node=%08x\n", (uint32_t)rt_node);
-    
-    viv_addr_t rt_physical = 0;
+    viv_addr_t rt_physical = 0; /* ADDR_A */
     void *rt_logical = 0;
     if(viv_lock_vidmem(rt_node, &rt_physical, &rt_logical)!=0)
     {
@@ -165,18 +64,17 @@ int main(int argc, char **argv)
         exit(1);
     }
     printf("Locked render target: phys=%08x log=%08x\n", (uint32_t)rt_physical, (uint32_t)rt_logical);
-    memset(rt_logical, 0xff, 0x70000); /* clear previous result just in case, test that clearing works */
+    memset(rt_logical, 0xff, 0x1a0000); /* clear previous result just in case, test that clearing works */
 
     /* allocate tile status for main render target */
     gcuVIDMEM_NODE_PTR rt_ts_node = 0;
-    if(viv_alloc_linear_vidmem(0x700, 0x40, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, &rt_ts_node)!=0)
+    if(viv_alloc_linear_vidmem(0x1a00, 0x40, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, &rt_ts_node)!=0)
     {
         fprintf(stderr, "Error allocating render target tile status memory\n");
         exit(1);
     }
     printf("Allocated render target tile status node: node=%08x\n", (uint32_t)rt_ts_node);
-    
-    viv_addr_t rt_ts_physical = 0;
+    viv_addr_t rt_ts_physical = 0; /* ADDR_B */
     void *rt_ts_logical = 0;
     if(viv_lock_vidmem(rt_ts_node, &rt_ts_physical, &rt_ts_logical)!=0)
     {
@@ -187,14 +85,13 @@ int main(int argc, char **argv)
 
     /* allocate depth for main render target */
     gcuVIDMEM_NODE_PTR z_node = 0;
-    if(viv_alloc_linear_vidmem(0x38000, 0x40, gcvSURF_DEPTH, gcvPOOL_DEFAULT, &z_node)!=0)
+    if(viv_alloc_linear_vidmem(0xd0000, 0x40, gcvSURF_DEPTH, gcvPOOL_DEFAULT, &z_node)!=0)
     {
         fprintf(stderr, "Error allocating depth memory\n");
         exit(1);
     }
     printf("Allocated depth node: node=%08x\n", (uint32_t)z_node);
-    
-    viv_addr_t z_physical = 0;
+    viv_addr_t z_physical = 0; /* ADDR_C */
     void *z_logical = 0;
     if(viv_lock_vidmem(z_node, &z_physical, &z_logical)!=0)
     {
@@ -205,14 +102,13 @@ int main(int argc, char **argv)
 
     /* allocate depth ts for main render target */
     gcuVIDMEM_NODE_PTR z_ts_node = 0;
-    if(viv_alloc_linear_vidmem(0x400, 0x40, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, &z_ts_node)!=0)
+    if(viv_alloc_linear_vidmem(0xd00, 0x40, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, &z_ts_node)!=0)
     {
         fprintf(stderr, "Error allocating depth memory\n");
         exit(1);
     }
     printf("Allocated depth ts node: node=%08x\n", (uint32_t)z_ts_node);
-    
-    viv_addr_t z_ts_physical = 0;
+    viv_addr_t z_ts_physical = 0; /* ADDR_D */
     void *z_ts_logical = 0;
     if(viv_lock_vidmem(z_ts_node, &z_ts_physical, &z_ts_logical)!=0)
     {
@@ -229,8 +125,7 @@ int main(int argc, char **argv)
         exit(1);
     }
     printf("Allocated vertex node: node=%08x\n", (uint32_t)vtx_node);
-    
-    viv_addr_t vtx_physical = 0;
+    viv_addr_t vtx_physical = 0; /* ADDR_E */
     void *vtx_logical = 0;
     if(viv_lock_vidmem(vtx_node, &vtx_physical, &vtx_logical)!=0)
     {
@@ -247,8 +142,7 @@ int main(int argc, char **argv)
         exit(1);
     }
     printf("Allocated aux render target node: node=%08x\n", (uint32_t)aux_rt_node);
-    
-    viv_addr_t aux_rt_physical = 0;
+    viv_addr_t aux_rt_physical = 0; /* ADDR_F */
     void *aux_rt_logical = 0;
     if(viv_lock_vidmem(aux_rt_node, &aux_rt_physical, &aux_rt_logical)!=0)
     {
@@ -265,8 +159,7 @@ int main(int argc, char **argv)
         exit(1);
     }
     printf("Allocated aux render target tile status node: node=%08x\n", (uint32_t)aux_rt_ts_node);
-    
-    viv_addr_t aux_rt_ts_physical = 0;
+    viv_addr_t aux_rt_ts_physical = 0; /* ADDR_G */
     void *aux_rt_ts_logical = 0;
     if(viv_lock_vidmem(aux_rt_ts_node, &aux_rt_ts_physical, &aux_rt_ts_logical)!=0)
     {
@@ -275,29 +168,7 @@ int main(int argc, char **argv)
     }
     printf("Locked aux render target ts: phys=%08x log=%08x\n", (uint32_t)aux_rt_ts_physical, (uint32_t)aux_rt_ts_logical);
 
-    /* Phew, now we got all the memory we need.
-     * Write interleaved attribute vertex stream.
-     * Unlike the GL example we only do this once, not every time glDrawArrays is called, the same would be accomplished
-     * from GL by using a vertex buffer object.
-     */
-    for(int vert=0; vert<NUM_VERTICES; ++vert)
-    {
-        int src_idx = vert * COMPONENTS_PER_VERTEX;
-        int dest_idx = vert * COMPONENTS_PER_VERTEX * 3;
-        for(int comp=0; comp<COMPONENTS_PER_VERTEX; ++comp)
-        {
-            ((float*)vtx_logical)[dest_idx+comp+0] = vVertices[src_idx + comp]; /* 0 */
-            ((float*)vtx_logical)[dest_idx+comp+3] = vNormals[src_idx + comp]; /* 1 */
-            ((float*)vtx_logical)[dest_idx+comp+6] = vColors[src_idx + comp]; /* 2 */
-        }
-    }
-    /*
-    for(int idx=0; idx<NUM_VERTICES*3*3; ++idx)
-    {
-        printf("%i %f\n", idx, ((float*)vtx_logical)[idx]);
-    }*/
-
-    /* Load the command buffer and send the commit command. */
+    /* Submit command buffer 1 */
     /* First build context state map */
     size_t stateCount = 0x1d00;
     uint32_t *contextMap = malloc(stateCount * 4);
@@ -311,30 +182,18 @@ int main(int argc, char **argv)
         .object = {
             .type = gcvOBJ_COMMANDBUFFER
         },
-        //.os = (_gcoOS*)0xbf7488,
-        //.hardware = (_gcoHARDWARE*)0x402694e0,
         .physical = (void*)buf0_physical,
         .logical = (void*)buf0_logical,
         .bytes = 0x8000,
         .startOffset = 0x0,
-        //.offset = 0xac0,
-        //.free = 0x7520,
-        //.hintTable = (unsigned int*)0x0, // Used when gcdSECURE
-        //.hintIndex = (unsigned int*)0x58,  // Used when gcdSECURE
-        //.hintCommit = (unsigned int*)0xffffffff // Used when gcdSECURE
     };
     struct _gcoCONTEXT contextBuffer = {
         .object = {
             .type = gcvOBJ_CONTEXT
         },
-        //.os = (_gcoOS*)0xbf7488,
-        //.hardware = (_gcoHARDWARE*)0x402694e0,
         .id = 0x0, // Actual ID will be returned here
         .map = contextMap,
         .stateCount = stateCount,
-        //.hint = (unsigned char*)0x0, // Used when gcdSECURE
-        //.hintValue = 2, // Used when gcdSECURE
-        //.hintCount = 0xca, // Used when gcdSECURE
         .buffer = contextbuf,
         .pipe3DIndex = 0x2d6, // XXX should not be hardcoded
         .pipe2DIndex = 0x106e,
@@ -354,21 +213,15 @@ int main(int argc, char **argv)
         .lastSize = 0x2, // Not used by kernel
         .lastIndex = 0x106a, // Not used by kernel
         .lastFixed = 0, // Not used by kernel
-        //.hintArray = (unsigned int*)0x0, // Used when gcdSECURE
-        //.hintIndex = (unsigned int*)0x0  // Used when gcdSECURE
     };
     commandBuffer.free = commandBuffer.bytes - 0x8; /* Always keep 0x8 at end of buffer for kernel driver */
     /* Set addresses in first command buffer */
-    cmdbuf1[0x57] = cmdbuf1[0x67] = cmdbuf1[0x9f] = cmdbuf1[0xbb] = cmdbuf1[0xd9] = cmdbuf1[0xfb] = rt_physical;
-    cmdbuf1[0x65] = cmdbuf1[0x9d] = cmdbuf1[0xb9] = cmdbuf1[0xd7] = cmdbuf1[0xe5] = cmdbuf1[0xf9] = rt_ts_physical;
-    cmdbuf1[0x6d] = cmdbuf1[0x7f] = z_physical;
-    cmdbuf1[0x7d] = z_ts_physical;
-    cmdbuf1[0x87] = cmdbuf1[0xa3] = cmdbuf1[0xc1] = aux_rt_ts_physical;
-    cmdbuf1[0x89] = cmdbuf1[0x8f] = cmdbuf1[0x93] 
-        = cmdbuf1[0xa5] = cmdbuf1[0xab] = cmdbuf1[0xaf] 
-        = cmdbuf1[0xc3] = cmdbuf1[0xc9] = cmdbuf1[0xcd] = aux_rt_physical;
-    cmdbuf1[0x1f3] = cmdbuf1[0x215] = cmdbuf1[0x237] 
-        = cmdbuf1[0x259] = cmdbuf1[0x27b] = cmdbuf1[0x29d] = vtx_physical;
+    cmdbuf1[0x57] = cmdbuf1[0x67] = cmdbuf1[0x9f] = cmdbuf1[0xbb] = cmdbuf1[0xd9] = cmdbuf1[0xfb] = cmdbuf1[0x119] = cmdbuf1[0x135] = cmdbuf1[0x153] = rt_physical;
+    cmdbuf1[0x65] = cmdbuf1[0x9d] = cmdbuf1[0xb9] = cmdbuf1[0xd7] = cmdbuf1[0xe5] = cmdbuf1[0xf9] = cmdbuf1[0x117] = cmdbuf1[0x133] = cmdbuf1[0x151] = rt_ts_physical;
+    cmdbuf1[0x6d] = cmdbuf1[0x7f] = cmdbuf1[0x175] = z_physical;
+    cmdbuf1[0x7d] = cmdbuf1[0x15f] = cmdbuf1[0x173] = z_ts_physical;
+    cmdbuf1[0x89] = cmdbuf1[0x8f] = cmdbuf1[0x93] = cmdbuf1[0xa5] = cmdbuf1[0xab] = cmdbuf1[0xaf] = cmdbuf1[0xc3] = cmdbuf1[0xc9] = cmdbuf1[0xcd] = cmdbuf1[0x103] = cmdbuf1[0x109] = cmdbuf1[0x10d] = cmdbuf1[0x11f] = cmdbuf1[0x125] = cmdbuf1[0x129] = cmdbuf1[0x13d] = cmdbuf1[0x143] = cmdbuf1[0x147] = aux_rt_physical;
+    cmdbuf1[0x87] = cmdbuf1[0xa3] = cmdbuf1[0xc1] = cmdbuf1[0x101] = cmdbuf1[0x11d] = cmdbuf1[0x13b] = aux_rt_ts_physical;
 
     /* Submit first command buffer */
     commandBuffer.startOffset = 0;
@@ -381,7 +234,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "Error committing first command buffer\n");
         exit(1);
     }
-
+    
     /* After the first COMMIT, allocate contiguous memory for context and set
      * bytes, physical, logical, link, inUse */
     printf("Context assigned index: %i\n", (uint32_t)contextBuffer.id);
@@ -400,10 +253,118 @@ int main(int argc, char **argv)
     contextBuffer.link = ((uint32_t*)cbuf0_logical) + contextBuffer.linkIndex;
     contextBuffer.inUse = (gctBOOL*)(((uint32_t*)cbuf0_logical) + contextBuffer.inUseIndex);
 
-    /* Submit second command buffer, with updated context.
-     * Second command buffer fills the background.
-     */
-    cmdbuf2[0x1d] = cmdbuf2[0x1f] = rt_physical;
+    /* Create signal */
+    int sig_id = 0;
+    if(viv_user_signal_create(0, &sig_id) != 0) /* automatic resetting signal */
+    {
+        fprintf(stderr, "Cannot create user signal\n");
+        exit(1);
+    }
+    printf("Created user signal %i\n", sig_id);
+    
+    /* Queue and wait for signal */
+    if(viv_event_queue_signal(sig_id, gcvKERNEL_PIXEL) != 0)
+    {
+        fprintf(stderr, "Cannot queue GPU signal\n");
+        exit(1);
+    }
+    if(viv_user_signal_wait(sig_id, SIG_WAIT_INDEFINITE) != 0)
+    {
+        fprintf(stderr, "Cannot wait for signal\n");
+        exit(1);
+    }
+
+    /* Allocate and map texture memory (ADDR_H) */
+    gcuVIDMEM_NODE_PTR tex_node = 0;
+    if(viv_alloc_linear_vidmem(0x100000, 0x40, gcvSURF_VERTEX, gcvPOOL_DEFAULT, &tex_node)!=0)
+    {
+        fprintf(stderr, "Error allocating tex memory\n");
+        exit(1);
+    }
+    printf("Allocated tex: node=%08x\n", (uint32_t)tex_node);
+    viv_addr_t tex_physical = 0; /* ADDR_H */
+    void *tex_logical = 0;
+    if(viv_lock_vidmem(tex_node, &tex_physical, &tex_logical)!=0)
+    {
+        fprintf(stderr, "Error locking tex memory\n");
+        exit(1);
+    }
+    printf("Locked tex: phys=%08x log=%08x\n", (uint32_t)tex_physical, (uint32_t)tex_logical);
+
+    /* Allocate and map more vertex memory (ADDR_I), ADDR_E is unused */
+    gcuVIDMEM_NODE_PTR vtx2_node = 0;
+    if(viv_alloc_linear_vidmem(0x5ef80, 0x8, gcvSURF_VERTEX, gcvPOOL_DEFAULT, &vtx2_node)!=0)
+    {
+        fprintf(stderr, "Error allocating vtx2 memory\n");
+        exit(1);
+    }
+    printf("Allocated vtx2: node=%08x\n", (uint32_t)vtx2_node);
+    viv_addr_t vtx2_physical = 0; /* ADDR_I */
+    void *vtx2_logical = 0;
+    if(viv_lock_vidmem(vtx2_node, &vtx2_physical, &vtx2_logical)!=0)
+    {
+        fprintf(stderr, "Error locking vtx2 memory\n");
+        exit(1);
+    }
+    printf("Locked vtx2: phys=%08x log=%08x\n", (uint32_t)vtx2_physical, (uint32_t)vtx2_logical);
+
+    /* Interleave companion cube vertex data into ADDR_I */
+    memset(vtx2_logical, 0, 0x5ef80);
+    float *vertices_array = companion_vertices_array();
+    float *texture_coordinates_array =
+            companion_texture_coordinates_array();
+    float *normals_array = companion_normals_array();
+    for(int vert=0; vert<COMPANION_ARRAY_COUNT; ++vert)
+    {
+        int dest_idx = vert * (3 + 3 + 2);
+        for(int comp=0; comp<3; ++comp)
+            ((float*)vtx2_logical)[dest_idx+comp+0] = vertices_array[vert*3 + comp]; /* 0 */
+        for(int comp=0; comp<3; ++comp)
+            ((float*)vtx2_logical)[dest_idx+comp+3] = normals_array[vert*3 + comp]; /* 1 */
+        for(int comp=0; comp<2; ++comp)
+            ((float*)vtx2_logical)[dest_idx+comp+6] = texture_coordinates_array[vert*2 + comp]; /* 2 */
+    }
+    
+    /* Fill in texture */
+    /* TODO: figure out tiling */
+#if 0
+    for(int y=0; y<COMPANION_TEXTURE_HEIGHT; ++y)
+    {
+        for(int x=0; x<COMPANION_TEXTURE_WIDTH; ++x)
+        {
+            int r,g,b,a;
+            /*
+            r = ((uint8_t*)companion_texture)[(y*512+x)*3+0];
+            g = ((uint8_t*)companion_texture)[(y*512+x)*3+1];
+            b = ((uint8_t*)companion_texture)[(y*512+x)*3+2];
+            */
+            if(y<256)
+                r = 255;
+            else
+                r = 0;
+            if(x<256)
+                g = 255;
+            else
+                g = 0;
+            /*r = x;
+            g = y;
+            b = x*y;*/
+            b = 0;
+            a = 255;
+            ((uint32_t*)tex_logical)[y*512+x] = ((a&0xFF) << 24) | ((b&0xFF) << 16) | ((g&0xFF) << 8) | (r&0xFF);
+        }
+    }
+#endif
+#if 1
+    int texfd = open("/data/mine/texture.raw", O_RDONLY); 
+    read(texfd, tex_logical, 512*512*4);
+    close(texfd);
+#endif
+
+    /* Submit command buffer 2 */
+    cmdbuf2[0x3b] = tex_physical;
+    cmdbuf2[0x125] = vtx2_physical;
+
     commandBuffer.startOffset = commandBuffer.offset + 0x18; /* Make space for LINK */
     memcpy((void*)((size_t)commandBuffer.logical + commandBuffer.startOffset), cmdbuf2, sizeof(cmdbuf2));
     commandBuffer.offset = commandBuffer.startOffset + sizeof(cmdbuf2);
@@ -415,14 +376,9 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    /* Submit third command buffer, with updated context
-     * Third command buffer does some cache flush trick?
-     * It can be left out without any visible harm.
-     **/
-    cmdbuf3[0x9] = aux_rt_ts_physical;
-    cmdbuf3[0xb] = cmdbuf3[0x11] = cmdbuf3[0x15] = aux_rt_physical;
-    cmdbuf3[0x1f] = rt_ts_physical;
-    cmdbuf3[0x21] = rt_physical;
+    /* Submit command buffer 3 */
+    cmdbuf3[0x1d] = cmdbuf3[0x1f] = rt_physical;
+
     commandBuffer.startOffset = commandBuffer.offset + 0x18;
     memcpy((void*)((size_t)commandBuffer.logical + commandBuffer.startOffset), cmdbuf3, sizeof(cmdbuf3));
     commandBuffer.offset = commandBuffer.startOffset + sizeof(cmdbuf3);
@@ -434,51 +390,12 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    /* Submit event queue with SIGNAL, fromWhere=gcvKERNEL_PIXEL (wait for pixel engine to finish) */
-    int sig_id = 0;
-    if(viv_user_signal_create(0, &sig_id) != 0) /* automatic resetting signal */
-    {
-        fprintf(stderr, "Cannot create user signal\n");
-        exit(1);
-    }
-    printf("Created user signal %i\n", sig_id);
-    if(viv_event_queue_signal(sig_id, gcvKERNEL_PIXEL) != 0)
-    {
-        fprintf(stderr, "Cannot queue GPU signal\n");
-        exit(1);
-    }
+    /* Submit command buffer 4 */
+    cmdbuf4[0x9] = aux_rt_ts_physical;
+    cmdbuf4[0xb] = cmdbuf4[0x11] = cmdbuf4[0x15] = aux_rt_physical;
+    cmdbuf4[0x21] = rt_physical;
+    cmdbuf4[0x1f] = rt_ts_physical;
 
-    /* Wait for signal */
-    if(viv_user_signal_wait(sig_id, SIG_WAIT_INDEFINITE) != 0)
-    {
-        fprintf(stderr, "Cannot wait for signal\n");
-        exit(1);
-    }
-
-    /* Allocate video memory for BITMAP, lock */
-    gcuVIDMEM_NODE_PTR bmp_node = 0;
-    if(viv_alloc_linear_vidmem(0x5dc00, 0x40, gcvSURF_BITMAP, gcvPOOL_DEFAULT, &bmp_node)!=0)
-    {
-        fprintf(stderr, "Error allocating bitmap status memory\n");
-        exit(1);
-    }
-    printf("Allocated bitmap node: node=%08x\n", (uint32_t)bmp_node);
-    
-    viv_addr_t bmp_physical = 0;
-    void *bmp_logical = 0;
-    if(viv_lock_vidmem(bmp_node, &bmp_physical, &bmp_logical)!=0)
-    {
-        fprintf(stderr, "Error locking bmp memory\n");
-        exit(1);
-    }
-    memset(bmp_logical, 0xff, 0x5dc00); /* clear previous result */
-    printf("Locked bmp: phys=%08x log=%08x\n", (uint32_t)bmp_physical, (uint32_t)bmp_logical);
-
-    /* Submit fourth command buffer, updating context.
-     * Fourth command buffer copies render result to bitmap, detiling along the way. 
-     */
-    cmdbuf4[0x19] = rt_physical;
-    cmdbuf4[0x1b] = bmp_physical;
     commandBuffer.startOffset = commandBuffer.offset + 0x18;
     memcpy((void*)((size_t)commandBuffer.logical + commandBuffer.startOffset), cmdbuf4, sizeof(cmdbuf4));
     commandBuffer.offset = commandBuffer.startOffset + sizeof(cmdbuf4);
@@ -486,7 +403,52 @@ int main(int argc, char **argv)
     printf("[4] startOffset=%08x, offset=%08x, free=%08x\n", (uint32_t)commandBuffer.startOffset, (uint32_t)commandBuffer.offset, (uint32_t)commandBuffer.free);
     if(viv_commit(&commandBuffer, &contextBuffer) != 0)
     {
-        fprintf(stderr, "Error committing fourth command buffer\n");
+        fprintf(stderr, "Error committing command buffer 4\n");
+        exit(1);
+    }
+
+    /* Submit event, and wait */
+    if(viv_event_queue_signal(sig_id, gcvKERNEL_PIXEL) != 0)
+    {
+        fprintf(stderr, "Cannot queue GPU signal\n");
+        exit(1);
+    }
+    if(viv_user_signal_wait(sig_id, SIG_WAIT_INDEFINITE) != 0)
+    {
+        fprintf(stderr, "Cannot wait for signal\n");
+        exit(1);
+    }
+
+    /* Allocate bitmap memory, map */
+    gcuVIDMEM_NODE_PTR bmp_node = 0;
+    if(viv_alloc_linear_vidmem(0x177000, 0x40, gcvSURF_BITMAP, gcvPOOL_DEFAULT, &bmp_node)!=0)
+    {
+        fprintf(stderr, "Error allocating bitmap status memory\n");
+        exit(1);
+    }
+    printf("Allocated bitmap node: node=%08x\n", (uint32_t)bmp_node);
+    viv_addr_t bmp_physical = 0; /* ADDR_J */
+    void *bmp_logical = 0;
+    if(viv_lock_vidmem(bmp_node, &bmp_physical, &bmp_logical)!=0)
+    {
+        fprintf(stderr, "Error locking bmp memory\n");
+        exit(1);
+    }
+    memset(bmp_logical, 0xff, 0x177000); /* clear previous result */
+    printf("Locked bmp: phys=%08x log=%08x\n", (uint32_t)bmp_physical, (uint32_t)bmp_logical);
+
+    /* Submit command buffer 5 */
+    cmdbuf5[0x19] = rt_physical;
+    cmdbuf5[0x1b] = bmp_physical;
+
+    commandBuffer.startOffset = commandBuffer.offset + 0x18;
+    memcpy((void*)((size_t)commandBuffer.logical + commandBuffer.startOffset), cmdbuf5, sizeof(cmdbuf5));
+    commandBuffer.offset = commandBuffer.startOffset + sizeof(cmdbuf5);
+    commandBuffer.free -= sizeof(cmdbuf5) + 0x18;
+    printf("[5] startOffset=%08x, offset=%08x, free=%08x\n", (uint32_t)commandBuffer.startOffset, (uint32_t)commandBuffer.offset, (uint32_t)commandBuffer.free);
+    if(viv_commit(&commandBuffer, &contextBuffer) != 0)
+    {
+        fprintf(stderr, "Error committing command buffer 5\n");
         exit(1);
     }
 
@@ -496,14 +458,14 @@ int main(int argc, char **argv)
         fprintf(stderr, "Cannot queue GPU signal\n");
         exit(1);
     }
-
     /* Wait for signal */
     if(viv_user_signal_wait(sig_id, SIG_WAIT_INDEFINITE) != 0)
     {
         fprintf(stderr, "Cannot wait for signal\n");
         exit(1);
     }
-    bmp_dump32(bmp_logical, 400, 240, false, "/mnt/sdcard/cube_replay.bmp");
+
+    bmp_dump32(bmp_logical, 800, 480, false, "/mnt/sdcard/replay.bmp");
     /* Unlock video memory */
     if(viv_unlock_vidmem(bmp_node, gcvSURF_BITMAP, 1) != 0)
     {
@@ -517,7 +479,6 @@ int main(int argc, char **argv)
         printf("Sample ts: %x %08x\n", x*4, value);
     }*/
     printf("Contextbuffer used %i\n", *contextBuffer.inUse);
-
     viv_close();
     return 0;
 }
