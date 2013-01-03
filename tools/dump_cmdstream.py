@@ -137,18 +137,7 @@ def fixp_as_float(i):
     '''Return float from 16.16 fixed-point value of i'''
     return i / 65536.0
 
-def bitextr(val, hi, lo):
-    '''Extract and return bits hi..lo from value val'''
-    return (val >> lo) & ((1<<(hi-lo+1))-1)
-
-# disassembly utils
 COMPS = 'xyzw'
-def format_swiz(swiz):
-    swiz = [(swiz >> x)&3 for x in [0,2,4,6]]
-    return ''.join([COMPS[c] for c in swiz])
-def format_comps(comps):
-    return ''.join([COMPS[c] for c in range(4) if ((comps >> c)&1)])
-
 def format_state(pos, value, fixp, state_map):
     try:
         path = state_map.lookup_address(pos)
@@ -160,62 +149,11 @@ def format_state(pos, value, fixp, state_map):
     if fixp:
         desc += ' = %f' % fixp_as_float(value)
     else:
-        # 0x04000 and 0x06000 contain shader instructions
-        if ((pos >= 0x04000 and pos < 0x05000) or (pos >= 0x06000 and pos < 0x07000)) and options.disassembly:
-            # See isa.xml for explanation of fields
-            inst_word = ((pos>>2)&3)
-            if inst_word == 0:
-                op = bitextr(value, 5, 0)
-                cond = bitextr(value, 10, 6)
-                sat = bitextr(value, 11, 11) # saturate
-                dst_use = bitextr(value, 12, 12) # desination used
-                dst_amode = bitextr(value, 15, 13) # addressing mode
-                dst_reg = bitextr(value, 22, 16) # reg nr
-                dst_comps = bitextr(value, 26, 23) # xyzw
-                tex_id = bitextr(value, 31, 27) # texture sampler id
-                desc += ' op=%s(0x%02x) cond=%s sat=%i dst_use=%i dst_amode=%i dst_reg=%i dst_comps=%s' % (
-                        isa.types['INST_OPCODE'].describe(op), op,
-                        isa.types['INST_CONDITION'].describe(cond), sat,
-                        dst_use, dst_amode, dst_reg, format_comps(dst_comps))
-            if inst_word == 1:
-                tex_amode = bitextr(value, 2, 0)
-                tex_swiz = bitextr(value, 10, 3)
-                src0_use = bitextr(value, 11, 11)
-                src0_reg = bitextr(value, 20, 12)
-                src0_swiz = bitextr(value, 29, 22)
-                src0_neg = bitextr(value, 30, 30)
-                src0_abs = bitextr(value, 31, 31)
-                desc += ' src0_use=%i src0_reg=%i src0_swiz=%s src0_neg=%i src0_abs=%i' % (
-                        src0_use, src0_reg, format_swiz(src0_swiz), src0_neg, src0_abs)
-            if inst_word == 2:
-                src0_amode = bitextr(value, 2, 0) # addressing mode
-                src0_rgroup = bitextr(value, 5, 3) # reg type (0=temp, 1=?, 2=uniform, 3=uniform)
-                src1_use = bitextr(value, 6, 6)
-                src1_reg = bitextr(value, 15, 7)
-                src1_swiz = bitextr(value, 24, 17)
-                src1_neg = bitextr(value, 25, 25)
-                src1_abs = bitextr(value, 26, 26)
-                src1_amode = bitextr(value, 29, 27)
-                desc += ' src0_amode=%i src0_rgroup=%i src1_use=%i src1_reg=%i src1_swiz=%s src1_neg=%i src1_abs=%i src1_amode=%i' % (
-                        src0_amode, src0_rgroup, src1_use, src1_reg, format_swiz(src1_swiz), src1_neg, src1_abs, src1_amode)
-
-            if inst_word == 3:
-                src1_rgroup = bitextr(value, 2, 0)
-                src2_use = bitextr(value, 3, 3)
-                src2_reg = bitextr(value, 12, 4)
-                # bit 13?
-                src2_swiz = bitextr(value, 21, 14)
-                src2_neg = bitextr(value, 22, 22)
-                src2_abs = bitextr(value, 23, 23)
-                # bit 24?
-                src2_amode = bitextr(value, 27, 25)
-                src2_rgroup = bitextr(value, 30, 28)
-                # bit 31?
-                desc += ' src1_rgroup=%i src2_use=%i src2_reg=%i src2_swiz=%s src2_neg=%i src2_abs=%i src2_amode=%i src2_rgroup=%i' % (
-                        src1_rgroup, src2_use, src2_reg, format_swiz(src2_swiz), src2_neg, src2_abs, src2_amode, src2_rgroup)
         # For uniforms, show float value
-        elif (pos >= 0x05000 and pos < 0x06000) or (pos >= 0x07000 and pos < 0x08000):
-            desc += ' := %f' % int_as_float(value)
+        if (pos >= 0x05000 and pos < 0x06000) or (pos >= 0x07000 and pos < 0x08000):
+            num = pos & 0xFFF
+            spec = 'u%i.%s' % (num//16, COMPS[(num//4)%4])
+            desc += ' := %f (%s)' % (int_as_float(value), spec)
         elif path is not None:
             register = path[-1][0]
             desc += ' := '
@@ -226,6 +164,7 @@ def format_state(pos, value, fixp, state_map):
     return desc
 
 def dump_shader(f, name, states, start, end):
+    '''Dump binary shader code to disk'''
     if not start in states:
         return # No shader detected
     # extract code from consecutive addresses
@@ -351,6 +290,7 @@ def dump_command_buffer(f, mem, addr, end_addr, depth, state_map):
         state_by_pos = {}
         for (ptr, pos, state_format, value) in states:
             state_by_pos[pos]=value
+        # 0x04000 and 0x06000 contain shader instructions
         dump_shader(f, 'vs', state_by_pos, 0x04000, 0x05000)
         dump_shader(f, 'ps', state_by_pos, 0x06000, 0x07000)
 
@@ -411,9 +351,6 @@ def parse_arguments():
     parser.add_argument('--list-address-states', dest='list_address_states',
             default=False, action='store_const', const=True,
             help='When dumping command buffer, provide list of states that contain GPU addresses')
-    parser.add_argument('--disassembly', dest='disassembly',
-            default=False, action='store_const', const=True,
-            help='Disassemble shader instructions')
     parser.add_argument('--dump-shaders', dest='dump_shaders',
             default=False, action='store_const', const=True,
             help='Dump shaders to file')
