@@ -41,22 +41,75 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <!-- TODO: match against TGSI instructions 
          http://people.freedesktop.org/~csimpson/gallium-docs/tgsi.html 
      -->
+    <doc>
+        Unused operands of an instruction should have their use flag at 0.
+
+        Unless mentioned otherwise, instructions do the same for all four components of the vector-valued
+        operands.
+
+        Operands src0,src1 and src2 can come from a temporary register or an uniform.
+    </doc>
     <value value="0x00" name="NOP" brief="No operation"/>
     <value value="0x01" name="ADD" brief="Add"/>
-    <value value="0x02" name="MAD" brief="Multiply add"/>
-    <value value="0x03" name="MUL" brief="Multiply"/>
+    <value value="0x02" name="MAD" brief="Multiply add">
+        <doc>
+            dst := src0 * src1 + src2
+
+            src0 is multipied with src1, then src2 is added. The result is put into temporary
+            register dst.
+        </doc>
+    </value>
+    <value value="0x03" name="MUL" brief="Multiply">
+        <doc>
+            dst := src0 * src1
+
+            src0 is multipied with src1 and the result is put into temporary register dst.
+        </doc>
+    </value>
     <value value="0x04" name="DST"/>
-    <value value="0x05" name="DP3" brief="3-component dot product"/>
+    <value value="0x05" name="DP3" brief="3-component dot product">
+        <doc>
+            dst := src0.x * src1.x + src0.y * src1.y + src0.z * src1.z
+
+            Computes the component-wise dot product between src0 and src1 and broadcasts the results to all destination 
+            components in temporary register dst.
+        </doc>
+    </value>
     <value value="0x06" name="DP4" brief="4-component dot product"/>
     <value value="0x07" name="DSX" brief="Compute derivative relative to X"/>
     <value value="0x08" name="DSY" brief="Compute derivative relative to Y"/>
-    <value value="0x09" name="MOV" brief="Move to temporary register"/>
+    <value value="0x09" name="MOV" brief="Move to temporary register">
+        <doc>
+            dst := src2
+
+            Copies the value of operand src2 to temporary register dst.
+        </doc>
+    </value>
     <value value="0x0A" name="MOVAR" brief="Move address to address register"/>
     <value value="0x0B" name="MOVAF" brief="Move float to address register"/>
-    <value value="0x0C" name="RCP" brief="Reciprocal"/>
-    <value value="0x0D" name="RSQ" brief="Reciprocal square root"/>
+    <value value="0x0C" name="RCP" brief="Reciprocal">
+        <doc>
+            dst := 1.0 / src2
+
+            Computes the reciprocal of src2, and puts the result into temporary register dst.
+        </doc>
+    </value>
+    <value value="0x0D" name="RSQ" brief="Reciprocal square root">
+        <doc>
+            dst := 1.0 / sqrt(src2)
+
+            Computes the reciprocal of the square root of src2, and puts the result into 
+            temporary register dst.
+        </doc>
+    </value>
     <value value="0x0E" name="LITP"/>
-    <value value="0x0F" name="SELECT" brief="Choose input based on condition"/>
+    <value value="0x0F" name="SELECT" brief="Choose input based on condition">
+        <doc>
+            dst := src0 if (src1 COND src2)
+
+            Sets temporary register dst to src0 if src1 COND src2 holds. If not, it will keep its previous value.
+        </doc>
+    </value>
     <value value="0x10" name="SET"/>
     <value value="0x11" name="EXP" brief="2^x"/>
     <value value="0x12" name="LOG" brief="log2"/>
@@ -65,7 +118,13 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <value value="0x15" name="RET" brief="Return from function"/>
     <value value="0x16" name="BRANCH" brief="Jump to address"/>
     <value value="0x17" name="TEXKILL" brief="Cancels rendering of the current fragment"/>
-    <value value="0x18" name="TEXLD" brief="Texture load"/>
+    <value value="0x18" name="TEXLD" brief="Texture load">
+        <doc>
+            dst := textureND(tex, src0)
+
+            Samples texture coordinate src0 with sampler tex, and returns the sampled color in temporary register dst.
+        </doc>
+    </value>
     <value value="0x19" name="TEXLDB" brief="Texture load (biased)"/>
     <value value="0x1A" name="TEXLDD" brief="Texture load (manually specified gradients)"/>
     <value value="0x1B" name="TEXLDL" brief="Texture load (at particular LOD)"/>
@@ -181,8 +240,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 <enum name="INST_RGROUP" brief="Register group">
     <value value="0" name="TEMP" brief="Temporary"/>
     <value value="1" name="UNK1"/>
-    <value value="2" name="UNIFORM_0" brief="Uniforms 0"/>
-    <value value="3" name="UNIFORM_1" brief="Uniforms 1"/>
+    <value value="2" name="UNIFORM_0" brief="Uniforms 0..127"/>
+    <value value="3" name="UNIFORM_1" brief="Uniforms 128..255"/>
     <!-- more values, it's 3 bits? -->
 </enum>
 

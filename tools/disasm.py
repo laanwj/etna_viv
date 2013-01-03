@@ -34,8 +34,8 @@ from etnaviv.parse_rng import parse_rng_file, format_path, BitSet, Domain
 
 # Register groups
 # t temporary
-# u uniform
-# v uniform
+# u uniform 0..127
+# v uniform 127..255 (this is rewritten to u in format_src)
 #  others are unknown
 rgroups = ['t', '?1?', 'u', 'v', '?4?', '?5?', '?6?', '?7?']
 # Addressing modes
@@ -120,6 +120,7 @@ def disassemble(isa, inst):
 def format_dst(isa, dst, warnings):
     '''Format destination operand'''
     if dst.use:
+        # actually, target register group depends on the instruction, but usually it's a temporary...
         arg = 't%i' % (dst.reg)
         if dst.amode != 0:
             arg += '[%s]' % amodes[dst.amode]
@@ -135,15 +136,22 @@ def format_dst(isa, dst, warnings):
 def format_src(isa, src, warnings):
     '''Format source operand'''
     if src.use:
-        arg = '%s%i' % (rgroups[src.rgroup], src.reg)
+        if src.rgroup == 3: # map vX to uniform u(X+128)
+            rgroup = 2
+            reg = 128 + src.reg
+        else:
+            rgroup = src.rgroup
+            reg = src.reg
+        arg = '%s%i' % (rgroups[rgroup], reg)
         if src.amode != 0:
             arg += '[%s]' % amodes[src.amode]
         if src.swiz != 0xe4: # if not null swizzle
             arg += '.' + format_swiz(src.swiz)
-        if src.neg:
-            return '-' + arg
+        # XXX is the - or the | done first? In a way, -|x| is the only ordering that makes sense.
         if src.abs:
             return '|' + arg + '|'
+        if src.neg:
+            return '-' + arg
     else:
         arg = 'void' # unused argument
         if src.reg != 0 or src.swiz != 0 or src.neg != 0 or src.abs != 0 or src.amode != 0 or src.rgroup != 0:
