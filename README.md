@@ -94,12 +94,14 @@ Replay test
 
 ![Example output](https://raw.github.com/laanwj/etna_viv/master/native/replay/cube_replay.png)
 
+![Example output 2](https://raw.github.com/laanwj/etna_viv/master/native/replay/cube_companion_replay.png)
+
     native/replay/
 
 Replays the command stream and ioctl commands of the EGL demos, to get the same output. 
 
-Currently this is available for the `cube` example that renders a smoothed cube.
-
+Currently this is available for the `cube` example that renders a smoothed cube, and the `cube_companion`
+example that renders a textured cube.
 
 Vivante GPL kernel driver
 --------------------------

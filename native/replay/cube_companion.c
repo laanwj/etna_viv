@@ -325,37 +325,41 @@ int main(int argc, char **argv)
             ((float*)vtx2_logical)[dest_idx+comp+6] = texture_coordinates_array[vert*2 + comp]; /* 2 */
     }
     
-    /* Fill in texture */
-    /* TODO: figure out tiling */
-#if 0
-    for(int y=0; y<COMPANION_TEXTURE_HEIGHT; ++y)
+    /* Fill in texture (convert from RGB linear to tiled) */
+#if 1
+#define TILE_WIDTH (4)
+#define TILE_HEIGHT (4)
+#define TILE_WORDS (TILE_WIDTH*TILE_HEIGHT)
+    unsigned ytiles = COMPANION_TEXTURE_HEIGHT / TILE_HEIGHT;
+    unsigned xtiles = COMPANION_TEXTURE_WIDTH / TILE_WIDTH;
+    unsigned dst_stride = xtiles * TILE_WORDS;
+
+    for(unsigned ty=0; ty<ytiles; ++ty)
     {
-        for(int x=0; x<COMPANION_TEXTURE_WIDTH; ++x)
+        for(unsigned tx=0; tx<xtiles; ++tx)
         {
-            int r,g,b,a;
-            /*
-            r = ((uint8_t*)companion_texture)[(y*512+x)*3+0];
-            g = ((uint8_t*)companion_texture)[(y*512+x)*3+1];
-            b = ((uint8_t*)companion_texture)[(y*512+x)*3+2];
-            */
-            if(y<256)
-                r = 255;
-            else
-                r = 0;
-            if(x<256)
-                g = 255;
-            else
-                g = 0;
-            /*r = x;
-            g = y;
-            b = x*y;*/
-            b = 0;
-            a = 255;
-            ((uint32_t*)tex_logical)[y*512+x] = ((a&0xFF) << 24) | ((b&0xFF) << 16) | ((g&0xFF) << 8) | (r&0xFF);
+            unsigned ofs = ty * dst_stride + tx * TILE_WORDS;
+            for(unsigned y=0; y<TILE_HEIGHT; ++y)
+            {
+                for(unsigned x=0; x<TILE_WIDTH; ++x)
+                {
+                    unsigned srcy = ty*TILE_HEIGHT + y;
+                    unsigned srcx = tx*TILE_WIDTH + x;
+                    unsigned src_ofs = (srcy*COMPANION_TEXTURE_WIDTH+srcx)*3;
+                    unsigned r,g,b,a;
+                    r = ((uint8_t*)companion_texture)[src_ofs+0];
+                    g = ((uint8_t*)companion_texture)[src_ofs+1];
+                    b = ((uint8_t*)companion_texture)[src_ofs+2];
+                    a = 255;
+
+                    ((uint32_t*)tex_logical)[ofs] = ((a&0xFF) << 24) | ((b&0xFF) << 16) | ((g&0xFF) << 8) | (r&0xFF);
+                    ofs += 1;
+                }
+            }
         }
     }
 #endif
-#if 1
+#if 0
     int texfd = open("/data/mine/texture.raw", O_RDONLY); 
     read(texfd, tex_logical, 512*512*4);
     close(texfd);
