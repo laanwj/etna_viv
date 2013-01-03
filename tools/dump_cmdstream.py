@@ -211,7 +211,6 @@ def format_state(pos, value, fixp, state_map):
                 src2_amode = bitextr(value, 27, 25)
                 src2_rgroup = bitextr(value, 30, 28)
                 # bit 31?
-
                 desc += ' src1_rgroup=%i src2_use=%i src2_reg=%i src2_swiz=%s src2_neg=%i src2_abs=%i src2_amode=%i src2_rgroup=%i' % (
                         src1_rgroup, src2_use, src2_reg, format_swiz(src2_swiz), src2_neg, src2_abs, src2_amode, src2_rgroup)
         # For uniforms, show float value
@@ -225,6 +224,24 @@ def format_state(pos, value, fixp, state_map):
             else:
                 desc += register.describe(value)
     return desc
+
+def dump_shader(f, name, states, start, end):
+    if not start in states:
+        return # No shader detected
+    # extract code from consecutive addresses
+    pos = start
+    code = []
+    while pos < end and (pos in states):
+        code.append(states[pos])
+        pos += 4
+    global shader_num
+    filename = '%s_%i.bin' % (name, shader_num)
+    with open(filename, 'wb') as g:
+        for word in code:
+            g.write(struct.pack('<I', word))
+    f.write('/* [dumped %s to %s] */ ' % (name, filename))
+    shader_num += 1
+
 
 def dump_command_buffer(f, mem, addr, end_addr, depth, state_map):
     '''
@@ -330,6 +347,13 @@ def dump_command_buffer(f, mem, addr, end_addr, depth, state_map):
 
         f.write(indent + '}')
 
+    if options.dump_shaders:
+        state_by_pos = {}
+        for (ptr, pos, state_format, value) in states:
+            state_by_pos[pos]=value
+        dump_shader(f, 'vs', state_by_pos, 0x04000, 0x05000)
+        dump_shader(f, 'ps', state_by_pos, 0x06000, 0x07000)
+
 def dump_context_map(f, mem, addr, end_addr, depth, state_map):
     '''
     Dump Vivante context map.
@@ -390,6 +414,9 @@ def parse_arguments():
     parser.add_argument('--disassembly', dest='disassembly',
             default=False, action='store_const', const=True,
             help='Disassemble shader instructions')
+    parser.add_argument('--dump-shaders', dest='dump_shaders',
+            default=False, action='store_const', const=True,
+            help='Dump shaders to file')
     return parser.parse_args()        
 
 def load_data_definitions(struct_file):
@@ -397,6 +424,7 @@ def load_data_definitions(struct_file):
         return json.load(f)
 
 vidmem_addr = Counter() # Keep track of video memories
+shader_num = 0
 
 def format_addr(value):
     '''

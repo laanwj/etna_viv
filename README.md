@@ -41,15 +41,24 @@ Other scattered bits of documentation about the hardware and ISA can be found in
 ISA documentation
 ------------------
     
-Shader instruction set description in rules-ng-ng format can be found here: 
+Shader (both vertex and fragment) instruction set description in rules-ng-ng format can be found here: 
 
     rnndb/isa.xml
 
-Vivante has a fixed-size, predictable instruction format with explicit inputs 
+Vivante has a unified, fixed-size, predictable instruction format with explicit inputs 
 and outputs. This does simplify code generation, compared to a weird flow 
 pipe system like the Mali 200/400.
 
-An assembler and disassembler still need to be written.
+Disassembler
+-------------
+
+A basic disassembler for the shader instructions can be found in the tools directory:
+
+    tools/disass.py
+
+This can be used to disassemble shaders extracted using `dump_cmdstream.py --dump-shaders`.
+
+An assembler still needs to be written.
 
 Command stream format
 -----------------------
@@ -165,5 +174,5 @@ Authors
 
 Thanks
 =======
-- Luc Verhaegen (libv) of Lima project developing an open source driver for the Mali GPUs
+- Luc Verhaegen (libv) of Lima project (developing an open source driver for the Mali GPUs)
 

@@ -221,8 +221,12 @@ Programming pecularities
 =========================
 
 - The FE can convert from 16.16 fixed point format to 32 bit float. This is enabled by the `fixp` bit
-  in the `LOAD_STATE` command.
+  in the `LOAD_STATE` command. This is mostly useful for older ARM CPUs without native floating point
+  support. The blob driver uses it for some states (viewport scaling, offset, scissor, ...)
+  but not others (uniforms etc). 
 
+  - Some of the states in states.xml are labeled as format "fixp" even though the FE does conversion and
+    their actual format is float, and they could be written as float as well. This needs to be checked.
 
 Masked state
 -------------
@@ -237,4 +241,22 @@ other bits in that state word.
 
 If masking functionality is not desired, as it is often practical to simply write all bits at once, simply keep all the `_MASK`
 bits at zero.
+
+Texture tiling
+----------------
+RGBA/RGBx textures and render targets are stored in a 4x4 tiled format.
+
+    Tile 1        Tile 2       ... Tile w-1
+    0  1  2  3    16 17 18 19
+    4  5  6  7    20 21 22 23
+    8  9  10 11   24 25 26 27
+    12 13 14 15   28 29 30 31
+
+The stride of these tiled surfaces is the number of bytes between one row of tiles and the next. So for a surface of width
+512, it is `(512/4)*16*4=8192`.
+
+Render buffers
+---------------
+
+It appears that render buffers pixel sizes are padded to a multiple of 64, ie, a width of 400 becomes 448 and 800 becomes 832.
 
