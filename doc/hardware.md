@@ -139,7 +139,7 @@ Opcodes
 Arguments are always padded to 2 32-bit words. Number of arguments depends on the opcode, and 
 sometimes on the first word of the command.
 
-Commands (also see cmdstream.xml)
+Commands (also see `cmdstream.xml`)
 
     00001FCC CCCCCCCC AAAAAAAA AAAAAAAA  Update state
 
@@ -147,41 +147,51 @@ Commands (also see cmdstream.xml)
       C    Count
       A    Base address / 4
 
-Fixed point flag: what this flag does is convert a fixed point float in the command stream
+Fixed point flag: convert a 16.16 fixed point float in the command stream
    to a floating point value in the state.
-
 
 Synchronization
 ----------------
 There are various states related to synchronization, either between different modules in the GPU
-and the GPU and the CPU.
+and the GPU and the CPU (through the FE).
 
 - `SEMAPHORE_TOKEN`
 - `STALL_TOKEN`
-- `STALL` command
+- `STALL` command in command stream
 (usually from PE to FE)
 
-Semaphore is used when it is available and not in use, otherwise execution of current
-thread is stalled
+The following sequence of states is common:
+
+    GLOBAL.SEMAPHORE_TOKEN := FROM=RA,TO=PE
+    GLOBAL.STALL_TOKEN := FROM=RA,TO=PE
+
+The first state load arms the semaphore, the second one stalls the FROM module until the TO module has raised its semaphore. In 
+this example it stalls the rasterizer until the pixel engine has completed the commands up until now. 
+
+The `STALL` command is used to stall the command queue until the semaphore has been received. The stall command has
+one argument that has the same format as the `_TOKEN` states above, except that the FROM module is always the FE. 
+
+XXX (cwabbott) usually, isa's have some sort of texture barrier or sync operation to be able to load textures asyncronously
+(mali does it w/ pipeline registers) i'm wondering where that is in the vivante isa
 
 Resolve
 -----------
 The resolve module is a glorified copy and fill engine. It can copy blocks of pixels
-from one GPU address to another, optionally detiling. The source and destination address
+from one GPU address to another, optionally tiling/detiling. The source and destination address
 can be the same for pixel format conversions, or to fill in tiles that were not touched
-during the rendering process.
+during the rendering process with the background color.
 
 Tile status (Fast clear)
 -------------------------
 A render target is divided in tiles, and every tile has a couple of status flags.
 
-An auxilary buffer for each render surface keeps track of tile status flags.
+An auxilary buffer for each render surface keeps track of tile status flags, allocated with `gcvSURF_TILE_STATUS`.
 
 One of these flags is the `clear` flag, that signifies that the tile has been cleared.
 `fast clear` happens by setting the clear bit for each tile instead of clearing the actual surface
 data.
 
-Tile size is dependent on the hardware, and so is the number of bits per tile.
+Tile size is dependent on the hardware, and so is the number of bits per tile (can be two or four).
 
 The tile status bits are cleared using RS, by clearing a small surface with the value
 0x55555555. When clearing, only the destination address and stride needs to be set,
@@ -191,21 +201,21 @@ Shader ISA
 ================
 
 Vivante GPUs have unified shader ISA, this means that vertex and pixel shaders share the same 
-instruction set. See `isa.xml`.
+instruction set. See `isa.xml` for details about the instructions, this section only provides a high-level overview.
 
 - One operation consists of 4 32-bit words. This have a fixed format, which only differs very little per opcode. Which
 instruction fields are used does differ per opcode.
 
 - Four-component SIMD processor
 
-- Older GPUs have floating point operations only, the newer ones have support for integer operations, in the context of compute. 
-  The split is around GC1000.
+- Older GPUs have floating point operations only, the newer ones have support for integer operations in the context of OpenCL. 
+  The split is around GC1000, though this being Vivante there is likely some feature bit for it.
 
 - Instructions can have up to three source operands (`SRC0_*`, `SRC1_*`, `SRC2_*`), and one destination operand (`DST_`). 
    In addition to that, there is a specific operand for texture sampling (`TEX_*`).
 
-- For every operand there are three properties: 
-  - `USE`: the operand is enabled
+- For every operand there are these properties:
+  - `USE`: the operand is enabled (1) or not (0)
   - `REG`: register number to read or write
   - `SWIZ`: arbitrary swizzle from four to four components (source operands only)
   - `COMPS`: which components to affect (destination operand only)
@@ -217,6 +227,10 @@ instruction fields are used does differ per opcode.
   - N temporary registers (actual number depends on the hardware, seems to be at least 64)
   - 1 address register
 
+Temporary registers are also used for shader inputs (attributes, varyings) and outputs (colors, positions). They are set to
+the input values before the shader executes, and should have the output values when the shader ends. If the output
+should be the same as the input (passthrough) an empty shader can be used.
+
 Programming pecularities
 =========================
 
@@ -226,7 +240,8 @@ Programming pecularities
   but not others (uniforms etc). 
 
   - Some of the states in states.xml are labeled as format "fixp" even though the FE does conversion and
-    their actual format is float, and they could be written as float as well. This needs to be checked.
+    their actual format is float, and they could be written as float as well when this is faster
+    from the driver perspective. This needs to be checked.
 
 Masked state
 -------------
