@@ -49,11 +49,18 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <value value="6" name="TRIANGLE_FAN" brief="Triangle fan (GL_TRIANGLE_FAN)"/>
     <value value="7" name="LINE_LOOP" brief="Line loop (GL_LINE_LOOP)"/>
 </enum>
-<domain name="VIVANTE_STATE">
+<domain name="VIV_STATE">
     <!-- should be import... -->
 </domain>
+<!-- same as in state.xml. should be import -->
+<enum name="SYNC_RECIPIENT" brief="Synchronization source/destination">
+    <value value="1" name="FE" brief="Front End"/>
+    <value value="5" name="RA" brief="Raster"/>
+    <value value="7" name="PE" brief="Pixel Engine"/>
+    <value value="11" name="DE" brief="Drawing Engine"/>
+</enum>
 
-<domain name="VIVANTE_FE">
+<domain name="VIV_FE">
     <!-- A stripe for each command follows. 
          The different commands are distinguished by the OP field. 
      -->
@@ -62,7 +69,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="31" low="27" name="OP" type="FE_OPCODE"/>
             <bitfield pos="26" name="FIXP" brief="Convert loaded values from 16.16 fixed point to float32"/>
             <bitfield pos="25" low="16" name="COUNT" brief="Number of state words to load"/>
-            <bitfield pos="15" low="0" name="OFFSET" shr="2" brief="State load starting offset" type="VIVANTE_STATE"/>
+            <bitfield pos="15" low="0" name="OFFSET" shr="2" brief="State load starting offset" type="VIV_STATE"/>
         </reg32>
         <doc>COUNT state words follow. These are literally written to state space at
              the provided offset, after which the offset is increased.
@@ -73,7 +80,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 
     <stripe name="END" varset="FE_OPCODE" variants="END"> <!-- size="4" -->
         <reg32 offset="0x00000" name="HEADER">
-            <bitfield high="4" low="0" brief="Event ID to be send"/>
+            <bitfield high="4" low="0" name="EVENT_ID" brief="Event ID to be send"/>
             <bitfield pos="8" name="EVENT_ENABLE" brief="Send event when END is completed"/>
             <bitfield high="31" low="27" name="OP" type="FE_OPCODE"/>
         </reg32>
@@ -164,8 +171,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="31" low="27" name="OP" type="FE_OPCODE"/>
         </reg32>
         <reg32 offset="0x00004" name="TOKEN">
-            <bitfield high="4" low="0" name="FROM" type="SYNC_RECEPIENT"/>
-            <bitfield high="12" low="8" name="TO" type="SYNC_RECEPIENT"/>
+            <bitfield high="4" low="0" name="FROM" type="SYNC_RECIPIENT"/>
+            <bitfield high="12" low="8" name="TO" type="SYNC_RECIPIENT"/>
         </reg32>
     </stripe>
 

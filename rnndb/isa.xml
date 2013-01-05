@@ -24,7 +24,7 @@
 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 <!-- Vivante GCxxxx instruction set overview  -->
-<domain name="VIVANTE_ISA">
+<domain name="VIV_ISA">
 <!-- XXX still unsure if rules-ng is a suitable format for ISA descriptions,
  I don't really think so, but it will initially help to put notes in a more structured format.
 

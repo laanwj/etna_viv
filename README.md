@@ -123,6 +123,23 @@ hardware at a basic level.
 
 The drivers are rooted in the kernel tree at `drivers/gpu/vivante`.
 
+Envytools
+----------
+
+The repository also contains a slightly modified subset of envytools for header generation from 
+the state / cmdstream / isa rnndb files, so they can be used from C code, build with
+
+    cd envytools
+    mkdir build
+    cd build
+    cmake ..
+    make
+    cd ../..
+
+Then generate the headers with
+
+    rnndb/gen_headers.sh
+
 Building
 =========
 
@@ -173,5 +190,6 @@ Authors
 
 Thanks
 =======
-- Luc Verhaegen (libv) of Lima project (developing an open source driver for the Mali GPUs)
-
+- Luc Verhaegen (libv) of Lima project (basic framework, general idea)
+- Nouveau developers (rnndb, envytools)
+ 

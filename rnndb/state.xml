@@ -39,6 +39,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                                    <doc> is left for longer specific documentation
          - type="fixedp": (N/2).(N/2) fixed-point value, where N is the number of bits of the bit field,
              so in case of a 32 bit field it will be a 16.16 FP value.
+         - domains can be used as types
 
      TODO: variants are somewhat different from NV; what features are supported is determined by (most common first)
          1) Chip features and minor feature flags
@@ -49,10 +50,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
          Generally the chip feature flags are used to distinguish functionality, as well as the specs, and not do much the model 
          and revision. Unlike NV which parametrizes everything on the model, for GC this is left for bugfixes.
 -->
-<domain name="VIVANTE_MEM">
+<domain name="VIV_MEM">
     <!-- GPU memory domain -->
 </domain>
-<domain name="VIVANTE_STATE">
+<domain name="VIV_STATE">
 
     <!-- Hardware description fields.
          For access in userspace these are also exposed over the ioctl interface through QUERY_CHIP_IDENTITY.
@@ -524,9 +525,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="31" low="24" name="END" brief="End offset of element data"/>
         </reg32>
         <reg32 offset="0x00640" name="CMD_STREAM_BASE_ADDR"/>
-        <reg32 offset="0x00644" name="INDEX_STREAM_BASE_ADDR" value="0x00000000" type="VIVANTE_MEM"/>
+        <reg32 offset="0x00644" name="INDEX_STREAM_BASE_ADDR" value="0x00000000" type="VIV_MEM"/>
         <reg32 offset="0x00648" name="INDEX_STREAM_CONTROL" value="0x00000000"/>
-        <reg32 offset="0x0064C" name="VERTEX_STREAM_BASE_ADDR" value="0x00000000" type="VIVANTE_MEM"/> <!-- vertex stream 0 -->
+        <reg32 offset="0x0064C" name="VERTEX_STREAM_BASE_ADDR" value="0x00000000" type="VIV_MEM"/> <!-- vertex stream 0 -->
         <reg32 offset="0x00650" name="VERTEX_STREAM_CONTROL" value="0x00000000"> <!-- vertex stream 0 -->
             <bitfield high="7" low="0" name="VERTEX_STRIDE"/>
         </reg32>
@@ -552,8 +553,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00670" name="AUTO_FLUSH" value="0x00000000" brief="Auto flush cycles"/>
         <reg32 offset="0x00678" name="UNK00678" value="0x00000000"/>
         <reg32 offset="0x0067C" name="UNK0067C" value="0xFFFFFFFF"/>
-        <stripe name="VERTEX_STREAM" length="8" stride="4"> <!-- vertex stream 1..N -->
-            <reg32 offset="0x00680" name="BASE_ADDR" value="0x00000000" type="VIVANTE_MEM"/>
+        <stripe name="VERTEX_STREAMS" length="8" stride="4"> <!-- vertex stream 1..N -->
+            <reg32 offset="0x00680" name="BASE_ADDR" value="0x00000000" type="VIV_MEM"/>
             <reg32 offset="0x006A0" name="CONTROL" value="0x00000000"/>
         </stripe>
         <reg32 offset="0x00700" name="UNK00700" value="0x00000000" length="16" stride="4"/>
@@ -561,7 +562,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00780" name="UNK00780" value="0x3F800000" length="16" stride="4"/>
     </stripe>
 
-    <stripe name="GLOBAL" doc="Global states">
+    <stripe name="GLOBAL" brief="Global states">
         <doc>Global device control states. Here is configured what pipe to use (2D or 3D),
             when to send event, when to wait on semaphores and the API mode (OGL or D3D).
         </doc>
@@ -660,7 +661,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     </stripe>
 
     <!-- PIPE_2D states -->
-    <stripe name="DE" doc="2D Drawing Engine">
+    <stripe name="DE" brief="2D Drawing Engine">
         <doc>2D drawing engine: conversion, scaling, filtering, rotation, blending of 2D images.</doc>
         <reg32 offset="0x01200" name="SOURCE_ADDR" brief="Source address"/>
         <reg32 offset="0x01204" name="SOURCE_STRIDE" brief="Source stride"/>
@@ -728,7 +729,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x012B4" name="ROTATION_TARGET_HEIGHT" brief="Rotation target height"/>
         <reg32 offset="0x012B8" name="ROTATION_SOURCE_HEIGHT" brief="Rotation source height"/>
         <reg32 offset="0x012BC" name="MIRROR_EXTENSION" brief="Rotation/mirror source/target config (with mirror extension)"/>
-        <reg32 offset="0x012C0" name="CLEAR_VALUE_LOW" brief="Clear pixel value low"/> <!-- PE20 -->
+        <reg32 offset="0x012C0" name="CLEAR_VALUE_LOW_PE20" brief="Clear pixel value low"/> <!-- PE20 -->
         <reg32 offset="0x012C4" name="TARGET_COLOR_KEY_LO" brief="Target color key range low"/> <!-- PE20 -->
         <reg32 offset="0x012C8" name="SOURCE_GLOBAL_COLOR" brief="Source global color"/> <!-- PE20 -->
         <reg32 offset="0x012CC" name="TARGET_GLOBAL_COLOR" brief="Target global color"/> <!-- PE20 -->
@@ -756,9 +757,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     </stripe>
 
     <!-- PIPE_3D states -->
-    <stripe name="VS" doc="Vertex shader states">
+    <stripe name="VS" brief="Vertex shader states">
         <doc>The vertex shader to use is configured here.</doc>
-        <reg32 offset="0x00800" name="END_PC" value="0x00000000" desc="End instruction number">
+        <reg32 offset="0x00800" name="END_PC" value="0x00000000" brief="End instruction number">
             <doc>index of last instruction + 1</doc>
         </reg32>
         <reg32 offset="0x00804" name="OUTPUT_COUNT" value="0x00000000"/>
@@ -785,7 +786,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
     </stripe>
 
-    <stripe name="THREAD_WALKER" doc="Thread walker states">
+    <stripe name="THREAD_WALKER" brief="Thread walker states">
         <doc>The thread walker drives shaders in a predefined grid for GPGPU computing (OpenCL).
         This states are not used for normal rendering.</doc>
         <reg32 offset="0x00900" name="UNK00900" value="0x00000000"/>
@@ -802,7 +803,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00924" name="UNK00924" value="0x00000000"/>
     </stripe>
     
-    <stripe name="PA" doc="Primitive assembly states">
+    <stripe name="PA" brief="Primitive assembly states">
         <doc>Primitive assembly assembles primitives (tris, quads, lines, points etc) from vertices for 3D rendering.
             Viewport scaling, line width and point size is configured here.</doc>
         <reg32 offset="0x00A00" name="VIEWPORT_SCALE_X" value="0x00000000" type="fixedp"/>
@@ -860,7 +861,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00A84" name="VIEWPORT_UNK00A84" value="0x00000000"/>
     </stripe>
    
-    <stripe name="SE" doc="Setup Engine states">
+    <stripe name="SE" brief="Setup Engine states">
         <doc>The setup engine takes care of scissor, clipping, and depth scale.</doc>
         <reg32 offset="0x00C00" name="SCISSOR_LEFT" value="0x00000000" type="fixedp"/>
         <reg32 offset="0x00C04" name="SCISSOR_TOP" value="0x00000000" type="fixedp"/>
@@ -874,7 +875,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00C24" name="CLIP_BOTTOM" value="0x00000000" type="fixedp"/>
     </stripe>
     
-    <stripe name="RA" doc="Raster states">
+    <stripe name="RA" brief="Raster states">
         <doc>Configuration for the rasterizer. This mainly controls multisampling.</doc>
         <reg32 offset="0x00E00" name="CONTROL" value="0x00000001"/>
         <reg32 offset="0x00E04" name="MULTISAMPLE_UNK00E04" value="0x00000000"/>
@@ -883,7 +884,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00E40" name="CENTROID_TABLE" value="0x00000000" length="16" stride="4"/>
     </stripe>
   
-    <stripe name="PS" doc="Pixel Shader states">
+    <stripe name="PS" brief="Pixel Shader states">
         <doc>The Pixel (Fragment) shader to use is configured here</doc>
         <reg32 offset="0x01000" name="END_PC" value="0x00000000"/>
         <reg32 offset="0x01004" name="OUTPUT_REG" value="0x00000000" brief="Register that will contain output color"/>
@@ -908,7 +909,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
     </stripe>
     
-    <stripe name="PE" doc="Pixel Engine states">
+    <stripe name="PE" brief="Pixel Engine states">
         <doc>The Pixel Engine takes care of fragment (pixel) processing.
 
             Some flags can be set either per group of bits, or all at once, by using masking flags.
@@ -932,7 +933,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x01404" name="DEPTH_NEAR" value="0x00000000" type="float"/>
         <reg32 offset="0x01408" name="DEPTH_FAR" value="0x00000000" type="float"/>
         <reg32 offset="0x0140C" name="DEPTH_NORMALIZE" value="0x00000000" type="float"/>
-        <reg32 offset="0x01410" name="DEPTH_ADDR" value="0x00000000" type="VIVANTE_MEM"/> <!-- pixelPipes == 1 -->
+        <reg32 offset="0x01410" name="DEPTH_ADDR" value="0x00000000" type="VIV_MEM"/> <!-- pixelPipes == 1 -->
         <reg32 offset="0x01414" name="DEPTH_STRIDE" value="0x00000000"/>
         <reg32 offset="0x01418" name="STENCIL_OP" value="0x00000000">
             <bitfield high="2" low="0" name="STENCIL_FUNC_FRONT" type="COMPARE_FUNC" brief="glStencilFunc func (GL_FRONT)"/>
@@ -1012,7 +1013,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="16" name="UNK16" brief="Set when alpha blending enabled or otherwise not the full destination is written"/>
             <bitfield pos="17" name="UNK16_MASK"/>
         </reg32>
-        <reg32 offset="0x01430" name="COLOR_ADDR" value="0x00000000" type="VIVANTE_MEM"/> <!-- pixelPipes == 1 -->
+        <reg32 offset="0x01430" name="COLOR_ADDR" value="0x00000000" type="VIV_MEM"/> <!-- pixelPipes == 1 -->
         <reg32 offset="0x01434" name="COLOR_STRIDE" value="0x00000000"/>
         <reg32 offset="0x01454" name="HDEPTH_CONTROL" value="0x00000000">
             <bitfield high="3" low="0" name="FORMAT">
@@ -1021,14 +1022,14 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <value value="8" name="D24S8" brief="24 bit depth (+8 bit stencil or padding)"/>
             </bitfield>
         </reg32>
-        <reg32 offset="0x01458" name="HDEPTH_ADDR" value="0x00000000" type="VIVANTE_MEM"/>
+        <reg32 offset="0x01458" name="HDEPTH_ADDR" value="0x00000000" type="VIV_MEM"/>
         <reg32 offset="0x0145C" name="UNK0145C" value="0x00000010"/>
         <stripe name="UNK01460" length="8" stride="4"> <!-- pixelPipes != 1 -->
             <!-- length="pixelPipes" -->
-            <reg32 offset="0x1460" name="ADDR_UNK01460" value="0x00000000" type="VIVANTE_MEM"/>
-            <reg32 offset="0x1480" name="ADDR_UNK01480" value="0x00000000" type="VIVANTE_MEM"/>
-            <reg32 offset="0x1500" name="ADDR_UNK01500" value="0x00000000" type="VIVANTE_MEM"/>
-            <reg32 offset="0x1520" name="ADDR_UNK01520" value="0x00000000" type="VIVANTE_MEM"/>
+            <reg32 offset="0x1460" name="ADDR_UNK01460" value="0x00000000" type="VIV_MEM"/>
+            <reg32 offset="0x1480" name="ADDR_UNK01480" value="0x00000000" type="VIV_MEM"/>
+            <reg32 offset="0x1500" name="ADDR_UNK01500" value="0x00000000" type="VIV_MEM"/>
+            <reg32 offset="0x1520" name="ADDR_UNK01520" value="0x00000000" type="VIV_MEM"/>
         </stripe>
         <reg32 offset="0x014A0" name="STENCIL_CONFIG_EXT" value="0x00000000">
             <bitfield high="7" low="0" name="REF_BACK" brief="glStencilFunc ref (GL_BACK)"/>
@@ -1043,7 +1044,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x01580" name="UNK01580" value="0x00000000" length="3" stride="4"/>
     </stripe>     
     
-    <stripe name="COMPOSE" doc="Compose states">
+    <stripe name="COMPOSE" brief="Compose states">
         <doc>Hardware composer. This functionality is present on some GCxxxx chips and allows
             for blending surfaces together with Porter-Diff composition methods, to accelerate the
             likes of Surfaceflinger (Android).</doc>
@@ -1078,7 +1079,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </array>
     </stripe>     
     
-    <stripe name="RS" doc="Resolve states">
+    <stripe name="RS" brief="Resolve states">
         <doc>To my current understanding, RESOLVE is a post-rendering pass,
             a copy engine that copies the render result from the internal framebuffer to 
             main memory. It can also be used for clearing surfaces.</doc>
@@ -1093,12 +1094,12 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="29" name="SWAP_RB" brief="Swap red and blue"/>
             <bitfield pos="30" name="FLIP" brief="Flip image in Y direction"/>
         </reg32>
-        <reg32 offset="0x01608" name="SOURCE_ADDR" value="0x00000000" type="VIVANTE_MEM"/>
+        <reg32 offset="0x01608" name="SOURCE_ADDR" value="0x00000000" type="VIV_MEM"/>
         <reg32 offset="0x0160C" name="SOURCE_STRIDE" value="0x00000000">
             <bitfield high="17" low="0" name="STRIDE" brief="Source stride"/>
             <bitfield pos="31" name="TILING" brief="Source is tiled"/>
         </reg32>
-        <reg32 offset="0x01610" name="DEST_ADDR" value="0x00000000" type="VIVANTE_MEM"/>
+        <reg32 offset="0x01610" name="DEST_ADDR" value="0x00000000" type="VIV_MEM"/>
         <reg32 offset="0x01614" name="DEST_STRIDE" value="0x00000000">
             <bitfield high="17" low="0" name="STRIDE" brief="Destination stride"/>
             <bitfield pos="31" name="TILING" brief="Destination is tiled"/>
@@ -1128,13 +1129,13 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x016B4" name="UNK016B4" value="0x00000000"/>
         <stripe name="UNK016C0" length="8" stride="4"> <!-- pixelPipes > 1 -->
             <!-- length="pixelPipes" -->
-            <reg32 offset="0x016C0" name="UNK016C0" value="0x00000000" type="VIVANTE_MEM"/>
-            <reg32 offset="0x016E0" name="UNK016E0" value="0x00000000" type="VIVANTE_MEM"/>
+            <reg32 offset="0x016C0" name="UNK016C0" value="0x00000000" type="VIV_MEM"/>
+            <reg32 offset="0x016E0" name="UNK016E0" value="0x00000000" type="VIV_MEM"/>
             <reg32 offset="0x01700" name="UNK01700" value="0x00000000"/>
         </stripe>
     </stripe>
     
-    <stripe name="TS" doc="Tile Status">
+    <stripe name="TS" brief="Tile Status">
         <doc>Tile status block contains information about the tiles to be resolved.</doc>
         <reg32 offset="0x01654" name="MEM_CONFIG" brief="Memory configuration" value="0x00200000">
             <bitfield pos="0" name="DEPTH_FAST_CLEAR"/>
@@ -1144,41 +1145,41 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="5" name="COLOR_AUTO_DISABLE" brief="Auto disable fast clear for color"/>
             <bitfield pos="6" name="DEPTH_COMPRESSION" brief="Enable depth compression"/>
         </reg32>
-        <reg32 offset="0x01658" name="COLOR_STATUS_BASE" brief="Color tile status base address" value="0x00000000" type="VIVANTE_MEM"/>
-        <reg32 offset="0x0165C" name="COLOR_SURFACE_BASE" brief="Color surface base address" value="0x00000000" type="VIVANTE_MEM"/>
+        <reg32 offset="0x01658" name="COLOR_STATUS_BASE" brief="Color tile status base address" value="0x00000000" type="VIV_MEM"/>
+        <reg32 offset="0x0165C" name="COLOR_SURFACE_BASE" brief="Color surface base address" value="0x00000000" type="VIV_MEM"/>
         <reg32 offset="0x01660" name="COLOR_CLEAR_VALUE" brief="Color clear value" value="0x00000000"/>
-        <reg32 offset="0x01664" name="DEPTH_STATUS_BASE" brief="Depth tile status base address" value="0x00000000" type="VIVANTE_MEM"/>
-        <reg32 offset="0x01668" name="DEPTH_SURFACE_BASE" brief="Depth surface base address" value="0x00000000" type="VIVANTE_MEM"/>
+        <reg32 offset="0x01664" name="DEPTH_STATUS_BASE" brief="Depth tile status base address" value="0x00000000" type="VIV_MEM"/>
+        <reg32 offset="0x01668" name="DEPTH_SURFACE_BASE" brief="Depth surface base address" value="0x00000000" type="VIV_MEM"/>
         <reg32 offset="0x0166C" name="DEPTH_CLEAR_VALUE" brief="Depth clear value" value="0x00000000"/>
         <reg32 offset="0x01670" name="COLOR_AUTO_DISABLE_COUNT" brief="Auto disable depth counter" value="0x00000000"/>
         <reg32 offset="0x01674" name="DEPTH_AUTO_DISABLE_COUNT" brief="Auto disable color counter" value="0x00000000"/>
-        <reg32 offset="0x016A4" name="HDEPTH_BASE" value="0x00000000" type="VIVANTE_MEM"/>
+        <reg32 offset="0x016A4" name="HDEPTH_BASE" value="0x00000000" type="VIV_MEM"/>
         <reg32 offset="0x016A8" name="HDEPTH_CLEAR_VALUE" brief="Hierarchical depth clear value" value="0x00000000"/>
         <stripe name="SAMPLER" length="8" stride="4"> <!-- Tile status for samplers -->
             <reg32 offset="0x01720" name="CONFIG" value="0x00000000">
                 <bitfield high="1" low="0" name="ENABLE"/>
                 <bitfield high="7" low="4" name="FORMAT"/>
             </reg32>
-            <reg32 offset="0x01740" name="STATUS_BASE" value="0x00000000" type="VIVANTE_MEM"/>
+            <reg32 offset="0x01740" name="STATUS_BASE" value="0x00000000" type="VIV_MEM"/>
             <reg32 offset="0x01760" name="CLEAR_VALUE" value="0x00000000"/>
         </stripe>
     </stripe>
 
-    <stripe name="YUV" doc="YUV tiler states">
+    <stripe name="YUV" brief="YUV tiler states">
         <doc>The YUV tiler can combine planar YUV formats to RGB or non-planar YUV formats.</doc>
         <reg32 offset="0x01678" name="UNK01678" value="0x00000000"/>
         <reg32 offset="0x0167C" name="UNK0167C" value="0x00000000"/>
-        <reg32 offset="0x01680" name="UNK01680" value="0x00000000" type="VIVANTE_MEM"/>
+        <reg32 offset="0x01680" name="UNK01680" value="0x00000000" type="VIV_MEM"/>
         <reg32 offset="0x01684" name="UNK01684" value="0x00000000"/>
-        <reg32 offset="0x01688" name="UNK01688" value="0x00000000" type="VIVANTE_MEM"/>
+        <reg32 offset="0x01688" name="UNK01688" value="0x00000000" type="VIV_MEM"/>
         <reg32 offset="0x0168C" name="UNK0168C" value="0x00000000"/>
-        <reg32 offset="0x01690" name="UNK01690" value="0x00000000" type="VIVANTE_MEM"/>
+        <reg32 offset="0x01690" name="UNK01690" value="0x00000000" type="VIV_MEM"/>
         <reg32 offset="0x01694" name="UNK01694" value="0x00000000"/>
-        <reg32 offset="0x01698" name="UNK01698" value="0x00000000" type="VIVANTE_MEM"/>
+        <reg32 offset="0x01698" name="UNK01698" value="0x00000000" type="VIV_MEM"/>
         <reg32 offset="0x0169C" name="UNK0169C" value="0x00000000"/>
     </stripe>
 
-    <stripe name="TE" doc="TExture sampler states">
+    <stripe name="TE" brief="TExture sampler states">
         <doc>Texture sampling, filtering, LOD, etc</doc>
         <stripe name="SAMPLER" length="12" stride="4"> 
             <reg32 offset="0x2000" name="CONFIG_1" value="0x00000000"/>
@@ -1197,11 +1198,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <reg32 offset="0x21C0" name="CONFIG_2" value="0x00321000"/>
             <reg32 offset="0x2200" name="UNK02200" value="0x00000000"/>
             <reg32 offset="0x2240" name="UNK02240" value="0x00000000"/>
-            <reg32 offset="0x2400" name="LOD_ADDR" length="14" stride="0x40" type="VIVANTE_MEM"/> <!-- Base address, per LOD level -->
+            <reg32 offset="0x2400" name="LOD_ADDR" length="14" stride="0x40" type="VIV_MEM"/> <!-- Base address, per LOD level -->
         </stripe>
     </stripe>
     
-    <stripe name="NEW_TE" doc="New texture states">
+    <stripe name="NEW_TE" brief="New texture states">
         <doc>Extra texture states for newer hardware. These exist if chipMinorFeatures2 bit 11 set.</doc>
         <array offset="0x10000" name="SAMPLER" length="32" stride="4">
             <reg32 offset="0x000" name="CONFIG_1" value="0x00000000"/> <!-- probably same as under TEXTURE.SAMPLER -->
@@ -1219,13 +1220,13 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <!-- length="texBlockCount"
                  where texBlockCount=12 if chipModel == GC2000 && chipRevision == 0x5108, otherwise 32
              -->
-            <reg32 offset="0" name="LOD" length="14" stride="4" type="VIVANTE_MEM"/> <!-- Base address, per LOD level -->
+            <reg32 offset="0" name="LOD" length="14" stride="4" type="VIV_MEM"/> <!-- Base address, per LOD level -->
         </array>
         <reg32 offset="0x12000" name="UNK12000" value="0x00000000" length="256" stride="4"/> <!-- chipMinorFeatures2 bit 15 set -->
         <reg32 offset="0x12400" name="UNK12400" value="0x00000000" length="256" stride="4"/> <!-- chipMinorFeatures2 bit 15 set -->
     </stripe>
     
-    <stripe name="SH_INST_MEM" doc="Unified shader instruction memory">
+    <stripe name="SH_INST_MEM" brief="Unified shader instruction memory">
         <doc>Shader instruction memory on new hardware that supports more than 256, or more than
             1024 shader instructions (different areas are used based on these cases).</doc>
         <reg32 offset="0x0085C" name="UNK0085C" value="0x00000000"/> <!-- instructionCount > 1024 -->
