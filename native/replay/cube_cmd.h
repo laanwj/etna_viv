@@ -309,15 +309,15 @@ uint32_t cmdbuf1[] = { /* seq 85 */
     0x0801020e, /* LOAD_STATE (1) Base: 0x00838 Size: 1 Fixp: 0 */
     0x00000000, /*   VS.START_PC := 0x0 */
     0x0801142d, /* LOAD_STATE (1) Base: 0x050B4 Size: 1 Fixp: 0 */
-    0x3f000000, /*   VS.UNIFORMS[45] := 0.500000 */
+    0x3f000000, /*   VS.UNIFORMS[45] := 0.500000  u11.y */
     0x0801142c, /* LOAD_STATE (1) Base: 0x050B0 Size: 1 Fixp: 0 */
-    0x3f800000, /*   VS.UNIFORMS[44] := 1.000000 */
+    0x3f800000, /*   VS.UNIFORMS[44] := 1.000000  u11.x */
     0x0801141b, /* LOAD_STATE (1) Base: 0x0506C Size: 1 Fixp: 0 */
-    0x00000000, /*   VS.UNIFORMS[27] := 0.000000 */
+    0x00000000, /*   VS.UNIFORMS[27] := 0.000000  u6.w */
     0x08011417, /* LOAD_STATE (1) Base: 0x0505C Size: 1 Fixp: 0 */
-    0x41a00000, /*   VS.UNIFORMS[23] := 20.000000 */
+    0x41a00000, /*   VS.UNIFORMS[23] := 20.000000 u5.w */
     0x08011413, /* LOAD_STATE (1) Base: 0x0504C Size: 1 Fixp: 0 */
-    0x40000000, /*   VS.UNIFORMS[19] := 2.000000 */
+    0x40000000, /*   VS.UNIFORMS[19] := 2.000000 u4.w */
     0x08601000, /* LOAD_STATE (1) Base: 0x04000 Size: 96 Fixp: 0 */
     0x01831009, /*   VS.INST_MEM[0] := 0x1831009 */
     0x00000000, /*   VS.INST_MEM[1] := 0x0 */
@@ -457,52 +457,52 @@ uint32_t cmdbuf1[] = { /* seq 85 */
     0x0801028d, /* LOAD_STATE (1) Base: 0x00A34 Size: 1 Fixp: 0 */
     0xfffffff3, /*   PA.CONFIG := UNK0=1,UNK1=1,POINT_SIZE_ENABLE=0,POINT_SIZE_MASK=0,POINT_SPRITE_ENABLE=1,POINT_SPRITE_MASK=1,UNK6=1,UNK7=1,CULL_FACE_MODE=0x3,CULL_FACE_MODE_MASK=1,UNK11=1,FILL_MODE=0x3,FILL_MODE_MASK=1,UNK15=1,SHADE_MODEL=0x3,SHADE_MODEL_MASK=1,UNK19=1,UNK20=1,UNK21=1,UNK22=1,UNK23=1,UNK24=1,UNK25=1,UNK26=1,UNK27=1,UNK28=1,UNK29=1,UNK30=1,UNK31=1 */
     0x08101400, /* LOAD_STATE (1) Base: 0x05000 Size: 16 Fixp: 0 */
-    0x3fbf00b4, /*   VS.UNIFORMS[0] := 1.492209 */
-    0x3fa8f7a3, /*   VS.UNIFORMS[1] := 1.320057 */
-    0xc01d7d33, /*   VS.UNIFORMS[2] := -2.460767 */
-    0xbf1d7d33, /*   VS.UNIFORMS[3] := -0.615192 */
-    0x3e86b73c, /*   VS.UNIFORMS[4] := 0.263117 */
-    0x403303b5, /*   VS.UNIFORMS[5] := 2.797101 */
-    0x401c0ad2, /*   VS.UNIFORMS[6] := 2.438160 */
-    0x3f1c0ad2, /*   VS.UNIFORMS[7] := 0.609540 */
-    0xbfc1f304, /*   VS.UNIFORMS[8] := -1.515229 */
-    0x3fe49248, /*   VS.UNIFORMS[9] := 1.785714 */
-    0xbfffffff, /*   VS.UNIFORMS[10] := -2.000000 */
-    0xbeffffff, /*   VS.UNIFORMS[11] := -0.500000 */
-    0x00000000, /*   VS.UNIFORMS[12] := 0.000000 */
-    0x00000000, /*   VS.UNIFORMS[13] := 0.000000 */
-    0x40000000, /*   VS.UNIFORMS[14] := 2.000000 */
-    0x41000000, /*   VS.UNIFORMS[15] := 8.000000 */
+    0x3fbf00b4, /*   VS.UNIFORMS[0] := 1.492209 mvp[0][0] u0 */
+    0x3fa8f7a3, /*   VS.UNIFORMS[1] := 1.320057 mvp[0][1] */
+    0xc01d7d33, /*   VS.UNIFORMS[2] := -2.460767 mvp[0][2] */
+    0xbf1d7d33, /*   VS.UNIFORMS[3] := -0.615192 mvp[0][3] */
+    0x3e86b73c, /*   VS.UNIFORMS[4] := 0.263117 mvp[1][0] u1 */
+    0x403303b5, /*   VS.UNIFORMS[5] := 2.797101 mvp[1][1] */
+    0x401c0ad2, /*   VS.UNIFORMS[6] := 2.438160 mvp[1][2] */
+    0x3f1c0ad2, /*   VS.UNIFORMS[7] := 0.609540 mvp[1][3] */
+    0xbfc1f304, /*   VS.UNIFORMS[8] := -1.515229 mvp[2][0] u2 */
+    0x3fe49248, /*   VS.UNIFORMS[9] := 1.785714 mvp[2][1]*/
+    0xbfffffff, /*   VS.UNIFORMS[10] := -2.000000 mvp[2][2] */
+    0xbeffffff, /*   VS.UNIFORMS[11] := -0.500000 mvp[2][3] */
+    0x00000000, /*   VS.UNIFORMS[12] := 0.000000 mvp[3][0] u3 */
+    0x00000000, /*   VS.UNIFORMS[13] := 0.000000 mvp[3][1] */
+    0x40000000, /*   VS.UNIFORMS[14] := 2.000000 mvp[3][2] */
+    0x41000000, /*   VS.UNIFORMS[15] := 8.000000 mvp[3][3] */
     0x00003152, /* PAD */
     0x08031410, /* LOAD_STATE (1) Base: 0x05040 Size: 3 Fixp: 0 */
-    0x3f3244ed, /*   VS.UNIFORMS[16] := 0.696364 */
-    0x3ebd3e50, /*   VS.UNIFORMS[17] := 0.369616 */
-    0x3f1d7d33, /*   VS.UNIFORMS[18] := 0.615192 */
+    0x3f3244ed, /*   VS.UNIFORMS[16] := 0.696364 normal[0][0] u4 */
+    0x3ebd3e50, /*   VS.UNIFORMS[17] := 0.369616 normal[0][1] */
+    0x3f1d7d33, /*   VS.UNIFORMS[18] := 0.615192 normal[0][2] */
     0x08031414, /* LOAD_STATE (1) Base: 0x05050 Size: 3 Fixp: 0 */
-    0x3dfb782d, /*   VS.UNIFORMS[20] := 0.122788 */
-    0x3f487f08, /*   VS.UNIFORMS[21] := 0.783188 */
-    0xbf1c0ad2, /*   VS.UNIFORMS[22] := -0.609540 */
+    0x3dfb782d, /*   VS.UNIFORMS[20] := 0.122788 normal[1][0] u5 */
+    0x3f487f08, /*   VS.UNIFORMS[21] := 0.783188 normal[1][1] */
+    0xbf1c0ad2, /*   VS.UNIFORMS[22] := -0.609540 normal[1][2] */
     0x08031418, /* LOAD_STATE (1) Base: 0x05060 Size: 3 Fixp: 0 */
-    0xbf3504f3, /*   VS.UNIFORMS[24] := -0.707107 */
-    0x3effffff, /*   VS.UNIFORMS[25] := 0.500000 */
-    0x3effffff, /*   VS.UNIFORMS[26] := 0.500000 */
+    0xbf3504f3, /*   VS.UNIFORMS[24] := -0.707107 normal[2][0] u6 */
+    0x3effffff, /*   VS.UNIFORMS[25] := 0.500000 normal[2][1] */
+    0x3effffff, /*   VS.UNIFORMS[26] := 0.500000 normal[2][2] */
     0x0810141c, /* LOAD_STATE (1) Base: 0x05070 Size: 16 Fixp: 0 */
-    0x3f3244ed, /*   VS.UNIFORMS[28] := 0.696364 */
-    0x3ebd3e50, /*   VS.UNIFORMS[29] := 0.369616 */
-    0x3f1d7d33, /*   VS.UNIFORMS[30] := 0.615192 */
-    0x00000000, /*   VS.UNIFORMS[31] := 0.000000 */
-    0x3dfb782d, /*   VS.UNIFORMS[32] := 0.122788 */
-    0x3f487f08, /*   VS.UNIFORMS[33] := 0.783188 */
-    0xbf1c0ad2, /*   VS.UNIFORMS[34] := -0.609540 */
-    0x00000000, /*   VS.UNIFORMS[35] := 0.000000 */
-    0xbf3504f3, /*   VS.UNIFORMS[36] := -0.707107 */
-    0x3effffff, /*   VS.UNIFORMS[37] := 0.500000 */
-    0x3effffff, /*   VS.UNIFORMS[38] := 0.500000 */
-    0x00000000, /*   VS.UNIFORMS[39] := 0.000000 */
-    0x00000000, /*   VS.UNIFORMS[40] := 0.000000 */
-    0x00000000, /*   VS.UNIFORMS[41] := 0.000000 */
-    0xc1000000, /*   VS.UNIFORMS[42] := -8.000000 */
-    0x3f800000, /*   VS.UNIFORMS[43] := 1.000000 */
+    0x3f3244ed, /*   VS.UNIFORMS[28] := 0.696364 mv[0][0] u7 */
+    0x3ebd3e50, /*   VS.UNIFORMS[29] := 0.369616 mv[0][1] */
+    0x3f1d7d33, /*   VS.UNIFORMS[30] := 0.615192 mv[0][2] */
+    0x00000000, /*   VS.UNIFORMS[31] := 0.000000 mv[0][3] */
+    0x3dfb782d, /*   VS.UNIFORMS[32] := 0.122788 mv[1][0] u8 */
+    0x3f487f08, /*   VS.UNIFORMS[33] := 0.783188 mv[1][1] */
+    0xbf1c0ad2, /*   VS.UNIFORMS[34] := -0.609540 mv[1][2] */
+    0x00000000, /*   VS.UNIFORMS[35] := 0.000000 mv[1][3] */
+    0xbf3504f3, /*   VS.UNIFORMS[36] := -0.707107 mv[2][0] u9 */
+    0x3effffff, /*   VS.UNIFORMS[37] := 0.500000 mv[2][1] */
+    0x3effffff, /*   VS.UNIFORMS[38] := 0.500000 mv[2][2] */
+    0x00000000, /*   VS.UNIFORMS[39] := 0.000000 mv[2][3] */
+    0x00000000, /*   VS.UNIFORMS[40] := 0.000000 mv[3][0] u10 */
+    0x00000000, /*   VS.UNIFORMS[41] := 0.000000 mv[3][1] */
+    0xc1000000, /*   VS.UNIFORMS[42] := -8.000000 mv[3][2] */
+    0x3f800000, /*   VS.UNIFORMS[43] := 1.000000 mv[3][3] */
     0x00000201, /* PAD */
     0x08010193, /* LOAD_STATE (1) Base: 0x0064C Size: 1 Fixp: 0 */
     0x7c24de80, /*   FE.VERTEX_STREAM_BASE_ADDR := *0x7c24de80 */

@@ -419,6 +419,23 @@ main(int argc, char *argv[])
 	glUniformMatrix4fv(modelviewprojectionmatrix_handle, 1, GL_FALSE, &modelviewprojection.m[0][0]);
 	glUniformMatrix3fv(normalmatrix_handle, 1, GL_FALSE, normal);
 
+        printf("Model view\n");
+        for(int i=0; i<4; ++i)
+        {
+            printf(" ");
+            for(int j=0; j<4; ++j)
+                printf("%f ", modelview.m[i][j]);
+            printf("\n");
+        }
+        printf("Model view projection\n");
+        for(int i=0; i<4; ++i)
+        {
+            printf(" ");
+            for(int j=0; j<4; ++j)
+                printf("%f ", modelviewprojection.m[i][j]);
+            printf("\n");
+        }
+
 	glEnable(GL_CULL_FACE);
 
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);

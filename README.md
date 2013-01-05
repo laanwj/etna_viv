@@ -5,8 +5,6 @@ Introduction
 
 Project Etnaviv is an attempt to make an open source user-space driver for the Vivante GCxxx series of embedded GPUs.
 
-Vivante GCxxx hardware is used in many embedded devices such as tablets.
-
 The current state of the project is experimental. It is currently only of use to developers interested
 in helping develop open source drivers for the hardware, reverse engineering, or in interfacing with GPU 
 hardware directly. It is NOT usable as a driver for end users.
@@ -116,11 +114,11 @@ example that renders a textured cube.
 Vivante GPL kernel driver
 --------------------------
 
+The headers and implementation files for the Vivante GPL kernel driver are also included:
+
     kernel_drivers/
 
-The headers for the Vivante GPL kernel driver interface.
-
-Both GPL kernel driver versions, v2 and v4, are provided. They are useful in understanding the interface, and the 
+Both GPL kernel driver versions, v2 and v4, are provided. They are useful in understanding the kernel interface, and the 
 hardware at a basic level.
 
 The drivers are rooted in the kernel tree at `drivers/gpu/vivante`.
@@ -160,7 +158,7 @@ some modifications to the build system may be necessary to make it compatible. L
 The command stream on different device GCxxx variants will also likely be slightly different; the features bit system
 allows for a ton of slightly different chips. When porting it, look for:
 
-- Tile size?
+- Tile size for textures and render targets
 
 - Number of bits per tile (2 on my hw), depends on `2BIT_PER_TILE` feature flag
 

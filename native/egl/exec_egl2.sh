@@ -8,5 +8,5 @@ fi
 make ${DEMO}
 adb push ${DEMO} /data/mine
 adb shell 'export LD_LIBRARY_PATH="/system/lib/egl";/data/mine/'"${DEMO}"
-adb pull /mnt/sdcard/egl2.fdr .
-adb pull /mnt/sdcard/egl2.bmp .
+adb pull /mnt/sdcard/egl2.fdr ${DEMO}.fdr
+adb pull /mnt/sdcard/egl2.bmp ${DEMO}.bmp
