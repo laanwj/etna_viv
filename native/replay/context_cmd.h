@@ -1,3 +1,8 @@
+typedef struct
+{
+    uint32_t index; /* index into command buffer */
+    uint32_t address; /* state address */
+} address_index_t;
 
 /* global state map */
 address_index_t contextbuf_addr[] = {

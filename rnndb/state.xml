@@ -172,7 +172,15 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield pos="20" name="TEXTURE_ALIGN_4" brief="Textures can be aligned to 4 instead of 16"/>
         <bitfield pos="21" name="NON_POWER_OF_TWO" brief="Non power-of-two texture support"/>
         <bitfield pos="22" name="LINEAR_TEXTURE_SUPPORT"/>
-        <bitfield pos="23" name="TEXTURE_ARRAY" brief="16 attr per vertex i.s.o. 10, and 12 varyings i.s.o. 8"/>
+        <bitfield pos="23" name="HALTI0" brief="Signals various features related to texturing and vertex processing">
+            <doc>
+                - Anisotropic texture filtering
+                - 3D texture support
+                - Texture array support
+                - GL_(INT|UNSIGNED)_10_10_10_2_OES texture / vertex support
+                - 16 attr per vertex i.s.o. 10, and 12 varyings i.s.o. 8
+            </doc>
+        </bitfield>
         <bitfield pos="24" name="CORRECT_OVERFLOW_VG"/>
         <bitfield pos="25" name="NEGATIVE_LOG_FIX"/>
         <bitfield pos="26" name="RESOLVE_OFFSET"/>

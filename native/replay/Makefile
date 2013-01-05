@@ -18,10 +18,10 @@ clean:
 	rm -f *.o ../lib/*.o
 	rm -f $(TARGETS)
 
-cube: cube.o ../lib/write_bmp.o viv.o
+cube: cube.o ../lib/write_bmp.o ../lib/viv.o
 	$(CC) $(CFLAGS) -o $@ $^  $(GL_LIBS) $(LDFLAGS)
 
 
-cube_companion: cube_companion.o ../lib/write_bmp.o viv.o $(COMPANION_OBJS)
+cube_companion: cube_companion.o ../lib/write_bmp.o ../lib/viv.o $(COMPANION_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^  $(GL_LIBS) $(LDFLAGS)
 

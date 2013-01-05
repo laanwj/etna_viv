@@ -11,13 +11,6 @@
 #include "write_bmp.h"
 #include "viv.h"
 
-/* "relocation" */
-typedef struct
-{
-    uint32_t index; /* index into command buffer */
-    uint32_t address; /* state address */
-} address_index_t;
-
 #include "cube_cmd.h"
 /* TODO: should actually update context as we go,
    a context switch would currently revert state and likely result in corrupted rendering.
