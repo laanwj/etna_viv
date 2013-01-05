@@ -18,6 +18,7 @@ Devices with Vivante GPU
 
 - Google TV (Marvell Armada 1500, contains a GC1000)
 - OLPC (also Marvell Armada something with GC1000)
+- CuBox, including pro variant (Marvell Armada 510, GC600)
 - Many tablets and such based on Rockchip 2918 SoC (GC800)
 - Devices based on Freescale i.MX6 Series (GC2000, GC320, GC355)
 
