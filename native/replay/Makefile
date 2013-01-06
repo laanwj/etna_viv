@@ -24,5 +24,5 @@ cube: cube.o ../lib/write_bmp.o ../lib/viv.o
 cube_companion: cube_companion.o ../lib/write_bmp.o ../lib/viv.o $(COMPANION_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^  $(GL_LIBS) $(LDFLAGS)
 
-cube_etna: cube_etna.o ../lib/write_bmp.o ../lib/viv.o
+cube_etna: cube_etna.o ../lib/write_bmp.o ../lib/viv.o ../lib/esTransform.o
 	$(CC) $(CFLAGS) -o $@ $^  $(GL_LIBS) $(LDFLAGS)

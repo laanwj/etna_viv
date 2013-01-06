@@ -13,6 +13,7 @@
 #include "etna/cmdstream.xml.h"
 #include "write_bmp.h"
 #include "viv.h"
+#include "esUtil.h"
 
 /* Print generated command buffer */
 //#define CMD_DEBUG
@@ -30,7 +31,6 @@
 float vVertices[] = {
   // front
   -1.0f, -1.0f, +1.0f, // point blue
-  //-0.5f, -0.6f, +0.5f, // point blue
   +1.0f, -1.0f, +1.0f, // point magenta
   -1.0f, +1.0f, +1.0f, // point cyan
   +1.0f, +1.0f, +1.0f, // point white
@@ -249,7 +249,7 @@ int cmdbuffer_compare(struct _gcoCMDBUF *cmdPtr, uint32_t *cmdbuf, uint32_t cmdb
     {
         uint32_t cmdbuf_word = cmdbuf[idx];
         uint32_t my_word = *(uint32_t*)((size_t)cmdPtr->logical + cmdPtr->startOffset + idx*4);
-        printf("/*%08x*/ %08x ref:%08x ", idx, my_word, cmdbuf_word);
+        printf("/*%03x*/ %08x ref:%08x ", idx, my_word, cmdbuf_word);
         if(is_padding[cmdPtr->startOffset/4 + idx])
         {
             printf("PAD");
@@ -271,6 +271,8 @@ int cmdbuffer_compare(struct _gcoCMDBUF *cmdPtr, uint32_t *cmdbuf, uint32_t cmdb
 int main(int argc, char **argv)
 {
     int rv;
+    int width = 400;
+    int height = 240;
     rv = viv_open();
     if(rv!=0)
     {
@@ -807,43 +809,41 @@ int main(int argc, char **argv)
     etna_set_state(cmdPtr, VIV_STATE_VS_LOAD_BALANCING, 0xf3f0582);
     etna_set_state(cmdPtr, VIV_STATE_VS_OUTPUT_COUNT, 2);
     etna_set_state(cmdPtr, VIV_STATE_PA_CONFIG, VIV_MASKED_BIT(VIV_STATE_PA_CONFIG_POINT_SIZE_ENABLE, 0));
-    etna_set_state_multi(cmdPtr, VIV_STATE_VS_UNIFORMS(0), 16, (uint32_t[]){ /* matrix */
-        0x3fbf00b4, /*   VS.UNIFORMS[0] := 1.492209 (u0.x) */
-        0x3fa8f7a3, /*   VS.UNIFORMS[1] := 1.320057 (u0.y) */
-        0xc01d7d33, /*   VS.UNIFORMS[2] := -2.460767 (u0.z) */
-        0xbf1d7d33, /*   VS.UNIFORMS[3] := -0.615192 (u0.w) */
-        0x3e86b73c, /*   VS.UNIFORMS[4] := 0.263117 (u1.x) */
-        0x403303b5, /*   VS.UNIFORMS[5] := 2.797101 (u1.y) */
-        0x401c0ad2, /*   VS.UNIFORMS[6] := 2.438160 (u1.z) */
-        0x3f1c0ad2, /*   VS.UNIFORMS[7] := 0.609540 (u1.w) */
-        0xbfc1f304, /*   VS.UNIFORMS[8] := -1.515229 (u2.x) */
-        0x3fe49248, /*   VS.UNIFORMS[9] := 1.785714 (u2.y) */
-        0xbfffffff, /*   VS.UNIFORMS[10] := -2.000000 (u2.z) */
-        0xbeffffff, /*   VS.UNIFORMS[11] := -0.500000 (u2.w) */
-        0x00000000, /*   VS.UNIFORMS[12] := 0.000000 (u3.x) */
-        0x00000000, /*   VS.UNIFORMS[13] := 0.000000 (u3.y) */
-        0x40000000, /*   VS.UNIFORMS[14] := 2.000000 (u3.z) */
-        0x41000000  /*   VS.UNIFORMS[15] := 8.000000 (u3.w) */});
-    etna_set_state_multi(cmdPtr, VIV_STATE_VS_UNIFORMS(16), 3, (uint32_t[]){0x3f3244ed, 0x3ebd3e50, 0x3f1d7d33}); /* u4.xyz */
-    etna_set_state_multi(cmdPtr, VIV_STATE_VS_UNIFORMS(20), 3, (uint32_t[]){0x3dfb782d, 0x3f487f08, 0xbf1c0ad2}); /* u5.xyz */
-    etna_set_state_multi(cmdPtr, VIV_STATE_VS_UNIFORMS(24), 3, (uint32_t[]){0xbf3504f3, 0x3effffff, 0x3effffff}); /* u6.xyz */
-    etna_set_state_multi(cmdPtr, VIV_STATE_VS_UNIFORMS(28), 16, (uint32_t[]){
-        0x3f3244ed, /*   VS.UNIFORMS[28] := 0.696364 (u7.x) */
-        0x3ebd3e50, /*   VS.UNIFORMS[29] := 0.369616 (u7.y) */
-        0x3f1d7d33, /*   VS.UNIFORMS[30] := 0.615192 (u7.z) */
-        0x00000000, /*   VS.UNIFORMS[31] := 0.000000 (u7.w) */
-        0x3dfb782d, /*   VS.UNIFORMS[32] := 0.122788 (u8.x) */
-        0x3f487f08, /*   VS.UNIFORMS[33] := 0.783188 (u8.y) */
-        0xbf1c0ad2, /*   VS.UNIFORMS[34] := -0.609540 (u8.z) */
-        0x00000000, /*   VS.UNIFORMS[35] := 0.000000 (u8.w) */
-        0xbf3504f3, /*   VS.UNIFORMS[36] := -0.707107 (u9.x) */
-        0x3effffff, /*   VS.UNIFORMS[37] := 0.500000 (u9.y) */
-        0x3effffff, /*   VS.UNIFORMS[38] := 0.500000 (u9.z) */
-        0x00000000, /*   VS.UNIFORMS[39] := 0.000000 (u9.w) */
-        0x00000000, /*   VS.UNIFORMS[40] := 0.000000 (u10.x) */
-        0x00000000, /*   VS.UNIFORMS[41] := 0.000000 (u10.y) */
-        0xc1000000, /*   VS.UNIFORMS[42] := -8.000000 (u10.z) */
-        0x3f800000, /*   VS.UNIFORMS[43] := 1.000000 (u10.w) */});
+    
+    /*   Compute transform matrices in the same way as cube egl demo */ 
+    ESMatrix modelview;
+    esMatrixLoadIdentity(&modelview);
+    esTranslate(&modelview, 0.0f, 0.0f, -8.0f);
+    esRotate(&modelview, 45.0f, 1.0f, 0.0f, 0.0f);
+    esRotate(&modelview, 45.0f, 0.0f, 1.0f, 0.0f);
+    esRotate(&modelview, 10.0f, 0.0f, 0.0f, 1.0f);
+
+    GLfloat aspect = (GLfloat)(height) / (GLfloat)(width);
+
+    ESMatrix projection;
+    esMatrixLoadIdentity(&projection);
+    esFrustum(&projection, -2.8f, +2.8f, -2.8f * aspect, +2.8f * aspect, 6.0f, 10.0f);
+
+    ESMatrix modelviewprojection;
+    esMatrixLoadIdentity(&modelviewprojection);
+    esMatrixMultiply(&modelviewprojection, &modelview, &projection);
+
+    float normal[9]; /* normal transformation matrix */
+    normal[0] = modelview.m[0][0];
+    normal[1] = modelview.m[0][1];
+    normal[2] = modelview.m[0][2];
+    normal[3] = modelview.m[1][0];
+    normal[4] = modelview.m[1][1];
+    normal[5] = modelview.m[1][2];
+    normal[6] = modelview.m[2][0];
+    normal[7] = modelview.m[2][1];
+    normal[8] = modelview.m[2][2];
+    
+    etna_set_state_multi(cmdPtr, VIV_STATE_VS_UNIFORMS(0), 16, (uint32_t*)&modelviewprojection.m[0][0]);
+    etna_set_state_multi(cmdPtr, VIV_STATE_VS_UNIFORMS(16), 3, (uint32_t*)&normal[0]); /* u4.xyz */
+    etna_set_state_multi(cmdPtr, VIV_STATE_VS_UNIFORMS(20), 3, (uint32_t*)&normal[3]); /* u5.xyz */
+    etna_set_state_multi(cmdPtr, VIV_STATE_VS_UNIFORMS(24), 3, (uint32_t*)&normal[6]); /* u6.xyz */
+    etna_set_state_multi(cmdPtr, VIV_STATE_VS_UNIFORMS(28), 16, (uint32_t*)&modelview.m[0][0]);
     etna_set_state(cmdPtr, VIV_STATE_FE_VERTEX_STREAM_BASE_ADDR, vtx_physical); /* ADDR_E */
     etna_set_state(cmdPtr, VIV_STATE_FE_VERTEX_STREAM_CONTROL, 
             0x24 << VIV_STATE_FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE__SHIFT);
