@@ -40,6 +40,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
          - type="fixedp": (N/2).(N/2) fixed-point value, where N is the number of bits of the bit field,
              so in case of a 32 bit field it will be a 16.16 FP value.
          - domains can be used as types
+         - for registers: masked="true", defaults to "false"
+           register supports partial state writes by using masks per bit group
 
      TODO: variants are somewhat different from NV; what features are supported is determined by (most common first)
          1) Chip features and minor feature flags
@@ -592,7 +594,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="1" name="FLUSH_PEMMU" brief="Flush the PE render target address translation caches"/>
         </reg32>
         <reg32 offset="0x03814" name="VERTEX_ELEMENT_CONFIG" value="0x00000001"/>
-        <reg32 offset="0x03818" name="MULTI_SAMPLE_CONFIG" value="0x00000000">
+        <reg32 offset="0x03818" name="MULTI_SAMPLE_CONFIG" value="0x00000000" masked="true">
             <bitfield high="1" low="0" name="UNK0"/>
             <bitfield pos="3" name="UNK0_MASK"/>
             <bitfield high="7" low="4" name="UNK4"/>
@@ -819,7 +821,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x00A2C" name="W_CLIP_LIMIT" value="0x00000000"/>
         <reg32 offset="0x00A30" name="ATTRIBUTE_ELEMENT_COUNT" value="0x00000000"/>
-        <reg32 offset="0x00A34" name="CONFIG" value="0x00000000" brief="Rasterizer state flags">
+        <reg32 offset="0x00A34" name="CONFIG" value="0x00000000" brief="Primitive assembly state flags" masked="true">
             <doc>
             These can be set either per group of bits, or all at once, by using masking flags.
             Each group of state flags has a masking flag that prevents overwriting the flags in that group.
@@ -827,9 +829,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="0" name="UNK0"/>
             <bitfield pos="1" name="UNK1"/>
             <bitfield pos="2" name="POINT_SIZE_ENABLE" brief="Enable point size"/>
-            <bitfield pos="3" name="POINT_SIZE_MASK"/>
+            <bitfield pos="3" name="POINT_SIZE_ENABLE_MASK"/>
             <bitfield pos="4" name="POINT_SPRITE_ENABLE" brief="Enable point sprite"/>
-            <bitfield pos="5" name="POINT_SPRITE_MASK"/>
+            <bitfield pos="5" name="POINT_SPRITE_ENABLE_MASK"/>
             <bitfield pos="6" name="UNK6"/>
             <bitfield pos="7" name="UNK7"/>
             <bitfield high="9" low="8" name="CULL_FACE_MODE">
@@ -916,7 +918,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             Each group of state flags has a masking flag that when set prevents overwriting the flags in that group.
             These will be called FOO_MASK if the state to be masked is called FOO.
         </doc>
-        <reg32 offset="0x01400" name="DEPTH_CONFIG" value="0x00000000">
+        <reg32 offset="0x01400" name="DEPTH_CONFIG" value="0x00000000" masked="true">
             <bitfield high="2" low="0" name="UNK0"/>
             <bitfield pos="3" name="UNK0_MASK"/>
             <bitfield pos="4" name="UNK4"/>
@@ -929,23 +931,25 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="17" name="UNK16_MASK"/>
             <bitfield pos="20" name="UNK20"/>
             <bitfield pos="21" name="UNK20_MASK"/>
+            <bitfield pos="26" name="UNK26"/>
+            <bitfield pos="27" name="UNK26_MASK"/>
         </reg32>
         <reg32 offset="0x01404" name="DEPTH_NEAR" value="0x00000000" type="float"/>
         <reg32 offset="0x01408" name="DEPTH_FAR" value="0x00000000" type="float"/>
         <reg32 offset="0x0140C" name="DEPTH_NORMALIZE" value="0x00000000" type="float"/>
         <reg32 offset="0x01410" name="DEPTH_ADDR" value="0x00000000" type="VIV_MEM"/> <!-- pixelPipes == 1 -->
         <reg32 offset="0x01414" name="DEPTH_STRIDE" value="0x00000000"/>
-        <reg32 offset="0x01418" name="STENCIL_OP" value="0x00000000">
-            <bitfield high="2" low="0" name="STENCIL_FUNC_FRONT" type="COMPARE_FUNC" brief="glStencilFunc func (GL_FRONT)"/>
-            <bitfield pos="3" name="STENCIL_FUNC_FRONT_MASK"/>
+        <reg32 offset="0x01418" name="STENCIL_OP" value="0x00000000" masked="true">
+            <bitfield high="2" low="0" name="FUNC_FRONT" type="COMPARE_FUNC" brief="glStencilFunc func (GL_FRONT)"/>
+            <bitfield pos="3" name="FUNC_FRONT_MASK"/>
             <bitfield high="6" low="4" name="PASS_FRONT" type="STENCIL_OP" brief="glStencilOp dppass (GL_FRONT)"/>
             <bitfield pos="7" name="PASS_FRONT_MASK"/>
             <bitfield high="10" low="8" name="FAIL_FRONT" type="STENCIL_OP" brief="glStencilOp sfail (GL_FRONT)"/>
             <bitfield pos="11" name="FAIL_FRONT_MASK"/>
             <bitfield high="14" low="12" name="DEPTH_FAIL_FRONT" type="STENCIL_OP" brief="glStencilOp dpfail (GL_FRONT)"/>
             <bitfield pos="15" name="DEPTH_FAIL_FRONT_MASK"/>
-            <bitfield high="18" low="16" name="STENCIL_FUNC_BACK" type="COMPARE_FUNC" brief="glStencilFunc func (GL_BACK)"/>
-            <bitfield pos="19" name="STENCIL_FUNC_BACK_MASK"/>
+            <bitfield high="18" low="16" name="FUNC_BACK" type="COMPARE_FUNC" brief="glStencilFunc func (GL_BACK)"/>
+            <bitfield pos="19" name="FUNC_BACK_MASK"/>
             <bitfield high="22" low="20" name="PASS_BACK" type="STENCIL_OP" brief="glStencilOp dppass (GL_BACK)"/>
             <bitfield pos="23" name="PASS_BACK_MASK"/>
             <bitfield high="26" low="24" name="FAIL_BACK" type="STENCIL_OP" brief="glStencilOp sfail (GL_BACK)"/>
@@ -953,7 +957,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="30" low="28" name="DEPTH_FAIL_BACK" type="STENCIL_OP" brief="glStencilOp dpfail (GL_BACK)"/>
             <bitfield pos="31" name="DEPTH_FAIL_BACK_MASK"/>
         </reg32>
-        <reg32 offset="0x0141C" name="STENCIL_CONFIG" value="0x00000000">
+        <reg32 offset="0x0141C" name="STENCIL_CONFIG" value="0x00000000" masked="true">
             <doc>Warning: confusing terminology. WRITE_MASK is the stencil write mask,
                 the state bits can be masked with WRITE_MASK_MASK.</doc>
             <bitfield high="1" low="0" name="MODE">
@@ -973,7 +977,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             </bitfield>
             <bitfield high="31" low="24" name="WRITE_MASK" brief="glStencilMask"/>
         </reg32>
-        <reg32 offset="0x01420" name="ALPHA_OP" value="0x00000000">
+        <reg32 offset="0x01420" name="ALPHA_OP" value="0x00000000" masked="true">
             <bitfield pos="0" name="ALPHA_TEST"/>
             <bitfield pos="1" name="ALPHA_TEST_MASK"/>
             <bitfield high="6" low="4" name="ALPHA_FUNC" type="COMPARE_FUNC"/>
@@ -985,7 +989,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="23" low="16" name="R"/>
             <bitfield high="31" low="24" name="A"/>
         </reg32>
-        <reg32 offset="0x01428" name="ALPHA_CONFIG" value="0x00000000">
+        <reg32 offset="0x01428" name="ALPHA_CONFIG" value="0x00000000" masked="true">
             <bitfield pos="0" name="BLEND_ENABLE_COLOR" brief="Enable alpha blending"/>
             <bitfield pos="1" name="BLEND_ENABLE_COLOR_MASK"/>
             <bitfield pos="2" name="SRC_FUNC_COLOR_MASK"/>
@@ -1005,13 +1009,15 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="30" low="28" name="EQ_ALPHA" type="BLEND_EQ"/>
             <bitfield pos="31" name="EQ_ALPHA_MASK"/>
         </reg32>
-        <reg32 offset="0x0142C" name="COLOR_FORMAT" value="0x00000000">
+        <reg32 offset="0x0142C" name="COLOR_FORMAT" value="0x00000000" masked="true">
             <bitfield high="3" low="0" name="FORMAT" type="RS_FORMAT"/>
             <bitfield pos="4" name="FORMAT_MASK"/>
             <bitfield high="11" low="8" name="COMPONENTS" type="RGBA_BITS" brief="glColorMask"/>
             <bitfield pos="12" name="COMPONENTS_MASK"/>
             <bitfield pos="16" name="UNK16" brief="Set when alpha blending enabled or otherwise not the full destination is written"/>
             <bitfield pos="17" name="UNK16_MASK"/>
+            <bitfield pos="20" name="UNK20"/>
+            <bitfield pos="21" name="UNK20_MASK"/>
         </reg32>
         <reg32 offset="0x01430" name="COLOR_ADDR" value="0x00000000" type="VIV_MEM"/> <!-- pixelPipes == 1 -->
         <reg32 offset="0x01434" name="COLOR_STRIDE" value="0x00000000"/>
@@ -1031,7 +1037,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <reg32 offset="0x1500" name="ADDR_UNK01500" value="0x00000000" type="VIV_MEM"/>
             <reg32 offset="0x1520" name="ADDR_UNK01520" value="0x00000000" type="VIV_MEM"/>
         </stripe>
-        <reg32 offset="0x014A0" name="STENCIL_CONFIG_EXT" value="0x00000000">
+        <reg32 offset="0x014A0" name="STENCIL_CONFIG_EXT" value="0x00000000" masked="true">
             <bitfield high="7" low="0" name="REF_BACK" brief="glStencilFunc ref (GL_BACK)"/>
             <bitfield pos="8" name="REF_BACK_MASK"/>
             <bitfield pos="9" name="UNK16_MASK"/>

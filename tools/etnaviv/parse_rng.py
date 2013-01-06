@@ -30,6 +30,8 @@ from lxml import etree as ET # parsing
 from itertools import izip
 
 ns = "{http://nouveau.freedesktop.org/}"
+XML_BOOL = {'false':False, 'true':True}
+MASK_FIELD_SUFFIX = '_MASK'
 
 # Simple interval arithmetic
 # XXX move to utils package
@@ -83,10 +85,12 @@ class TypedValue(object):
     shr = None # Shiftright value, only makes sense for integer types
     anon_type = None # anonymous private type
     size = None
+    masked = None  # does this register use masks for state groups?
 
     def __init__(self, **attr):
         self.type = attr.get('type', None)
         self.shr = attr.get('shr', None)
+        self.masked = attr.get('masked', False)
         
     def add_child(self, child):
         # Creates an anonymous type
@@ -94,7 +98,7 @@ class TypedValue(object):
             if self.type is not None:
                 raise ValueError('Register with type cannot have bitfield inside')
             if self.anon_type is None:
-                self.anon_type = BitSet(self)
+                self.anon_type = BitSet(self, masked=self.masked)
             self.anon_type.add_child(child)
             return True
         elif isinstance(child, EnumValue):
@@ -244,10 +248,12 @@ class BitField(TypedValue, RNNObject):
 class BitSet(RNNObject, Type):
     '''Rules-ng bitset description'''
     bitfields = None # List of bit fields
+    masked = None # does this register use masks for state groups?
     def __init__(self, parent, **attr):
         RNNObject.__init__(self, parent, **attr)
         self.bitfields = []
         self.size = 0
+        self.masked = attr.get('masked', False)
     
     def add_child(self, child):
         if isinstance(child, BitField):
@@ -262,13 +268,30 @@ class BitSet(RNNObject, Type):
         Short description of the value.
         '''
         fields = []
-        residue = value
-        for field in self.bitfields:
-            fields.append(field.name + '=' + field.describe(value))
-            residue &= ~field.mask
+        if self.masked:
+            # first, find out which fields are to be modified
+            unmasked = set()
+            residue = 0xffffffff
+            for field in self.bitfields:
+                if field.name.endswith(MASK_FIELD_SUFFIX) and field.size == 1:
+                    if field.extract(value) == 0:
+                        unmasked.add(field.name[0:-len(MASK_FIELD_SUFFIX)])
+                        residue &= ~field.mask
+            # then log fields that are unmaked
+            for field in self.bitfields:
+                if field.name in unmasked:
+                    fields.append(field.name + '=' + field.describe(value))
+                    residue &= ~field.mask
+                    residue |= value & field.mask
+            residue ^= value # residue are the bits that are not predicted by the masks
+        else:
+            residue = value
+            for field in self.bitfields:
+                fields.append(field.name + '=' + field.describe(value))
+                residue &= ~field.mask
         rv = ','.join(fields)
         if residue != 0:
-            rv += '(residue:%08x)' % residue
+            rv += '(residue:0x%08x)' % residue
         return rv 
 
 #-------------------------------------------------------------------------
@@ -401,8 +424,6 @@ class Register(RNNObject, Range, TypedValue):
     length = None
     stride = None
     size = None # size, in bits
-    type = None # value type (can be Bitfield, Enum, BaseType or Domain object)
-    shr = None # Shiftright value
     def __init__(self, parent, **attr):
         RNNObject.__init__(self, parent, **attr)
         Range.__init__(self, **attr)
@@ -412,7 +433,6 @@ class Register(RNNObject, Range, TypedValue):
         self.offset = attr['offset']
         self.length = attr.get('length', 1)
         self.stride = attr.get('stride', self.size // 8)
-    # add methods to break up a value
     
     def add_child(self, child):
         return TypedValue.add_child(self, child)
@@ -578,6 +598,8 @@ def visit_xml(syms, type_resolve_list, parent, root):
     for key,value in root.attrib.iteritems():
         if key in ['stride', 'offset', 'length', 'value', 'pos', 'low', 'high']:
             attr[key] = intdh(value)
+        elif key in ['masked']:
+            attr[key] = XML_BOOL[value]
         else:
             attr[key] = value
     if root.tag in Tag.REG_TO_SIZE:

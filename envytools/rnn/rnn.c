@@ -578,6 +578,8 @@ static struct rnndelem *trydelem(struct rnndb *db, char *file, xmlNode *node) {
 			// TODO
 		} else if (!strcmp(attr->name, "value")) {
 			// TODO
+		} else if (!strcmp(attr->name, "masked")) {
+			// TODO
 		} else if (!trytypeattr(db, file, node, attr, &res->typeinfo)) {
 			fprintf (stderr, "%s:%d: wrong attribute \"%s\" for register\n", file, node->line, attr->name);
 			db->estatus = 1;
