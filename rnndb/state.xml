@@ -564,7 +564,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00780" name="UNK00780" value="0x3F800000" length="16" stride="4"/>
     </stripe>
 
-    <stripe name="GLOBAL" brief="Global states">
+    <stripe name="GL" brief="Global states">
         <doc>Global device control states. Here is configured what pipe to use (2D or 3D),
             when to send event, when to wait on semaphores and the API mode (OGL or D3D).
         </doc>
@@ -583,7 +583,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x0380C" name="FLUSH_CACHE" brief="Flush the current pipe">
             <bitfield pos="0" name="DEPTH"/>
             <bitfield pos="1" name="COLOR"/>
-            <bitfield pos="2" name="3D_TEXTURE"/>
+            <bitfield pos="2" name="TEXTURE"/>
             <bitfield pos="3" name="2D"/>
             <bitfield pos="4" name="UNK4"/>
             <bitfield pos="5" name="SHADER_L1"/>
