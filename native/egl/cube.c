@@ -58,31 +58,7 @@ static const EGLint context_attribute_list[] = {
 	EGL_NONE
 };
 
-char *
-eglStrError(EGLint error)
-{
-	printf("Error: %d\n", error);
-
-	switch (error) {
-	case EGL_SUCCESS:
-		return "EGL_SUCCESS";
-	case EGL_BAD_ALLOC:
-		return "EGL_BAD_ALLOC";
-	case EGL_BAD_CONFIG:
-		return "EGL_BAD_CONFIG";
-	case EGL_BAD_PARAMETER:
-		return "EGL_BAD_PARAMETER";
-	case EGL_BAD_MATCH:
-		return "EGL_BAD_MATCH";
-	case EGL_BAD_ATTRIBUTE:
-		return "EGL_BAD_ATTRIBUTE";
-	default:
-		return "UNKNOWN";
-	}
-}
-
-    int
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	EGLDisplay display;
 	EGLint egl_major, egl_minor;

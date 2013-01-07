@@ -73,8 +73,8 @@ Command stream interception
 
     native/egl/*.c
 
-Use ELF hooks to intercept ioctl and mmap calls from libGAL (the Vivante user space blob)
-to the kernel driver in GLES2 examples.
+Uses ELF hooks to intercept ioctl and mmap calls from libGAL (the Vivante user space blob)
+to the kernel driver, while running GLES2 examples.
 
 At the beginning of the program call `the_hook`, at the end of the program call `end_hook` to finalize 
 and flush buffers.
@@ -151,7 +151,8 @@ Install the Android NDK and define a native build environment, for example like 
     export PATH="$PATH:$TOOLCHAIN/bin"
 
 To build the egl samples, you need to copy `libEGL_VIVANTE.so` `libGLESv2_VIVANTE.so` from the device `/system/lib/egl` to
-`native/lib/egl`. This is not needed if you just want to build the replay example.
+`native/lib/egl`. This is not needed if you just want to build the replay example, which does not rely in any way on the
+userspace blob.
 
 Run make in `native/replay` and `native/egl` separately.
 
