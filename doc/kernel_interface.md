@@ -198,3 +198,95 @@ At least in the v2 kernel driver they are not used. They are used for building t
 userspace driver, but not for using it.
 
 
+Profiling
+===============
+
+HW profiling registers can be read using the ioctl:
+
+    gcvHAL_READ_ALL_PROFILE_REGISTERS
+
+This will return a structure `gcsPROFILER_COUNTERS`, defined in `GC_HAL_PROFILER.h`, which has the following timers:
+
+Hardware-wise, the memory controller keeps track of these counters in registers `MC_PROFILE_xx_READ`,
+switched by corresponding bits in registers `MC_PROFILE_CONFIGx`.
+
+HW static counters (clock rates). These are not filled in by the kernel, it appears.
+
+    gpuClock
+    axiClock
+    shaderClock
+
+HW variable counters
+
+    gpuClockStart
+    gpuClockEnd
+    gpuCyclesCounter
+    gpuTotalRead64BytesPerFrame
+    gpuTotalWrite64BytesPerFrame
+
+PE (Pixel engine)
+
+    pe_pixel_count_killed_by_color_pipe
+    pe_pixel_count_killed_by_depth_pipe
+    pe_pixel_count_drawn_by_color_pipe
+    pe_pixel_count_drawn_by_depth_pipe
+
+SH (Shader engine)
+
+    ps_inst_counter
+    rendered_pixel_counter
+    vs_inst_counter
+    rendered_vertice_counter
+    vtx_branch_inst_counter
+    vtx_texld_inst_counter
+    pxl_branch_inst_counter
+    pxl_texld_inst_counter
+
+PA (Primitive assembly)
+
+    pa_input_vtx_counter
+    pa_input_prim_counter
+    pa_output_prim_counter
+    pa_depth_clipped_counter
+    pa_trivial_rejected_counter
+    pa_culled_counter
+
+SE (Setup engine)
+
+    se_culled_triangle_count
+    se_culled_lines_count
+
+RA (Rasterizer)
+
+    ra_valid_pixel_count
+    ra_total_quad_count
+    ra_valid_quad_count_after_early_z
+    ra_total_primitive_count
+    ra_pipe_cache_miss_counter
+    ra_prefetch_cache_miss_counter
+    ra_eez_culled_counter
+
+TX (Texture engine)
+
+    tx_total_bilinear_requests
+    tx_total_trilinear_requests
+    tx_total_discarded_texture_requests
+    tx_total_texture_requests
+    tx_mem_read_count
+    tx_mem_read_in_8B_count
+    tx_cache_miss_count
+    tx_cache_hit_texel_count
+    tx_cache_miss_texel_count
+
+MC (Memory controller)
+
+    mc_total_read_req_8B_from_pipeline
+    mc_total_read_req_8B_from_IP
+    mc_total_write_req_8B_from_pipeline
+
+HI (Host interface)
+
+    hi_axi_cycles_read_request_stalled
+    hi_axi_cycles_write_request_stalled
+    hi_axi_cycles_write_data_stalled
+

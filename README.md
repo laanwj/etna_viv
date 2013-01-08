@@ -48,16 +48,18 @@ Vivante has a unified, fixed-size, predictable instruction format with explicit 
 and outputs. This does simplify code generation, compared to a weird flow 
 pipe system like the Mali 200/400.
 
-Disassembler
--------------
+Assembler and disassembler
+----------------------------
 
 A basic disassembler for the shader instructions can be found in the tools directory:
 
-    tools/disass.py
+    tools/disasm.py rnn/isa.xml <shader.bin>
 
 This can be used to disassemble shaders extracted using `dump_cmdstream.py --dump-shaders`.
 
-An assembler still needs to be written.
+There is also an assembler:
+
+    tools/asm.py rnn/isa.xml <shader.asm> -o <shader.bin>
 
 Command stream format
 -----------------------

@@ -241,6 +241,13 @@ class BitField(TypedValue, RNNObject):
     def extract(self, value):
         '''Extract this bit field from a value'''
         return (value >> self.low) & ((1<<(self.high-self.low+1))-1)
+    
+    def fill(self, value):
+        '''Return value filled into this bit field'''
+        rv = (value << self.low)
+        if rv != (rv & self.mask):
+            raise ValueError('Value %i doesn\'t fit in mask %s' % (value, self.name))
+        return rv
 
     def describe(self, value):
         return self.type.describe(self.extract(value))

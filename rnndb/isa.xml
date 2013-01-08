@@ -27,14 +27,6 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 <domain name="VIV_ISA">
 <!-- XXX still unsure if rules-ng is a suitable format for ISA descriptions,
  I don't really think so, but it will initially help to put notes in a more structured format.
-
- Anyone know an description format better suited, and which 
- allows automatic generation of assemblers/disassemblers/code generators if possible?
- (LLVM tblgen maybe?).
-
- The Envytools disassembler is table-based and could be adopted,
- it would have to be modified to support 128-bit instructions.
-
  -->
 
 <enum name="INST_OPCODE" brief="Main opcode table">
@@ -92,7 +84,14 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </doc>
     </value>
     <value value="0x0A" name="MOVAR" brief="Move address to address register"/>
-    <value value="0x0B" name="MOVAF" brief="Move float to address register"/>
+    <value value="0x0B" name="MOVAF" brief="Move float to address register">
+        <doc>
+            dst := src2
+
+            Copies the floating point value of operand src2 to address register dst.
+            XXX does this round or floor?
+        </doc>
+    </value>
     <value value="0x0C" name="RCP" brief="Reciprocal">
         <doc>
             dst := 1.0 / src2
@@ -139,13 +138,57 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <value value="0x1E" name="ENDREP" brief="Ends a REPEAT block"/>
     <value value="0x1F" name="LOOP" brief="Begins a LOOP block"/>
     <value value="0x20" name="ENDLOOP" brief="Ends a LOOP block"/>
-    <value value="0x21" name="SQRT" brief="Square root"/> <!-- HAS_SQRT_TRIG -->
-    <value value="0x22" name="SIN" brief="Sine"/> <!-- HAS_SQRT_TRIG -->
-    <value value="0x23" name="COS" brief="Cosine"/> <!-- HAS_SQRT_TRIG -->
+    <value value="0x21" name="SQRT" brief="Square root"> <!-- HAS_SQRT_TRIG -->
+        <doc>
+            dst := sqrt(src2)
+
+            Computes the square root of src2 and puts the result in temporary register dst.
+        </doc>
+    </value>
+    <value value="0x22" name="SIN" brief="Sine"> <!-- HAS_SQRT_TRIG -->
+        <doc>
+            dst := sin(src2 * (PI/2))
+
+            Computes the sine of src2 and puts the result in temporary register dst. 
+
+            The period of the sine is 4 and not 2 PI, thus to get normal behavior the instruction
+            should be prefixed by a division by PI/2.
+        </doc>
+    </value>
+    <value value="0x23" name="COS" brief="Cosine"> <!-- HAS_SQRT_TRIG -->
+        <doc>
+            dst := cos(src2 * (PI/2))
+
+            Computes the cosine of src2 and puts the result in temporary register dst.
+            
+            The period of the cosine is 4 and not 2 PI, thus to get normal behavior the instruction
+            should be prefixed by a division by PI/2.
+        </doc>
+    </value>
     <value value="0x24" name="POLY"/>
-    <value value="0x25" name="FLOOR" brief="Largest integral value not greater than the argument"/> <!-- HAS_SIGN_FLOOR_CEIL -->
-    <value value="0x26" name="CEIL" brief="Smallest integral value not less than the argument"/> <!-- HAS_SIGN_FLOOR_CEIL -->
-    <value value="0x27" name="SIGN" brief="Return sign of the argument"/> <!-- HAS_SIGN_FLOOR_CEIL -->
+    <value value="0x25" name="FLOOR" brief="Largest integral value not greater than the argument"> <!-- HAS_SIGN_FLOOR_CEIL -->
+        <doc>
+            dst := floor(src2)
+            
+            Computes the largest integral value not greater than the argument, and puts the result in temporary
+            register dst.
+        </doc>
+    </value>
+    <value value="0x26" name="CEIL" brief="Smallest integral value not less than the argument"> <!-- HAS_SIGN_FLOOR_CEIL -->
+        <doc>
+            dst := ceil(src2)
+            
+            Computes the smallest integral value not less than the argument, and puts the result in temporary
+            register dst.
+        </doc>
+    </value>
+    <value value="0x27" name="SIGN" brief="Return sign of the argument"> <!-- HAS_SIGN_FLOOR_CEIL -->
+        <doc>
+            dst := sign(src2)
+
+            Return 1.0 if the sign is positive or zero, -1.0 if negative.
+        </doc>
+    </value>
     <value value="0x28" name="ADDLO"/>
     <value value="0x29" name="MULLO"/>
     <value value="0x2A" name="BARRIER" brief="Thread barrier"/>
@@ -292,7 +335,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <!-- operand 0 -->
     <bitfield high="11" low="11" name="SRC0_USE" brief="Source operand 0 used"/>
     <bitfield high="20" low="12" name="SRC0_REG" brief="Source operand 0 register"/>
-    <!-- bit 21? -->
+    <bitfield high="21" low="21" name="UNK1_21"/>
     <bitfield high="29" low="22" name="SRC0_SWIZ" type="INST_SWIZ" brief="Source operand 0 swizzle"/>
     <bitfield high="30" low="30" name="SRC0_NEG" brief="Source operand 0 negate"/>
     <bitfield high="31" low="31" name="SRC0_ABS" brief="Source operand 0 absolute"/>
@@ -303,26 +346,28 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <!-- operand 1 -->
     <bitfield high="6" low="6" name="SRC1_USE" brief="Source operand 1 used"/>
     <bitfield high="15" low="7" name="SRC1_REG" brief="Source operand 1 register"/>
-    <!-- bit 16? -->
+    <bitfield high="16" low="16" name="UNK2_16"/>
     <bitfield high="24" low="17" name="SRC1_SWIZ" type="INST_SWIZ" brief="Source operand 1 swizzle"/>
     <bitfield high="25" low="25" name="SRC1_NEG" brief="Source operand 1 negate"/>
     <bitfield high="26" low="26" name="SRC1_ABS" brief="Source operand 1 absolute"/>
     <bitfield high="29" low="27" name="SRC1_AMODE" type="INST_AMODE" brief="Source operand 1 addressing mode"/>
-    <!-- bit 30,31? -->
+    <bitfield high="31" low="30" name="UNK2_30"/>
 </reg32>
 <reg32 offset="0x0000C" name="WORD_3">
     <bitfield high="2" low="0" name="SRC1_RGROUP" type="INST_RGROUP" brief="Source operand 1 register group"/>
+    <!-- bits 7..21: instruction address, effectively takes the place of src2 operand -->
+    <bitfield high="21" low="7" name="SRC2_IMM" brief="Immediate (address) operand"/>
     <!-- operand 2 --> 
     <bitfield high="3" low="3" name="SRC2_USE" brief="Source operand 2 used"/>
     <bitfield high="12" low="4" name="SRC2_REG" brief="Source operand 2 register"/>
-    <!-- bit 13? -->
+    <bitfield high="13" low="13" name="UNK3_13"/>
     <bitfield high="21" low="14" name="SRC2_SWIZ" type="INST_SWIZ" brief="Source operand 2 swizzle"/>
     <bitfield high="22" low="22" name="SRC2_NEG" brief="Source operand 2 negate"/>
     <bitfield high="23" low="23" name="SRC2_ABS" brief="Source operand 2 absolute"/>
-    <!-- bit 24? -->
+    <bitfield high="24" low="24" name="UNK3_24"/>
     <bitfield high="27" low="25" name="SRC2_AMODE" type="INST_AMODE" brief="Source operand 2 addressing mode"/>
     <bitfield high="30" low="28" name="SRC2_RGROUP" type="INST_RGROUP" brief="Source operand 2 register group"/>
-    <!-- bit 31? -->
+    <bitfield high="31" low="31" name="UNK3_31"/>
 </reg32>
 
 </domain>

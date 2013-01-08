@@ -652,8 +652,9 @@ int main(int argc, char **argv)
         /*
         0x06011009, 0x00000000, 0x00000000, 0x20100008, 
         */
+        /* appears that invalid instructions are simply ignored */
         /* r=r+g component */
-        0x00811001, 0x00001800, 0x00000000, 0x00154018,
+        0x00811013, 0x00001800, 0x00000000, 0x00154018,
         0x07011009, 0x00000000, 0x00000000, 0x20100008,
     };
 
