@@ -45,7 +45,7 @@ def format_swiz(swiz):
     swiz = [(swiz >> x)&3 for x in [0,2,4,6]]
     return ''.join([COMPS[c] for c in swiz])
 def format_comps(comps):
-    return ''.join([COMPS[c] for c in range(4) if ((comps >> c)&1)])
+    return ''.join([['_',COMPS[c]][(comps >> c)&1] for c in range(4)])
 
 DstOperand = namedtuple('DstOperand', ['use', 'amode', 'reg', 'comps'])
 DstOperandAReg = namedtuple('DstOperandAReg', ['reg', 'comps'])
@@ -176,7 +176,6 @@ def format_src(isa, src):
             arg += '[%s]' % AMODES[src.amode]
         if src.swiz != 0xe4: # if not null swizzle
             arg += '.' + format_swiz(src.swiz)
-        # XXX is the - or the | done first? In a way, -|x| is the only ordering that makes sense.
         if src.abs:
             return '|' + arg + '|'
         if src.neg:

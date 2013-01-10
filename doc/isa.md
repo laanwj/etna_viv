@@ -162,3 +162,24 @@ Becomes:
     TEXLD t2, tex0, t2.xyyy, void, void
     MUL t1, t1, t2, void
 
+Misc notes
+=======================
+- The shader engine packs together the registers of concurrently-executing shaders into the register bank.
+  If you write beyond the number of registers in `VIV_STATE_(PS/VS)_TEMP_REGISTER_CONTROL`, you will overwrite
+  registers of the next/previous shader instance, resulting in corrupt output.
+
+- Two instructions are always appended to the vertex shader:
+
+    ADD t0.__z_, t0.zzzz, void, t0.wwww
+    MUL t0.__z_, t0.zzzz, u0.xxxx, void ; u0.x=0.5
+
+  This adjusts the output position z, based on w. Likely this works around a difference in interpretation between
+  the hardware and the OpenGL standard.
+
+- t0 at the beginning of the fragment shader has the x/y/z coordinates
+  x and y are in screen space, z is depth in 0.0 .. 1.0
+
+  gl_fragCoord: contains the window-relative coordinates of the current fragment
+
+- In PS, RGROUP UNK1/?1? register 0.x contains the value of gl_FrontFacing
+

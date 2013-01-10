@@ -32,6 +32,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 <enum name="INST_OPCODE" brief="Main opcode table">
     <!-- TODO: match against TGSI instructions 
          http://people.freedesktop.org/~csimpson/gallium-docs/tgsi.html 
+
+         Overall, the ISA seems to be mostly derived from DirectX shader assembly.
      -->
     <doc>
         Unused operands of an instruction should have their use flag at 0.
@@ -64,7 +66,16 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             src0 is multipied with src1 and the result is put into temporary register dst.
         </doc>
     </value>
-    <value value="0x04" name="DST"/>
+    <value value="0x04" name="DST" brief="Calculates a distance vector">
+        <doc>
+            dst.x := 1;
+            dst.y := src0.y * src1.y
+            dst.z := src0.z
+            dst.w := src1.w
+
+            http://msdn.microsoft.com/en-us/library/windows/desktop/bb219790%28v=vs.85%29.aspx
+        </doc>
+    </value>
     <value value="0x05" name="DP3" brief="3-component dot product">
         <doc>
             dst := src0.x * src1.x + src0.y * src1.y + src0.z * src1.z
@@ -107,18 +118,56 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             temporary register dst.
         </doc>
     </value>
-    <value value="0x0E" name="LITP"/>
-    <value value="0x0F" name="SELECT" brief="Choose input based on condition">
+    <value value="0x0E" name="LITP" brief="Partial lighting computation">
         <doc>
-            dst := src0 if (src1 COND src2)
-
-            Sets temporary register dst to src0 if src1 COND src2 holds. If not, it will keep its previous value.
+            Appears to use input argument src0.yz and src1.yz.
+            dst.x is always 1, dst.w is always 1.
+            Probably http://msdn.microsoft.com/en-us/library/windows/desktop/bb174703%28v=vs.85%29.aspx
         </doc>
     </value>
-    <value value="0x10" name="SET"/>
-    <value value="0x11" name="EXP" brief="2^x"/>
-    <value value="0x12" name="LOG" brief="log2"/>
-    <value value="0x13" name="FRC" brief="Return fractional portion"/>
+    <value value="0x0F" name="SELECT" brief="Choose input based on condition">
+        <doc>
+            dst := src0 COND src1 ? src1 : src2
+
+            Sets temporary register dst to src1 if (src0 COND src1) holds, otherwise to src2.
+            This operation is performed per-component. It is used to implement MIN(a,b) and MAX(a,b)
+            in the following way:
+            - MIN(a,b): SELECT.GE dst, a, b, a 
+            - MAX(a,b): SELECT.LE dst, a, b, a 
+        </doc>
+    </value>
+    <value value="0x10" name="SET">
+        <doc>
+            dst := src0 COND src1
+
+            Sets temporary register dst to 1.0 if (src0 COND src1), otherwise to 0.0.
+        </doc>
+    </value>
+    <value value="0x11" name="EXP" brief="2^x">
+        <doc>
+            dst := exp2(src2.x)
+
+            Sets temporary register dst to the 2-exponent of the x component of src2). 
+            This is a scalar operation, the result is broadcasted over all active destination components.
+        </doc>
+    </value>
+    <value value="0x12" name="LOG" brief="log2">
+        <doc>
+            dst := log2(src2.x)
+
+            Sets temporary register dst to the 2-log of the x component of src2). 
+            This is a scalar operation, the result is broadcasted over all active destination components.
+        </doc>
+    </value>
+    <value value="0x13" name="FRC" brief="Return fractional portion">
+        <doc>
+            dst := frc(src2)
+
+            Sets temporary register dst to the fractional portion of src2 for positive values. For negative values, 
+            the returned value will be 1.0 - the fractional portion. For example, 1.5 will become 0.5, and -0.1 
+            will be turned into 0.9.
+        </doc>
+    </value>
     <value value="0x14" name="CALL" brief="Function call"/>
     <value value="0x15" name="RET" brief="Return from function"/>
     <value value="0x16" name="BRANCH" brief="Jump to address"/>

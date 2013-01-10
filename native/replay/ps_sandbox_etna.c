@@ -198,7 +198,6 @@ int main(int argc, char **argv)
         exit(1);
     }
     printf("Succesfully opened device\n");
-    viv_show_chip_info();
 
     /* allocate command buffer (blob uses four command buffers, but we don't even fill one) */
     viv_addr_t buf0_physical = 0;
@@ -510,7 +509,7 @@ int main(int argc, char **argv)
     etna_set_state(cmdPtr, VIV_STATE_PA_CONFIG, VIV_MASKED_INL(VIV_STATE_PA_CONFIG_FILL_MODE, SOLID));
     etna_set_state(cmdPtr, VIV_STATE_PA_CONFIG, VIV_MASKED_INL(VIV_STATE_PA_CONFIG_SHADE_MODEL, SMOOTH));
     etna_set_state(cmdPtr, VIV_STATE_PE_COLOR_FORMAT, 
-            VIV_MASKED(VIV_STATE_PE_COLOR_FORMAT_FORMAT, RS_FORMAT_X8R8G8B8) &
+            VIV_MASKED(VIV_STATE_PE_COLOR_FORMAT_FORMAT, RS_FORMAT_A8R8G8B8) &
             VIV_MASKED_BIT(VIV_STATE_PE_COLOR_FORMAT_UNK20, 1));
 
     etna_set_state(cmdPtr, VIV_STATE_PE_COLOR_ADDR, rt_physical); /* ADDR_A */
@@ -647,19 +646,32 @@ int main(int argc, char **argv)
         0x02001001, 0x2a800800, 0x00000000, 0x003fc008,
         0x02001003, 0x2a800800, 0x00000040, 0x00000002,
     };
-    uint32_t ps[] = {
-        /* Simple passthrough */
-        /*
-        0x06011009, 0x00000000, 0x00000000, 0x20100008, 
-        */
-        /* appears that invalid instructions are simply ignored */
-        /* r=r+g component */
-        0x00811013, 0x00001800, 0x00000000, 0x00154018,
-        0x07011009, 0x00000000, 0x00000000, 0x20100008,
-    };
+    uint32_t vs_size = sizeof(vs);
+    uint32_t *ps;
+    uint32_t ps_size;
+    if(argc < 2)
+    {
+        perror("provide shader on command line");
+        exit(1);
+    }
+    int fd = open(argv[1], O_RDONLY);
+    if(fd == -1)
+    {
+        perror("opening shader");
+        exit(1);
+    }
+    ps_size = lseek(fd, 0, SEEK_END);
+    ps = malloc(ps_size);
+    lseek(fd, 0, SEEK_SET);
+    if(ps_size == 0 || read(fd, ps, ps_size) != ps_size)
+    {
+        perror("empty or unreadable shader");
+        exit(1);
+    }
+    close(fd);
 
     /* shader setup */
-    etna_set_state(cmdPtr, VIV_STATE_VS_END_PC, sizeof(vs)/16);
+    etna_set_state(cmdPtr, VIV_STATE_VS_END_PC, vs_size/16);
     etna_set_state_multi(cmdPtr, VIV_STATE_VS_INPUT_COUNT, 3, (uint32_t[]){
             /* VIV_STATE_VS_INPUT_COUNT */ (1<<8) | 2,
             /* VIV_STATE_VS_TEMP_REGISTER_CONTROL */ 2 << VIV_STATE_VS_TEMP_REGISTER_CONTROL_NUM_TEMPS__SHIFT,
@@ -667,10 +679,10 @@ int main(int argc, char **argv)
     etna_set_state(cmdPtr, VIV_STATE_VS_START_PC, 0x0);
     etna_set_state_f32(cmdPtr, VIV_STATE_VS_UNIFORMS(0), 0.5); /* u0.x */
 
-    etna_set_state_multi(cmdPtr, VIV_STATE_VS_INST_MEM(0), sizeof(vs)/4, vs);
+    etna_set_state_multi(cmdPtr, VIV_STATE_VS_INST_MEM(0), vs_size/4, vs);
     etna_set_state(cmdPtr, VIV_STATE_RA_CONTROL, 0x3); /* huh, this is 1 for the cubes */
     etna_set_state_multi(cmdPtr, VIV_STATE_PS_END_PC, 2, (uint32_t[]){
-            /* VIV_STATE_PS_END_PC */ sizeof(ps)/16,
+            /* VIV_STATE_PS_END_PC */ ps_size/16,
             /* VIV_STATE_PS_OUTPUT_REG */ 0x1});
     etna_set_state(cmdPtr, VIV_STATE_PS_START_PC, 0x0);
     etna_set_state(cmdPtr, VIV_STATE_PA_SHADER_ATTRIBUTES(0), 0x200);
@@ -684,12 +696,15 @@ int main(int argc, char **argv)
             (VARYING_COMPONENT_USE_UNUSED << VIV_STATE_GL_PS_VARYING_COMPONENT_USE_COMP3__SHIFT)
             , 0
             });
-    etna_set_state_f32(cmdPtr, VIV_STATE_PS_UNIFORMS(1), 1.0); /* u0.y */
     etna_set_state_f32(cmdPtr, VIV_STATE_PS_UNIFORMS(0), 0.0); /* u0.x */
-    etna_set_state_multi(cmdPtr, VIV_STATE_PS_INST_MEM(0), sizeof(ps)/4, ps);
+    etna_set_state_f32(cmdPtr, VIV_STATE_PS_UNIFORMS(1), 1.0); /* u0.y */
+    etna_set_state_f32(cmdPtr, VIV_STATE_PS_UNIFORMS(2), 0.5); /* u0.z */
+    etna_set_state_f32(cmdPtr, VIV_STATE_PS_UNIFORMS(3), 2.0); /* u0.w */
+    etna_set_state_f32(cmdPtr, VIV_STATE_PS_UNIFORMS(4), 1/256.0); /* u1.x */
+    etna_set_state_multi(cmdPtr, VIV_STATE_PS_INST_MEM(0), ps_size/4, ps);
     etna_set_state(cmdPtr, VIV_STATE_PS_INPUT_COUNT, (31<<8)|2);
     etna_set_state(cmdPtr, VIV_STATE_PS_TEMP_REGISTER_CONTROL, 
-            (2 << VIV_STATE_PS_TEMP_REGISTER_CONTROL_NUM_TEMPS__SHIFT));
+            (4 << VIV_STATE_PS_TEMP_REGISTER_CONTROL_NUM_TEMPS__SHIFT));
     etna_set_state(cmdPtr, VIV_STATE_PS_CONTROL, 
             VIV_STATE_PS_CONTROL_UNK1
             );
@@ -751,6 +766,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "Error committing first command buffer\n");
         exit(1);
     }
+    // printf("[1] Contextbuffer used %i\n", *contextBuffer.inUse);
 
     /* After the first COMMIT, allocate contiguous memory for context and set
      * bytes, physical, logical, link, inUse */
@@ -769,6 +785,7 @@ int main(int argc, char **argv)
     contextBuffer.logical = cbuf0_logical;
     contextBuffer.link = ((uint32_t*)cbuf0_logical) + contextBuffer.linkIndex;
     contextBuffer.inUse = (gctBOOL*)(((uint32_t*)cbuf0_logical) + contextBuffer.inUseIndex);
+    *contextBuffer.inUse = 0;
 
     /* Build second command buffer */
     commandBuffer.startOffset = commandBuffer.offset;
@@ -778,9 +795,9 @@ int main(int argc, char **argv)
     etna_set_state(cmdPtr, VIV_STATE_GL_FLUSH_CACHE, VIV_STATE_GL_FLUSH_CACHE_COLOR | VIV_STATE_GL_FLUSH_CACHE_DEPTH);
     etna_set_state(cmdPtr, VIV_STATE_GL_FLUSH_CACHE, VIV_STATE_GL_FLUSH_CACHE_COLOR | VIV_STATE_GL_FLUSH_CACHE_DEPTH);
     etna_set_state(cmdPtr, VIV_STATE_RS_CONFIG,
-            (RS_FORMAT_X8R8G8B8 << VIV_STATE_RS_CONFIG_SOURCE_FORMAT__SHIFT) |
+            (RS_FORMAT_A8R8G8B8 << VIV_STATE_RS_CONFIG_SOURCE_FORMAT__SHIFT) |
             VIV_STATE_RS_CONFIG_UNK7 |
-            (RS_FORMAT_X8R8G8B8 << VIV_STATE_RS_CONFIG_DEST_FORMAT__SHIFT) |
+            (RS_FORMAT_A8R8G8B8 << VIV_STATE_RS_CONFIG_DEST_FORMAT__SHIFT) |
             VIV_STATE_RS_CONFIG_UNK14);
     etna_set_state(cmdPtr, VIV_STATE_RS_SOURCE_STRIDE, (padded_width * 4 * 4) | VIV_STATE_RS_SOURCE_STRIDE_TILING);
     etna_set_state(cmdPtr, VIV_STATE_RS_DEST_STRIDE, (padded_width * 4 * 4) | VIV_STATE_RS_DEST_STRIDE_TILING);
@@ -802,6 +819,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "Error committing second command buffer\n");
         exit(1);
     }
+    printf("[2] Contextbuffer used %i\n", *contextBuffer.inUse);
 
     /* Build third command buffer 
      * Third command buffer does some cache flush trick?
@@ -830,6 +848,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "Error committing third command buffer\n");
         exit(1);
     }
+    printf("[3] Contextbuffer used %i\n", *contextBuffer.inUse);
 
     /* Submit event queue with SIGNAL, fromWhere=gcvKERNEL_PIXEL (wait for pixel engine to finish) */
     int sig_id = 0;
@@ -878,9 +897,9 @@ int main(int argc, char **argv)
     commandBuffer.offset = commandBuffer.startOffset + 8*4;
     etna_set_state(cmdPtr, VIV_STATE_GL_FLUSH_CACHE, VIV_STATE_GL_FLUSH_CACHE_COLOR | VIV_STATE_GL_FLUSH_CACHE_DEPTH);
     etna_set_state(cmdPtr, VIV_STATE_RS_CONFIG,
-            (RS_FORMAT_X8R8G8B8 << VIV_STATE_RS_CONFIG_SOURCE_FORMAT__SHIFT) |
+            (RS_FORMAT_A8R8G8B8 << VIV_STATE_RS_CONFIG_SOURCE_FORMAT__SHIFT) |
             VIV_STATE_RS_CONFIG_UNK7 |
-            (RS_FORMAT_X8R8G8B8 << VIV_STATE_RS_CONFIG_DEST_FORMAT__SHIFT) /*|
+            (RS_FORMAT_A8R8G8B8 << VIV_STATE_RS_CONFIG_DEST_FORMAT__SHIFT) /*|
             VIV_STATE_RS_CONFIG_SWAP_RB*/);
     etna_set_state(cmdPtr, VIV_STATE_RS_SOURCE_STRIDE, (padded_width * 4 * 4) | VIV_STATE_RS_SOURCE_STRIDE_TILING);
     etna_set_state(cmdPtr, VIV_STATE_RS_DEST_STRIDE, width * 4);
@@ -905,6 +924,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "Error committing fourth command buffer\n");
         exit(1);
     }
+    printf("[4] Contextbuffer used %i\n", *contextBuffer.inUse);
 
     /* Submit event queue with SIGNAL, fromWhere=gcvKERNEL_PIXEL */
     if(viv_event_queue_signal(sig_id, gcvKERNEL_PIXEL) != 0)
@@ -919,14 +939,14 @@ int main(int argc, char **argv)
         fprintf(stderr, "Cannot wait for signal\n");
         exit(1);
     }
-    bmp_dump32(bmp_logical, width, height, true, "/mnt/sdcard/replay.bmp");
+    if(argc>2)
+        bmp_dump32(bmp_logical, width, height, true, argv[2]);
     /* Unlock video memory */
     if(viv_unlock_vidmem(bmp_node, gcvSURF_BITMAP, 1) != 0)
     {
         fprintf(stderr, "Cannot unlock vidmem\n");
         exit(1);
     }
-    printf("Contextbuffer used %i\n", *contextBuffer.inUse);
 
     viv_close();
     return 0;

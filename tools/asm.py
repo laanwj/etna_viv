@@ -34,7 +34,7 @@ from etnaviv.parse_rng import parse_rng_file, format_path, BitSet, Domain
 from etnaviv.asm_common import DstOperand, DstOperandAReg, SrcOperand, TexOperand, AddrOperand, Instruction, AMODES, COMPS
 from etnaviv.asm_common import disassemble, format_instruction
 
-reg_re = re.compile('^(t|u|a|tex)(\d+)(\[.*?\])?(\.[xyzw]{1,4})?$')
+reg_re = re.compile('^(t|u|a|tex)(\d+)(\[.*?\])?(\.[\_xyzw]{1,4})?$')
 label_re = re.compile('^[0-9a-zA-Z\-\_]+$')
 
 def parse_amode(amode):
@@ -50,10 +50,11 @@ def parse_comps(comps):
 def parse_swiz(swiz):
     if not swiz:
         return 0xe4
+    swiz = swiz[1:] # drop .
     rv = 0
     for idx in xrange(4):
         if idx < len(swiz):
-            comp = COMPS.index(swiz[idx+1])
+            comp = COMPS.index(swiz[idx])
         rv |= comp << (idx * 2)
     return rv
 
@@ -173,14 +174,14 @@ class Assembler(object):
             operand = operand.strip()
             neg = False
             abs = False
+            if operand.startswith('-'):
+                neg = True
+                operand = operand[1:]
             if operand.startswith('|'):
                 if not operand.endswith('|'):
                     self.errors.append((self.linenr, 'Unterminated |'))
                 abs = True
                 operand = operand[1:-1]
-            if operand.startswith('-'):
-                neg = True
-                operand = operand[1:]
 
             # check kind of operand
             # (t|u|a)XXX[.xyzw] (address)register
@@ -205,7 +206,7 @@ class Assembler(object):
                     try:
                         swiz = parse_swiz(swiz)
                     except LookupError:
-                        self.errors.append((self.linenr, 'Unknown swizzle %s' % swiz))
+                        self.errors.append((self.linenr, 'Unparseable swizzle %s' % swiz))
                         swiz = 0
                     if regtype == 't' or regtype == 'u':
                         rgroup = 0
@@ -233,7 +234,11 @@ class Assembler(object):
                 #print('label ', operand)
                 addr = AddrOperand(addr = operand) # will resolve labels later
             else:
-                self.errors.append((self.linenr, 'Unknown operand ' + operand))
+                self.errors.append((self.linenr, 'Unparseable operand ' + operand))
+
+        num_operands = 1 + len(src) + (addr is not None)
+        if num_operands != 4:
+            self.errors.append((self.linenr, 'Invalid number of operands (%i)' % num_operands))
         inst_out = Instruction(op=op,
             cond=cond,sat=sat,
             tex=tex,dst=dst,src=src,addr=addr,unknowns={},linenr=self.linenr)
@@ -315,6 +320,8 @@ def main():
             else: # no binary output, print as ascii
                 for inst in code:
                     print('0x%08x,0x%08x,0x%08x,0x%08x,' % tuple(inst))
+        else:
+            exit(1)
 
 
 
