@@ -49,3 +49,19 @@ eglStrError(EGLint error)
 	}
 }
 
+void printEGLConfig(EGLDisplay display, EGLConfig config)
+{
+    EGLint red, green, blue, alpha, depth, stencil;
+    EGLint samples, sampleBuffers;
+    eglGetConfigAttrib(display, config, EGL_RED_SIZE, &red);
+    eglGetConfigAttrib(display, config, EGL_GREEN_SIZE, &green);
+    eglGetConfigAttrib(display, config, EGL_BLUE_SIZE, &blue);
+    eglGetConfigAttrib(display, config, EGL_ALPHA_SIZE, &alpha);
+    eglGetConfigAttrib(display, config, EGL_DEPTH_SIZE, &depth);
+    eglGetConfigAttrib(display, config, EGL_STENCIL_SIZE, &stencil);
+    eglGetConfigAttrib(display, config, EGL_SAMPLE_BUFFERS, &sampleBuffers);
+    eglGetConfigAttrib(display, config, EGL_SAMPLES, &samples);
+    printf("EGL config: R%i G%i B%i A%i D%i S%i BUFFERS=%i SAMPLES=%i\n",
+            red, green, blue, alpha, depth, stencil, sampleBuffers, samples);
+}
+

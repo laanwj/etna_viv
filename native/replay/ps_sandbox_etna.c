@@ -552,7 +552,8 @@ int main(int argc, char **argv)
             );
 
     /* Set up the resolve to clear tile status for main render target 
-     * Regard the TS as an image of width 16 with 4 bytes per pixel (64 bytes per row)
+     * What the blob does is regard the TS as an image of width N, height 4, with 4 bytes per pixel
+     * Looks like the height always stays the same. I don't think it matters as long as the entire memory are is covered.
      * XXX need to clear the depth ts too.
      * */
     etna_set_state(cmdPtr, VIVS_RS_CONFIG,

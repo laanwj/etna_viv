@@ -42,6 +42,13 @@ static EGLint const config_attribute_list[] = {
     EGL_RED_SIZE, 8,
     EGL_GREEN_SIZE, 8,
     EGL_BLUE_SIZE, 8,
+    //EGL_ALPHA_SIZE, 8,
+    //EGL_SAMPLE_BUFFERS, 1,
+    //EGL_SAMPLES, 2,
+    //EGL_SAMPLES, 4,
+    //EGL_RED_SIZE, 4,
+    //EGL_GREEN_SIZE, 4,
+    //EGL_BLUE_SIZE, 4,
     EGL_SURFACE_TYPE, EGL_PBUFFER_BIT,
     EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
     EGL_DEPTH_SIZE, 8,
@@ -124,6 +131,7 @@ int main(int argc, char *argv[])
     }
 
     eglChooseConfig(display, config_attribute_list, &config, 1, &num_config);
+    printEGLConfig(display, config);
 
     context = eglCreateContext(display, config, EGL_NO_CONTEXT, context_attribute_list);
     if (context == EGL_NO_CONTEXT) {

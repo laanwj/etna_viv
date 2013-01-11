@@ -480,6 +480,7 @@ int main(int argc, char **argv)
     contextBuffer.logical = cbuf0_logical;
     contextBuffer.link = ((uint32_t*)cbuf0_logical) + contextBuffer.linkIndex;
     contextBuffer.inUse = (gctBOOL*)(((uint32_t*)cbuf0_logical) + contextBuffer.inUseIndex);
+    *contextBuffer.inUse = 0;
 
     /* Submit second command buffer, with updated context.
      * Second command buffer fills the background.

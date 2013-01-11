@@ -21,7 +21,12 @@
  * DEALINGS IN THE SOFTWARE.
  */
 #ifndef H_EGLUTIL
-char *
-eglStrError(EGLint error);
+
+/* Get string for EGL error */
+char *eglStrError(EGLint error);
+
+/* Print basic information about EGL configuration */
+void printEGLConfig(EGLDisplay display, EGLConfig config);
+
 #endif
 

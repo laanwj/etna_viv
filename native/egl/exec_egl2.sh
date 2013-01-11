@@ -6,6 +6,8 @@ if [ -z "$DEMO" ]; then
     DEMO="cube"
 fi
 make ${DEMO}
+[ $? -ne 0 ] && exit
+
 adb push ${DEMO} /data/mine
 adb shell 'export LD_LIBRARY_PATH="/system/lib/egl";/data/mine/'"${DEMO}"
 adb pull /mnt/sdcard/egl2.fdr ${DEMO}.fdr
