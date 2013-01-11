@@ -379,7 +379,7 @@ def main():
     args = parse_arguments()
     defs = load_data_definitions(args.struct_file)
     state_xml = parse_rng_file(args.rules_file)
-    state_map = state_xml.lookup_domain('VIV_STATE')
+    state_map = state_xml.lookup_domain('VIVS')
     fdr = FDRLoader(args.input)
     global options
     options = args

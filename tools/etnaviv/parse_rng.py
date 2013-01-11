@@ -30,7 +30,7 @@ from lxml import etree as ET # parsing
 from itertools import izip
 
 ns = "{http://nouveau.freedesktop.org/}"
-XML_BOOL = {'false':False, 'true':True}
+XML_BOOL = {'1':True, '0':False, 'false':False, 'true':True, 'yes':True, 'no':False}
 MASK_FIELD_SUFFIX = '_MASK'
 
 # Simple interval arithmetic

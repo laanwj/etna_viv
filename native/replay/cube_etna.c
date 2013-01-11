@@ -221,23 +221,23 @@ inline void etna_draw_primitives(struct _gcoCMDBUF *cmdPtr, uint32_t primitive_t
 /* warm up RS on aux render target */
 void etna_warm_up_rs(struct _gcoCMDBUF *cmdPtr, viv_addr_t aux_rt_physical, viv_addr_t aux_rt_ts_physical)
 {
-    etna_set_state(cmdPtr, VIV_STATE_TS_COLOR_STATUS_BASE, aux_rt_ts_physical); /* ADDR_G */
-    etna_set_state(cmdPtr, VIV_STATE_TS_COLOR_SURFACE_BASE, aux_rt_physical); /* ADDR_F */
-    etna_set_state(cmdPtr, VIV_STATE_RS_FLUSH_CACHE, VIV_STATE_RS_FLUSH_CACHE_FLUSH);
-    etna_set_state(cmdPtr, VIV_STATE_RS_CONFIG,  /* wut? */
-            (RS_FORMAT_A8R8G8B8 << VIV_STATE_RS_CONFIG_SOURCE_FORMAT__SHIFT) |
-            VIV_STATE_RS_CONFIG_UNK7 |
-            (RS_FORMAT_R5G6B5 << VIV_STATE_RS_CONFIG_DEST_FORMAT__SHIFT) |
-            VIV_STATE_RS_CONFIG_UNK14);
-    etna_set_state(cmdPtr, VIV_STATE_RS_SOURCE_ADDR, aux_rt_physical); /* ADDR_F */
-    etna_set_state(cmdPtr, VIV_STATE_RS_SOURCE_STRIDE, 0x400);
-    etna_set_state(cmdPtr, VIV_STATE_RS_DEST_ADDR, aux_rt_physical); /* ADDR_F */
-    etna_set_state(cmdPtr, VIV_STATE_RS_DEST_STRIDE, 0x400);
-    etna_set_state(cmdPtr, VIV_STATE_RS_WINDOW_SIZE, 
-            (4 << VIV_STATE_RS_WINDOW_SIZE_HEIGHT__SHIFT) |
-            (16 << VIV_STATE_RS_WINDOW_SIZE_WIDTH__SHIFT));
-    etna_set_state(cmdPtr, VIV_STATE_RS_CLEAR_CONTROL, VIV_STATE_RS_CLEAR_CONTROL_MODE_DISABLED);
-    etna_set_state(cmdPtr, VIV_STATE_RS_KICKER, 0xbeebbeeb);
+    etna_set_state(cmdPtr, VIVS_TS_COLOR_STATUS_BASE, aux_rt_ts_physical); /* ADDR_G */
+    etna_set_state(cmdPtr, VIVS_TS_COLOR_SURFACE_BASE, aux_rt_physical); /* ADDR_F */
+    etna_set_state(cmdPtr, VIVS_RS_FLUSH_CACHE, VIVS_RS_FLUSH_CACHE_FLUSH);
+    etna_set_state(cmdPtr, VIVS_RS_CONFIG,  /* wut? */
+            (RS_FORMAT_A8R8G8B8 << VIVS_RS_CONFIG_SOURCE_FORMAT__SHIFT) |
+            VIVS_RS_CONFIG_SOURCE_TILED |
+            (RS_FORMAT_R5G6B5 << VIVS_RS_CONFIG_DEST_FORMAT__SHIFT) |
+            VIVS_RS_CONFIG_DEST_TILED);
+    etna_set_state(cmdPtr, VIVS_RS_SOURCE_ADDR, aux_rt_physical); /* ADDR_F */
+    etna_set_state(cmdPtr, VIVS_RS_SOURCE_STRIDE, 0x400);
+    etna_set_state(cmdPtr, VIVS_RS_DEST_ADDR, aux_rt_physical); /* ADDR_F */
+    etna_set_state(cmdPtr, VIVS_RS_DEST_STRIDE, 0x400);
+    etna_set_state(cmdPtr, VIVS_RS_WINDOW_SIZE, 
+            (4 << VIVS_RS_WINDOW_SIZE_HEIGHT__SHIFT) |
+            (16 << VIVS_RS_WINDOW_SIZE_WIDTH__SHIFT));
+    etna_set_state(cmdPtr, VIVS_RS_CLEAR_CONTROL, VIVS_RS_CLEAR_CONTROL_MODE_DISABLED);
+    etna_set_state(cmdPtr, VIVS_RS_KICKER, 0xbeebbeeb);
 }
 
 #ifdef CMD_COMPARE
@@ -525,240 +525,240 @@ int main(int argc, char **argv)
      * in DMA command buffer size. */
 
     /* Build first command buffer */
-    etna_set_state(cmdPtr, VIV_STATE_GL_VERTEX_ELEMENT_CONFIG, 0x1);
-    etna_set_state(cmdPtr, VIV_STATE_RA_CONTROL, 0x1);
+    etna_set_state(cmdPtr, VIVS_GL_VERTEX_ELEMENT_CONFIG, 0x1);
+    etna_set_state(cmdPtr, VIVS_RA_CONTROL, 0x1);
 
-    etna_set_state(cmdPtr, VIV_STATE_PA_W_CLIP_LIMIT, 0x34000001);
-    etna_set_state(cmdPtr, VIV_STATE_PA_SYSTEM_MODE, 0x11);
-    etna_set_state(cmdPtr, VIV_STATE_PA_CONFIG, VIV_MASKED_BIT(VIV_STATE_PA_CONFIG_UNK22, 0));
-    etna_set_state(cmdPtr, VIV_STATE_SE_LAST_PIXEL_ENABLE, 0x0);
-    etna_set_state(cmdPtr, VIV_STATE_GL_FLUSH_CACHE, VIV_STATE_GL_FLUSH_CACHE_COLOR);
-    etna_set_state(cmdPtr, VIV_STATE_PE_COLOR_FORMAT, 
-            VIV_MASKED_BIT(VIV_STATE_PE_COLOR_FORMAT_UNK16, 0));
-    etna_set_state(cmdPtr, VIV_STATE_PE_ALPHA_CONFIG, /* can & all these together */
-            VIV_MASKED_BIT(VIV_STATE_PE_ALPHA_CONFIG_BLEND_ENABLE_COLOR, 0) &
-            VIV_MASKED_BIT(VIV_STATE_PE_ALPHA_CONFIG_BLEND_ENABLE_ALPHA, 0));
-    etna_set_state(cmdPtr, VIV_STATE_PE_ALPHA_CONFIG,
-            VIV_MASKED(VIV_STATE_PE_ALPHA_CONFIG_SRC_FUNC_COLOR, BLEND_FUNC_ONE) &
-            VIV_MASKED(VIV_STATE_PE_ALPHA_CONFIG_SRC_FUNC_ALPHA, BLEND_FUNC_ONE));
-    etna_set_state(cmdPtr, VIV_STATE_PE_ALPHA_CONFIG,
-            VIV_MASKED(VIV_STATE_PE_ALPHA_CONFIG_DST_FUNC_COLOR, BLEND_FUNC_ZERO) &
-            VIV_MASKED(VIV_STATE_PE_ALPHA_CONFIG_DST_FUNC_ALPHA, BLEND_FUNC_ZERO));
-    etna_set_state(cmdPtr, VIV_STATE_PE_ALPHA_CONFIG,
-            VIV_MASKED(VIV_STATE_PE_ALPHA_CONFIG_EQ_COLOR, BLEND_EQ_ADD) &
-            VIV_MASKED(VIV_STATE_PE_ALPHA_CONFIG_EQ_ALPHA, BLEND_EQ_ADD));
-    etna_set_state(cmdPtr, VIV_STATE_PE_ALPHA_BLEND_COLOR, 
-            (0 << VIV_STATE_PE_ALPHA_BLEND_COLOR_B__SHIFT) | 
-            (0 << VIV_STATE_PE_ALPHA_BLEND_COLOR_G__SHIFT) | 
-            (0 << VIV_STATE_PE_ALPHA_BLEND_COLOR_R__SHIFT) | 
-            (0 << VIV_STATE_PE_ALPHA_BLEND_COLOR_A__SHIFT));
+    etna_set_state(cmdPtr, VIVS_PA_W_CLIP_LIMIT, 0x34000001);
+    etna_set_state(cmdPtr, VIVS_PA_SYSTEM_MODE, 0x11);
+    etna_set_state(cmdPtr, VIVS_PA_CONFIG, VIV_MASKED_BIT(VIVS_PA_CONFIG_UNK22, 0));
+    etna_set_state(cmdPtr, VIVS_SE_LAST_PIXEL_ENABLE, 0x0);
+    etna_set_state(cmdPtr, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR);
+    etna_set_state(cmdPtr, VIVS_PE_COLOR_FORMAT, 
+            VIV_MASKED_BIT(VIVS_PE_COLOR_FORMAT_PARTIAL, 0));
+    etna_set_state(cmdPtr, VIVS_PE_ALPHA_CONFIG, /* can & all these together */
+            VIV_MASKED_BIT(VIVS_PE_ALPHA_CONFIG_BLEND_ENABLE_COLOR, 0) &
+            VIV_MASKED_BIT(VIVS_PE_ALPHA_CONFIG_BLEND_ENABLE_ALPHA, 0));
+    etna_set_state(cmdPtr, VIVS_PE_ALPHA_CONFIG,
+            VIV_MASKED(VIVS_PE_ALPHA_CONFIG_SRC_FUNC_COLOR, BLEND_FUNC_ONE) &
+            VIV_MASKED(VIVS_PE_ALPHA_CONFIG_SRC_FUNC_ALPHA, BLEND_FUNC_ONE));
+    etna_set_state(cmdPtr, VIVS_PE_ALPHA_CONFIG,
+            VIV_MASKED(VIVS_PE_ALPHA_CONFIG_DST_FUNC_COLOR, BLEND_FUNC_ZERO) &
+            VIV_MASKED(VIVS_PE_ALPHA_CONFIG_DST_FUNC_ALPHA, BLEND_FUNC_ZERO));
+    etna_set_state(cmdPtr, VIVS_PE_ALPHA_CONFIG,
+            VIV_MASKED(VIVS_PE_ALPHA_CONFIG_EQ_COLOR, BLEND_EQ_ADD) &
+            VIV_MASKED(VIVS_PE_ALPHA_CONFIG_EQ_ALPHA, BLEND_EQ_ADD));
+    etna_set_state(cmdPtr, VIVS_PE_ALPHA_BLEND_COLOR, 
+            (0 << VIVS_PE_ALPHA_BLEND_COLOR_B__SHIFT) | 
+            (0 << VIVS_PE_ALPHA_BLEND_COLOR_G__SHIFT) | 
+            (0 << VIVS_PE_ALPHA_BLEND_COLOR_R__SHIFT) | 
+            (0 << VIVS_PE_ALPHA_BLEND_COLOR_A__SHIFT));
     
-    etna_set_state(cmdPtr, VIV_STATE_PE_ALPHA_OP, VIV_MASKED_BIT(VIV_STATE_PE_ALPHA_OP_ALPHA_TEST, 0));
-    etna_set_state(cmdPtr, VIV_STATE_PA_CONFIG, VIV_MASKED_INL(VIV_STATE_PA_CONFIG_CULL_FACE_MODE, OFF));
-    etna_set_state(cmdPtr, VIV_STATE_PE_DEPTH_CONFIG, VIV_MASKED_BIT(VIV_STATE_PE_DEPTH_CONFIG_WRITE_ENABLE, 0));
-    etna_set_state(cmdPtr, VIV_STATE_PE_STENCIL_CONFIG, VIV_MASKED(VIV_STATE_PE_STENCIL_CONFIG_REF_FRONT, 0));
-    etna_set_state(cmdPtr, VIV_STATE_PE_STENCIL_OP, VIV_MASKED(VIV_STATE_PE_STENCIL_OP_FUNC_FRONT, COMPARE_FUNC_ALWAYS));
-    etna_set_state(cmdPtr, VIV_STATE_PE_STENCIL_OP, VIV_MASKED(VIV_STATE_PE_STENCIL_OP_FUNC_BACK, COMPARE_FUNC_ALWAYS));
-    etna_set_state(cmdPtr, VIV_STATE_PE_STENCIL_CONFIG, VIV_MASKED(VIV_STATE_PE_STENCIL_CONFIG_MASK_FRONT, 0xff));
-    etna_set_state(cmdPtr, VIV_STATE_PE_STENCIL_CONFIG, VIV_MASKED(VIV_STATE_PE_STENCIL_CONFIG_WRITE_MASK, 0xff));
-    etna_set_state(cmdPtr, VIV_STATE_PE_STENCIL_OP, VIV_MASKED(VIV_STATE_PE_STENCIL_OP_FAIL_FRONT, STENCIL_OP_KEEP));
-    etna_set_state(cmdPtr, VIV_STATE_PE_DEPTH_CONFIG, VIV_MASKED_BIT(VIV_STATE_PE_DEPTH_CONFIG_UNK16, 0));
-    etna_set_state(cmdPtr, VIV_STATE_PE_STENCIL_OP, VIV_MASKED(VIV_STATE_PE_STENCIL_OP_FAIL_BACK, STENCIL_OP_KEEP));
-    etna_set_state(cmdPtr, VIV_STATE_PE_DEPTH_CONFIG, VIV_MASKED_BIT(VIV_STATE_PE_DEPTH_CONFIG_UNK16, 0));
-    etna_set_state(cmdPtr, VIV_STATE_PE_STENCIL_OP, VIV_MASKED(VIV_STATE_PE_STENCIL_OP_DEPTH_FAIL_FRONT, STENCIL_OP_KEEP));
-    etna_set_state(cmdPtr, VIV_STATE_PE_DEPTH_CONFIG, VIV_MASKED_BIT(VIV_STATE_PE_DEPTH_CONFIG_UNK16, 0));
-    etna_set_state(cmdPtr, VIV_STATE_PE_STENCIL_OP, VIV_MASKED(VIV_STATE_PE_STENCIL_OP_DEPTH_FAIL_BACK, STENCIL_OP_KEEP));
-    etna_set_state(cmdPtr, VIV_STATE_PE_DEPTH_CONFIG, VIV_MASKED_BIT(VIV_STATE_PE_DEPTH_CONFIG_UNK16, 0));
-    etna_set_state(cmdPtr, VIV_STATE_PE_STENCIL_OP, VIV_MASKED(VIV_STATE_PE_STENCIL_OP_PASS_FRONT, STENCIL_OP_KEEP));
-    etna_set_state(cmdPtr, VIV_STATE_PE_DEPTH_CONFIG, VIV_MASKED_BIT(VIV_STATE_PE_DEPTH_CONFIG_UNK16, 0));
-    etna_set_state(cmdPtr, VIV_STATE_PE_STENCIL_OP, VIV_MASKED(VIV_STATE_PE_STENCIL_OP_PASS_BACK, STENCIL_OP_KEEP));
-    etna_set_state(cmdPtr, VIV_STATE_PE_DEPTH_CONFIG, VIV_MASKED_BIT(VIV_STATE_PE_DEPTH_CONFIG_UNK16, 0));
-    etna_set_state(cmdPtr, VIV_STATE_PE_COLOR_FORMAT, VIV_MASKED(VIV_STATE_PE_COLOR_FORMAT_COMPONENTS, 0xf));
+    etna_set_state(cmdPtr, VIVS_PE_ALPHA_OP, VIV_MASKED_BIT(VIVS_PE_ALPHA_OP_ALPHA_TEST, 0));
+    etna_set_state(cmdPtr, VIVS_PA_CONFIG, VIV_MASKED_INL(VIVS_PA_CONFIG_CULL_FACE_MODE, OFF));
+    etna_set_state(cmdPtr, VIVS_PE_DEPTH_CONFIG, VIV_MASKED_BIT(VIVS_PE_DEPTH_CONFIG_WRITE_ENABLE, 0));
+    etna_set_state(cmdPtr, VIVS_PE_STENCIL_CONFIG, VIV_MASKED(VIVS_PE_STENCIL_CONFIG_REF_FRONT, 0));
+    etna_set_state(cmdPtr, VIVS_PE_STENCIL_OP, VIV_MASKED(VIVS_PE_STENCIL_OP_FUNC_FRONT, COMPARE_FUNC_ALWAYS));
+    etna_set_state(cmdPtr, VIVS_PE_STENCIL_OP, VIV_MASKED(VIVS_PE_STENCIL_OP_FUNC_BACK, COMPARE_FUNC_ALWAYS));
+    etna_set_state(cmdPtr, VIVS_PE_STENCIL_CONFIG, VIV_MASKED(VIVS_PE_STENCIL_CONFIG_MASK_FRONT, 0xff));
+    etna_set_state(cmdPtr, VIVS_PE_STENCIL_CONFIG, VIV_MASKED(VIVS_PE_STENCIL_CONFIG_WRITE_MASK, 0xff));
+    etna_set_state(cmdPtr, VIVS_PE_STENCIL_OP, VIV_MASKED(VIVS_PE_STENCIL_OP_FAIL_FRONT, STENCIL_OP_KEEP));
+    etna_set_state(cmdPtr, VIVS_PE_DEPTH_CONFIG, VIV_MASKED_BIT(VIVS_PE_DEPTH_CONFIG_EARLY_Z, 0));
+    etna_set_state(cmdPtr, VIVS_PE_STENCIL_OP, VIV_MASKED(VIVS_PE_STENCIL_OP_FAIL_BACK, STENCIL_OP_KEEP));
+    etna_set_state(cmdPtr, VIVS_PE_DEPTH_CONFIG, VIV_MASKED_BIT(VIVS_PE_DEPTH_CONFIG_EARLY_Z, 0));
+    etna_set_state(cmdPtr, VIVS_PE_STENCIL_OP, VIV_MASKED(VIVS_PE_STENCIL_OP_DEPTH_FAIL_FRONT, STENCIL_OP_KEEP));
+    etna_set_state(cmdPtr, VIVS_PE_DEPTH_CONFIG, VIV_MASKED_BIT(VIVS_PE_DEPTH_CONFIG_EARLY_Z, 0));
+    etna_set_state(cmdPtr, VIVS_PE_STENCIL_OP, VIV_MASKED(VIVS_PE_STENCIL_OP_DEPTH_FAIL_BACK, STENCIL_OP_KEEP));
+    etna_set_state(cmdPtr, VIVS_PE_DEPTH_CONFIG, VIV_MASKED_BIT(VIVS_PE_DEPTH_CONFIG_EARLY_Z, 0));
+    etna_set_state(cmdPtr, VIVS_PE_STENCIL_OP, VIV_MASKED(VIVS_PE_STENCIL_OP_PASS_FRONT, STENCIL_OP_KEEP));
+    etna_set_state(cmdPtr, VIVS_PE_DEPTH_CONFIG, VIV_MASKED_BIT(VIVS_PE_DEPTH_CONFIG_EARLY_Z, 0));
+    etna_set_state(cmdPtr, VIVS_PE_STENCIL_OP, VIV_MASKED(VIVS_PE_STENCIL_OP_PASS_BACK, STENCIL_OP_KEEP));
+    etna_set_state(cmdPtr, VIVS_PE_DEPTH_CONFIG, VIV_MASKED_BIT(VIVS_PE_DEPTH_CONFIG_EARLY_Z, 0));
+    etna_set_state(cmdPtr, VIVS_PE_COLOR_FORMAT, VIV_MASKED(VIVS_PE_COLOR_FORMAT_COMPONENTS, 0xf));
 
 #if 0
     /* set bits at once -- faster? */
-    etna_set_state(cmdPtr, VIV_STATE_PE_ALPHA_CONFIG,
-             // VIV_STATE_PE_ALPHA_CONFIG_BLEND_ENABLE_COLOR |
-             // VIV_STATE_PE_ALPHA_CONFIG_BLEND_ENABLE_ALPHA_MASK |
-             (BLEND_FUNC_ONE << VIV_STATE_PE_ALPHA_CONFIG_SRC_FUNC_COLOR__SHIFT) |
-             (BLEND_FUNC_ONE << VIV_STATE_PE_ALPHA_CONFIG_SRC_FUNC_ALPHA__SHIFT) |
-             (BLEND_FUNC_ZERO << VIV_STATE_PE_ALPHA_CONFIG_DST_FUNC_COLOR__SHIFT) |
-             (BLEND_FUNC_ZERO << VIV_STATE_PE_ALPHA_CONFIG_DST_FUNC_ALPHA__SHIFT) |
-             (BLEND_EQ_ADD << VIV_STATE_PE_ALPHA_CONFIG_EQ_COLOR__SHIFT) |
-             (BLEND_EQ_ADD << VIV_STATE_PE_ALPHA_CONFIG_EQ_ALPHA__SHIFT));
-    etna_set_state(cmdPtr, VIV_STATE_PE_ALPHA_OP, ~(VIV_STATE_PE_ALPHA_OP_ALPHA_TEST | VIV_STATE_PE_ALPHA_OP_ALPHA_TEST_MASK));
+    etna_set_state(cmdPtr, VIVS_PE_ALPHA_CONFIG,
+             // VIVS_PE_ALPHA_CONFIG_BLEND_ENABLE_COLOR |
+             // VIVS_PE_ALPHA_CONFIG_BLEND_ENABLE_ALPHA_MASK |
+             (BLEND_FUNC_ONE << VIVS_PE_ALPHA_CONFIG_SRC_FUNC_COLOR__SHIFT) |
+             (BLEND_FUNC_ONE << VIVS_PE_ALPHA_CONFIG_SRC_FUNC_ALPHA__SHIFT) |
+             (BLEND_FUNC_ZERO << VIVS_PE_ALPHA_CONFIG_DST_FUNC_COLOR__SHIFT) |
+             (BLEND_FUNC_ZERO << VIVS_PE_ALPHA_CONFIG_DST_FUNC_ALPHA__SHIFT) |
+             (BLEND_EQ_ADD << VIVS_PE_ALPHA_CONFIG_EQ_COLOR__SHIFT) |
+             (BLEND_EQ_ADD << VIVS_PE_ALPHA_CONFIG_EQ_ALPHA__SHIFT));
+    etna_set_state(cmdPtr, VIVS_PE_ALPHA_OP, ~(VIVS_PE_ALPHA_OP_ALPHA_TEST | VIVS_PE_ALPHA_OP_ALPHA_TEST_MASK));
 
-    etna_set_state(cmdPtr, VIV_STATE_PA_CONFIG, 
-            (~(VIV_STATE_PA_CONFIG_CULL_FACE_MODE_MASK | VIV_STATE_PA_CONFIG_CULL_FACE_MODE__MASK)) |
-            VIV_STATE_PA_CONFIG_CULL_FACE_MODE_OFF);
-    etna_set_state(cmdPtr, VIV_STATE_PE_DEPTH_CONFIG, 
-            ~(VIV_STATE_PE_DEPTH_CONFIG_WRITE_ENABLE | VIV_STATE_PE_DEPTH_CONFIG_WRITE_ENABLE_MASK |
-              VIV_STATE_PE_DEPTH_CONFIG_UNK16 | VIV_STATE_PE_DEPTH_CONFIG_UNK16_MASK));
-    etna_set_state(cmdPtr, VIV_STATE_PE_STENCIL_CONFIG, 
-            VIV_STATE_PE_STENCIL_CONFIG_MODE_DISABLED | 
-            (0 << VIV_STATE_PE_STENCIL_CONFIG_REF_FRONT__SHIFT) | 
-            (0 << VIV_STATE_PE_STENCIL_CONFIG_MASK_FRONT__SHIFT) |
-            (0 << VIV_STATE_PE_STENCIL_CONFIG_WRITE_MASK__SHIFT));
-    etna_set_state(cmdPtr, VIV_STATE_PE_STENCIL_OP, 
-            (COMPARE_FUNC_ALWAYS << VIV_STATE_PE_STENCIL_OP_FUNC_FRONT__SHIFT)|
-            (STENCIL_OP_KEEP << VIV_STATE_PE_STENCIL_OP_PASS_FRONT__SHIFT)|
-            (STENCIL_OP_KEEP << VIV_STATE_PE_STENCIL_OP_FAIL_FRONT__SHIFT)|
-            (STENCIL_OP_KEEP << VIV_STATE_PE_STENCIL_OP_DEPTH_FAIL_FRONT__SHIFT)|
-            (COMPARE_FUNC_ALWAYS << VIV_STATE_PE_STENCIL_OP_FUNC_BACK__SHIFT) |
-            (STENCIL_OP_KEEP << VIV_STATE_PE_STENCIL_OP_PASS_BACK__SHIFT)|
-            (STENCIL_OP_KEEP << VIV_STATE_PE_STENCIL_OP_FAIL_BACK__SHIFT)|
-            (STENCIL_OP_KEEP << VIV_STATE_PE_STENCIL_OP_DEPTH_FAIL_BACK__SHIFT));
+    etna_set_state(cmdPtr, VIVS_PA_CONFIG, 
+            (~(VIVS_PA_CONFIG_CULL_FACE_MODE_MASK | VIVS_PA_CONFIG_CULL_FACE_MODE__MASK)) |
+            VIVS_PA_CONFIG_CULL_FACE_MODE_OFF);
+    etna_set_state(cmdPtr, VIVS_PE_DEPTH_CONFIG, 
+            ~(VIVS_PE_DEPTH_CONFIG_WRITE_ENABLE | VIVS_PE_DEPTH_CONFIG_WRITE_ENABLE_MASK |
+              VIVS_PE_DEPTH_CONFIG_EARLY_Z | VIVS_PE_DEPTH_CONFIG_EARLY_Z_MASK));
+    etna_set_state(cmdPtr, VIVS_PE_STENCIL_CONFIG, 
+            VIVS_PE_STENCIL_CONFIG_MODE_DISABLED | 
+            (0 << VIVS_PE_STENCIL_CONFIG_REF_FRONT__SHIFT) | 
+            (0 << VIVS_PE_STENCIL_CONFIG_MASK_FRONT__SHIFT) |
+            (0 << VIVS_PE_STENCIL_CONFIG_WRITE_MASK__SHIFT));
+    etna_set_state(cmdPtr, VIVS_PE_STENCIL_OP, 
+            (COMPARE_FUNC_ALWAYS << VIVS_PE_STENCIL_OP_FUNC_FRONT__SHIFT)|
+            (STENCIL_OP_KEEP << VIVS_PE_STENCIL_OP_PASS_FRONT__SHIFT)|
+            (STENCIL_OP_KEEP << VIVS_PE_STENCIL_OP_FAIL_FRONT__SHIFT)|
+            (STENCIL_OP_KEEP << VIVS_PE_STENCIL_OP_DEPTH_FAIL_FRONT__SHIFT)|
+            (COMPARE_FUNC_ALWAYS << VIVS_PE_STENCIL_OP_FUNC_BACK__SHIFT) |
+            (STENCIL_OP_KEEP << VIVS_PE_STENCIL_OP_PASS_BACK__SHIFT)|
+            (STENCIL_OP_KEEP << VIVS_PE_STENCIL_OP_FAIL_BACK__SHIFT)|
+            (STENCIL_OP_KEEP << VIVS_PE_STENCIL_OP_DEPTH_FAIL_BACK__SHIFT));
 #endif 
-    etna_set_state(cmdPtr, VIV_STATE_SE_DEPTH_SCALE, 0x0);
-    etna_set_state(cmdPtr, VIV_STATE_SE_DEPTH_BIAS, 0x0);
+    etna_set_state(cmdPtr, VIVS_SE_DEPTH_SCALE, 0x0);
+    etna_set_state(cmdPtr, VIVS_SE_DEPTH_BIAS, 0x0);
     
-    etna_set_state(cmdPtr, VIV_STATE_PA_CONFIG, VIV_MASKED_INL(VIV_STATE_PA_CONFIG_FILL_MODE, SOLID));
-    etna_set_state(cmdPtr, VIV_STATE_PA_CONFIG, VIV_MASKED_INL(VIV_STATE_PA_CONFIG_SHADE_MODEL, SMOOTH));
-    etna_set_state(cmdPtr, VIV_STATE_PE_COLOR_FORMAT, 
-            VIV_MASKED(VIV_STATE_PE_COLOR_FORMAT_FORMAT, RS_FORMAT_X8R8G8B8) &
-            VIV_MASKED_BIT(VIV_STATE_PE_COLOR_FORMAT_UNK20, 1));
+    etna_set_state(cmdPtr, VIVS_PA_CONFIG, VIV_MASKED_INL(VIVS_PA_CONFIG_FILL_MODE, SOLID));
+    etna_set_state(cmdPtr, VIVS_PA_CONFIG, VIV_MASKED_INL(VIVS_PA_CONFIG_SHADE_MODEL, SMOOTH));
+    etna_set_state(cmdPtr, VIVS_PE_COLOR_FORMAT, 
+            VIV_MASKED(VIVS_PE_COLOR_FORMAT_FORMAT, RS_FORMAT_X8R8G8B8) &
+            VIV_MASKED_BIT(VIVS_PE_COLOR_FORMAT_SUPER_TILED, 1));
 
-    etna_set_state(cmdPtr, VIV_STATE_PE_COLOR_ADDR, rt_physical); /* ADDR_A */
-    etna_set_state(cmdPtr, VIV_STATE_PE_COLOR_STRIDE, padded_width * 4); 
-    etna_set_state(cmdPtr, VIV_STATE_GL_MULTI_SAMPLE_CONFIG, 
-            VIV_MASKED(VIV_STATE_GL_MULTI_SAMPLE_CONFIG_UNK0, 0x0) &
-            VIV_MASKED(VIV_STATE_GL_MULTI_SAMPLE_CONFIG_UNK4, 0xf) &
-            VIV_MASKED(VIV_STATE_GL_MULTI_SAMPLE_CONFIG_UNK12, 0x0) &
-            VIV_MASKED(VIV_STATE_GL_MULTI_SAMPLE_CONFIG_UNK16, 0x0)
+    etna_set_state(cmdPtr, VIVS_PE_COLOR_ADDR, rt_physical); /* ADDR_A */
+    etna_set_state(cmdPtr, VIVS_PE_COLOR_STRIDE, padded_width * 4); 
+    etna_set_state(cmdPtr, VIVS_GL_MULTI_SAMPLE_CONFIG, 
+            VIV_MASKED(VIVS_GL_MULTI_SAMPLE_CONFIG_UNK0, 0x0) &
+            VIV_MASKED(VIVS_GL_MULTI_SAMPLE_CONFIG_UNK4, 0xf) &
+            VIV_MASKED(VIVS_GL_MULTI_SAMPLE_CONFIG_UNK12, 0x0) &
+            VIV_MASKED(VIVS_GL_MULTI_SAMPLE_CONFIG_UNK16, 0x0)
             ); 
-    etna_set_state(cmdPtr, VIV_STATE_GL_FLUSH_CACHE, VIV_STATE_GL_FLUSH_CACHE_COLOR);
-    etna_set_state(cmdPtr, VIV_STATE_PE_COLOR_FORMAT, VIV_MASKED_BIT(VIV_STATE_PE_COLOR_FORMAT_UNK16, 1));
-    etna_set_state(cmdPtr, VIV_STATE_GL_FLUSH_CACHE, VIV_STATE_GL_FLUSH_CACHE_COLOR);
-    etna_set_state(cmdPtr, VIV_STATE_TS_COLOR_CLEAR_VALUE, 0);
-    etna_set_state(cmdPtr, VIV_STATE_TS_COLOR_STATUS_BASE, rt_ts_physical); /* ADDR_B */
-    etna_set_state(cmdPtr, VIV_STATE_TS_COLOR_SURFACE_BASE, rt_physical); /* ADDR_A */
-    etna_set_state(cmdPtr, VIV_STATE_TS_MEM_CONFIG, VIV_STATE_TS_MEM_CONFIG_COLOR_FAST_CLEAR); /* ADDR_A */
+    etna_set_state(cmdPtr, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR);
+    etna_set_state(cmdPtr, VIVS_PE_COLOR_FORMAT, VIV_MASKED_BIT(VIVS_PE_COLOR_FORMAT_PARTIAL, 1));
+    etna_set_state(cmdPtr, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR);
+    etna_set_state(cmdPtr, VIVS_TS_COLOR_CLEAR_VALUE, 0);
+    etna_set_state(cmdPtr, VIVS_TS_COLOR_STATUS_BASE, rt_ts_physical); /* ADDR_B */
+    etna_set_state(cmdPtr, VIVS_TS_COLOR_SURFACE_BASE, rt_physical); /* ADDR_A */
+    etna_set_state(cmdPtr, VIVS_TS_MEM_CONFIG, VIVS_TS_MEM_CONFIG_COLOR_FAST_CLEAR); /* ADDR_A */
 
-    etna_set_state(cmdPtr, VIV_STATE_PE_DEPTH_CONFIG, 
-            VIV_MASKED_BIT(VIV_STATE_PE_DEPTH_CONFIG_UNK4, 0) &
-            VIV_MASKED_BIT(VIV_STATE_PE_DEPTH_CONFIG_UNK26, 1)
+    etna_set_state(cmdPtr, VIVS_PE_DEPTH_CONFIG, 
+            VIV_MASKED_INL(VIVS_PE_DEPTH_CONFIG_DEPTH_FORMAT, D16) &
+            VIV_MASKED_BIT(VIVS_PE_DEPTH_CONFIG_SUPER_TILED, 1)
             );
-    etna_set_state(cmdPtr, VIV_STATE_PE_DEPTH_ADDR, z_physical); /* ADDR_C */
-    etna_set_state(cmdPtr, VIV_STATE_PE_DEPTH_STRIDE, padded_width * 2);
-    etna_set_state(cmdPtr, VIV_STATE_PE_STENCIL_CONFIG, VIV_MASKED_INL(VIV_STATE_PE_STENCIL_CONFIG_MODE, DISABLED));
-    etna_set_state(cmdPtr, VIV_STATE_PE_HDEPTH_CONTROL, VIV_STATE_PE_HDEPTH_CONTROL_FORMAT_DISABLED);
-    etna_set_state_f32(cmdPtr, VIV_STATE_PE_DEPTH_NORMALIZE, 65535.0);
-    etna_set_state(cmdPtr, VIV_STATE_PE_DEPTH_CONFIG, VIV_MASKED_BIT(VIV_STATE_PE_DEPTH_CONFIG_UNK16, 0));
-    etna_set_state(cmdPtr, VIV_STATE_GL_FLUSH_CACHE, VIV_STATE_GL_FLUSH_CACHE_DEPTH);
+    etna_set_state(cmdPtr, VIVS_PE_DEPTH_ADDR, z_physical); /* ADDR_C */
+    etna_set_state(cmdPtr, VIVS_PE_DEPTH_STRIDE, padded_width * 2);
+    etna_set_state(cmdPtr, VIVS_PE_STENCIL_CONFIG, VIV_MASKED_INL(VIVS_PE_STENCIL_CONFIG_MODE, DISABLED));
+    etna_set_state(cmdPtr, VIVS_PE_HDEPTH_CONTROL, VIVS_PE_HDEPTH_CONTROL_FORMAT_DISABLED);
+    etna_set_state_f32(cmdPtr, VIVS_PE_DEPTH_NORMALIZE, 65535.0);
+    etna_set_state(cmdPtr, VIVS_PE_DEPTH_CONFIG, VIV_MASKED_BIT(VIVS_PE_DEPTH_CONFIG_EARLY_Z, 0));
+    etna_set_state(cmdPtr, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_DEPTH);
 
-    etna_set_state(cmdPtr, VIV_STATE_TS_DEPTH_CLEAR_VALUE, 0xffffffff);
-    etna_set_state(cmdPtr, VIV_STATE_TS_DEPTH_STATUS_BASE, z_ts_physical); /* ADDR_D */
-    etna_set_state(cmdPtr, VIV_STATE_TS_DEPTH_SURFACE_BASE, z_physical); /* ADDR_C */
-    etna_set_state(cmdPtr, VIV_STATE_TS_MEM_CONFIG, 
-            VIV_STATE_TS_MEM_CONFIG_DEPTH_FAST_CLEAR |
-            VIV_STATE_TS_MEM_CONFIG_COLOR_FAST_CLEAR |
-            VIV_STATE_TS_MEM_CONFIG_DEPTH_16BPP | 
-            VIV_STATE_TS_MEM_CONFIG_DEPTH_COMPRESSION);
-    etna_set_state(cmdPtr, VIV_STATE_PE_DEPTH_CONFIG, VIV_MASKED_BIT(VIV_STATE_PE_DEPTH_CONFIG_UNK16, 1)); /* flip-flopping once again */
+    etna_set_state(cmdPtr, VIVS_TS_DEPTH_CLEAR_VALUE, 0xffffffff);
+    etna_set_state(cmdPtr, VIVS_TS_DEPTH_STATUS_BASE, z_ts_physical); /* ADDR_D */
+    etna_set_state(cmdPtr, VIVS_TS_DEPTH_SURFACE_BASE, z_physical); /* ADDR_C */
+    etna_set_state(cmdPtr, VIVS_TS_MEM_CONFIG, 
+            VIVS_TS_MEM_CONFIG_DEPTH_FAST_CLEAR |
+            VIVS_TS_MEM_CONFIG_COLOR_FAST_CLEAR |
+            VIVS_TS_MEM_CONFIG_DEPTH_16BPP | 
+            VIVS_TS_MEM_CONFIG_DEPTH_COMPRESSION);
+    etna_set_state(cmdPtr, VIVS_PE_DEPTH_CONFIG, VIV_MASKED_BIT(VIVS_PE_DEPTH_CONFIG_EARLY_Z, 1)); /* flip-flopping once again */
 
     /* Warm up RS on aux render target */
-    etna_set_state(cmdPtr, VIV_STATE_GL_FLUSH_CACHE, VIV_STATE_GL_FLUSH_CACHE_COLOR | VIV_STATE_GL_FLUSH_CACHE_DEPTH);
+    etna_set_state(cmdPtr, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
     etna_warm_up_rs(cmdPtr, aux_rt_physical, aux_rt_ts_physical);
 
     /* Phew, now that's one hell of a setup; the serious rendering starts now */
-    etna_set_state(cmdPtr, VIV_STATE_TS_COLOR_STATUS_BASE, rt_ts_physical); /* ADDR_B */
-    etna_set_state(cmdPtr, VIV_STATE_TS_COLOR_SURFACE_BASE, rt_physical); /* ADDR_A */
+    etna_set_state(cmdPtr, VIVS_TS_COLOR_STATUS_BASE, rt_ts_physical); /* ADDR_B */
+    etna_set_state(cmdPtr, VIVS_TS_COLOR_SURFACE_BASE, rt_physical); /* ADDR_A */
 
     /* ... or so we thought */
-    etna_set_state(cmdPtr, VIV_STATE_GL_FLUSH_CACHE, VIV_STATE_GL_FLUSH_CACHE_COLOR | VIV_STATE_GL_FLUSH_CACHE_DEPTH);
+    etna_set_state(cmdPtr, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
     etna_warm_up_rs(cmdPtr, aux_rt_physical, aux_rt_ts_physical);
 
     /* maybe now? */
-    etna_set_state(cmdPtr, VIV_STATE_TS_COLOR_STATUS_BASE, rt_ts_physical); /* ADDR_B */
-    etna_set_state(cmdPtr, VIV_STATE_TS_COLOR_SURFACE_BASE, rt_physical); /* ADDR_A */
-    etna_set_state(cmdPtr, VIV_STATE_GL_FLUSH_CACHE, VIV_STATE_GL_FLUSH_CACHE_COLOR | VIV_STATE_GL_FLUSH_CACHE_DEPTH);
+    etna_set_state(cmdPtr, VIVS_TS_COLOR_STATUS_BASE, rt_ts_physical); /* ADDR_B */
+    etna_set_state(cmdPtr, VIVS_TS_COLOR_SURFACE_BASE, rt_physical); /* ADDR_A */
+    etna_set_state(cmdPtr, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
    
     /* nope, not really... */ 
-    etna_set_state(cmdPtr, VIV_STATE_GL_FLUSH_CACHE, VIV_STATE_GL_FLUSH_CACHE_COLOR | VIV_STATE_GL_FLUSH_CACHE_DEPTH);
+    etna_set_state(cmdPtr, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
     etna_warm_up_rs(cmdPtr, aux_rt_physical, aux_rt_ts_physical);
-    etna_set_state(cmdPtr, VIV_STATE_TS_COLOR_STATUS_BASE, rt_ts_physical); /* ADDR_B */
-    etna_set_state(cmdPtr, VIV_STATE_TS_COLOR_SURFACE_BASE, rt_physical); /* ADDR_A */
+    etna_set_state(cmdPtr, VIVS_TS_COLOR_STATUS_BASE, rt_ts_physical); /* ADDR_B */
+    etna_set_state(cmdPtr, VIVS_TS_COLOR_SURFACE_BASE, rt_physical); /* ADDR_A */
 
     /* semaphore time */
-    etna_set_state(cmdPtr, VIV_STATE_GL_SEMAPHORE_TOKEN, 
-            (SYNC_RECIPIENT_RA<<VIV_STATE_GL_SEMAPHORE_TOKEN_FROM__SHIFT)|
-            (SYNC_RECIPIENT_PE<<VIV_STATE_GL_SEMAPHORE_TOKEN_TO__SHIFT)
+    etna_set_state(cmdPtr, VIVS_GL_SEMAPHORE_TOKEN, 
+            (SYNC_RECIPIENT_RA<<VIVS_GL_SEMAPHORE_TOKEN_FROM__SHIFT)|
+            (SYNC_RECIPIENT_PE<<VIVS_GL_SEMAPHORE_TOKEN_TO__SHIFT)
             );
-    etna_set_state(cmdPtr, VIV_STATE_GL_STALL_TOKEN, 
-            (SYNC_RECIPIENT_RA<<VIV_STATE_GL_STALL_TOKEN_FROM__SHIFT)|
-            (SYNC_RECIPIENT_PE<<VIV_STATE_GL_STALL_TOKEN_TO__SHIFT)
+    etna_set_state(cmdPtr, VIVS_GL_STALL_TOKEN, 
+            (SYNC_RECIPIENT_RA<<VIVS_GL_STALL_TOKEN_FROM__SHIFT)|
+            (SYNC_RECIPIENT_PE<<VIVS_GL_STALL_TOKEN_TO__SHIFT)
             );
 
     /* Set up the resolve to clear tile status for main render target 
      * Regard the TS as an image of width 16 with 4 bytes per pixel (64 bytes per row)
      * XXX need to clear the depth ts too.
      * */
-    etna_set_state(cmdPtr, VIV_STATE_RS_CONFIG,
-            (RS_FORMAT_A8R8G8B8 << VIV_STATE_RS_CONFIG_SOURCE_FORMAT__SHIFT) |
-            (RS_FORMAT_A8R8G8B8 << VIV_STATE_RS_CONFIG_DEST_FORMAT__SHIFT)
+    etna_set_state(cmdPtr, VIVS_RS_CONFIG,
+            (RS_FORMAT_A8R8G8B8 << VIVS_RS_CONFIG_SOURCE_FORMAT__SHIFT) |
+            (RS_FORMAT_A8R8G8B8 << VIVS_RS_CONFIG_DEST_FORMAT__SHIFT)
             );
-    etna_set_state_multi(cmdPtr, VIV_STATE_RS_DITHER(0), 2, (uint32_t[]){0xffffffff, 0xffffffff});
-    etna_set_state(cmdPtr, VIV_STATE_RS_DEST_ADDR, rt_ts_physical); /* ADDR_B */
-    etna_set_state(cmdPtr, VIV_STATE_RS_DEST_STRIDE, 0x40);
-    etna_set_state(cmdPtr, VIV_STATE_RS_WINDOW_SIZE, 
-            ((rt_ts_size/0x40) << VIV_STATE_RS_WINDOW_SIZE_HEIGHT__SHIFT) |
-            (16 << VIV_STATE_RS_WINDOW_SIZE_WIDTH__SHIFT));
-    etna_set_state(cmdPtr, VIV_STATE_RS_FILL_VALUE(0), 0x55555555);
-    etna_set_state(cmdPtr, VIV_STATE_RS_CLEAR_CONTROL, 
-            VIV_STATE_RS_CLEAR_CONTROL_MODE_ENABLED |
-            (0xffff << VIV_STATE_RS_CLEAR_CONTROL_BITS__SHIFT));
-    etna_set_state(cmdPtr, VIV_STATE_RS_EXTRA_CONFIG, 
+    etna_set_state_multi(cmdPtr, VIVS_RS_DITHER(0), 2, (uint32_t[]){0xffffffff, 0xffffffff});
+    etna_set_state(cmdPtr, VIVS_RS_DEST_ADDR, rt_ts_physical); /* ADDR_B */
+    etna_set_state(cmdPtr, VIVS_RS_DEST_STRIDE, 0x40);
+    etna_set_state(cmdPtr, VIVS_RS_WINDOW_SIZE, 
+            ((rt_ts_size/0x40) << VIVS_RS_WINDOW_SIZE_HEIGHT__SHIFT) |
+            (16 << VIVS_RS_WINDOW_SIZE_WIDTH__SHIFT));
+    etna_set_state(cmdPtr, VIVS_RS_FILL_VALUE(0), 0x55555555);
+    etna_set_state(cmdPtr, VIVS_RS_CLEAR_CONTROL, 
+            VIVS_RS_CLEAR_CONTROL_MODE_ENABLED |
+            (0xffff << VIVS_RS_CLEAR_CONTROL_BITS__SHIFT));
+    etna_set_state(cmdPtr, VIVS_RS_EXTRA_CONFIG, 
             0); /* no AA, no endian switch */
-    etna_set_state(cmdPtr, VIV_STATE_RS_KICKER, 
+    etna_set_state(cmdPtr, VIVS_RS_KICKER, 
             0xbeebbeeb);
     
-    etna_set_state(cmdPtr, VIV_STATE_TS_COLOR_CLEAR_VALUE, 0xff7f7f7f);
-    etna_set_state(cmdPtr, VIV_STATE_GL_FLUSH_CACHE, VIV_STATE_GL_FLUSH_CACHE_COLOR);
-    etna_set_state(cmdPtr, VIV_STATE_TS_COLOR_CLEAR_VALUE, 0xff7f7f7f);
-    etna_set_state(cmdPtr, VIV_STATE_TS_COLOR_STATUS_BASE, rt_ts_physical); /* ADDR_B */
-    etna_set_state(cmdPtr, VIV_STATE_TS_COLOR_SURFACE_BASE, rt_physical); /* ADDR_A */
-    etna_set_state(cmdPtr, VIV_STATE_TS_MEM_CONFIG, 
-            VIV_STATE_TS_MEM_CONFIG_DEPTH_FAST_CLEAR |
-            VIV_STATE_TS_MEM_CONFIG_COLOR_FAST_CLEAR |
-            VIV_STATE_TS_MEM_CONFIG_DEPTH_16BPP | 
-            VIV_STATE_TS_MEM_CONFIG_DEPTH_COMPRESSION);
-    etna_set_state(cmdPtr, VIV_STATE_PA_CONFIG, VIV_MASKED_INL(VIV_STATE_PA_CONFIG_CULL_FACE_MODE, CCW));
-    etna_set_state(cmdPtr, VIV_STATE_GL_FLUSH_CACHE, VIV_STATE_GL_FLUSH_CACHE_COLOR | VIV_STATE_GL_FLUSH_CACHE_DEPTH);
+    etna_set_state(cmdPtr, VIVS_TS_COLOR_CLEAR_VALUE, 0xff7f7f7f);
+    etna_set_state(cmdPtr, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR);
+    etna_set_state(cmdPtr, VIVS_TS_COLOR_CLEAR_VALUE, 0xff7f7f7f);
+    etna_set_state(cmdPtr, VIVS_TS_COLOR_STATUS_BASE, rt_ts_physical); /* ADDR_B */
+    etna_set_state(cmdPtr, VIVS_TS_COLOR_SURFACE_BASE, rt_physical); /* ADDR_A */
+    etna_set_state(cmdPtr, VIVS_TS_MEM_CONFIG, 
+            VIVS_TS_MEM_CONFIG_DEPTH_FAST_CLEAR |
+            VIVS_TS_MEM_CONFIG_COLOR_FAST_CLEAR |
+            VIVS_TS_MEM_CONFIG_DEPTH_16BPP | 
+            VIVS_TS_MEM_CONFIG_DEPTH_COMPRESSION);
+    etna_set_state(cmdPtr, VIVS_PA_CONFIG, VIV_MASKED_INL(VIVS_PA_CONFIG_CULL_FACE_MODE, CCW));
+    etna_set_state(cmdPtr, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
 
-    etna_set_state(cmdPtr, VIV_STATE_PE_DEPTH_CONFIG, VIV_MASKED_BIT(VIV_STATE_PE_DEPTH_CONFIG_WRITE_ENABLE, 0));
-    etna_set_state(cmdPtr, VIV_STATE_PE_DEPTH_CONFIG, VIV_MASKED(VIV_STATE_PE_DEPTH_CONFIG_UNK0, 4));
-    etna_set_state(cmdPtr, VIV_STATE_PE_DEPTH_CONFIG, VIV_MASKED_BIT(VIV_STATE_PE_DEPTH_CONFIG_WRITE_ENABLE, 0));
-    etna_set_state(cmdPtr, VIV_STATE_PE_DEPTH_CONFIG, VIV_MASKED(VIV_STATE_PE_DEPTH_CONFIG_DEPTH_FUNC, COMPARE_FUNC_ALWAYS));
-    etna_set_state(cmdPtr, VIV_STATE_PE_DEPTH_CONFIG, VIV_MASKED(VIV_STATE_PE_DEPTH_CONFIG_UNK0, 5));
-    etna_set_state_f32(cmdPtr, VIV_STATE_PE_DEPTH_NEAR, 0.0);
-    etna_set_state_f32(cmdPtr, VIV_STATE_PE_DEPTH_FAR, 1.0);
-    etna_set_state_f32(cmdPtr, VIV_STATE_PE_DEPTH_NORMALIZE, 65535.0);
+    etna_set_state(cmdPtr, VIVS_PE_DEPTH_CONFIG, VIV_MASKED_BIT(VIVS_PE_DEPTH_CONFIG_WRITE_ENABLE, 0));
+    etna_set_state(cmdPtr, VIVS_PE_DEPTH_CONFIG, VIV_MASKED_INL(VIVS_PE_DEPTH_CONFIG_DEPTH_MODE, NONE));
+    etna_set_state(cmdPtr, VIVS_PE_DEPTH_CONFIG, VIV_MASKED_BIT(VIVS_PE_DEPTH_CONFIG_WRITE_ENABLE, 0));
+    etna_set_state(cmdPtr, VIVS_PE_DEPTH_CONFIG, VIV_MASKED(VIVS_PE_DEPTH_CONFIG_DEPTH_FUNC, COMPARE_FUNC_ALWAYS));
+    etna_set_state(cmdPtr, VIVS_PE_DEPTH_CONFIG, VIV_MASKED_INL(VIVS_PE_DEPTH_CONFIG_DEPTH_MODE, Z));
+    etna_set_state_f32(cmdPtr, VIVS_PE_DEPTH_NEAR, 0.0);
+    etna_set_state_f32(cmdPtr, VIVS_PE_DEPTH_FAR, 1.0);
+    etna_set_state_f32(cmdPtr, VIVS_PE_DEPTH_NORMALIZE, 65535.0);
 
     /* set up primitive assembly */
-    etna_set_state_f32(cmdPtr, VIV_STATE_PA_VIEWPORT_OFFSET_Z, 0.0);
-    etna_set_state_f32(cmdPtr, VIV_STATE_PA_VIEWPORT_SCALE_Z, 1.0);
-    etna_set_state(cmdPtr, VIV_STATE_PE_DEPTH_CONFIG, VIV_MASKED_BIT(VIV_STATE_PE_DEPTH_CONFIG_UNK20, 0));
-    etna_set_state_fixp(cmdPtr, VIV_STATE_PA_VIEWPORT_OFFSET_X, width << 15);
-    etna_set_state_fixp(cmdPtr, VIV_STATE_PA_VIEWPORT_OFFSET_Y, height << 15);
-    etna_set_state_fixp(cmdPtr, VIV_STATE_PA_VIEWPORT_SCALE_X, width << 15);
-    etna_set_state_fixp(cmdPtr, VIV_STATE_PA_VIEWPORT_SCALE_Y, height << 15);
-    etna_set_state_fixp(cmdPtr, VIV_STATE_SE_SCISSOR_LEFT, 0);
-    etna_set_state_fixp(cmdPtr, VIV_STATE_SE_SCISSOR_TOP, 0);
-    etna_set_state_fixp(cmdPtr, VIV_STATE_SE_SCISSOR_RIGHT, (width << 16) | 5);
-    etna_set_state_fixp(cmdPtr, VIV_STATE_SE_SCISSOR_BOTTOM, (height << 16) | 5);
+    etna_set_state_f32(cmdPtr, VIVS_PA_VIEWPORT_OFFSET_Z, 0.0);
+    etna_set_state_f32(cmdPtr, VIVS_PA_VIEWPORT_SCALE_Z, 1.0);
+    etna_set_state(cmdPtr, VIVS_PE_DEPTH_CONFIG, VIV_MASKED_BIT(VIVS_PE_DEPTH_CONFIG_ONLY_DEPTH, 0));
+    etna_set_state_fixp(cmdPtr, VIVS_PA_VIEWPORT_OFFSET_X, width << 15);
+    etna_set_state_fixp(cmdPtr, VIVS_PA_VIEWPORT_OFFSET_Y, height << 15);
+    etna_set_state_fixp(cmdPtr, VIVS_PA_VIEWPORT_SCALE_X, width << 15);
+    etna_set_state_fixp(cmdPtr, VIVS_PA_VIEWPORT_SCALE_Y, height << 15);
+    etna_set_state_fixp(cmdPtr, VIVS_SE_SCISSOR_LEFT, 0);
+    etna_set_state_fixp(cmdPtr, VIVS_SE_SCISSOR_TOP, 0);
+    etna_set_state_fixp(cmdPtr, VIVS_SE_SCISSOR_RIGHT, (width << 16) | 5);
+    etna_set_state_fixp(cmdPtr, VIVS_SE_SCISSOR_BOTTOM, (height << 16) | 5);
 
     /* shader setup */
-    etna_set_state(cmdPtr, VIV_STATE_VS_END_PC, 0x18);
-    etna_set_state_multi(cmdPtr, VIV_STATE_VS_INPUT_COUNT, 3, (uint32_t[]){
-            /* VIV_STATE_VS_INPUT_COUNT */ (1<<8) | 3,
-            /* VIV_STATE_VS_TEMP_REGISTER_CONTROL */ 6 << VIV_STATE_VS_TEMP_REGISTER_CONTROL_NUM_TEMPS__SHIFT,
-            /* VIV_STATE_VS_OUTPUT(0) */ 4});
-    etna_set_state(cmdPtr, VIV_STATE_VS_START_PC, 0x0);
-    etna_set_state_f32(cmdPtr, VIV_STATE_VS_UNIFORMS(45), 0.5); /* u11.y */
-    etna_set_state_f32(cmdPtr, VIV_STATE_VS_UNIFORMS(44), 1.0); /* u11.x */
-    etna_set_state_f32(cmdPtr, VIV_STATE_VS_UNIFORMS(27), 0.0); /* u6.w */
-    etna_set_state_f32(cmdPtr, VIV_STATE_VS_UNIFORMS(23), 20.0); /* u5.w */
-    etna_set_state_f32(cmdPtr, VIV_STATE_VS_UNIFORMS(19), 2.0); /* u4.w */
+    etna_set_state(cmdPtr, VIVS_VS_END_PC, 0x18);
+    etna_set_state_multi(cmdPtr, VIVS_VS_INPUT_COUNT, 3, (uint32_t[]){
+            /* VIVS_VS_INPUT_COUNT */ (1<<8) | 3,
+            /* VIVS_VS_TEMP_REGISTER_CONTROL */ 6 << VIVS_VS_TEMP_REGISTER_CONTROL_NUM_TEMPS__SHIFT,
+            /* VIVS_VS_OUTPUT(0) */ 4});
+    etna_set_state(cmdPtr, VIVS_VS_START_PC, 0x0);
+    etna_set_state_f32(cmdPtr, VIVS_VS_UNIFORMS(45), 0.5); /* u11.y */
+    etna_set_state_f32(cmdPtr, VIVS_VS_UNIFORMS(44), 1.0); /* u11.x */
+    etna_set_state_f32(cmdPtr, VIVS_VS_UNIFORMS(27), 0.0); /* u6.w */
+    etna_set_state_f32(cmdPtr, VIVS_VS_UNIFORMS(23), 20.0); /* u5.w */
+    etna_set_state_f32(cmdPtr, VIVS_VS_UNIFORMS(19), 2.0); /* u4.w */
 
     /* Now load the shader itself */
     uint32_t vs[] = {
@@ -791,37 +791,37 @@ int main(int argc, char **argv)
         0x00000000, 0x00000000, 0x00000000, 0x00000000
     };
 
-    etna_set_state_multi(cmdPtr, VIV_STATE_VS_INST_MEM(0), sizeof(vs)/4, vs);
-    etna_set_state(cmdPtr, VIV_STATE_RA_CONTROL, 0x1);
-    etna_set_state_multi(cmdPtr, VIV_STATE_PS_END_PC, 2, (uint32_t[]){
-            /* VIV_STATE_PS_END_PC */ 0x1,
-            /* VIV_STATE_PS_OUTPUT_REG */ 0x1});
-    etna_set_state(cmdPtr, VIV_STATE_PS_START_PC, 0x0);
-    etna_set_state(cmdPtr, VIV_STATE_PA_SHADER_ATTRIBUTES(0), 0x200);
-    etna_set_state(cmdPtr, VIV_STATE_GL_PS_VARYING_NUM_COMPONENTS,  /* one varying, with four components */
-            (4 << VIV_STATE_GL_VS_VARYING_NUM_COMPONENTS_VAR0__SHIFT)
+    etna_set_state_multi(cmdPtr, VIVS_VS_INST_MEM(0), sizeof(vs)/4, vs);
+    etna_set_state(cmdPtr, VIVS_RA_CONTROL, 0x1);
+    etna_set_state_multi(cmdPtr, VIVS_PS_END_PC, 2, (uint32_t[]){
+            /* VIVS_PS_END_PC */ 0x1,
+            /* VIVS_PS_OUTPUT_REG */ 0x1});
+    etna_set_state(cmdPtr, VIVS_PS_START_PC, 0x0);
+    etna_set_state(cmdPtr, VIVS_PA_SHADER_ATTRIBUTES(0), 0x200);
+    etna_set_state(cmdPtr, VIVS_GL_PS_VARYING_NUM_COMPONENTS,  /* one varying, with four components */
+            (4 << VIVS_GL_VS_VARYING_NUM_COMPONENTS_VAR0__SHIFT)
             );
-    etna_set_state_multi(cmdPtr, VIV_STATE_GL_PS_VARYING_COMPONENT_USE(0), 2, (uint32_t[]){ /* one varying, with four components */
-            (VARYING_COMPONENT_USE_USED << VIV_STATE_GL_PS_VARYING_COMPONENT_USE_COMP0__SHIFT) |
-            (VARYING_COMPONENT_USE_USED << VIV_STATE_GL_PS_VARYING_COMPONENT_USE_COMP1__SHIFT) |
-            (VARYING_COMPONENT_USE_USED << VIV_STATE_GL_PS_VARYING_COMPONENT_USE_COMP2__SHIFT) |
-            (VARYING_COMPONENT_USE_USED << VIV_STATE_GL_PS_VARYING_COMPONENT_USE_COMP3__SHIFT)
+    etna_set_state_multi(cmdPtr, VIVS_GL_PS_VARYING_COMPONENT_USE(0), 2, (uint32_t[]){ /* one varying, with four components */
+            (VARYING_COMPONENT_USE_USED << VIVS_GL_PS_VARYING_COMPONENT_USE_COMP0__SHIFT) |
+            (VARYING_COMPONENT_USE_USED << VIVS_GL_PS_VARYING_COMPONENT_USE_COMP1__SHIFT) |
+            (VARYING_COMPONENT_USE_USED << VIVS_GL_PS_VARYING_COMPONENT_USE_COMP2__SHIFT) |
+            (VARYING_COMPONENT_USE_USED << VIVS_GL_PS_VARYING_COMPONENT_USE_COMP3__SHIFT)
             , 0
             });
-    etna_set_state_multi(cmdPtr, VIV_STATE_PS_INST_MEM(0), sizeof(ps)/4, ps);
-    etna_set_state(cmdPtr, VIV_STATE_PS_INPUT_COUNT, (31<<8)|2);
-    etna_set_state(cmdPtr, VIV_STATE_PS_TEMP_REGISTER_CONTROL, 
-            (2 << VIV_STATE_PS_TEMP_REGISTER_CONTROL_NUM_TEMPS__SHIFT));
-    etna_set_state(cmdPtr, VIV_STATE_PS_CONTROL, 
-            VIV_STATE_PS_CONTROL_UNK1
+    etna_set_state_multi(cmdPtr, VIVS_PS_INST_MEM(0), sizeof(ps)/4, ps);
+    etna_set_state(cmdPtr, VIVS_PS_INPUT_COUNT, (31<<8)|2);
+    etna_set_state(cmdPtr, VIVS_PS_TEMP_REGISTER_CONTROL, 
+            (2 << VIVS_PS_TEMP_REGISTER_CONTROL_NUM_TEMPS__SHIFT));
+    etna_set_state(cmdPtr, VIVS_PS_CONTROL, 
+            VIVS_PS_CONTROL_UNK1
             );
-    etna_set_state(cmdPtr, VIV_STATE_PA_ATTRIBUTE_ELEMENT_COUNT, 0x100);
-    etna_set_state(cmdPtr, VIV_STATE_GL_VS_VARYING_NUM_COMPONENTS,  /* one varying, with four components */
-            (4 << VIV_STATE_GL_VS_VARYING_NUM_COMPONENTS_VAR0__SHIFT)
+    etna_set_state(cmdPtr, VIVS_PA_ATTRIBUTE_ELEMENT_COUNT, 0x100);
+    etna_set_state(cmdPtr, VIVS_GL_VS_VARYING_NUM_COMPONENTS,  /* one varying, with four components */
+            (4 << VIVS_GL_VS_VARYING_NUM_COMPONENTS_VAR0__SHIFT)
             );
-    etna_set_state(cmdPtr, VIV_STATE_VS_LOAD_BALANCING, 0xf3f0582);
-    etna_set_state(cmdPtr, VIV_STATE_VS_OUTPUT_COUNT, 2);
-    etna_set_state(cmdPtr, VIV_STATE_PA_CONFIG, VIV_MASKED_BIT(VIV_STATE_PA_CONFIG_POINT_SIZE_ENABLE, 0));
+    etna_set_state(cmdPtr, VIVS_VS_LOAD_BALANCING, 0xf3f0582);
+    etna_set_state(cmdPtr, VIVS_VS_OUTPUT_COUNT, 2);
+    etna_set_state(cmdPtr, VIVS_PA_CONFIG, VIV_MASKED_BIT(VIVS_PA_CONFIG_POINT_SIZE_ENABLE, 0));
     
     /*   Compute transform matrices in the same way as cube egl demo */ 
     ESMatrix modelview;
@@ -852,91 +852,91 @@ int main(int argc, char **argv)
     normal[7] = modelview.m[2][1];
     normal[8] = modelview.m[2][2];
     
-    etna_set_state_multi(cmdPtr, VIV_STATE_VS_UNIFORMS(0), 16, (uint32_t*)&modelviewprojection.m[0][0]);
-    etna_set_state_multi(cmdPtr, VIV_STATE_VS_UNIFORMS(16), 3, (uint32_t*)&normal[0]); /* u4.xyz */
-    etna_set_state_multi(cmdPtr, VIV_STATE_VS_UNIFORMS(20), 3, (uint32_t*)&normal[3]); /* u5.xyz */
-    etna_set_state_multi(cmdPtr, VIV_STATE_VS_UNIFORMS(24), 3, (uint32_t*)&normal[6]); /* u6.xyz */
-    etna_set_state_multi(cmdPtr, VIV_STATE_VS_UNIFORMS(28), 16, (uint32_t*)&modelview.m[0][0]);
-    etna_set_state(cmdPtr, VIV_STATE_FE_VERTEX_STREAM_BASE_ADDR, vtx_physical); /* ADDR_E */
-    etna_set_state(cmdPtr, VIV_STATE_FE_VERTEX_STREAM_CONTROL, 
-            0x24 << VIV_STATE_FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE__SHIFT);
-    etna_set_state(cmdPtr, VIV_STATE_FE_VERTEX_ELEMENT_CONFIG(0), 
-            VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_TYPE_FLOAT |
-            (ENDIAN_MODE_NO_SWAP << VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_ENDIAN__SHIFT) |
-            (0 << VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_STREAM__SHIFT) |
-            (3 <<VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_NUM__SHIFT) |
-            VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_NORMALIZE_OFF |
-            (0x0 << VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_START__SHIFT) |
-            (0xc << VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_END__SHIFT));
-    etna_set_state(cmdPtr, VIV_STATE_FE_VERTEX_ELEMENT_CONFIG(1), 
-            VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_TYPE_FLOAT |
-            (ENDIAN_MODE_NO_SWAP << VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_ENDIAN__SHIFT) |
-            (0 << VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_STREAM__SHIFT) |
-            (3 <<VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_NUM__SHIFT) |
-            VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_NORMALIZE_OFF |
-            (0xc << VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_START__SHIFT) |
-            (0x18 << VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_END__SHIFT));
-    etna_set_state(cmdPtr, VIV_STATE_FE_VERTEX_ELEMENT_CONFIG(2), 
-            VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_TYPE_FLOAT |
-            (ENDIAN_MODE_NO_SWAP << VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_ENDIAN__SHIFT) |
-            VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_NONCONSECUTIVE |
-            (0 << VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_STREAM__SHIFT) |
-            (3 <<VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_NUM__SHIFT) |
-            VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_NORMALIZE_OFF |
-            (0x18 << VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_START__SHIFT) |
-            (0x24 << VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_END__SHIFT));
-    etna_set_state(cmdPtr, VIV_STATE_VS_INPUT(0), 0x20100);
-    etna_set_state(cmdPtr, VIV_STATE_PA_CONFIG, VIV_MASKED_BIT(VIV_STATE_PA_CONFIG_POINT_SPRITE_ENABLE, 0));
+    etna_set_state_multi(cmdPtr, VIVS_VS_UNIFORMS(0), 16, (uint32_t*)&modelviewprojection.m[0][0]);
+    etna_set_state_multi(cmdPtr, VIVS_VS_UNIFORMS(16), 3, (uint32_t*)&normal[0]); /* u4.xyz */
+    etna_set_state_multi(cmdPtr, VIVS_VS_UNIFORMS(20), 3, (uint32_t*)&normal[3]); /* u5.xyz */
+    etna_set_state_multi(cmdPtr, VIVS_VS_UNIFORMS(24), 3, (uint32_t*)&normal[6]); /* u6.xyz */
+    etna_set_state_multi(cmdPtr, VIVS_VS_UNIFORMS(28), 16, (uint32_t*)&modelview.m[0][0]);
+    etna_set_state(cmdPtr, VIVS_FE_VERTEX_STREAM_BASE_ADDR, vtx_physical); /* ADDR_E */
+    etna_set_state(cmdPtr, VIVS_FE_VERTEX_STREAM_CONTROL, 
+            0x24 << VIVS_FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE__SHIFT);
+    etna_set_state(cmdPtr, VIVS_FE_VERTEX_ELEMENT_CONFIG(0), 
+            VIVS_FE_VERTEX_ELEMENT_CONFIG_TYPE_FLOAT |
+            (ENDIAN_MODE_NO_SWAP << VIVS_FE_VERTEX_ELEMENT_CONFIG_ENDIAN__SHIFT) |
+            (0 << VIVS_FE_VERTEX_ELEMENT_CONFIG_STREAM__SHIFT) |
+            (3 <<VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM__SHIFT) |
+            VIVS_FE_VERTEX_ELEMENT_CONFIG_NORMALIZE_OFF |
+            (0x0 << VIVS_FE_VERTEX_ELEMENT_CONFIG_START__SHIFT) |
+            (0xc << VIVS_FE_VERTEX_ELEMENT_CONFIG_END__SHIFT));
+    etna_set_state(cmdPtr, VIVS_FE_VERTEX_ELEMENT_CONFIG(1), 
+            VIVS_FE_VERTEX_ELEMENT_CONFIG_TYPE_FLOAT |
+            (ENDIAN_MODE_NO_SWAP << VIVS_FE_VERTEX_ELEMENT_CONFIG_ENDIAN__SHIFT) |
+            (0 << VIVS_FE_VERTEX_ELEMENT_CONFIG_STREAM__SHIFT) |
+            (3 <<VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM__SHIFT) |
+            VIVS_FE_VERTEX_ELEMENT_CONFIG_NORMALIZE_OFF |
+            (0xc << VIVS_FE_VERTEX_ELEMENT_CONFIG_START__SHIFT) |
+            (0x18 << VIVS_FE_VERTEX_ELEMENT_CONFIG_END__SHIFT));
+    etna_set_state(cmdPtr, VIVS_FE_VERTEX_ELEMENT_CONFIG(2), 
+            VIVS_FE_VERTEX_ELEMENT_CONFIG_TYPE_FLOAT |
+            (ENDIAN_MODE_NO_SWAP << VIVS_FE_VERTEX_ELEMENT_CONFIG_ENDIAN__SHIFT) |
+            VIVS_FE_VERTEX_ELEMENT_CONFIG_NONCONSECUTIVE |
+            (0 << VIVS_FE_VERTEX_ELEMENT_CONFIG_STREAM__SHIFT) |
+            (3 <<VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM__SHIFT) |
+            VIVS_FE_VERTEX_ELEMENT_CONFIG_NORMALIZE_OFF |
+            (0x18 << VIVS_FE_VERTEX_ELEMENT_CONFIG_START__SHIFT) |
+            (0x24 << VIVS_FE_VERTEX_ELEMENT_CONFIG_END__SHIFT));
+    etna_set_state(cmdPtr, VIVS_VS_INPUT(0), 0x20100);
+    etna_set_state(cmdPtr, VIVS_PA_CONFIG, VIV_MASKED_BIT(VIVS_PA_CONFIG_POINT_SPRITE_ENABLE, 0));
     etna_draw_primitives(cmdPtr, PRIMITIVE_TYPE_TRIANGLE_STRIP, 0, 2);
 
     for(int prim=0; prim<5; ++prim) /* this part is repeated 5 times */
     {
-        etna_set_state(cmdPtr, VIV_STATE_PS_INPUT_COUNT, (31<<8)|2);
-        etna_set_state(cmdPtr, VIV_STATE_PS_TEMP_REGISTER_CONTROL, 
-                (2 << VIV_STATE_PS_TEMP_REGISTER_CONTROL_NUM_TEMPS__SHIFT));
-        etna_set_state(cmdPtr, VIV_STATE_PS_CONTROL, 
-                VIV_STATE_PS_CONTROL_UNK1
+        etna_set_state(cmdPtr, VIVS_PS_INPUT_COUNT, (31<<8)|2);
+        etna_set_state(cmdPtr, VIVS_PS_TEMP_REGISTER_CONTROL, 
+                (2 << VIVS_PS_TEMP_REGISTER_CONTROL_NUM_TEMPS__SHIFT));
+        etna_set_state(cmdPtr, VIVS_PS_CONTROL, 
+                VIVS_PS_CONTROL_UNK1
                 );
-        etna_set_state(cmdPtr, VIV_STATE_PA_ATTRIBUTE_ELEMENT_COUNT, 0x100);
-        etna_set_state(cmdPtr, VIV_STATE_GL_VS_VARYING_NUM_COMPONENTS,  /* one varying, with four components */
-                (4 << VIV_STATE_GL_VS_VARYING_NUM_COMPONENTS_VAR0__SHIFT)
+        etna_set_state(cmdPtr, VIVS_PA_ATTRIBUTE_ELEMENT_COUNT, 0x100);
+        etna_set_state(cmdPtr, VIVS_GL_VS_VARYING_NUM_COMPONENTS,  /* one varying, with four components */
+                (4 << VIVS_GL_VS_VARYING_NUM_COMPONENTS_VAR0__SHIFT)
                 );
-        etna_set_state(cmdPtr, VIV_STATE_VS_LOAD_BALANCING, 0xf3f0582);
-        etna_set_state(cmdPtr, VIV_STATE_VS_OUTPUT_COUNT, 2);
-        etna_set_state(cmdPtr, VIV_STATE_PA_CONFIG, VIV_MASKED_BIT(VIV_STATE_PA_CONFIG_POINT_SIZE_ENABLE, 0));
-        etna_set_state(cmdPtr, VIV_STATE_FE_VERTEX_STREAM_BASE_ADDR, vtx_physical); /* ADDR_E */
-        etna_set_state(cmdPtr, VIV_STATE_FE_VERTEX_STREAM_CONTROL, 
-                0x24 << VIV_STATE_FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE__SHIFT);
-        etna_set_state(cmdPtr, VIV_STATE_FE_VERTEX_ELEMENT_CONFIG(0), 
-                VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_TYPE_FLOAT |
-                (ENDIAN_MODE_NO_SWAP << VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_ENDIAN__SHIFT) |
-                (0 << VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_STREAM__SHIFT) |
-                (3 <<VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_NUM__SHIFT) |
-                VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_NORMALIZE_OFF |
-                (0x0 << VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_START__SHIFT) |
-                (0xc << VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_END__SHIFT));
-        etna_set_state(cmdPtr, VIV_STATE_FE_VERTEX_ELEMENT_CONFIG(1), 
-                VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_TYPE_FLOAT |
-                (ENDIAN_MODE_NO_SWAP << VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_ENDIAN__SHIFT) |
-                (0 << VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_STREAM__SHIFT) |
-                (3 <<VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_NUM__SHIFT) |
-                VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_NORMALIZE_OFF |
-                (0xc << VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_START__SHIFT) |
-                (0x18 << VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_END__SHIFT));
-        etna_set_state(cmdPtr, VIV_STATE_FE_VERTEX_ELEMENT_CONFIG(2), 
-                VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_TYPE_FLOAT |
-                (ENDIAN_MODE_NO_SWAP << VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_ENDIAN__SHIFT) |
-                VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_NONCONSECUTIVE |
-                (0 << VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_STREAM__SHIFT) |
-                (3 <<VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_NUM__SHIFT) |
-                VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_NORMALIZE_OFF |
-                (0x18 << VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_START__SHIFT) |
-                (0x24 << VIV_STATE_FE_VERTEX_ELEMENT_CONFIG_END__SHIFT));
-        etna_set_state(cmdPtr, VIV_STATE_VS_INPUT(0), 0x20100);
-        etna_set_state(cmdPtr, VIV_STATE_PA_CONFIG, VIV_MASKED_BIT(VIV_STATE_PA_CONFIG_POINT_SPRITE_ENABLE, 0));
+        etna_set_state(cmdPtr, VIVS_VS_LOAD_BALANCING, 0xf3f0582);
+        etna_set_state(cmdPtr, VIVS_VS_OUTPUT_COUNT, 2);
+        etna_set_state(cmdPtr, VIVS_PA_CONFIG, VIV_MASKED_BIT(VIVS_PA_CONFIG_POINT_SIZE_ENABLE, 0));
+        etna_set_state(cmdPtr, VIVS_FE_VERTEX_STREAM_BASE_ADDR, vtx_physical); /* ADDR_E */
+        etna_set_state(cmdPtr, VIVS_FE_VERTEX_STREAM_CONTROL, 
+                0x24 << VIVS_FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE__SHIFT);
+        etna_set_state(cmdPtr, VIVS_FE_VERTEX_ELEMENT_CONFIG(0), 
+                VIVS_FE_VERTEX_ELEMENT_CONFIG_TYPE_FLOAT |
+                (ENDIAN_MODE_NO_SWAP << VIVS_FE_VERTEX_ELEMENT_CONFIG_ENDIAN__SHIFT) |
+                (0 << VIVS_FE_VERTEX_ELEMENT_CONFIG_STREAM__SHIFT) |
+                (3 <<VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM__SHIFT) |
+                VIVS_FE_VERTEX_ELEMENT_CONFIG_NORMALIZE_OFF |
+                (0x0 << VIVS_FE_VERTEX_ELEMENT_CONFIG_START__SHIFT) |
+                (0xc << VIVS_FE_VERTEX_ELEMENT_CONFIG_END__SHIFT));
+        etna_set_state(cmdPtr, VIVS_FE_VERTEX_ELEMENT_CONFIG(1), 
+                VIVS_FE_VERTEX_ELEMENT_CONFIG_TYPE_FLOAT |
+                (ENDIAN_MODE_NO_SWAP << VIVS_FE_VERTEX_ELEMENT_CONFIG_ENDIAN__SHIFT) |
+                (0 << VIVS_FE_VERTEX_ELEMENT_CONFIG_STREAM__SHIFT) |
+                (3 <<VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM__SHIFT) |
+                VIVS_FE_VERTEX_ELEMENT_CONFIG_NORMALIZE_OFF |
+                (0xc << VIVS_FE_VERTEX_ELEMENT_CONFIG_START__SHIFT) |
+                (0x18 << VIVS_FE_VERTEX_ELEMENT_CONFIG_END__SHIFT));
+        etna_set_state(cmdPtr, VIVS_FE_VERTEX_ELEMENT_CONFIG(2), 
+                VIVS_FE_VERTEX_ELEMENT_CONFIG_TYPE_FLOAT |
+                (ENDIAN_MODE_NO_SWAP << VIVS_FE_VERTEX_ELEMENT_CONFIG_ENDIAN__SHIFT) |
+                VIVS_FE_VERTEX_ELEMENT_CONFIG_NONCONSECUTIVE |
+                (0 << VIVS_FE_VERTEX_ELEMENT_CONFIG_STREAM__SHIFT) |
+                (3 <<VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM__SHIFT) |
+                VIVS_FE_VERTEX_ELEMENT_CONFIG_NORMALIZE_OFF |
+                (0x18 << VIVS_FE_VERTEX_ELEMENT_CONFIG_START__SHIFT) |
+                (0x24 << VIVS_FE_VERTEX_ELEMENT_CONFIG_END__SHIFT));
+        etna_set_state(cmdPtr, VIVS_VS_INPUT(0), 0x20100);
+        etna_set_state(cmdPtr, VIVS_PA_CONFIG, VIV_MASKED_BIT(VIVS_PA_CONFIG_POINT_SPRITE_ENABLE, 0));
         etna_draw_primitives(cmdPtr, PRIMITIVE_TYPE_TRIANGLE_STRIP, 4 + prim*4, 2);
     }
-    etna_set_state(cmdPtr, VIV_STATE_GL_FLUSH_CACHE, VIV_STATE_GL_FLUSH_CACHE_COLOR | VIV_STATE_GL_FLUSH_CACHE_DEPTH);
+    etna_set_state(cmdPtr, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
 #ifdef CMD_COMPARE
     /* Set addresses in first command buffer */
     cmdbuf1[0x57] = cmdbuf1[0x67] = cmdbuf1[0x9f] = cmdbuf1[0xbb] = cmdbuf1[0xd9] = cmdbuf1[0xfb] = rt_physical; /* ADDR_A */
@@ -986,26 +986,26 @@ int main(int argc, char **argv)
     commandBuffer.startOffset = commandBuffer.offset;
     commandBuffer.offset = commandBuffer.startOffset + 8*4;
 
-    etna_set_state(cmdPtr, VIV_STATE_GL_FLUSH_CACHE, VIV_STATE_GL_FLUSH_CACHE_COLOR | VIV_STATE_GL_FLUSH_CACHE_DEPTH);
-    etna_set_state(cmdPtr, VIV_STATE_GL_FLUSH_CACHE, VIV_STATE_GL_FLUSH_CACHE_COLOR | VIV_STATE_GL_FLUSH_CACHE_DEPTH);
-    etna_set_state(cmdPtr, VIV_STATE_GL_FLUSH_CACHE, VIV_STATE_GL_FLUSH_CACHE_COLOR | VIV_STATE_GL_FLUSH_CACHE_DEPTH);
-    etna_set_state(cmdPtr, VIV_STATE_RS_CONFIG,
-            (RS_FORMAT_X8R8G8B8 << VIV_STATE_RS_CONFIG_SOURCE_FORMAT__SHIFT) |
-            VIV_STATE_RS_CONFIG_UNK7 |
-            (RS_FORMAT_X8R8G8B8 << VIV_STATE_RS_CONFIG_DEST_FORMAT__SHIFT) |
-            VIV_STATE_RS_CONFIG_UNK14);
-    etna_set_state(cmdPtr, VIV_STATE_RS_SOURCE_STRIDE, (padded_width * 4 * 4) | VIV_STATE_RS_SOURCE_STRIDE_TILING);
-    etna_set_state(cmdPtr, VIV_STATE_RS_DEST_STRIDE, (padded_width * 4 * 4) | VIV_STATE_RS_DEST_STRIDE_TILING);
-    etna_set_state(cmdPtr, VIV_STATE_RS_DITHER(0), 0xffffffff);
-    etna_set_state(cmdPtr, VIV_STATE_RS_DITHER(1), 0xffffffff);
-    etna_set_state(cmdPtr, VIV_STATE_RS_CLEAR_CONTROL, VIV_STATE_RS_CLEAR_CONTROL_MODE_DISABLED);
-    etna_set_state(cmdPtr, VIV_STATE_RS_EXTRA_CONFIG, 0); /* no AA, no endian switch */
-    etna_set_state(cmdPtr, VIV_STATE_RS_SOURCE_ADDR, rt_physical); /* ADDR_A */
-    etna_set_state(cmdPtr, VIV_STATE_RS_DEST_ADDR, rt_physical); /* ADDR_A */
-    etna_set_state(cmdPtr, VIV_STATE_RS_WINDOW_SIZE, 
-            (padded_height << VIV_STATE_RS_WINDOW_SIZE_HEIGHT__SHIFT) |
-            (padded_width << VIV_STATE_RS_WINDOW_SIZE_WIDTH__SHIFT));
-    etna_set_state(cmdPtr, VIV_STATE_RS_KICKER, 0xbeebbeeb);
+    etna_set_state(cmdPtr, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
+    etna_set_state(cmdPtr, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
+    etna_set_state(cmdPtr, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
+    etna_set_state(cmdPtr, VIVS_RS_CONFIG,
+            (RS_FORMAT_X8R8G8B8 << VIVS_RS_CONFIG_SOURCE_FORMAT__SHIFT) |
+            VIVS_RS_CONFIG_SOURCE_TILED |
+            (RS_FORMAT_X8R8G8B8 << VIVS_RS_CONFIG_DEST_FORMAT__SHIFT) |
+            VIVS_RS_CONFIG_DEST_TILED);
+    etna_set_state(cmdPtr, VIVS_RS_SOURCE_STRIDE, (padded_width * 4 * 4) | VIVS_RS_SOURCE_STRIDE_TILING);
+    etna_set_state(cmdPtr, VIVS_RS_DEST_STRIDE, (padded_width * 4 * 4) | VIVS_RS_DEST_STRIDE_TILING);
+    etna_set_state(cmdPtr, VIVS_RS_DITHER(0), 0xffffffff);
+    etna_set_state(cmdPtr, VIVS_RS_DITHER(1), 0xffffffff);
+    etna_set_state(cmdPtr, VIVS_RS_CLEAR_CONTROL, VIVS_RS_CLEAR_CONTROL_MODE_DISABLED);
+    etna_set_state(cmdPtr, VIVS_RS_EXTRA_CONFIG, 0); /* no AA, no endian switch */
+    etna_set_state(cmdPtr, VIVS_RS_SOURCE_ADDR, rt_physical); /* ADDR_A */
+    etna_set_state(cmdPtr, VIVS_RS_DEST_ADDR, rt_physical); /* ADDR_A */
+    etna_set_state(cmdPtr, VIVS_RS_WINDOW_SIZE, 
+            (padded_height << VIVS_RS_WINDOW_SIZE_HEIGHT__SHIFT) |
+            (padded_width << VIVS_RS_WINDOW_SIZE_WIDTH__SHIFT));
+    etna_set_state(cmdPtr, VIVS_RS_KICKER, 0xbeebbeeb);
 
 #ifdef CMD_COMPARE
     /* Submit second command buffer, with updated context.
@@ -1033,16 +1033,16 @@ int main(int argc, char **argv)
     commandBuffer.offset = commandBuffer.startOffset + 8*4;
     etna_warm_up_rs(cmdPtr, aux_rt_physical, aux_rt_ts_physical);
 
-    etna_set_state(cmdPtr, VIV_STATE_TS_COLOR_STATUS_BASE, rt_ts_physical); /* ADDR_B */
-    etna_set_state(cmdPtr, VIV_STATE_TS_COLOR_SURFACE_BASE, rt_physical); /* ADDR_A */
-    etna_set_state(cmdPtr, VIV_STATE_GL_FLUSH_CACHE, VIV_STATE_GL_FLUSH_CACHE_COLOR);
-    etna_set_state(cmdPtr, VIV_STATE_TS_MEM_CONFIG, 
-            VIV_STATE_TS_MEM_CONFIG_DEPTH_FAST_CLEAR |
-            VIV_STATE_TS_MEM_CONFIG_DEPTH_16BPP | 
-            VIV_STATE_TS_MEM_CONFIG_DEPTH_COMPRESSION);
-    etna_set_state(cmdPtr, VIV_STATE_GL_FLUSH_CACHE, VIV_STATE_GL_FLUSH_CACHE_COLOR);
-    etna_set_state(cmdPtr, VIV_STATE_PE_COLOR_FORMAT, 
-            VIV_MASKED_BIT(VIV_STATE_PE_COLOR_FORMAT_UNK16, 0));
+    etna_set_state(cmdPtr, VIVS_TS_COLOR_STATUS_BASE, rt_ts_physical); /* ADDR_B */
+    etna_set_state(cmdPtr, VIVS_TS_COLOR_SURFACE_BASE, rt_physical); /* ADDR_A */
+    etna_set_state(cmdPtr, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR);
+    etna_set_state(cmdPtr, VIVS_TS_MEM_CONFIG, 
+            VIVS_TS_MEM_CONFIG_DEPTH_FAST_CLEAR |
+            VIVS_TS_MEM_CONFIG_DEPTH_16BPP | 
+            VIVS_TS_MEM_CONFIG_DEPTH_COMPRESSION);
+    etna_set_state(cmdPtr, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR);
+    etna_set_state(cmdPtr, VIVS_PE_COLOR_FORMAT, 
+            VIV_MASKED_BIT(VIVS_PE_COLOR_FORMAT_PARTIAL, 0));
 
     /* Submit third command buffer */
 #ifdef CMD_COMPARE
@@ -1107,25 +1107,25 @@ int main(int argc, char **argv)
      */
     commandBuffer.startOffset = commandBuffer.offset;
     commandBuffer.offset = commandBuffer.startOffset + 8*4;
-    etna_set_state(cmdPtr, VIV_STATE_GL_FLUSH_CACHE, VIV_STATE_GL_FLUSH_CACHE_COLOR | VIV_STATE_GL_FLUSH_CACHE_DEPTH);
-    etna_set_state(cmdPtr, VIV_STATE_RS_CONFIG,
-            (RS_FORMAT_X8R8G8B8 << VIV_STATE_RS_CONFIG_SOURCE_FORMAT__SHIFT) |
-            VIV_STATE_RS_CONFIG_UNK7 |
-            (RS_FORMAT_X8R8G8B8 << VIV_STATE_RS_CONFIG_DEST_FORMAT__SHIFT) /*|
-            VIV_STATE_RS_CONFIG_SWAP_RB*/);
-    etna_set_state(cmdPtr, VIV_STATE_RS_SOURCE_STRIDE, (padded_width * 4 * 4) | VIV_STATE_RS_SOURCE_STRIDE_TILING);
-    etna_set_state(cmdPtr, VIV_STATE_RS_DEST_STRIDE, width * 4);
-    etna_set_state(cmdPtr, VIV_STATE_RS_DITHER(0), 0xffffffff);
-    etna_set_state(cmdPtr, VIV_STATE_RS_DITHER(1), 0xffffffff);
-    etna_set_state(cmdPtr, VIV_STATE_RS_CLEAR_CONTROL, VIV_STATE_RS_CLEAR_CONTROL_MODE_DISABLED);
-    etna_set_state(cmdPtr, VIV_STATE_RS_EXTRA_CONFIG, 
+    etna_set_state(cmdPtr, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
+    etna_set_state(cmdPtr, VIVS_RS_CONFIG,
+            (RS_FORMAT_X8R8G8B8 << VIVS_RS_CONFIG_SOURCE_FORMAT__SHIFT) |
+            VIVS_RS_CONFIG_SOURCE_TILED |
+            (RS_FORMAT_X8R8G8B8 << VIVS_RS_CONFIG_DEST_FORMAT__SHIFT) /*|
+            VIVS_RS_CONFIG_SWAP_RB*/);
+    etna_set_state(cmdPtr, VIVS_RS_SOURCE_STRIDE, (padded_width * 4 * 4) | VIVS_RS_SOURCE_STRIDE_TILING);
+    etna_set_state(cmdPtr, VIVS_RS_DEST_STRIDE, width * 4);
+    etna_set_state(cmdPtr, VIVS_RS_DITHER(0), 0xffffffff);
+    etna_set_state(cmdPtr, VIVS_RS_DITHER(1), 0xffffffff);
+    etna_set_state(cmdPtr, VIVS_RS_CLEAR_CONTROL, VIVS_RS_CLEAR_CONTROL_MODE_DISABLED);
+    etna_set_state(cmdPtr, VIVS_RS_EXTRA_CONFIG, 
             0); /* no AA, no endian switch */
-    etna_set_state(cmdPtr, VIV_STATE_RS_SOURCE_ADDR, rt_physical); /* ADDR_A */
-    etna_set_state(cmdPtr, VIV_STATE_RS_DEST_ADDR, bmp_physical); /* ADDR_J */
-    etna_set_state(cmdPtr, VIV_STATE_RS_WINDOW_SIZE, 
-            (height << VIV_STATE_RS_WINDOW_SIZE_HEIGHT__SHIFT) |
-            (width << VIV_STATE_RS_WINDOW_SIZE_WIDTH__SHIFT));
-    etna_set_state(cmdPtr, VIV_STATE_RS_KICKER, 0xbeebbeeb);
+    etna_set_state(cmdPtr, VIVS_RS_SOURCE_ADDR, rt_physical); /* ADDR_A */
+    etna_set_state(cmdPtr, VIVS_RS_DEST_ADDR, bmp_physical); /* ADDR_J */
+    etna_set_state(cmdPtr, VIVS_RS_WINDOW_SIZE, 
+            (height << VIVS_RS_WINDOW_SIZE_HEIGHT__SHIFT) |
+            (width << VIVS_RS_WINDOW_SIZE_WIDTH__SHIFT));
+    etna_set_state(cmdPtr, VIVS_RS_KICKER, 0xbeebbeeb);
 
     /* Submit fourth command buffer
      */

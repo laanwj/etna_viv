@@ -5,7 +5,7 @@ if [ -z "$DEMO" ]; then
     echo "Defaulting to cube"
     DEMO="cube"
 fi
-IMAGE_OUT="/data/mine/replay.bmp"
+IMAGE_OUT="/mnt/sdcard/replay.bmp"
 if [ "$DEMO" == "ps_sandbox_etna" ]; then
     ARG="/data/mine/shader.bin"
     ../../tools/asm.py ../../rnndb/isa.xml sandbox.asm -o shader.bin

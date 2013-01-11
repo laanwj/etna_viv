@@ -35,7 +35,7 @@ from etnaviv.parse_rng import parse_rng_file, format_path, BitSet, Domain
 # u uniform 0..127
 # v uniform 127..255 (this is rewritten to u in format_src)
 #  others are unknown
-RGROUPS = ['t', '?1?', 'u', 'v', '?4?', '?5?', '?6?', '?7?']
+RGROUPS = ['t', 'i', 'u', 'v', '?4?', '?5?', '?6?', '?7?']
 # Addressing modes
 AMODES = ['', 'a.x', 'a.y', 'a.z', 'a.w', '?5?', '?6?', '?7?']
 # components

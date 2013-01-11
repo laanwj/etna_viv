@@ -31,10 +31,10 @@ from binascii import b2a_hex
 import re
 
 from etnaviv.parse_rng import parse_rng_file, format_path, BitSet, Domain
-from etnaviv.asm_common import DstOperand, DstOperandAReg, SrcOperand, TexOperand, AddrOperand, Instruction, AMODES, COMPS
+from etnaviv.asm_common import DstOperand, DstOperandAReg, SrcOperand, TexOperand, AddrOperand, Instruction, AMODES, COMPS, RGROUPS
 from etnaviv.asm_common import disassemble, format_instruction
 
-reg_re = re.compile('^(t|u|a|tex)(\d+)(\[.*?\])?(\.[\_xyzw]{1,4})?$')
+reg_re = re.compile('^(i|t|u|a|tex|\?4\?|\?5\?|\?6\?|\?7\?)(\d+)(\[.*?\])?(\.[\_xyzw]{1,4})?$')
 label_re = re.compile('^[0-9a-zA-Z\-\_]+$')
 
 def parse_amode(amode):
@@ -208,14 +208,15 @@ class Assembler(object):
                     except LookupError:
                         self.errors.append((self.linenr, 'Unparseable swizzle %s' % swiz))
                         swiz = 0
-                    if regtype == 't' or regtype == 'u':
-                        rgroup = 0
+                    if regtype in RGROUPS: # register group
                         if regtype == 'u':
                             if regid < 128:
                                 rgroup = 2
                             else:
                                 rgroup = 3
                                 regid -= 128
+                        else:
+                            rgroup = RGROUPS.index(regtype)
                         src.append(SrcOperand(use=1, reg=regid, swiz=swiz, neg=neg, abs=abs, amode=amode, rgroup=rgroup))
                     elif regtype == 'a':
                         src.append(DstOperandAReg(reg=regid, comps=comps))
@@ -254,6 +255,7 @@ class Assembler(object):
                     addr = AddrOperand(self.labels[inst.addr.addr])
                 except LookupError:
                     self.errors.append((inst.linenr, 'Unknown label ' + inst.addr.addr))
+                    addr = AddrOperand(0) # dummy
                 inst = inst._replace(addr=addr)
             inst_out = assemble(self.isa, inst, warnings)
             rv.append(inst_out)
@@ -267,6 +269,8 @@ class Assembler(object):
             
             for warning in warnings:
                 self.errors.append((inst.linenr, warning))
+        if self.errors:
+            return None
         return rv
 
 def compare_inst(a,b,warnings):

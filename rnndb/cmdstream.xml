@@ -50,7 +50,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <value value="7" name="LINE_LOOP" brief="Line loop (GL_LINE_LOOP)"/>
     <value value="8" name="QUADS" brief="Quadliterals (GL_QUADS)"/>
 </enum>
-<domain name="VIV_STATE">
+<domain name="VIVS">
     <!-- should be import... -->
 </domain>
 <!-- same as in state.xml. should be import -->
@@ -72,7 +72,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             </bitfield>
             <bitfield pos="26" name="FIXP" brief="Convert loaded values from 16.16 fixed point to float32"/>
             <bitfield pos="25" low="16" name="COUNT" brief="Number of state words to load"/>
-            <bitfield pos="15" low="0" name="OFFSET" shr="2" brief="State load starting offset" type="VIV_STATE"/>
+            <bitfield pos="15" low="0" name="OFFSET" shr="2" brief="State load starting offset" type="VIVS"/>
         </reg32>
         <doc>COUNT state words follow. These are literally written to state space at
              the provided offset, after which the offset is increased.

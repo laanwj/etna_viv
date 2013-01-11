@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build, upload, execute egl2 on device and fetch data log
+# Build, upload, execute gles2 demo on device and fetch data log and resulting image
 DEMO=$1
 if [ -z "$DEMO" ]; then
     echo "Defaulting to cube"

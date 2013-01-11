@@ -87,6 +87,11 @@ void printdef (char *name, char *suf, int type, uint64_t val, char *file) {
 		fprintf (dst, "#define %s__%s%n", name, suf, &len);
 	else
 		fprintf (dst, "#define %s%n", name, &len);
+        if (type == 2)
+        {
+                fprintf (dst, "(x)");
+                len += 3;
+        }
 	if (type == 0 && val > 0xffffffffull)
 		seekcol (dst, len, startcol-8);
 	else
@@ -101,6 +106,9 @@ void printdef (char *name, char *suf, int type, uint64_t val, char *file) {
 		case 1:
 			fprintf (dst, "%"PRIu64"\n", val);
 			break;
+                case 2:
+			fprintf (dst, "((x) << %"PRIu64")\n", val);
+                        break;
 	}
 }
 
@@ -137,6 +145,9 @@ void printbitfield (struct rnnbitfield *bf, int shift) {
 	} else {
 		printdef (bf->fullname, "MASK", 0, bf->mask << shift, bf->file);
 		printdef (bf->fullname, "SHIFT", 1, bf->low + shift, bf->file);
+	        if (bf->typeinfo.type != RNN_TTYPE_INLINE_ENUM && bf->typeinfo.type != RNN_TTYPE_INLINE_BITSET) {
+		    printdef (bf->fullname, 0, 2, bf->low + shift, bf->file);
+                }
 	}
 	printtypeinfo (&bf->typeinfo, bf->fullname, bf->low + shift, bf->file);
 }

@@ -17,7 +17,7 @@ Devices with Vivante GPU
 - Google TV (Marvell Armada 1500, contains a GC1000)
 - OLPC (also Marvell Armada something with GC1000)
 - CuBox, including pro variant (Marvell Armada 510, GC600)
-- Many tablets and such based on Rockchip 2918 SoC (GC800)
+- Many older tablets and such based on Rockchip 2918 SoC (GC800)
 - Devices based on Freescale i.MX6 Series (GC2000, GC320, GC355)
 
 See also https://en.wikipedia.org/wiki/Vivante_Corporation
@@ -130,11 +130,11 @@ In addition to the `v2` and `v4` kernel drivers included in the archive there is
 https://github.com/rabeeh/linux/tree/master/arch/arm/mach-dove/gc600_driver_dove
 It has another slightly different (likely predating v2) interface.
 
-Envytools
-----------
+Envytools fork
+---------------
 
 The repository also contains a slightly modified subset of envytools for header generation from 
-the state / cmdstream / isa rnndb files, so they can be used from C code, build with
+the state / cmdstream / isa rnndb files, so they can be used from the C code, build with
 
     cd envytools
     mkdir build

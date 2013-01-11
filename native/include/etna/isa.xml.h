@@ -8,7 +8,7 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- /home/orion/projects/etna_viv/rnndb/isa.xml (  15836 bytes, from 2013-01-05 17:27:02)
+- /home/orion/projects/etna_viv/rnndb/isa.xml (  20750 bytes, from 2013-01-11 09:22:21)
 
 Copyright (C) 2013
 */
@@ -137,14 +137,14 @@ Copyright (C) 2013
 #define INST_CONDITION_LEZ					0x0000000e
 #define INST_CONDITION_LZ					0x0000000f
 #define INST_RGROUP_TEMP					0x00000000
-#define INST_RGROUP_UNK1					0x00000001
+#define INST_RGROUP_INTERNAL					0x00000001
 #define INST_RGROUP_UNIFORM_0					0x00000002
 #define INST_RGROUP_UNIFORM_1					0x00000003
 #define INST_AMODE_DIRECT					0x00000000
-#define INST_AMODE_INDEXED_X					0x00000001
-#define INST_AMODE_INDEXED_Y					0x00000001
-#define INST_AMODE_INDEXED_Z					0x00000002
-#define INST_AMODE_INDEXED_W					0x00000003
+#define INST_AMODE_ADD_A_X					0x00000001
+#define INST_AMODE_ADD_A_Y					0x00000002
+#define INST_AMODE_ADD_A_Z					0x00000003
+#define INST_AMODE_ADD_A_W					0x00000004
 #define INST_SWIZ_COMP_X					0x00000000
 #define INST_SWIZ_COMP_Y					0x00000001
 #define INST_SWIZ_COMP_Z					0x00000002
@@ -155,70 +155,105 @@ Copyright (C) 2013
 #define INST_COMPS_W						0x00000008
 #define INST_SWIZ_X__MASK					0x00000003
 #define INST_SWIZ_X__SHIFT					0
+#define INST_SWIZ_X(x)						((x) << 0)
 #define INST_SWIZ_Y__MASK					0x0000000c
 #define INST_SWIZ_Y__SHIFT					2
+#define INST_SWIZ_Y(x)						((x) << 2)
 #define INST_SWIZ_Z__MASK					0x00000030
 #define INST_SWIZ_Z__SHIFT					4
+#define INST_SWIZ_Z(x)						((x) << 4)
 #define INST_SWIZ_W__MASK					0x000000c0
 #define INST_SWIZ_W__SHIFT					6
+#define INST_SWIZ_W(x)						((x) << 6)
 #define VIV_ISA_WORD_0						0x00000000
 #define VIV_ISA_WORD_0_OPCODE__MASK				0x0000003f
 #define VIV_ISA_WORD_0_OPCODE__SHIFT				0
+#define VIV_ISA_WORD_0_OPCODE(x)				((x) << 0)
 #define VIV_ISA_WORD_0_COND__MASK				0x000007c0
 #define VIV_ISA_WORD_0_COND__SHIFT				6
+#define VIV_ISA_WORD_0_COND(x)					((x) << 6)
 #define VIV_ISA_WORD_0_SAT					0x00000800
 #define VIV_ISA_WORD_0_DST_USE					0x00001000
 #define VIV_ISA_WORD_0_DST_AMODE__MASK				0x0000e000
 #define VIV_ISA_WORD_0_DST_AMODE__SHIFT				13
+#define VIV_ISA_WORD_0_DST_AMODE(x)				((x) << 13)
 #define VIV_ISA_WORD_0_DST_REG__MASK				0x007f0000
 #define VIV_ISA_WORD_0_DST_REG__SHIFT				16
+#define VIV_ISA_WORD_0_DST_REG(x)				((x) << 16)
 #define VIV_ISA_WORD_0_DST_COMPS__MASK				0x07800000
 #define VIV_ISA_WORD_0_DST_COMPS__SHIFT				23
+#define VIV_ISA_WORD_0_DST_COMPS(x)				((x) << 23)
 #define VIV_ISA_WORD_0_TEX_ID__MASK				0xf8000000
 #define VIV_ISA_WORD_0_TEX_ID__SHIFT				27
+#define VIV_ISA_WORD_0_TEX_ID(x)				((x) << 27)
 
 #define VIV_ISA_WORD_1						0x00000004
 #define VIV_ISA_WORD_1_TEX_AMODE__MASK				0x00000007
 #define VIV_ISA_WORD_1_TEX_AMODE__SHIFT				0
+#define VIV_ISA_WORD_1_TEX_AMODE(x)				((x) << 0)
 #define VIV_ISA_WORD_1_TEX_SWIZ__MASK				0x000007f8
 #define VIV_ISA_WORD_1_TEX_SWIZ__SHIFT				3
+#define VIV_ISA_WORD_1_TEX_SWIZ(x)				((x) << 3)
 #define VIV_ISA_WORD_1_SRC0_USE					0x00000800
 #define VIV_ISA_WORD_1_SRC0_REG__MASK				0x001ff000
 #define VIV_ISA_WORD_1_SRC0_REG__SHIFT				12
+#define VIV_ISA_WORD_1_SRC0_REG(x)				((x) << 12)
+#define VIV_ISA_WORD_1_UNK1_21					0x00200000
 #define VIV_ISA_WORD_1_SRC0_SWIZ__MASK				0x3fc00000
 #define VIV_ISA_WORD_1_SRC0_SWIZ__SHIFT				22
+#define VIV_ISA_WORD_1_SRC0_SWIZ(x)				((x) << 22)
 #define VIV_ISA_WORD_1_SRC0_NEG					0x40000000
 #define VIV_ISA_WORD_1_SRC0_ABS					0x80000000
 
 #define VIV_ISA_WORD_2						0x00000008
 #define VIV_ISA_WORD_2_SRC0_AMODE__MASK				0x00000007
 #define VIV_ISA_WORD_2_SRC0_AMODE__SHIFT			0
+#define VIV_ISA_WORD_2_SRC0_AMODE(x)				((x) << 0)
 #define VIV_ISA_WORD_2_SRC0_RGROUP__MASK			0x00000038
 #define VIV_ISA_WORD_2_SRC0_RGROUP__SHIFT			3
+#define VIV_ISA_WORD_2_SRC0_RGROUP(x)				((x) << 3)
 #define VIV_ISA_WORD_2_SRC1_USE					0x00000040
 #define VIV_ISA_WORD_2_SRC1_REG__MASK				0x0000ff80
 #define VIV_ISA_WORD_2_SRC1_REG__SHIFT				7
+#define VIV_ISA_WORD_2_SRC1_REG(x)				((x) << 7)
+#define VIV_ISA_WORD_2_UNK2_16					0x00010000
 #define VIV_ISA_WORD_2_SRC1_SWIZ__MASK				0x01fe0000
 #define VIV_ISA_WORD_2_SRC1_SWIZ__SHIFT				17
+#define VIV_ISA_WORD_2_SRC1_SWIZ(x)				((x) << 17)
 #define VIV_ISA_WORD_2_SRC1_NEG					0x02000000
 #define VIV_ISA_WORD_2_SRC1_ABS					0x04000000
 #define VIV_ISA_WORD_2_SRC1_AMODE__MASK				0x38000000
 #define VIV_ISA_WORD_2_SRC1_AMODE__SHIFT			27
+#define VIV_ISA_WORD_2_SRC1_AMODE(x)				((x) << 27)
+#define VIV_ISA_WORD_2_UNK2_30__MASK				0xc0000000
+#define VIV_ISA_WORD_2_UNK2_30__SHIFT				30
+#define VIV_ISA_WORD_2_UNK2_30(x)				((x) << 30)
 
 #define VIV_ISA_WORD_3						0x0000000c
 #define VIV_ISA_WORD_3_SRC1_RGROUP__MASK			0x00000007
 #define VIV_ISA_WORD_3_SRC1_RGROUP__SHIFT			0
+#define VIV_ISA_WORD_3_SRC1_RGROUP(x)				((x) << 0)
+#define VIV_ISA_WORD_3_SRC2_IMM__MASK				0x003fff80
+#define VIV_ISA_WORD_3_SRC2_IMM__SHIFT				7
+#define VIV_ISA_WORD_3_SRC2_IMM(x)				((x) << 7)
 #define VIV_ISA_WORD_3_SRC2_USE					0x00000008
 #define VIV_ISA_WORD_3_SRC2_REG__MASK				0x00001ff0
 #define VIV_ISA_WORD_3_SRC2_REG__SHIFT				4
+#define VIV_ISA_WORD_3_SRC2_REG(x)				((x) << 4)
+#define VIV_ISA_WORD_3_UNK3_13					0x00002000
 #define VIV_ISA_WORD_3_SRC2_SWIZ__MASK				0x003fc000
 #define VIV_ISA_WORD_3_SRC2_SWIZ__SHIFT				14
+#define VIV_ISA_WORD_3_SRC2_SWIZ(x)				((x) << 14)
 #define VIV_ISA_WORD_3_SRC2_NEG					0x00400000
 #define VIV_ISA_WORD_3_SRC2_ABS					0x00800000
+#define VIV_ISA_WORD_3_UNK3_24					0x01000000
 #define VIV_ISA_WORD_3_SRC2_AMODE__MASK				0x0e000000
 #define VIV_ISA_WORD_3_SRC2_AMODE__SHIFT			25
+#define VIV_ISA_WORD_3_SRC2_AMODE(x)				((x) << 25)
 #define VIV_ISA_WORD_3_SRC2_RGROUP__MASK			0x70000000
 #define VIV_ISA_WORD_3_SRC2_RGROUP__SHIFT			28
+#define VIV_ISA_WORD_3_SRC2_RGROUP(x)				((x) << 28)
+#define VIV_ISA_WORD_3_UNK3_31					0x80000000
 
 
 #endif /* ISA_XML */

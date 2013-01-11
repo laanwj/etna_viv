@@ -181,5 +181,9 @@ Misc notes
 
   gl_fragCoord: contains the window-relative coordinates of the current fragment
 
-- In PS, RGROUP UNK1/?1? register 0.x contains the value of gl_FrontFacing
+- In PS, RGROUP 1 register i0.x contains the value of gl_FrontFacing. 
+  i0.y also contains a non-zero value. i0.zw are zero.
+
+- i1..i127 are simply aliases of i0, at least on my GC600.
+
 

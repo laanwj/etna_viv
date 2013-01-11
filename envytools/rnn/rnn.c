@@ -411,6 +411,8 @@ static void parsebitset(struct rnndb *db, char *file, xmlNode *node) {
 			variantsstr = strdup(getattrib(db, file, node->line, attr));
 		} else if (!strcmp(attr->name, "brief")) {
 			// TODO
+		} else if (!strcmp(attr->name, "masked")) {
+			// TODO
 		} else {
 			fprintf (stderr, "%s:%d: wrong attribute \"%s\" for bitset\n", file, node->line, attr->name);
 			db->estatus = 1;
@@ -671,6 +673,8 @@ static void parsedomain(struct rnndb *db, char *file, xmlNode *node) {
 			varsetstr = strdup(getattrib(db, file, node->line, attr));
 		} else if (!strcmp(attr->name, "variants")) {
 			variantsstr = strdup(getattrib(db, file, node->line, attr));
+		} else if (!strcmp(attr->name, "brief")) {
+                        /* ignored */
 		} else {
 			fprintf (stderr, "%s:%d: wrong attribute \"%s\" for domain\n", file, node->line, attr->name);
 			db->estatus = 1;
