@@ -27,13 +27,15 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 <domain name="VIV_ISA">
 <!-- XXX still unsure if rules-ng is a suitable format for ISA descriptions,
  I don't really think so, but it will initially help to put notes in a more structured format.
+ See function assemble() in asm.py and function disassemble() in etnaviv/disasm.py for details on assembling/disassembling
+ an instruction using the bitfields and instructions defined in this file.
  -->
-
 <enum name="INST_OPCODE" brief="Main opcode table">
     <!-- TODO: match against TGSI instructions 
          http://people.freedesktop.org/~csimpson/gallium-docs/tgsi.html 
 
-         Overall, the ISA seems to be mostly derived from DirectX shader assembly.
+         Overall the ISA seems to be based on DirectX shader assembly. This is pretty obvious in retrospect
+         as Vivante started by marketing DirectX-compatible GPUs for playing desktop PC games.
      -->
     <doc>
         Unused operands of an instruction should have their use flag at 0.
@@ -68,7 +70,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     </value>
     <value value="0x04" name="DST" brief="Calculates a distance vector">
         <doc>
-            dst.x := 1;
+            dst.x := 1
             dst.y := src0.y * src1.y
             dst.z := src0.z
             dst.w := src1.w
@@ -80,11 +82,18 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <doc>
             dst := src0.x * src1.x + src0.y * src1.y + src0.z * src1.z
 
+            Computes the component-wise dot product of the first three components between src0 and src1 and 
+            broadcasts the results to all destination components in temporary register dst.
+        </doc>
+    </value>
+    <value value="0x06" name="DP4" brief="4-component dot product">
+        <doc>
+            dst := src0.x * src1.x + src0.y * src1.y + src0.z * src1.z + src0.w * src1.w
+
             Computes the component-wise dot product between src0 and src1 and broadcasts the results to all destination 
             components in temporary register dst.
         </doc>
     </value>
-    <value value="0x06" name="DP4" brief="4-component dot product"/>
     <value value="0x07" name="DSX" brief="Compute derivative relative to X"/>
     <value value="0x08" name="DSY" brief="Compute derivative relative to Y"/>
     <value value="0x09" name="MOV" brief="Move to temporary register">
@@ -170,8 +179,24 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     </value>
     <value value="0x14" name="CALL" brief="Function call"/>
     <value value="0x15" name="RET" brief="Return from function"/>
-    <value value="0x16" name="BRANCH" brief="Jump to address"/>
-    <value value="0x17" name="TEXKILL" brief="Cancels rendering of the current fragment"/>
+    <value value="0x16" name="BRANCH" brief="Jump to address">
+        <doc>
+            pc := src2_imm *if src1 COND src2*
+
+            Changes the current value of the instruction pointer if (src1 COND src2) evaluates
+            to true.
+        </doc>
+    </value>
+    <value value="0x17" name="TEXKILL" brief="Cancels rendering of the current fragment">
+        <doc>
+            Discards (kills) the current fragment. Can only be used in PS.
+
+            No input or output arguments. 
+
+            XXX figure out if the COND bits are used. It appears not, as the blob generates BRANCH.XX based flow
+            control around it.
+        </doc>
+    </value>
     <value value="0x18" name="TEXLD" brief="Texture load">
         <doc>
             dst := textureND(tex, src0)
@@ -238,14 +263,15 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             Return 1.0 if the sign is positive or zero, -1.0 if negative.
         </doc>
     </value>
+    <!-- The following only exist on GLES3/OpenCL capable devices -->
     <value value="0x28" name="ADDLO"/>
     <value value="0x29" name="MULLO"/>
     <value value="0x2A" name="BARRIER" brief="Thread barrier"/>
     <value value="0x2B" name="SWIZZLE"/>
-    <value value="0x2C" name="I2I"/> <!-- OpenCL -->
-    <value value="0x2D" name="I2F"/> <!-- OpenCL -->
-    <value value="0x2E" name="F2I"/> <!-- OpenCL -->
-    <value value="0x2F" name="F2IRND"/>  <!-- OpenCL -->
+    <value value="0x2C" name="I2I"/>
+    <value value="0x2D" name="I2F"/>
+    <value value="0x2E" name="F2I"/>
+    <value value="0x2F" name="F2IRND"/>
     <value value="0x30" name="F2I7"/>
     <value value="0x31" name="CMP" brief="Compare"/>
     <value value="0x32" name="LOAD"/>
@@ -287,13 +313,13 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <value value="0x56" name="MOVAI" brief="Move int to address register"/>
     <value value="0x57" name="IABS"/>
     <value value="0x58" name="LEADZERO" brief="Count leading zeros"/>
-    <value value="0x59" name="LSHIFT" brief="Bitwise left shift"/> <!-- OpenCL -->
-    <value value="0x5A" name="RSHIFT" brief="Bitwise right shift"/> <!-- OpenCL -->
-    <value value="0x5B" name="ROTATE" brief="Bitwise rotate"/> <!-- OpenCL -->
-    <value value="0x5C" name="OR" brief="Bitwise or"/> <!-- OpenCL -->
-    <value value="0x5D" name="AND" brief="Bitwise and"/> <!-- OpenCL -->
-    <value value="0x5E" name="XOR" brief="Bitwise xor"/> <!-- OpenCL -->
-    <value value="0x5F" name="NOT" brief="Bitwise not"/> <!-- OpenCL -->
+    <value value="0x59" name="LSHIFT" brief="Bitwise left shift"/>
+    <value value="0x5A" name="RSHIFT" brief="Bitwise right shift"/>
+    <value value="0x5B" name="ROTATE" brief="Bitwise rotate"/>
+    <value value="0x5C" name="OR" brief="Bitwise or"/>
+    <value value="0x5D" name="AND" brief="Bitwise and"/>
+    <value value="0x5E" name="XOR" brief="Bitwise xor"/>
+    <value value="0x5F" name="NOT" brief="Bitwise not"/>
     <value value="0x60" name="BITSELECT"/>
     <value value="0x61" name="POPCOUNT"/>
 </enum>
@@ -337,18 +363,21 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 
 <enum name="INST_RGROUP" brief="Register group">
     <value value="0" name="TEMP" brief="Temporary"/>
-    <value value="1" name="UNK1"/>
+    <value value="1" name="INTERNAL" brief="Derived values">
+        Only one register in this range is known:
+        - 0.x: gl_FrontFacing (PS)
+    </value>
     <value value="2" name="UNIFORM_0" brief="Uniforms 0..127"/>
     <value value="3" name="UNIFORM_1" brief="Uniforms 128..255"/>
-    <!-- more values, it's 3 bits? -->
+    <!-- 4..7 alias 0..3 -->
 </enum>
 
 <enum name="INST_AMODE" brief="Addressing mode">
     <value value="0" name="DIRECT"/>
-    <value value="1" name="INDEXED_X"/>
-    <value value="1" name="INDEXED_Y"/>
-    <value value="2" name="INDEXED_Z"/>
-    <value value="3" name="INDEXED_W"/>
+    <value value="1" name="ADD_A_X" brief="Add a.x to the sampler or register index"/>
+    <value value="2" name="ADD_A_Y" brief="Add a.y to the sampler or register index"/>
+    <value value="3" name="ADD_A_Z" brief="Add a.z to the sampler or register index"/>
+    <value value="4" name="ADD_A_W" brief="Add a.w to the sampler or register index"/>
 </enum>
 
 <enum name="INST_SWIZ_COMP" brief="Swizzle source component">
