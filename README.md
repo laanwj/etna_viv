@@ -44,6 +44,10 @@ Shader (both vertex and fragment) instruction set description in rules-ng-ng for
 
     rnndb/isa.xml
 
+Some written down notes, and examples of disassembled shaders can be found here:
+
+    doc/isa.md
+
 Vivante has a unified, fixed-size, predictable instruction format with explicit inputs 
 and outputs. This does simplify code generation, compared to a weird flow 
 pipe system like the Mali 200/400.
@@ -63,26 +67,36 @@ There is also an assembler:
 
 Command stream format
 -----------------------
-    
-Command stream format represented in rules-ng-ng XML format. 
+
+Like many other GPUs, the primary means of programming the chip is through a command stream 
+interpreted by a DMA engine. This "Front End" takes care of distributing state changes through
+the individual modules of the GPU, kicking off primitive rendering, synchronization, 
+and also supports some primitive flow control (branch, call, return).
+
+Most of the relevant bits of this command stream have been deciphered.
+
+The command stream format represented in rules-ng-ng XML format can be found here:
 
     rnndb/cmdstream.xml
 
-Most of the relevant bits have been deciphered.
 
 Command stream interception
 ----------------------------
 
-    native/egl/*.c
+`viv_hook`: A library to intercept and log the traffic between libGAL (the Vivante user space blob) and the kernel
+driver / hardware.
 
-Uses ELF hooks to intercept ioctl and mmap calls from libGAL (the Vivante user space blob)
-to the kernel driver, while running GLES2 examples.
+It uses ELF hooks to intercept only system calls such as ioctl and mmap coming from the driver, not from
+other parts of the application (unlike more crude hacks using `LD_PRELOAD`).
 
 At the beginning of the program call `the_hook`, at the end of the program call `end_hook` to finalize 
-and flush buffers.
+and flush buffers. This should even work for native android applications that fork from the zygote.
 
 The raw binary structures interchanged with the kernel are written to disk in a `.fdr` file, along 
-with updates to video memory, to be parsed by the accompanying tools.
+with updates to video memory, to be parsed by the accompanying command stream dumper and other tools.
+
+    native/egl/*.c
+
 
 Command stream dumper
 ----------------------
@@ -97,7 +111,7 @@ Decodes and dumps the intercepted command stream in human readable format, makin
 
 - `fdr_dump_mem.py`
 
-Helps extract areas of video memory and command buffers at certain points of execution.
+Helps extract areas of video memory, images, and command buffers at certain points of execution.
 
 Replay test
 --------------
@@ -112,6 +126,16 @@ Replays the command stream and ioctl commands of the EGL demos, to get the same 
 
 Currently this is available for the `cube` example that renders a smoothed cube, and the `cube_companion`
 example that renders a textured cube.
+
+Command stream builder
+-----------------------
+
+A beginning has been made of a simple low-level driver that builds the command stream from scratch and submits
+it to the kernel driver:
+
+    native/lib/viv.(c|h)
+    native/replay/cube_etna.c (renders the GLES2 smoothed cube)
+    native/replay/ps_sandbox_etna.c (to experiment with shaders)
 
 Vivante GPL kernel driver
 --------------------------
@@ -128,12 +152,14 @@ The drivers are rooted in the kernel tree at `drivers/gpu/vivante`.
 In addition to the `v2` and `v4` kernel drivers included in the archive there is another a kernel driver
 (0.8.x) part of the Linux mach-dove architecture as used for Cubox:
 https://github.com/rabeeh/linux/tree/master/arch/arm/mach-dove/gc600_driver_dove
-It has another slightly different (likely predating v2) interface.
+It has another slightly different (likely predating `v2`) interface.
 
 Envytools fork
 ---------------
 
-The repository also contains a slightly modified subset of envytools for header generation from 
+Envytools (https://github.com/pathscale/envytools) is a set of tools aimed at developers of the open source
+NVidia driver Nouveau, however some parts such as rnndb be more generally applied. The repository 
+contains a slightly modified subset of envytools for header generation from 
 the state / cmdstream / isa rnndb files, so they can be used from the C code, build with
 
     cd envytools
@@ -158,7 +184,7 @@ Install the Android NDK and define a native build environment, for example like 
     export PATH="$PATH:$TOOLCHAIN/bin"
 
 To build the egl samples, you need to copy `libEGL_VIVANTE.so` `libGLESv2_VIVANTE.so` from the device `/system/lib/egl` to
-`native/lib/egl`. This is not needed if you just want to build the replay example, which does not rely in any way on the
+`native/lib/egl`. This is not needed if you just want to build the replay or etna tests, which do not rely in any way on the
 userspace blob.
 
 Run make in `native/replay` and `native/egl` separately.

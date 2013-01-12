@@ -271,14 +271,29 @@ The stride of these tiled surfaces is the number of bytes between one row of til
 512, it is `(512/4)*16*4=8192`.
 
 Render buffers
----------------
-
+-------------------
 It appears that render buffers pixel sizes are padded to a multiple of 64, ie, a width of 400 becomes 448 and 800 becomes 832.
+
+The render buffer is also tiled, albeit differently than the 4x4 tiling format of the textures.
+
+Original rendering:
+![Original rendering](https://raw.github.com/laanwj/etna_viv/master/doc/images/fsaa_result.png)
+
+Video memory representation:
+
+- No FSAA:
+![No FSAA](https://raw.github.com/laanwj/etna_viv/master/doc/images/fsaa1.png)
+
+- 2X FSAA:
+![2X FSAA](https://raw.github.com/laanwj/etna_viv/master/doc/images/fsaa2.png)
+
+- 4X FSAA:
+![4X FSAA](https://raw.github.com/laanwj/etna_viv/master/doc/images/fsaa4.png)
 
 Multisampling
 --------------
 
-GC600 supports 1, 2, or 4 MSAA samples.
+GC600 supports 1, 2, or 4 MSAA samples. Vivante's patent [1] on anti-aliasing may reveal some of the inner workings.
 
 - 256x256 target with 0 samples creates a 256x256 render target (duh)
 
@@ -320,7 +335,7 @@ GC600 supports 1, 2, or 4 MSAA samples.
     PE.COLOR_STRIDE := 0x800
     PE.DEPTH_STRIDE := 0x400  (doubled)
 
-Other differences based on whether MSAA is enabled:
+Other differences when MSAA is enabled:
 
 - `TS.MEM_CONFIG` is different when MSAA is used (see fields MSAA and MSAA_FORMAT). 
 - The TS surface belonging to the enlarged in the same way; just like there simply is a bigger render target.
@@ -337,4 +352,6 @@ input is likely added to the end.
 - When resolving the supersampled surface to another (normal pixmap) surface, flag `SOURCE_MSAA` must be configured appropriately to
   un-subsample the surface. `WINDOW_SIZE` for this resolve is the *doubled* window size as above, so 512x512 for a 256x256 render
   target with MSAA.
+
+[1] http://www.faqs.org/patents/app/20110249901
 

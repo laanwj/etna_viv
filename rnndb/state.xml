@@ -360,6 +360,21 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="11" name="A32L32F" brief="32-bit fp alpha luminosity format" />
         <value value="12" name="A2B10G10R10"/>
     </enum>
+    <enum name="TEXTURE_FILTER">
+        <value value="0" name="NONE"/>
+        <value value="1" name="NEAREST"/>
+        <value value="2" name="LINEAR"/>
+        <value value="3" name="ANISOTROPIC"/><!-- Only supported if HALTI0 feature bit set -->
+    </enum>
+    <enum name="TEXTURE_TYPE">
+        <value value="2" name="2D"/>
+        <value value="5" name="CUBE_MAP"/>
+    </enum>
+    <enum name="TEXTURE_WRAPMODE">
+        <value value="0" name="REPEAT"/>
+        <value value="1" name="MIRRORED_REPEAT"/>
+        <value value="2" name="CLAMP_TO_EDGE"/>
+    </enum>
     <enum name="ENDIAN_MODE" brief="Byte swap configuration">
         <value value="0" name="NO_SWAP" brief="No endian swap"/>
         <value value="1" name="SWAP_16" brief="Swap per 16 bit unit"/>
@@ -1584,14 +1599,18 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x01604" name="CONFIG" brief="Resolve configuration register" value="0x00000000">
             <bitfield high="4" low="0" name="SOURCE_FORMAT" type="RS_FORMAT" brief="Source color format"/>
-            <bitfield high="6" low="5" name="SOURCE_MSAA">
+            <bitfield high="6" low="5" name="SOURCE_MSAA" brief="Source supersampling factor">
+                <doc>
+                    A resolve operation can downsample a supersampled surface.
+                    This functionality is also used to compute mipmaps.
+                </doc>
                 <value value="0" name="NONE"/>
                 <value value="1" name="2X"/>
                 <value value="3" name="4X"/>
             </bitfield>
-            <bitfield pos="7" name="SOURCE_TILED"/>
+            <bitfield pos="7" name="SOURCE_TILED" brief="Source is tiled"/>
             <bitfield high="12" low="8" name="DEST_FORMAT" type="RS_FORMAT" brief="Destination color format"/>
-            <bitfield pos="14" name="DEST_TILED"/>
+            <bitfield pos="14" name="DEST_TILED" brief="Destination is tiled"/>
             <bitfield pos="29" name="SWAP_RB" brief="Swap red and blue"/>
             <bitfield pos="30" name="FLIP" brief="Flip image in Y direction"/>
         </reg32>
@@ -1605,14 +1624,19 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="17" low="0" name="STRIDE" brief="Destination stride"/>
             <bitfield pos="31" name="TILING" brief="Destination is tiled"/>
         </reg32>
-        <reg32 offset="0x01620" name="WINDOW_SIZE" value="0x00000000">
+        <reg32 offset="0x01620" name="WINDOW_SIZE" value="0x00000000" brief="Size of area to resolve">
+            <doc>
+                When resolving a supersampled rectangle to a non-supersampled destination,
+                the source and destination size will be different. In this case, the WINDOW_SIZE
+                will be the source size.
+            </doc>
             <bitfield high="31" low="16" name="HEIGHT" type="uint"/>
             <bitfield high="15" low="0" name="WIDTH" type="uint"/>
         </reg32>
         <reg32 offset="0x01630" name="DITHER" value="0x00000000" length="2" stride="4"/>
         <reg32 offset="0x0163C" name="CLEAR_CONTROL" value="0x00000000">
             <bitfield high="15" low="0" name="BITS" brief="Affects which channels of which tiles are cleared"/>
-            <bitfield high="17" low="16" name="MODE">
+            <bitfield high="17" low="16" name="MODE" brief="Enable clearing (disregards source)">
                 <value value="0" name="DISABLED"/>
                 <value value="1" name="ENABLED"/> <!-- is there difference between these modes? -->
                 <value value="2" name="ENABLED2"/>
@@ -1624,7 +1648,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="0" name="FLUSH"/>
         </reg32>
         <reg32 offset="0x016A0" name="EXTRA_CONFIG" value="0x00000000">
-            <bitfield high="1" low="0" name="AA" brief="Anti-aliasing mode"/>
+            <bitfield high="1" low="0" name="AA" brief="Anti-aliasing mode (not used for MSAA)"/>
             <bitfield high="9" low="8" name="ENDIAN" type="ENDIAN_MODE"/>
         </reg32>
         <reg32 offset="0x016B4" name="UNK016B4" value="0x00000000"/>
@@ -1645,7 +1669,12 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="4" name="DEPTH_AUTO_DISABLE" brief="Auto disable fast clear for depth"/>
             <bitfield pos="5" name="COLOR_AUTO_DISABLE" brief="Auto disable fast clear for color"/>
             <bitfield pos="6" name="DEPTH_COMPRESSION" brief="Enable depth compression"/>
-            <bitfield pos="7" name="MSAA" brief="This bit is enabled when MSAA samples >= 2"/>
+            <bitfield pos="7" name="MSAA" brief="This bit is enabled when MSAA samples >= 2">
+                <doc>
+                    The main bits for switching MSAA in rendering are in register #0x03818, these bits
+                    in the TS memory configuration appear to affect the writing of tiles in a minor way.
+                </doc>
+            </bitfield>
             <bitfield high="11" low="8" name="MSAA_FORMAT">
                 <value value="0" name="A4R4G4B4"/>
                 <value value="1" name="A1R5G5B5"/>
@@ -1691,7 +1720,15 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <stripe name="TE" brief="TExture sampler states">
         <doc>Texture sampling, filtering, LOD, etc</doc>
         <stripe name="SAMPLER" length="12" stride="4"> 
-            <reg32 offset="0x2000" name="CONFIG_1" value="0x00000000"/>
+            <reg32 offset="0x2000" name="CONFIG0" value="0x00000000">
+                <bitfield high="2" low="0" name="TYPE" type="TEXTURE_TYPE"/>
+                <bitfield high="4" low="3" name="UWRAP" type="TEXTURE_WRAPMODE"/>
+                <bitfield high="6" low="5" name="VWRAP" type="TEXTURE_WRAPMODE"/>
+                <bitfield high="8" low="7" name="MIN" type="TEXTURE_FILTER"/>
+                <bitfield high="10" low="9" name="MIP" type="TEXTURE_FILTER"/>
+                <bitfield high="12" low="11" name="MAG" type="TEXTURE_FILTER"/>
+                <bitfield high="17" low="13" name="FORMAT" type="TEXTURE_FORMAT"/>
+            </reg32>
             <reg32 offset="0x2040" name="SIZE" value="0x00000000">
                 <bitfield high="15" low="0" name="WIDTH" type="uint"/>
                 <bitfield high="31" low="16" name="HEIGHT" type="uint"/>
@@ -1700,18 +1737,24 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <bitfield high="9" low="0" name="WIDTH" type="fixedp"/>
                 <bitfield high="19" low="10" name="HEIGHT" type="fixedp"/>
             </reg32>
-            <reg32 offset="0x20C0" name="LOD_CONFIG" value="0x00000000"/>
+            <reg32 offset="0x20C0" name="LOD_CONFIG" value="0x00000000">
+                <bitfield high="10" low="1" name="MAX" type="fixedp" brief="Maximum LOD level"/>
+                <bitfield high="20" low="11" name="MIN" type="fixedp" brief="Minimum LOD level"/>
+                <bitfield high="30" low="21" name="BIAS" type="fixedp" brief="LOD bias"/>
+            </reg32>
             <reg32 offset="0x2100" name="UNK02100" value="0x00000000"/>
             <reg32 offset="0x2140" name="UNK02140" value="0x00000000"/>
             <reg32 offset="0x2180" name="UNK02180" value="0x00000000"/>
-            <reg32 offset="0x21C0" name="CONFIG_2" value="0x00321000"/>
+            <reg32 offset="0x21C0" name="CONFIG1" value="0x00321000">
+                <bitfield high="4" low="0" name="FORMAT_EXT" type="TEXTURE_FORMAT_EXT"/>
+            </reg32>
             <reg32 offset="0x2200" name="UNK02200" value="0x00000000"/>
             <reg32 offset="0x2240" name="UNK02240" value="0x00000000"/>
             <reg32 offset="0x2400" name="LOD_ADDR" length="14" stride="0x40" type="VIVM"/> <!-- Base address, per LOD level -->
         </stripe>
     </stripe>
     
-    <stripe name="NEW_TE" brief="New texture states">
+    <stripe name="NTE" brief="New texture states">
         <doc>Extra texture states for newer hardware. These exist if chipMinorFeatures2 bit 11 set.</doc>
         <array offset="0x10000" name="SAMPLER" length="32" stride="4">
             <reg32 offset="0x000" name="CONFIG_1" value="0x00000000"/> <!-- probably same as under TEXTURE.SAMPLER -->

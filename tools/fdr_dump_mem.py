@@ -34,7 +34,7 @@ def parse_arguments():
     parser.add_argument('input', metavar='INFILE', type=str, 
             help='FDR file')
     parser.add_argument('seq', metavar='SEQ', type=str, 
-            help='Event sequenct #')
+            help='Event sequence #')
     parser.add_argument('addr', metavar='ADDR', type=str, 
             help='Starting address')
     parser.add_argument('size', metavar='SIZE', type=str, 

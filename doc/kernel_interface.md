@@ -197,9 +197,10 @@ What are these used for? Seems they are the last parameters of a 'LOAD_STATE' co
 At least in the v2 kernel driver they are not used. They are used for building the buffer from the 
 userspace driver, but not for using it.
 
-
 Profiling
 ===============
+
+To enable profiling, the kernel most have been built with `VIVANTE_PROFILER` enabled in `gc_hal_options.h`.
 
 HW profiling registers can be read using the ioctl:
 
@@ -289,4 +290,5 @@ HI (Host interface)
     hi_axi_cycles_read_request_stalled
     hi_axi_cycles_write_request_stalled
     hi_axi_cycles_write_data_stalled
+
 
