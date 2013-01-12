@@ -34,14 +34,15 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 
      This file is in Envytools rules-ng-ng format with the following extensions:
 
-         - regXX attribute value: initial state value in new context
-         - attribute brief: short human-friendly name of this register/array, can be an attribute as well as <brief>;
+         - regXX attribute "value": initial state value in new context
+         - attribute "brief": short human-friendly name of this register/array, can be an attribute as well as <brief>;
                                    <doc> is left for longer specific documentation
          - type="fixedp": (N/2).(N/2) fixed-point value, where N is the number of bits of the bit field,
              so in case of a 32 bit field it will be a 16.16 FP value.
-         - domains can be used as types
+         - domains can be used as types (to signify a memory address in a certain domain)
          - for registers: masked="yes", defaults to "no"
-           register supports partial state writes by using masks per bit group
+           mark registers that support partial state writes by using masks per bit group
+           (mask for state group A is called A_MASK)
 
      TODO: variants are somewhat different from NV; what features are supported is determined by (most common first)
          1) Chip features and minor feature flags
@@ -50,7 +51,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
          4) Chip revision of the form 0x1234
 
          Generally the chip feature flags are used to distinguish functionality, as well as the specs, and not do much the model 
-         and revision. Unlike NV which parametrizes everything on the model, for GC this is left for bugfixes.
+         and revision. Unlike NV which parametrizes everything on the model, for GC this is done only for bugfixes.
 -->
 <domain name="VIVM" brief="GPU memory domain">
 </domain>
@@ -61,10 +62,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
      --> 
     <enum name="chipModel">
         <value value="0x0300" name="GC300"/> <!-- 2D graphics -->
-        <value value="0x0320" name="GC320"/> <!-- 2D graphics (Composition) -->
+        <value value="0x0320" name="GC320"/> <!-- 2D graphics + Compose engine -->
         <value value="0x0350" name="GC350"/> <!-- OpenVG -->
         <value value="0x0355" name="GC355"/> <!-- OpenVG -->
-        <value value="0x0400" name="GC400"/> <!-- 3D graphics, 1 core -->
+        <value value="0x0400" name="GC400"/> <!-- 3D graphics, 1 core, according to Vivante it is "the smallest OpenGL ES 2.0 compliant GPU available today" -->
         <value value="0x0410" name="GC410"/>
         <value value="0x0420" name="GC420"/>
         <value value="0x0450" name="GC450"/>
@@ -261,13 +262,16 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield pos="31" name="UNK31"/>
     </bitset>
     <!-- Other generic enums -->
-    <enum name="ENABLE_DISABLE" inline="yes">
+    <enum name="ENABLE_DISABLE" inline="yes"> 
+        <!-- Generic type for functionality that can be enabled/disabled, it can be somewhat clearer than a
+             boolean (RNN default type for 1-bit values) in some cases.
+          -->
         <value value="0" name="DISABLE"/>
         <value value="1" name="ENABLE"/>
     </enum>
     <enum name="PIPE_ID">
         <value value="0" name="PIPE_3D"/>
-        <value value="1" name="PIPE_2D"/>
+        <value value="1" name="PIPE_2D"/> <!-- DE only -->
     </enum>
     <enum name="VARYING_COMPONENT_USE">
         <value value="0" name="UNUSED" brief="Component is not used"/>
@@ -275,7 +279,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="2" name="POINTCOORD_X" brief="glPointCoord.x"/>
         <value value="3" name="POINTCOORD_Y" brief="glPointCoord.y"/>
     </enum>
-    <enum name="COMPARE_FUNC" brief="Compare function (for glStencilFunc and glFepthFunc)">
+    <enum name="COMPARE_FUNC" brief="Compare function (for glStencilFunc and glDepthFunc)">
         <value value="0" name="NEVER"/>
         <value value="1" name="LESS"/>
         <value value="2" name="EQUAL"/>
@@ -285,7 +289,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="6" name="GEQUAL"/>
         <value value="7" name="ALWAYS"/>
     </enum>
-    <enum name="STENCIL_OP" brief="glStencilOp">
+    <enum name="STENCIL_OP" brief="Stencil operation">
         <value value="0" name="KEEP" brief="Keeps the current value"/>
         <value value="1" name="ZERO" brief="Sets the stencil buffer value to 0"/>
         <value value="2" name="REPLACE" brief="Sets the stencil value to ref"/>
@@ -295,7 +299,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="6" name="INCR_WRAP" brief="Increments stencil buffer value, wraps around"/>
         <value value="7" name="DECR_WRAP" brief="Decrements stencil buffer value, wraps around"/>
     </enum>
-    <enum name="BLEND_EQ" brief="glBlendEquation">
+    <enum name="BLEND_EQ" brief="Blend equation">
+        <doc>determines how pixel blending combines source and destination</doc>
         <value value="0" name="ADD"/>
         <value value="1" name="SUBTRACT"/>
         <value value="2" name="REVERSE_SUBTRACT"/>
@@ -381,6 +386,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="2" name="SWAP_32" brief="Swap per 32 bit unit"/>
     </enum>
     <enum name="SYNC_RECIPIENT" brief="Synchronization source/destination">
+        <doc>This is used for synchronization primitives, for example for semaphores and stalling</doc>
         <value value="1" name="FE" brief="Front End"/>
         <value value="5" name="RA" brief="Raster"/>
         <value value="7" name="PE" brief="Pixel Engine"/>
@@ -427,13 +433,13 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="11" name="TS" brief="Tile status is idle"/>
             <bitfield pos="31" name="AXI_LP" brief="AXI bus in low power mode"/>
         </reg32>
-        <reg32 offset="0x00008" name="AXI_CONFIG">
+        <reg32 offset="0x00008" name="AXI_CONFIG" brief="AXI bus configuration">
           <bitfield high="3" low="0" name="AWID"/>
           <bitfield high="7" low="4" name="ARID"/>
           <bitfield high="11" low="8" name="AWCACHE"/>
           <bitfield high="15" low="12" name="ARCACHE"/>
         </reg32>
-        <reg32 offset="0x0000C" name="AXI_STATUS">
+        <reg32 offset="0x0000C" name="AXI_STATUS" brief="AXI bus status">
           <bitfield high="3" low="0" name="WR_ERR_ID"/>
           <bitfield high="7" low="4" name="RD_ERR_ID"/>
           <bitfield high="8" low="8" name="DET_WR_ERR"/>

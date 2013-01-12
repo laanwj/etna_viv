@@ -54,8 +54,8 @@ Functional blocks, indicated by two-letter abbreviations:
 - SE Setup Engine (depth offset, scissor, clipping)
 - RA RAsterizer (multisampling, clipping, culling, varying interpolation, generate fragments)
 - TX Texture
-- VG Vector Graphics (not available)
-- IM ? (unknown bit in idle state, may group a few other modules)
+- VG Vector Graphics
+- IM ? (unknown bit in idle state, may group a few other modules, or maybe the 2D DE)
 - FP Fragment Processor (not available, probably was present in older GLES1 HW)
 - MC Memory Controller
 - HI Host Interface
@@ -64,7 +64,7 @@ Functional blocks, indicated by two-letter abbreviations:
   - VR Video raster (YUV tiler)
   - TS Tile Status
 
-These abbreviations are used in `state.xml` where appropriate.
+These abbreviations are used in `state.xml` for the stripes where appropriate.
 
 [1] http://www.socip.org/socip/speech/pdf/2-Vivante-SoCIP%202011%20Presentation.pdf
 
@@ -139,16 +139,14 @@ Opcodes
 Arguments are always padded to 2 32-bit words. Number of arguments depends on the opcode, and 
 sometimes on the first word of the command.
 
-Commands (also see `cmdstream.xml`)
+See `cmdstream.xml` for details overview of commands and arguments. The most commonly used command is
+`LOAD_STATE` whose header word has the following format:
 
     00001FCC CCCCCCCC AAAAAAAA AAAAAAAA  Update state
 
-      F    Fixed point flag
-      C    Count
+      F    Fixed point flag: convert a 16.16 fixed point float in the command stream to a floating point value in the state.
+      C    Count of state words that follow
       A    Base address / 4
-
-Fixed point flag: convert a 16.16 fixed point float in the command stream
-   to a floating point value in the state.
 
 Synchronization
 ----------------
@@ -158,7 +156,6 @@ and the GPU and the CPU (through the FE).
 - `SEMAPHORE_TOKEN`
 - `STALL_TOKEN`
 - `STALL` command in command stream
-(usually from PE to FE)
 
 The following sequence of states is common:
 
@@ -176,10 +173,9 @@ XXX (cwabbott) usually, isa's have some sort of texture barrier or sync operatio
 
 Resolve
 -----------
-The resolve module is a glorified copy and fill engine. It can copy blocks of pixels
-from one GPU address to another, optionally tiling/detiling. The source and destination address
-can be the same for pixel format conversions, or to fill in tiles that were not touched
-during the rendering process with the background color.
+The resolve module is a copy and fill engine. It can copy blocks of pixels from one GPU address to another, 
+optionally tiling/detiling, converting between pixel formats, or scaling down by a factor of 2. The source and 
+destination address can be the same for fill in tiles that were not touched during the rendering process with the background color.
 
 Tile status (Fast clear)
 -------------------------
@@ -200,11 +196,11 @@ the source is ignored.
 Shader ISA
 ================
 
-Vivante GPUs have unified shader ISA, this means that vertex and pixel shaders share the same 
+Vivante GPUs have a unified shader ISA, this means that vertex and pixel shaders share the same 
 instruction set. See `isa.xml` for details about the instructions, this section only provides a high-level overview.
 
-- One operation consists of 4 32-bit words. This have a fixed format, which only differs very little per opcode. Which
-instruction fields are used does differ per opcode.
+- One operation consists of 4 32-bit words. This have a fixed format, with bitfields with a fixed purpose
+which only differs very little per opcode. The actual instruction fields that are used (which operands) does differ per opcode.
 
 - Four-component SIMD processor
 
@@ -214,7 +210,7 @@ instruction fields are used does differ per opcode.
 - Instructions can have up to three source operands (`SRC0_*`, `SRC1_*`, `SRC2_*`), and one destination operand (`DST_`). 
    In addition to that, there is a specific operand for texture sampling (`TEX_*`).
 
-- For every operand there are these properties:
+- Operands can have these properties:
   - `USE`: the operand is enabled (1) or not (0)
   - `REG`: register number to read or write
   - `SWIZ`: arbitrary swizzle from four to four components (source operands only)
@@ -224,12 +220,13 @@ instruction fields are used does differ per opcode.
      possibly others.
 
 - Registers:
-  - N temporary registers (actual number depends on the hardware, seems to be at least 64)
-  - 1 address register
+  - N four-component float temporary registers `tX` (actual number depends on the hardware, seems to be at least 64, but like with other GPUs
+    using more registers will likely restrict the available paralellism)
+  - 1 four-component address register `a0`
 
 Temporary registers are also used for shader inputs (attributes, varyings) and outputs (colors, positions). They are set to
 the input values before the shader executes, and should have the output values when the shader ends. If the output
-should be the same as the input (passthrough) an empty shader can be used.
+should be the same as the input (passthrough) an empty shader with only a NOP instruction can be used.
 
 Programming pecularities
 =========================

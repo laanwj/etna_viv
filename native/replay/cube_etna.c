@@ -133,31 +133,40 @@ float vNormals[] = {
 char is_padding[0x8000 / 4];
 #endif
 
+/* macro for MASKED() (multiple can be &ed) */
+#define VIV_MASKED(NAME, VALUE) (~(NAME ## _MASK | NAME ## __MASK) | ((VALUE)<<(NAME ## __SHIFT)))
+/* for boolean bits */
+#define VIV_MASKED_BIT(NAME, VALUE) (~(NAME ## _MASK | NAME) | ((VALUE) ? NAME : 0))
+/* for inline enum bit fields 
+ * XXX in principle headergen could simply generate these fields prepackaged 
+ */
+#define VIV_MASKED_INL(NAME, VALUE) (~(NAME ## _MASK | NAME ## __MASK) | (NAME ## _ ## VALUE))
+
 /* XXX store state changes
  * group consecutive states 
  * make LOAD_STATE commands, add to current command buffer
  */
-inline void etna_set_state(struct _gcoCMDBUF *commandBuffer, uint32_t address, uint32_t value)
+inline void etna_set_state(gcoCMDBUF commandBuffer, uint32_t address, uint32_t value)
 {
 #ifdef CMD_DEBUG
     printf("%05x := %08x\n", address, value);
 #endif
     uint32_t *tgt = (uint32_t*)((size_t)commandBuffer->logical + commandBuffer->offset);
     tgt[0] = VIV_FE_LOAD_STATE_HEADER_OP_LOAD_STATE |
-            (1 << VIV_FE_LOAD_STATE_HEADER_COUNT__SHIFT) |
-            ((address >> 2) << VIV_FE_LOAD_STATE_HEADER_OFFSET__SHIFT);
+            VIV_FE_LOAD_STATE_HEADER_COUNT(1) |
+            VIV_FE_LOAD_STATE_HEADER_OFFSET(address >> 2);
     tgt[1] = value;
     commandBuffer->offset += 8;
 }
 
 /* this can be inlined, though would likely be even faster to return a pointer and let the client write to
  * the buffer directly */
-inline void etna_set_state_multi(struct _gcoCMDBUF *commandBuffer, uint32_t base, uint32_t num, uint32_t *values)
+inline void etna_set_state_multi(gcoCMDBUF commandBuffer, uint32_t base, uint32_t num, uint32_t *values)
 {
     uint32_t *tgt = (uint32_t*)((size_t)commandBuffer->logical + commandBuffer->offset);
     tgt[0] = VIV_FE_LOAD_STATE_HEADER_OP_LOAD_STATE |
-            ((num & 0x3ff) << VIV_FE_LOAD_STATE_HEADER_COUNT__SHIFT) |
-            ((base >> 2) << VIV_FE_LOAD_STATE_HEADER_OFFSET__SHIFT);
+            VIV_FE_LOAD_STATE_HEADER_COUNT(num & 0x3ff) |
+            VIV_FE_LOAD_STATE_HEADER_OFFSET(base >> 2);
 #ifdef CMD_DEBUG
     for(uint32_t idx=0; idx<num; ++idx)
     {
@@ -175,7 +184,7 @@ inline void etna_set_state_multi(struct _gcoCMDBUF *commandBuffer, uint32_t base
         commandBuffer->offset += 4;
     }
 }
-inline void etna_set_state_f32(struct _gcoCMDBUF *commandBuffer, uint32_t address, float value)
+inline void etna_set_state_f32(gcoCMDBUF commandBuffer, uint32_t address, float value)
 {
     union {
         uint32_t i32;
@@ -183,20 +192,20 @@ inline void etna_set_state_f32(struct _gcoCMDBUF *commandBuffer, uint32_t addres
     } x = { .f32 = value };
     etna_set_state(commandBuffer, address, x.i32);
 }
-inline void etna_set_state_fixp(struct _gcoCMDBUF *commandBuffer, uint32_t address, uint32_t value)
+inline void etna_set_state_fixp(gcoCMDBUF commandBuffer, uint32_t address, uint32_t value)
 {
 #ifdef CMD_DEBUG
     printf("%05x := %08x (fixp)\n", address, value);
 #endif
     uint32_t *tgt = (uint32_t*)((size_t)commandBuffer->logical + commandBuffer->offset);
     tgt[0] = VIV_FE_LOAD_STATE_HEADER_OP_LOAD_STATE |
-            (1 << VIV_FE_LOAD_STATE_HEADER_COUNT__SHIFT) |
+            VIV_FE_LOAD_STATE_HEADER_COUNT(1) |
             VIV_FE_LOAD_STATE_HEADER_FIXP |
-            ((address >> 2) << VIV_FE_LOAD_STATE_HEADER_OFFSET__SHIFT);
+            VIV_FE_LOAD_STATE_HEADER_OFFSET(address >> 2);
     tgt[1] = value;
     commandBuffer->offset += 8;
 }
-inline void etna_draw_primitives(struct _gcoCMDBUF *cmdPtr, uint32_t primitive_type, uint32_t start, uint32_t count)
+inline void etna_draw_primitives(gcoCMDBUF cmdPtr, uint32_t primitive_type, uint32_t start, uint32_t count)
 {
 #ifdef CMD_DEBUG
     printf("draw_primitives %08x %08x %08x %08x\n", 
@@ -211,37 +220,30 @@ inline void etna_draw_primitives(struct _gcoCMDBUF *cmdPtr, uint32_t primitive_t
     cmdPtr->offset += 16;
 }
 
-/* macro for MASKED() (multiple can be &ed) */
-#define VIV_MASKED(NAME, VALUE) (~(NAME ## _MASK | NAME ## __MASK) | ((VALUE)<<(NAME ## __SHIFT)))
-/* for boolean bits */
-#define VIV_MASKED_BIT(NAME, VALUE) (~(NAME ## _MASK | NAME) | ((VALUE) ? NAME : 0))
-/* for inline enum bit fields */
-#define VIV_MASKED_INL(NAME, VALUE) (~(NAME ## _MASK | NAME ## __MASK) | (NAME ## _ ## VALUE))
-
 /* warm up RS on aux render target */
-void etna_warm_up_rs(struct _gcoCMDBUF *cmdPtr, viv_addr_t aux_rt_physical, viv_addr_t aux_rt_ts_physical)
+void etna_warm_up_rs(gcoCMDBUF cmdPtr, viv_addr_t aux_rt_physical, viv_addr_t aux_rt_ts_physical)
 {
     etna_set_state(cmdPtr, VIVS_TS_COLOR_STATUS_BASE, aux_rt_ts_physical); /* ADDR_G */
     etna_set_state(cmdPtr, VIVS_TS_COLOR_SURFACE_BASE, aux_rt_physical); /* ADDR_F */
     etna_set_state(cmdPtr, VIVS_RS_FLUSH_CACHE, VIVS_RS_FLUSH_CACHE_FLUSH);
     etna_set_state(cmdPtr, VIVS_RS_CONFIG,  /* wut? */
-            (RS_FORMAT_A8R8G8B8 << VIVS_RS_CONFIG_SOURCE_FORMAT__SHIFT) |
+            VIVS_RS_CONFIG_SOURCE_FORMAT(RS_FORMAT_A8R8G8B8) |
             VIVS_RS_CONFIG_SOURCE_TILED |
-            (RS_FORMAT_R5G6B5 << VIVS_RS_CONFIG_DEST_FORMAT__SHIFT) |
+            VIVS_RS_CONFIG_DEST_FORMAT(RS_FORMAT_R5G6B5) |
             VIVS_RS_CONFIG_DEST_TILED);
     etna_set_state(cmdPtr, VIVS_RS_SOURCE_ADDR, aux_rt_physical); /* ADDR_F */
     etna_set_state(cmdPtr, VIVS_RS_SOURCE_STRIDE, 0x400);
     etna_set_state(cmdPtr, VIVS_RS_DEST_ADDR, aux_rt_physical); /* ADDR_F */
     etna_set_state(cmdPtr, VIVS_RS_DEST_STRIDE, 0x400);
     etna_set_state(cmdPtr, VIVS_RS_WINDOW_SIZE, 
-            (4 << VIVS_RS_WINDOW_SIZE_HEIGHT__SHIFT) |
-            (16 << VIVS_RS_WINDOW_SIZE_WIDTH__SHIFT));
+            VIVS_RS_WINDOW_SIZE_HEIGHT(4) |
+            VIVS_RS_WINDOW_SIZE_WIDTH(16));
     etna_set_state(cmdPtr, VIVS_RS_CLEAR_CONTROL, VIVS_RS_CLEAR_CONTROL_MODE_DISABLED);
     etna_set_state(cmdPtr, VIVS_RS_KICKER, 0xbeebbeeb);
 }
 
 #ifdef CMD_COMPARE
-int cmdbuffer_compare(struct _gcoCMDBUF *cmdPtr, uint32_t *cmdbuf, uint32_t cmdbuf_size)
+int cmdbuffer_compare(gcoCMDBUF cmdPtr, uint32_t *cmdbuf, uint32_t cmdbuf_size)
 {
     /* Count differences between generated and stored command buffer */
     int diff = 0;

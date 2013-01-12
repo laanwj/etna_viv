@@ -279,6 +279,8 @@ int viv_user_signal_wait(int sig_id, int wait)
 
 int viv_event_queue_signal(int sig_id, gceKERNEL_WHERE fromWhere)
 {
+    /* XXX is it important to keep the gcsQUEUE structure in memory until
+     * the event happens, or does the kernel copy it? */
     gcsQUEUE id = {
         .next = NULL,
         .iface = {
