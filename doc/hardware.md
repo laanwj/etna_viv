@@ -1,11 +1,12 @@
 GCxxx hardware
 ===============
 
-Major optional blocks. Each of these can be present or not depending on the specific chip.
+Major optional blocks. Each of these can be present or not depending on the specific chip:
 
 - 2D engine
 - Composition engine (multi source blit)
 - 3D engine
+- VG engine
 
 Feature bits
 =================
@@ -71,9 +72,10 @@ These abbreviations are used in `state.xml` for the stripes where appropriate.
 Operations
 -----------
 
-Modules are programmed and kicked off using state updates, queued through the FE.
+Modules are programmed and kicked off using state updates, queued through the FE. Except for 2D/3D primitive rendering,
+which is kicked off directly through a FE command.
 
-The GC320 technical manual [1] described quite a few operations, but only for the 2D part (DE).
+The GC320 technical manual [1] describes quite a few operations, but only for the 2D part (DE).
 
 Hands-on Workshop: Graphics Development on the i.MX 6 Series [2] has some tips specific to programming Vivante 3D hardware,
 including OpenCL, but is very high level.
@@ -123,6 +125,7 @@ Overall format
     argN-1
 
 Opcodes
+
     00001 Update state
     00010 End
     00011 NOP
@@ -139,7 +142,7 @@ Opcodes
 Arguments are always padded to 2 32-bit words. Number of arguments depends on the opcode, and 
 sometimes on the first word of the command.
 
-See `cmdstream.xml` for details overview of commands and arguments. The most commonly used command is
+See `cmdstream.xml` for detailed overview of commands and arguments. The most commonly used command is
 `LOAD_STATE` whose header word has the following format:
 
     00001FCC CCCCCCCC AAAAAAAA AAAAAAAA  Update state
@@ -269,22 +272,26 @@ The stride of these tiled surfaces is the number of bytes between one row of til
 
 Render buffers
 -------------------
-It appears that render buffers pixel sizes are padded to a multiple of 64, ie, a width of 400 becomes 448 and 800 becomes 832.
+It appears that the blob always pads render buffers pixel sizes to a multiple of 64, ie, a width of 400 becomes 448 and 800 becomes 832.
 
-The render buffer is also tiled, albeit differently than the 4x4 tiling format of the textures.
+The render buffer is also tiled, albeit differently than the 4x4 tiling format of the textures. XXX figure this out.
 
 Original rendering:
+
 ![Original rendering](https://raw.github.com/laanwj/etna_viv/master/doc/images/fsaa_result.png)
 
 Video memory representation:
 
 - No FSAA:
+
 ![No FSAA](https://raw.github.com/laanwj/etna_viv/master/doc/images/fsaa1.png)
 
 - 2X FSAA:
+
 ![2X FSAA](https://raw.github.com/laanwj/etna_viv/master/doc/images/fsaa2.png)
 
 - 4X FSAA:
+
 ![4X FSAA](https://raw.github.com/laanwj/etna_viv/master/doc/images/fsaa4.png)
 
 Multisampling
@@ -294,54 +301,54 @@ GC600 supports 1, 2, or 4 MSAA samples. Vivante's patent [1] on anti-aliasing ma
 
 - 256x256 target with 0 samples creates a 256x256 render target (duh)
 
-    GL.MULTI_SAMPLE_CONFIG := MSAA_SAMPLES=NONE,MSAA_ENABLES=0xf,UNK12=0x0,UNK16=0x0
-    PE.COLOR_STRIDE := 0x400
-    PE.DEPTH_STRIDE := 0x200
+        GL.MULTI_SAMPLE_CONFIG := MSAA_SAMPLES=NONE,MSAA_ENABLES=0xf,UNK12=0x0,UNK16=0x0
+        PE.COLOR_STRIDE := 0x400
+        PE.DEPTH_STRIDE := 0x200
 
 - 256x256 target with 2 samples creates a 512x256 render target and depth buffer
 
-    GL.MULTI_SAMPLE_CONFIG := MSAA_SAMPLES=2X,MSAA_ENABLES=0x3,UNK12=0x0,UNK16=0x0
-    RA.MULTISAMPLE_UNK00E04 := 0x0
-    RA.MULTISAMPLE_UNK00E10[0] := 0xaa22
-    RA.CENTROID_TABLE[0] := 0x66aa2288
-    RA.CENTROID_TABLE[1] := 0x88558800
-    RA.CENTROID_TABLE[2] := 0x88881100
-    RA.CENTROID_TABLE[3] := 0x33888800
-    PE.COLOR_STRIDE := 0x800  (doubled)
-    PE.DEPTH_STRIDE := 0x400  (doubled)
+        GL.MULTI_SAMPLE_CONFIG := MSAA_SAMPLES=2X,MSAA_ENABLES=0x3,UNK12=0x0,UNK16=0x0
+        RA.MULTISAMPLE_UNK00E04 := 0x0
+        RA.MULTISAMPLE_UNK00E10[0] := 0xaa22
+        RA.CENTROID_TABLE[0] := 0x66aa2288
+        RA.CENTROID_TABLE[1] := 0x88558800
+        RA.CENTROID_TABLE[2] := 0x88881100
+        RA.CENTROID_TABLE[3] := 0x33888800
+        PE.COLOR_STRIDE := 0x800  (doubled)
+        PE.DEPTH_STRIDE := 0x400  (doubled)
 
 - 256x256 target with 4 samples creates a 512x512 render target and depth buffer
 
-    GL.MULTI_SAMPLE_CONFIG := MSAA_SAMPLES=4X,MSAA_ENABLES=0xf,UNK12=0x0,UNK16=0x0
-    RA.MULTISAMPLE_UNK00E04 := 0x0 
-    RA.MULTISAMPLE_UNK00E10[2] := 0xaaa22a22
-    RA.CENTROID_TABLE[8] := 0x262a2288
-    RA.CENTROID_TABLE[9] := 0x886688a2
-    RA.CENTROID_TABLE[10] := 0x888866aa
-    RA.CENTROID_TABLE[11] := 0x668888a6
-    RA.MULTISAMPLE_UNK00E10[1] := 0xe6ae622a
-    RA.CENTROID_TABLE[4] := 0x46622a88
-    RA.CENTROID_TABLE[5] := 0x888888ae
-    RA.CENTROID_TABLE[6] := 0x888888e6
-    RA.CENTROID_TABLE[7] := 0x888888ca
-    RA.MULTISAMPLE_UNK00E10[0] := 0xeaa26e26
-    RA.CENTROID_TABLE[0] := 0x4a6e2688
-    RA.CENTROID_TABLE[1] := 0x888888a2
-    RA.CENTROID_TABLE[2] := 0x888888ea
-    RA.CENTROID_TABLE[3] := 0x888888c6
-    PE.COLOR_STRIDE := 0x800
-    PE.DEPTH_STRIDE := 0x400  (doubled)
+        GL.MULTI_SAMPLE_CONFIG := MSAA_SAMPLES=4X,MSAA_ENABLES=0xf,UNK12=0x0,UNK16=0x0
+        RA.MULTISAMPLE_UNK00E04 := 0x0 
+        RA.MULTISAMPLE_UNK00E10[2] := 0xaaa22a22
+        RA.CENTROID_TABLE[8] := 0x262a2288
+        RA.CENTROID_TABLE[9] := 0x886688a2
+        RA.CENTROID_TABLE[10] := 0x888866aa
+        RA.CENTROID_TABLE[11] := 0x668888a6
+        RA.MULTISAMPLE_UNK00E10[1] := 0xe6ae622a
+        RA.CENTROID_TABLE[4] := 0x46622a88
+        RA.CENTROID_TABLE[5] := 0x888888ae
+        RA.CENTROID_TABLE[6] := 0x888888e6
+        RA.CENTROID_TABLE[7] := 0x888888ca
+        RA.MULTISAMPLE_UNK00E10[0] := 0xeaa26e26
+        RA.CENTROID_TABLE[0] := 0x4a6e2688
+        RA.CENTROID_TABLE[1] := 0x888888a2
+        RA.CENTROID_TABLE[2] := 0x888888ea
+        RA.CENTROID_TABLE[3] := 0x888888c6
+        PE.COLOR_STRIDE := 0x800
+        PE.DEPTH_STRIDE := 0x400  (doubled)
 
 Other differences when MSAA is enabled:
 
-- `TS.MEM_CONFIG` is different when MSAA is used (see fields MSAA and MSAA_FORMAT). 
+- `TS.MEM_CONFIG` is different when MSAA is used (see descriptions for fields `MSAA` and `MSAA_FORMAT`). 
 - The TS surface belonging to the enlarged in the same way; just like there simply is a bigger render target.
 - It also looks like the PS gets an extra input/temporary when MSAA is enabled:
 
-    -0x00001f02, /*   PS.INPUT_COUNT := COUNT=2,COUNT2=31 */
-    +0x00001f03, /*   PS.INPUT_COUNT := COUNT=3,COUNT2=31 */
-    -0x00000002, /*   PS.TEMP_REGISTER_CONTROL := NUM_TEMPS=2 */
-    +0x00000003, /*   PS.TEMP_REGISTER_CONTROL := NUM_TEMPS=3 */
+        -0x00001f02, /*   PS.INPUT_COUNT := COUNT=2,COUNT2=31 */
+        +0x00001f03, /*   PS.INPUT_COUNT := COUNT=3,COUNT2=31 */
+        -0x00000002, /*   PS.TEMP_REGISTER_CONTROL := NUM_TEMPS=2 */
+        +0x00000003, /*   PS.TEMP_REGISTER_CONTROL := NUM_TEMPS=3 */
 
 Haven't yet checked what the value is that is passed in. The shader code itself is unaffected the same so the extra
 input is likely added to the end.
