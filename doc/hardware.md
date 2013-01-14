@@ -12,7 +12,7 @@ Feature bits
 =================
 
 Variants are somewhat different from NV; what features are supported is not so much determined by the model number 
-(which only determines the performance), but determined by various properties that can be found in
+(which mainly determines the performance), but determined by various properties that can be found in
 read-only registers in the hardware:
 
  1) Chip features and minor feature flags
@@ -139,7 +139,7 @@ Opcodes
     01011 Return
     01101 Chip select
 
-Arguments are always padded to 2 32-bit words. Number of arguments depends on the opcode, and 
+Arguments are always padded to 2 32-bit words. Number of argument words depends on the opcode, and 
 sometimes on the first word of the command.
 
 See `cmdstream.xml` for detailed overview of commands and arguments. The most commonly used command is
@@ -274,7 +274,7 @@ Render buffers
 -------------------
 It appears that the blob always pads render buffers pixel sizes to a multiple of 64, ie, a width of 400 becomes 448 and 800 becomes 832.
 
-The render buffer is also tiled, albeit differently than the 4x4 tiling format of the textures. XXX figure this out.
+The render buffer is also tiled, albeit differently than the 4x4 tiling format of the textures. Supertiled format = size 64x64 tiles.
 
 Original rendering:
 
@@ -293,6 +293,9 @@ Video memory representation:
 - 4X FSAA:
 
 ![4X FSAA](https://raw.github.com/laanwj/etna_viv/master/doc/images/fsaa4.png)
+
+Stride, as used for resolve operations, is for a row of tiles; 0x1c00 for width 448 (originally 400), 
+0x3400 for width 832 (originally 800).
 
 Multisampling
 --------------

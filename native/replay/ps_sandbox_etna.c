@@ -759,7 +759,7 @@ int main(int argc, char **argv)
     *contextBuffer.inUse = 0;
 
     /* Build second command buffer */
-    commandBuffer.startOffset = commandBuffer.offset;
+    commandBuffer.startOffset = commandBuffer.offset + 0x18;
     commandBuffer.offset = commandBuffer.startOffset + 8*4;
 
     etna_set_state(cmdPtr, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
@@ -796,7 +796,7 @@ int main(int argc, char **argv)
      * Third command buffer does some cache flush trick?
      * It can be left out without any visible harm.
      **/
-    commandBuffer.startOffset = commandBuffer.offset;
+    commandBuffer.startOffset = commandBuffer.offset + 0x18;
     commandBuffer.offset = commandBuffer.startOffset + 8*4;
     etna_warm_up_rs(cmdPtr, aux_rt_physical, aux_rt_ts_physical);
 
@@ -864,7 +864,7 @@ int main(int argc, char **argv)
     /* Start building fourth command buffer
      * Fourth command buffer copies render result to bitmap, detiling along the way. 
      */
-    commandBuffer.startOffset = commandBuffer.offset;
+    commandBuffer.startOffset = commandBuffer.offset + 0x18;
     commandBuffer.offset = commandBuffer.startOffset + 8*4;
     etna_set_state(cmdPtr, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
     etna_set_state(cmdPtr, VIVS_RS_CONFIG,

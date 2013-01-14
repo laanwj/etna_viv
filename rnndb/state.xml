@@ -1669,8 +1669,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <stripe name="TS" brief="Tile Status">
         <doc>Tile status block contains information about the tiles to be resolved.</doc>
         <reg32 offset="0x01654" name="MEM_CONFIG" brief="Memory configuration" value="0x00200000">
-            <bitfield pos="0" name="DEPTH_FAST_CLEAR"/>
-            <bitfield pos="1" name="COLOR_FAST_CLEAR"/>
+            <bitfield pos="0" name="DEPTH_FAST_CLEAR" brief="Clear depth tiles on resolve"/>
+            <bitfield pos="1" name="COLOR_FAST_CLEAR" brief="Clear color tiles on resolve"/>
             <bitfield pos="3" name="DEPTH_16BPP"/>
             <bitfield pos="4" name="DEPTH_AUTO_DISABLE" brief="Auto disable fast clear for depth"/>
             <bitfield pos="5" name="COLOR_AUTO_DISABLE" brief="Auto disable fast clear for color"/>
