@@ -6,7 +6,7 @@ if [ -z "$DEMO" ]; then
     DEMO="cube"
 fi
 IMAGE_OUT="/mnt/sdcard/replay.bmp"
-if [ "$DEMO" == "ps_sandbox_etna" ]; then
+if [[ "$DEMO" == "ps_sandbox_etna" || "$DEMO" == "etna_test" ]]; then
     ARG="/data/mine/shader.bin"
     ../../tools/asm.py ../../rnndb/isa.xml sandbox.asm -o shader.bin
     [ $? -ne 0 ] && exit

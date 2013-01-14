@@ -8290,6 +8290,6 @@ uint32_t contextbuf[] = {
     0x00000001, /*   GLOBAL.PIPE_SELECT := PIPE=PIPE_2D */
     0x40000000, /* LINK (8) */
     0x00000000, /*  */
-    0x00000000  /* UNKNOWN (0) */
+    0x00000000  /* [inUse placeholder index] */
 };
 

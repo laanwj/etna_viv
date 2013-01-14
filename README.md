@@ -22,7 +22,7 @@ ARM-based:
 - Devices based on Freescale i.MX6 Series (GC2000, GC320, GC355)
 
 MIPS-based:
-- Devices based on Ingenic JZ4770 MIPS SoC (GC860)
+- Devices based on Ingenic JZ4770 MIPS SoC (GC860), JZ4760 (GC200, 2D only)
 
 See also https://en.wikipedia.org/wiki/Vivante_Corporation
 
@@ -134,12 +134,13 @@ example that renders a textured cube.
 Command stream builder
 -----------------------
 
-A beginning has been made of a simple low-level driver that builds the command stream from scratch and submits
+A beginning has been made of a simple driver that builds the command stream from scratch and submits
 it to the kernel driver:
 
     native/lib/viv.(c|h)
+    native/replay/etna.(c|h)
+    native/replay/etna_test.c (to experiment with shaders)
     native/replay/cube_etna.c (renders the GLES2 smoothed cube)
-    native/replay/ps_sandbox_etna.c (to experiment with shaders)
 
 Vivante GPL kernel driver
 --------------------------
