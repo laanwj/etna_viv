@@ -1,0 +1,79 @@
+    Dove Graphics Driver for Generic Linux
+    Ver0.8.0.1123
+
+1.  Introduction
+    This package contains Dove unified graphics driver for 
+    generic linux and some documents. 
+    This document is used to describe the package contents, how to build 
+    kernel mode driver and how to install the driver binaries to device.
+ 
+2.  Revision History 
+    Ver0.8.0.1123
+		1. Add texture generation support
+		2. Workaround the YUV texture quality issue.
+		3. Merge 2009.9 vivante driver.
+
+
+3.  Package Contents
+    --/                   -- Package root directory
+       galcroe_ko_src     -- GC source code needed to build kernel mode driver
+       libgfx
+          bin/            -- GC driver binaries
+          include/        -- GC sdk header files
+          samples/        -- GC sample codes
+ 
+
+4.  Build and Installation
+4.1 System Requirement 
+    Host PC :
+       Operating system   -- Ubuntu 8.04 or newer
+       Toolchain          -- arm-marvell-linux-gnueabi
+    Target Device:
+        Platform          -- PXA950 processor EVB platform
+                             PXA968 processor EVB platform
+                             ARMADA 610 processor EVB platform
+        Operation system  -- Linux kernel 2.6.29 or newer
+   
+4.2  Build Kernel Mode Driver
+     Enter ~/galcore_ko_src, modify the "Makefile" according to your system:
+        1)  Modify "CROSS_COMPILE" to your toolchain directory with prefix
+           (path_to_your_marvelltoolchain_dir/bin/arm-marvell-linux-gnueabi-);
+        2)  Modify "KERNEL_DIR" to point to your linux kernel tree.
+     Build kernel mode driver by commands:
+        #make clean
+        #make
+     If no error, the build result galcore.ko will be placed on current directory.
+	
+4.3 Build Samples
+    1) Enter the ~/libgfx/samples, modify the Makefile according to your system;
+    2) Modify "CC" point to your toolchain gcc compiler;
+    3) Build samples by commands:
+       #make clean
+       #make
+
+4.4 Installation
+    Copy galcore.ko to device /lib/modules directory:
+       #cp ~/galcore.ko         /lib/modules/
+    Copy *.so to device /usr/lib directory:
+       #cp ~/bin/libGAL.so      /usr/lib/
+       #cp ~/bin/libEGL.so      /usr/lib/
+       #cp ~/bin/libGLES_CM.so  /usr/lib/
+       #cp ~/bin/libOpenVG.so   /usr/lib/
+       #cp ~/bin/libGLESv2x.so  /usr/lib/
+       #cp ~/bin/libGLESv2SC.so /usr/lib/
+       #cp ~/bin/libVDK.so      /usr/lib/
+    Make sure the system startup script already contains the command to load kernel mode driver,
+	For example, you can add a init script in /ect/init.d/galcore.sh like:
+		#!/bin/sh
+		insmod /lib/modules/galcore.ko registerMemBase=0xf1840000 irqLine=48 contiguousBase=0x8000000 contiguousSize=0x2000000
+		mknod /dev/galcore c 199 0
+		chmod 777 /dev/galcore
+
+5.  FAQ
+    1. "We can't find the arm-marvell-linux-gnueabi toolchain".
+       Contact your Marvell representative to get arm-marvell-linux-gnueabi toolchain.
+
+6.  Known Issues
+    Problem   : The OpenVG implementation does not enable anti-alias by default.
+    Workaround: Choose the EGL configuration with EGL_SAMPLES = 4.
+

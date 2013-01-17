@@ -1,0 +1,92 @@
+##############################################################################
+#
+#    Copyright (c) 2005 - 2010 by Vivante Corp.  All rights reserved.
+#
+#    The material in this file is confidential and contains trade secrets
+#    of Vivante Corporation. This is proprietary information owned by
+#    Vivante Corporation. No part of this work may be disclosed,
+#    reproduced, copied, transmitted, or used in any way for any purpose,
+#    without the express written permission of Vivante Corporation.
+#
+##############################################################################
+#
+#
+##############################################################################
+
+
+#
+# Common include file for Android build
+#
+
+################################################################
+# Options.
+
+# CPU arch type. Could be 'arm' or 'mips'
+ARCH_TYPE 				    ?= arm
+FIXED_ARCH_TYPE				?=
+
+# CPU arch type.
+GPU_TYPE					?= XAQ2
+
+# Kernel directory
+export KERNEL_DIR			?= $(ANDROID_BUILD_TOP)/kernel/kernel
+
+# Cross compiler for building kernel module
+export CROSS_COMPILE		?= arm-eabi-
+
+# Driver build options.
+NO_DMA_COHERENT				?= 1
+ENABLE_GPU_CLOCK_BY_DRIVER	?= 1
+ENABLE_ARM_L2_CACHE			?= 1
+USE_PLATFORM_DRIVER			?= 1
+USE_NEW_LINUX_SIGNAL		?= 0
+USE_PROFILER				?= 0
+
+
+################################################################
+# Target INCLUDES.
+
+C_INCLUDES	:= $(TARGET_C_INCLUDES) $(filter-out %/opengl/include,$(TARGET_PROJECT_INCLUDES))
+
+
+################################################################
+# Target CFLAGS.
+
+CFLAGS		:= $(TARGET_GLOBAL_CFLAGS) $(TARGET_$(ARCH_TYPE)_CFLAGS)
+
+CFLAGS		+= -DANDROID=1 -DEGL_API_ANDROID=1 -DUSE_VDK=0 -DLINUX
+CFLAGS		+= -fno-strict-aliasing -fno-short-enums
+
+ifeq ($(PLATFORM_SDK_VERSION), 7)
+CFLAGS		+= -DANDROID_VERSION_ECLAIR
+else
+$(error This makefile is only for eclair)
+endif
+
+ifeq ($(USE_PROFILER), 1)
+CFLAGS		+= -DVIVANTE_PROFILER=1
+else
+CFLAGS		+= -DVIVANTE_PROFILER=0
+endif
+
+
+################################################################
+# Tag.
+
+TAG					:= VIVANTE
+
+################################################################
+# Variables.
+
+export AQROOT				:= $(abspath $(call my-dir))
+export AQARCH				:= $(AQROOT)/arch/$(GPU_TYPE)
+
+GC_HAL_USER_DIR				:= hal/user
+GC_HAL_ARCH_USER_DIR		:= arch/$(GPU_TYPE)/hal/user
+GC_HAL_OS_USER_DIR			:= hal/os/linux/user
+GC_HAL_OPTIMIZER_DIR		:= hal/optimizer
+GC_EGL_DIR					:= driver/openGL/egl
+GC_GLES11_DIR				:= driver/openGL/libGLESv11
+GC_GLESv2X_DIR				:= driver/openGL/libGLESv2x/driver
+GC_GLESv2SC_DIR				:= driver/openGL/libGLESv2x/compiler/libGLESv2SC
+

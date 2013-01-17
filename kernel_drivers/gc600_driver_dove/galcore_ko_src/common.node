@@ -1,0 +1,45 @@
+##############################################################################
+#  
+#    Copyright (C) 2005 - 2010 by Vivante Corp.
+#  
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the license, or
+#    (at your option) any later version.
+#  
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+#    GNU General Public Lisence for more details.
+#  
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not write to the Free Software
+#    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#  
+##############################################################################
+
+
+#
+# Common makefile for the node.
+#
+
+################################################################################
+# Specify the targets.
+
+.PHONY: all clean install $(MODULES)
+
+all: $(MAIN_MODULE)
+
+clean:
+	$(MAKE) V_TARGET=clean STATIC_LINK=$(STATIC_LINK)
+
+install:
+	$(MAKE) V_TARGET=install STATIC_LINK=$(STATIC_LINK)
+
+ifneq ($(VIVANTE_NO_3D), 1)
+$(MODULES):
+	@test ! -d $@ || $(MAKE) --directory=$@ $(V_TARGET) STATIC_LINK=$(STATIC_LINK)
+else
+$(MODULES):
+	@test ! -d $@ || $(MAKE) --directory=$@ $(V_TARGET) VIVANTE_NO_3D=1 STATIC_LINK=$(STATIC_LINK)
+endif

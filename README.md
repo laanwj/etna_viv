@@ -140,19 +140,12 @@ it to the kernel driver:
 Vivante GPL kernel driver
 --------------------------
 
-The headers and implementation files for the Vivante GPL kernel driver are also included:
+The headers and implementation files for the Vivante GPL kernel drivers are also included:
 
     kernel_drivers/
 
-Both GPL kernel driver versions, v2 and v4, are provided. They are useful in understanding the kernel interface, and the 
-hardware at a basic level.
-
-The drivers are rooted in the kernel tree at `drivers/gpu/vivante`.
-
-In addition to the `v2` and `v4` kernel drivers included in the archive there is another a kernel driver
-(0.8.x) part of the Linux mach-dove architecture as used for Cubox:
-https://github.com/rabeeh/linux/tree/master/arch/arm/mach-dove/gc600_driver_dove
-It has another slightly different (likely predating `v2`) interface.
+Three GPL kernel driver versions, `gc600_driver_dove`, `v2` and `v4`, are provided. They are useful in understanding the kernel 
+interface, and the hardware at a basic level.
 
 Envytools fork
 ---------------
