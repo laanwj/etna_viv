@@ -14,11 +14,15 @@ Once the understanding of the hardware is good enough, we'd likely want to fork 
 Devices with Vivante GPU
 =========================
 
+ARM-based:
 - Google TV (Marvell Armada 1500, contains a GC1000)
 - OLPC (also Marvell Armada something with GC1000)
 - CuBox, including pro variant (Marvell Armada 510, GC600)
 - Many older tablets and such based on Rockchip 2918 SoC (GC800)
 - Devices based on Freescale i.MX6 Series (GC2000, GC320, GC355)
+
+MIPS-based:
+- Devices based on Ingenic JZ4770 MIPS SoC (GC860)
 
 See also https://en.wikipedia.org/wiki/Vivante_Corporation
 
