@@ -316,4 +316,12 @@ void viv_show_chip_info(void)
     printf("  Vertex output buffer size: 0x%08x\n", viv_chip.vertexOutputBufferSize);
 }
 
+int viv_reset(void)
+{
+    gcsHAL_INTERFACE id = {
+        .command = gcvHAL_RESET,
+    };
+    return viv_invoke(&id);
+}
+
 

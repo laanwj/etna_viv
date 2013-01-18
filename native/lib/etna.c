@@ -1,14 +1,14 @@
 #include "etna.h"
 #include "viv.h"
-#include "context_cmd.h"
+#include "etna_context_cmd.h"
 #include "etna/state.xml.h"
 
 #include <stdlib.h>
 #include <stdbool.h>
-#define DEBUG
-#ifdef DEBUG
+//#define DEBUG
+//#ifdef DEBUG
 #include <stdio.h>
-#endif
+//#endif
 
 
 /* TODO: don't forget to handle FE.VERTEX_ELEMENT_CONFIG (0x0600....0x0063c) specially;
@@ -139,8 +139,8 @@ etna_ctx *etna_create(void)
             return NULL;
         }
 #ifdef DEBUG
-        printf("Allocated buffer %i: phys=%08x log=%08x [signal %i]\n", x, (uint32_t)buf0_physical, (uint32_t)buf0_logical,
-                ctx->cmdbuf_sig[x]);
+        printf("Allocated buffer %i: phys=%08x log=%08x bytes=%08x [signal %i]\n", x, (uint32_t)buf0_physical, (uint32_t)buf0_logical,
+                buf0_bytes, ctx->cmdbuf_sig[x]);
 #endif
     }
     /* Set current buffer to -1, to signify that we need to switch to buffer 0 before
@@ -190,10 +190,6 @@ int etna_free(etna_ctx *ctx)
     return ETNA_OK;
 }
 
-/* XXX ideally, (part of) this function should be inlined,
- * as it's a very simple but also very common operation 
- */
-
 /* internal (non-inline) part of etna_reserve 
  * - commit current command buffer (if there is a current command buffer)
  * - signify when current command buffer becomes available using a signal
@@ -202,11 +198,13 @@ int etna_free(etna_ctx *ctx)
 int _etna_reserve_internal(etna_ctx *ctx, size_t n)
 {
     int status;
+#ifdef DEBUG
+    printf("Buffer full\n");
+#endif
     if(ctx->cur_buf != -1)
     {
         /* Otherwise, if there is something to be committed left in the current command buffer, commit it */
-        status = etna_flush(ctx);
-        if(status != 0)
+        if((status = etna_flush(ctx)) != ETNA_OK)
             return status;
         /* Queue signal to signify when buffer is available again */
         if(viv_event_queue_signal(ctx->cmdbuf_sig[ctx->cur_buf], gcvKERNEL_COMMAND) != 0)
@@ -232,16 +230,15 @@ int etna_flush(etna_ctx *ctx)
 #endif
     if(ctx->offset*4 <= (cur_buf->startOffset + BEGIN_COMMIT_CLEARANCE))
         return ETNA_OK; /* Nothing to do */
+    cur_buf->offset = ctx->offset*4; /* Copy over current ending offset into CMDBUF, for kernel */
 #ifdef DEBUG
     printf("    {");
-    for(size_t i=cur_buf->startOffset; i<ctx->offset*4; i+=4)
+    for(size_t i=cur_buf->startOffset; i<cur_buf->offset; i+=4)
     {
-        printf("0x%08x,", *((uint32_t*)((size_t)cur_buf->logical)+i));
+        printf("0x%08x,", *((uint32_t*)(((size_t)cur_buf->logical)+i)));
     }
-
     printf("}\n");
 #endif
-    cur_buf->offset = ctx->offset*4; /* Copy over current ending offset into CMDBUF, for kernel */
     int status = viv_commit(cur_buf, &ctx->ctx);
     if(status != 0)
     {
@@ -250,9 +247,15 @@ int etna_flush(etna_ctx *ctx)
 #endif
         return status;
     }
+    if(*ctx->ctx.inUse)
+    {
+        printf("    Warning: context buffer used, full context handling not yet supported. Rendering may be corrupted.\n");
+        *ctx->ctx.inUse = 0;
+    }
     /* TODO: analyze command buffer to update context */
     /* set context entryPipe to currentPipe (next commit will start with current pipe) */
     ctx->ctx.entryPipe = ctx->ctx.currentPipe;
+    /* TODO: update context, NOP out final pipe2D if entryPipe is 2D, else put in the 2D pipe switch */
     /* TODO: if context was used, queue it to be freed later, and initialize new context buffer */
     cur_buf->startOffset = cur_buf->offset + END_COMMIT_CLEARANCE;
     cur_buf->offset = cur_buf->startOffset + BEGIN_COMMIT_CLEARANCE;
@@ -268,8 +271,7 @@ int etna_finish(etna_ctx *ctx)
     int status;
     if(ctx == NULL)
         return ETNA_INVALID_ADDR;
-    status = etna_flush(ctx);
-    if(status != ETNA_OK)
+    if((status = etna_flush(ctx)) != ETNA_OK)
         return status;
     /* Submit event queue with SIGNAL, fromWhere=gcvKERNEL_PIXEL (wait for pixel engine to finish) */
     if(viv_event_queue_signal(ctx->sig_id, gcvKERNEL_PIXEL) != 0)
@@ -288,9 +290,9 @@ int etna_finish(etna_ctx *ctx)
 
 int etna_set_pipe(etna_ctx *ctx, etna_pipe pipe)
 {
+    int status;
     if(ctx == NULL)
         return ETNA_INVALID_ADDR;
-    int status;
 
     if((status = etna_reserve(ctx, 2)) != ETNA_OK)
         return status;
@@ -315,10 +317,10 @@ int etna_set_pipe(etna_ctx *ctx, etna_pipe pipe)
 
 int etna_semaphore(etna_ctx *ctx, uint32_t from, uint32_t to)
 {
+    int status;
     if(ctx == NULL)
         return ETNA_INVALID_ADDR;
-    int status = etna_reserve(ctx, 2);
-    if(status != ETNA_OK)
+    if((status = etna_reserve(ctx, 2)) != ETNA_OK)
         return status;
     ETNA_EMIT_LOAD_STATE(ctx, VIVS_GL_SEMAPHORE_TOKEN, 1, 0);
     ETNA_EMIT(ctx, VIVS_GL_SEMAPHORE_TOKEN_FROM(from) | VIVS_GL_SEMAPHORE_TOKEN_TO(to));
@@ -327,10 +329,10 @@ int etna_semaphore(etna_ctx *ctx, uint32_t from, uint32_t to)
 
 int etna_stall(etna_ctx *ctx, uint32_t from, uint32_t to)
 {
+    int status;
     if(ctx == NULL)
         return ETNA_INVALID_ADDR;
-    int status = etna_reserve(ctx, 4);
-    if(status != ETNA_OK)
+    if((status = etna_reserve(ctx, 4)) != ETNA_OK)
         return status;
     ETNA_EMIT_LOAD_STATE(ctx, VIVS_GL_SEMAPHORE_TOKEN, 1, 0);
     ETNA_EMIT(ctx, VIVS_GL_SEMAPHORE_TOKEN_FROM(from) | VIVS_GL_SEMAPHORE_TOKEN_TO(to));

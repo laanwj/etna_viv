@@ -8,7 +8,7 @@ CFLAGS += $(COMMON_FLAGS)
 CXXFLAGS += $(COMMON_FLAGS) -I$(NDK)/sources/cxx-stl/gnu-libstdc++/4.6/include -I$(NDK)/sources/cxx-stl/gnu-libstdc++/4.6/libs/$(CXXABI)/include
 LDFLAGS += -L$(NDK)/sources/cxx-stl/gnu-libstdc++/4.6/libs/$(CXXABI) -lgnustl_static
 
-TARGETS = cube cube_companion cube_etna ps_sandbox_etna etna_test
+TARGETS = cube cube_companion cube_etna ps_sandbox_etna etna_test reset
 GL_LIBS = -L$(TOP)/lib -L$(TOP)/lib/egl -Xlinker --allow-shlib-undefined -lm
 COMPANION_OBJS = ../resources/companion_array.o ../resources/companion_mesh.o ../resources/companion_texture.o
 
@@ -30,5 +30,9 @@ cube_etna: cube_etna.o ../lib/write_bmp.o ../lib/viv.o ../lib/esTransform.o
 ps_sandbox_etna: ps_sandbox_etna.o ../lib/write_bmp.o ../lib/viv.o ../lib/esTransform.o
 	$(CC) $(CFLAGS) -o $@ $^  $(GL_LIBS) $(LDFLAGS)
 
-etna_test: etna_test.o ../lib/write_bmp.o ../lib/viv.o ../lib/esTransform.o etna.o
+etna_test: etna_test.o ../lib/write_bmp.o ../lib/viv.o ../lib/esTransform.o ../lib/etna.o ../lib/etna_rs.o
 	$(CC) $(CFLAGS) -o $@ $^  $(GL_LIBS) $(LDFLAGS)
+
+reset: reset.o ../lib/viv.o
+	$(CC) $(CFLAGS) -o $@ $^  $(GL_LIBS) $(LDFLAGS)
+

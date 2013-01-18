@@ -35,7 +35,6 @@
 #include <stdint.h>
 
 /* Number of command buffers, to be used in a circular fashion.
- * When the next buffer is full, wait for it to finish.
  */
 #define NUM_COMMAND_BUFFERS 5
 
@@ -95,7 +94,7 @@ typedef struct _etna_ctx {
     struct _gcoCONTEXT ctx;
 } etna_ctx;
 
-/* Convenience macros for command buffer building, remember to reserve space first before using them */
+/** Convenience macros for command buffer building, remember to reserve space first before using them */
 /* Queue load state command header (queues one word) */
 #define ETNA_EMIT_LOAD_STATE(ctx, ofs, count, fixp) \
     (ctx)->buf[(ctx)->offset++] = \
@@ -192,7 +191,7 @@ int etna_flush(etna_ctx *ctx);
  */
 int etna_finish(etna_ctx *ctx);
 
-/* Queue a semaphore.
+/* Queue a semaphore (but don't stall).
  * from, to are values from SYNC_RECIPIENT_*.
  * @return OK on success, error code otherwise
  */

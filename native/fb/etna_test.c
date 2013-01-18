@@ -11,6 +11,9 @@
 #include <sys/mman.h>
 #include <stdarg.h>
 
+#include <linux/fb.h>
+#include <errno.h>
+
 #include "etna/state.xml.h"
 #include "etna/cmdstream.xml.h"
 #include "write_bmp.h"
@@ -20,6 +23,91 @@
 #include "etna_rs.h"
 
 #include "esUtil.h"
+
+#ifdef ANDROID
+#define FBDEV_DEV "/dev/graphics/fb%i"
+#else
+#define FBDEV_DEV "/dev/fb%i"
+#endif
+
+#define FB_MAX_BUFFERS (4)
+typedef struct
+{
+    int fd;
+    int num_buffers;
+    size_t physical[FB_MAX_BUFFERS];
+    size_t stride;
+    size_t buffer_stride;
+    struct fb_var_screeninfo fb_var;
+    struct fb_fix_screeninfo fb_fix;
+} fb_info;
+
+/* Open framebuffer and get information */
+int fb_open(int num, fb_info *out)
+{
+    char devname[256];
+
+    snprintf(devname, 256, FBDEV_DEV, num);
+	
+    int fd = open(devname, O_RDWR);
+    if (fd == -1) {
+        printf("Error: failed to open %s: %s\n",
+                devname, strerror(errno));
+        return errno;
+    }
+
+    if (ioctl(fd, FBIOGET_VSCREENINFO, &out->fb_var) ||
+        ioctl(fd, FBIOGET_FSCREENINFO, &out->fb_fix)) {
+            printf("Error: failed to run ioctl on %s: %s\n",
+                    devname, strerror(errno));
+        close(fd);
+        return errno;
+    }
+
+    printf("fix smem_start %08x\n", (unsigned)out->fb_fix.smem_start);
+    printf("    smem_len %08x\n", (unsigned)out->fb_fix.smem_len);
+    printf("    line_length %08x\n", (unsigned)out->fb_fix.line_length);
+    printf("\n");
+    printf("var x_res %i\n", (unsigned)out->fb_var.xres);
+    printf("    y_res %i\n", (unsigned)out->fb_var.yres);
+    printf("    x_res_virtual %i\n", (unsigned)out->fb_var.xres_virtual);
+    printf("    y_res_virtual %i\n", (unsigned)out->fb_var.yres_virtual);
+    printf("    bits_per_pixel %i\n", (unsigned)out->fb_var.bits_per_pixel);
+    printf("    red.offset %i\n", (unsigned)out->fb_var.red.offset);
+    printf("    red.length %i\n", (unsigned)out->fb_var.red.length);
+    printf("    green.offset %i\n", (unsigned)out->fb_var.green.offset);
+    printf("    green.length %i\n", (unsigned)out->fb_var.green.length);
+    printf("    blue.offset %i\n", (unsigned)out->fb_var.blue.offset);
+    printf("    blue.length %i\n", (unsigned)out->fb_var.blue.length);
+    printf("    transp.offset %i\n", (unsigned)out->fb_var.transp.offset);
+    printf("    transp.length %i\n", (unsigned)out->fb_var.transp.length);
+    
+    out->fd = fd;
+    out->stride = out->fb_fix.line_length;
+    out->buffer_stride = out->stride * out->fb_var.yres;
+    out->num_buffers = out->fb_fix.smem_len / out->buffer_stride;
+    if(out->num_buffers > FB_MAX_BUFFERS)
+        out->num_buffers = FB_MAX_BUFFERS;
+    for(int idx=0; idx<out->num_buffers; ++idx)
+    {
+        out->physical[idx] = out->fb_fix.smem_start + idx * out->buffer_stride;
+    }
+    printf("number of fb buffers: %i\n", out->num_buffers);
+    return 0;
+}
+
+/* Set currently visible buffer id */
+int fb_set_buffer(fb_info *fb, int buffer)
+{
+    fb->fb_var.yoffset = buffer * fb->fb_var.yres;
+
+    if (ioctl(fb->fd, FBIOPAN_DISPLAY, &fb->fb_var))
+    {
+        printf("Error: failed to run ioctl to pan display: %s\n", strerror(errno));
+        return errno;
+    }
+    return 0;
+}
 
 GLfloat vVertices[] = {
   -1.0f, -1.0f, +0.0f,
@@ -42,8 +130,20 @@ int main(int argc, char **argv)
     int rv;
     int width = 256;
     int height = 256;
-    int padded_width = etna_align_up(width, 64);
-    int padded_height = etna_align_up(height, 64);
+    int padded_width, padded_height;
+    int backbuffer = 0;
+    
+    fb_info fb;
+    rv = fb_open(0, &fb);
+    if(rv!=0)
+    {
+        exit(1);
+    }
+    width = fb.fb_var.xres;
+    height = fb.fb_var.yres;
+    padded_width = etna_align_up(width, 64);
+    padded_height = etna_align_up(height, 64);
+
     printf("padded_width %i padded_height %i\n", padded_width, padded_height);
     rv = viv_open();
     if(rv!=0)
@@ -249,66 +349,68 @@ int main(int argc, char **argv)
     /* XXX how important is the ordering? I suppose we could group states (except the flushes, kickers, semaphores etc)
      * and simply submit them at once. Especially for consecutive states and masked stated this could be a big win
      * in DMA command buffer size. */
-    /* Build first command buffer */
-    etna_set_state(ctx, VIVS_GL_VERTEX_ELEMENT_CONFIG, 0x1);
-    etna_set_state(ctx, VIVS_RA_CONTROL, 0x1);
-
-    etna_set_state(ctx, VIVS_PA_W_CLIP_LIMIT, 0x34000001);
-    etna_set_state(ctx, VIVS_PA_SYSTEM_MODE, 0x11);
-    etna_set_state(ctx, VIVS_PA_CONFIG, ETNA_MASKED_BIT(VIVS_PA_CONFIG_UNK22, 0));
-    etna_set_state(ctx, VIVS_SE_LAST_PIXEL_ENABLE, 0x0);
-    etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR);
-
-    /* Set up pixel engine */
-    etna_set_state(ctx, VIVS_PE_COLOR_FORMAT, 
-            ETNA_MASKED_BIT(VIVS_PE_COLOR_FORMAT_PARTIAL, 0));
-    etna_set_state(ctx, VIVS_PE_ALPHA_CONFIG,
-            ETNA_MASKED_BIT(VIVS_PE_ALPHA_CONFIG_BLEND_ENABLE_COLOR, 0) &
-            ETNA_MASKED_BIT(VIVS_PE_ALPHA_CONFIG_BLEND_ENABLE_ALPHA, 0) &
-            ETNA_MASKED(VIVS_PE_ALPHA_CONFIG_SRC_FUNC_COLOR, BLEND_FUNC_ONE) &
-            ETNA_MASKED(VIVS_PE_ALPHA_CONFIG_SRC_FUNC_ALPHA, BLEND_FUNC_ONE) &
-            ETNA_MASKED(VIVS_PE_ALPHA_CONFIG_DST_FUNC_COLOR, BLEND_FUNC_ZERO) &
-            ETNA_MASKED(VIVS_PE_ALPHA_CONFIG_DST_FUNC_ALPHA, BLEND_FUNC_ZERO) &
-            ETNA_MASKED(VIVS_PE_ALPHA_CONFIG_EQ_COLOR, BLEND_EQ_ADD) &
-            ETNA_MASKED(VIVS_PE_ALPHA_CONFIG_EQ_ALPHA, BLEND_EQ_ADD));
-    etna_set_state(ctx, VIVS_PE_ALPHA_BLEND_COLOR, 
-            VIVS_PE_ALPHA_BLEND_COLOR_B(0) | 
-            VIVS_PE_ALPHA_BLEND_COLOR_G(0) | 
-            VIVS_PE_ALPHA_BLEND_COLOR_R(0) | 
-            VIVS_PE_ALPHA_BLEND_COLOR_A(0));
-    
-    etna_set_state(ctx, VIVS_PE_ALPHA_OP, ETNA_MASKED_BIT(VIVS_PE_ALPHA_OP_ALPHA_TEST, 0));
-    etna_set_state(ctx, VIVS_PA_CONFIG, ETNA_MASKED_INL(VIVS_PA_CONFIG_CULL_FACE_MODE, OFF));
-    etna_set_state(ctx, VIVS_PE_DEPTH_CONFIG, ETNA_MASKED_BIT(VIVS_PE_DEPTH_CONFIG_WRITE_ENABLE, 0));
-    etna_set_state(ctx, VIVS_PE_STENCIL_CONFIG, ETNA_MASKED(VIVS_PE_STENCIL_CONFIG_REF_FRONT, 0) &
-                                                ETNA_MASKED(VIVS_PE_STENCIL_CONFIG_MASK_FRONT, 0xff) & 
-                                                ETNA_MASKED(VIVS_PE_STENCIL_CONFIG_WRITE_MASK, 0xff));
-    etna_set_state(ctx, VIVS_PE_STENCIL_OP, ETNA_MASKED(VIVS_PE_STENCIL_OP_FUNC_FRONT, COMPARE_FUNC_ALWAYS) &
-                                            ETNA_MASKED(VIVS_PE_STENCIL_OP_FUNC_BACK, COMPARE_FUNC_ALWAYS) &
-                                            ETNA_MASKED(VIVS_PE_STENCIL_OP_FAIL_FRONT, STENCIL_OP_KEEP) & 
-                                            ETNA_MASKED(VIVS_PE_STENCIL_OP_FAIL_BACK, STENCIL_OP_KEEP) & 
-                                            ETNA_MASKED(VIVS_PE_STENCIL_OP_DEPTH_FAIL_FRONT, STENCIL_OP_KEEP) & 
-                                            ETNA_MASKED(VIVS_PE_STENCIL_OP_DEPTH_FAIL_BACK, STENCIL_OP_KEEP) &
-                                            ETNA_MASKED(VIVS_PE_STENCIL_OP_PASS_FRONT, STENCIL_OP_KEEP) &
-                                            ETNA_MASKED(VIVS_PE_STENCIL_OP_PASS_BACK, STENCIL_OP_KEEP));
-
-    etna_set_state(ctx, VIVS_PE_DEPTH_CONFIG, ETNA_MASKED_BIT(VIVS_PE_DEPTH_CONFIG_EARLY_Z, 0));
-    etna_set_state(ctx, VIVS_PE_COLOR_FORMAT, ETNA_MASKED(VIVS_PE_COLOR_FORMAT_COMPONENTS, 0xf));
-
-    etna_set_state(ctx, VIVS_SE_DEPTH_SCALE, 0x0);
-    etna_set_state(ctx, VIVS_SE_DEPTH_BIAS, 0x0);
-    
-    etna_set_state(ctx, VIVS_PA_CONFIG, ETNA_MASKED_INL(VIVS_PA_CONFIG_FILL_MODE, SOLID));
-    etna_set_state(ctx, VIVS_PA_CONFIG, ETNA_MASKED_INL(VIVS_PA_CONFIG_SHADE_MODEL, SMOOTH));
-
-    /* Set up render target */
-    etna_set_state(ctx, VIVS_PE_COLOR_FORMAT, 
-            ETNA_MASKED(VIVS_PE_COLOR_FORMAT_FORMAT, RS_FORMAT_A8R8G8B8) &
-            ETNA_MASKED_BIT(VIVS_PE_COLOR_FORMAT_SUPER_TILED, 1));
 
     for(int frame=0; frame<1000; ++frame)
     {
         printf("*** FRAME %i ****\n", frame);
+        /* XXX part of this can be put outside the loop, but until we have usable context management
+         * this is safest.
+         */
+        etna_set_state(ctx, VIVS_GL_VERTEX_ELEMENT_CONFIG, 0x1);
+        etna_set_state(ctx, VIVS_RA_CONTROL, 0x1);
+        etna_set_state(ctx, VIVS_PA_W_CLIP_LIMIT, 0x34000001);
+        etna_set_state(ctx, VIVS_PA_SYSTEM_MODE, 0x11);
+        etna_set_state(ctx, VIVS_PA_CONFIG, ETNA_MASKED_BIT(VIVS_PA_CONFIG_UNK22, 0));
+        etna_set_state(ctx, VIVS_SE_LAST_PIXEL_ENABLE, 0x0);
+        etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR);
+
+        /* Set up pixel engine */
+        etna_set_state(ctx, VIVS_PE_COLOR_FORMAT, 
+                ETNA_MASKED_BIT(VIVS_PE_COLOR_FORMAT_PARTIAL, 0));
+        etna_set_state(ctx, VIVS_PE_ALPHA_CONFIG,
+                ETNA_MASKED_BIT(VIVS_PE_ALPHA_CONFIG_BLEND_ENABLE_COLOR, 0) &
+                ETNA_MASKED_BIT(VIVS_PE_ALPHA_CONFIG_BLEND_ENABLE_ALPHA, 0) &
+                ETNA_MASKED(VIVS_PE_ALPHA_CONFIG_SRC_FUNC_COLOR, BLEND_FUNC_ONE) &
+                ETNA_MASKED(VIVS_PE_ALPHA_CONFIG_SRC_FUNC_ALPHA, BLEND_FUNC_ONE) &
+                ETNA_MASKED(VIVS_PE_ALPHA_CONFIG_DST_FUNC_COLOR, BLEND_FUNC_ZERO) &
+                ETNA_MASKED(VIVS_PE_ALPHA_CONFIG_DST_FUNC_ALPHA, BLEND_FUNC_ZERO) &
+                ETNA_MASKED(VIVS_PE_ALPHA_CONFIG_EQ_COLOR, BLEND_EQ_ADD) &
+                ETNA_MASKED(VIVS_PE_ALPHA_CONFIG_EQ_ALPHA, BLEND_EQ_ADD));
+        etna_set_state(ctx, VIVS_PE_ALPHA_BLEND_COLOR, 
+                VIVS_PE_ALPHA_BLEND_COLOR_B(0) | 
+                VIVS_PE_ALPHA_BLEND_COLOR_G(0) | 
+                VIVS_PE_ALPHA_BLEND_COLOR_R(0) | 
+                VIVS_PE_ALPHA_BLEND_COLOR_A(0));
+        
+        etna_set_state(ctx, VIVS_PE_ALPHA_OP, ETNA_MASKED_BIT(VIVS_PE_ALPHA_OP_ALPHA_TEST, 0));
+        etna_set_state(ctx, VIVS_PA_CONFIG, ETNA_MASKED_INL(VIVS_PA_CONFIG_CULL_FACE_MODE, OFF));
+        etna_set_state(ctx, VIVS_PE_DEPTH_CONFIG, ETNA_MASKED_BIT(VIVS_PE_DEPTH_CONFIG_WRITE_ENABLE, 0));
+        etna_set_state(ctx, VIVS_PE_STENCIL_CONFIG, ETNA_MASKED(VIVS_PE_STENCIL_CONFIG_REF_FRONT, 0) &
+                                                    ETNA_MASKED(VIVS_PE_STENCIL_CONFIG_MASK_FRONT, 0xff) & 
+                                                    ETNA_MASKED(VIVS_PE_STENCIL_CONFIG_WRITE_MASK, 0xff));
+        etna_set_state(ctx, VIVS_PE_STENCIL_OP, ETNA_MASKED(VIVS_PE_STENCIL_OP_FUNC_FRONT, COMPARE_FUNC_ALWAYS) &
+                                                ETNA_MASKED(VIVS_PE_STENCIL_OP_FUNC_BACK, COMPARE_FUNC_ALWAYS) &
+                                                ETNA_MASKED(VIVS_PE_STENCIL_OP_FAIL_FRONT, STENCIL_OP_KEEP) & 
+                                                ETNA_MASKED(VIVS_PE_STENCIL_OP_FAIL_BACK, STENCIL_OP_KEEP) & 
+                                                ETNA_MASKED(VIVS_PE_STENCIL_OP_DEPTH_FAIL_FRONT, STENCIL_OP_KEEP) & 
+                                                ETNA_MASKED(VIVS_PE_STENCIL_OP_DEPTH_FAIL_BACK, STENCIL_OP_KEEP) &
+                                                ETNA_MASKED(VIVS_PE_STENCIL_OP_PASS_FRONT, STENCIL_OP_KEEP) &
+                                                ETNA_MASKED(VIVS_PE_STENCIL_OP_PASS_BACK, STENCIL_OP_KEEP));
+
+        etna_set_state(ctx, VIVS_PE_DEPTH_CONFIG, ETNA_MASKED_BIT(VIVS_PE_DEPTH_CONFIG_EARLY_Z, 0));
+        etna_set_state(ctx, VIVS_PE_COLOR_FORMAT, ETNA_MASKED(VIVS_PE_COLOR_FORMAT_COMPONENTS, 0xf));
+
+        etna_set_state(ctx, VIVS_SE_DEPTH_SCALE, 0x0);
+        etna_set_state(ctx, VIVS_SE_DEPTH_BIAS, 0x0);
+        
+        etna_set_state(ctx, VIVS_PA_CONFIG, ETNA_MASKED_INL(VIVS_PA_CONFIG_FILL_MODE, SOLID));
+        etna_set_state(ctx, VIVS_PA_CONFIG, ETNA_MASKED_INL(VIVS_PA_CONFIG_SHADE_MODEL, SMOOTH));
+
+        /* Set up render target */
+        etna_set_state(ctx, VIVS_PE_COLOR_FORMAT, 
+                ETNA_MASKED(VIVS_PE_COLOR_FORMAT_FORMAT, RS_FORMAT_A8R8G8B8) &
+                ETNA_MASKED_BIT(VIVS_PE_COLOR_FORMAT_SUPER_TILED, 1));
+
         etna_set_state(ctx, VIVS_PE_COLOR_ADDR, rt_physical); /* ADDR_A */
         etna_set_state(ctx, VIVS_PE_COLOR_STRIDE, padded_width * 4); 
         etna_set_state(ctx, VIVS_GL_MULTI_SAMPLE_CONFIG, 
@@ -505,7 +607,6 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_VS_INPUT(0), 0x00100); /* 0x20000 in etna_cube */
         etna_set_state(ctx, VIVS_PA_CONFIG, ETNA_MASKED_BIT(VIVS_PA_CONFIG_POINT_SPRITE_ENABLE, 0));
         etna_draw_primitives(ctx, PRIMITIVE_TYPE_TRIANGLE_STRIP, 0, 2);
-
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
 
         /* Submit first command buffer */
@@ -551,6 +652,7 @@ int main(int argc, char **argv)
         /* Submit third command buffer, wait for pixel engine to finish */
         etna_finish(ctx);
 
+
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
         etna_set_state(ctx, VIVS_RS_CONFIG,
                 VIVS_RS_CONFIG_SOURCE_FORMAT(RS_FORMAT_A8R8G8B8) |
@@ -558,27 +660,24 @@ int main(int argc, char **argv)
                 VIVS_RS_CONFIG_DEST_FORMAT(RS_FORMAT_A8R8G8B8) /*|
                 VIVS_RS_CONFIG_SWAP_RB*/);
         etna_set_state(ctx, VIVS_RS_SOURCE_STRIDE, (padded_width * 4 * 4) | VIVS_RS_SOURCE_STRIDE_TILING);
-        etna_set_state(ctx, VIVS_RS_DEST_STRIDE, width * 4);
+        etna_set_state(ctx, VIVS_RS_DEST_STRIDE, fb.fb_fix.line_length);
         etna_set_state(ctx, VIVS_RS_DITHER(0), 0xffffffff);
         etna_set_state(ctx, VIVS_RS_DITHER(1), 0xffffffff);
         etna_set_state(ctx, VIVS_RS_CLEAR_CONTROL, VIVS_RS_CLEAR_CONTROL_MODE_DISABLED);
         etna_set_state(ctx, VIVS_RS_EXTRA_CONFIG, 
                 0); /* no AA, no endian switch */
         etna_set_state(ctx, VIVS_RS_SOURCE_ADDR, rt_physical); /* ADDR_A */
-        etna_set_state(ctx, VIVS_RS_DEST_ADDR, bmp_physical); /* ADDR_J */
+        etna_set_state(ctx, VIVS_RS_DEST_ADDR, fb.physical[backbuffer]); /* ADDR_J */
         etna_set_state(ctx, VIVS_RS_WINDOW_SIZE, 
                 VIVS_RS_WINDOW_SIZE_HEIGHT(height) |
                 VIVS_RS_WINDOW_SIZE_WIDTH(width));
         etna_set_state(ctx, VIVS_RS_KICKER, 0xbeebbeeb);
-
         etna_finish(ctx);
+        /* switch buffers */
+        fb_set_buffer(&fb, backbuffer);
+        backbuffer = 1-backbuffer;
     }
     
-    if(argc>2)
-    {
-        printf("Dumping image to %s\n", argv[2]);
-        bmp_dump32(bmp_logical, width, height, true, argv[2]);
-    }
     /* Unlock video memory */
     if(viv_unlock_vidmem(bmp_node, gcvSURF_BITMAP, 1) != 0)
     {

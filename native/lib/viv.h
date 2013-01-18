@@ -93,6 +93,10 @@ int viv_event_queue_signal(int sig_id, gceKERNEL_WHERE fromWhere);
 
 void viv_show_chip_info(void);
 
+/** Send reset command to GPU.
+ */
+int viv_reset(void);
+
 
 #endif
 
