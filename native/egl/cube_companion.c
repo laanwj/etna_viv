@@ -294,12 +294,11 @@ int main(int argc, char *argv[])
 	esRotate(&modelview, 10.0f, 0.0f, 0.0f, 1.0f);
 	esScale(&modelview, 0.475f, 0.475f, 0.475f);
 
-
 	GLfloat aspect = (GLfloat)(height) / (GLfloat)(width);
 
 	ESMatrix projection;
 	esMatrixLoadIdentity(&projection);
-	esFrustum(&projection, -2.8f, +2.8f, -2.8f * aspect, +2.8f * aspect, 6.0f, 10.0f);
+	esFrustum(&projection, -2.8f, +2.8f, -2.8f * aspect, +2.8f * aspect, 6.0f, 11.0f);
 
 	ESMatrix modelviewprojection;
 	esMatrixLoadIdentity(&modelviewprojection);

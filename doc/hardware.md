@@ -231,6 +231,21 @@ Temporary registers are also used for shader inputs (attributes, varyings) and o
 the input values before the shader executes, and should have the output values when the shader ends. If the output
 should be the same as the input (passthrough) an empty shader with only a NOP instruction can be used.
 
+Rendering to framebuffer
+=========================
+
+Rendering to the framebuffer is pretty easy (see `etna_fb.c`). The general idea is to get the physical address
+of the framebuffer using the `FBIOGET_VSCREENINFO` and `FBIOGET_FSCREENINFO` ioctls on the framebuffer device.
+This physical address can then directly be used as target address for a resolve operation, just like when copying
+to a normal bitmap.
+
+It *may* also be possible to use the physical address of the frame buffer directly for rendering, which would save a 
+copy operation, if the device supports rendering to a linear (non-tiled) buffer. However, as this prevents the use of (super) tiling,
+so in the end it may be slower. XXX this needs to be tested.
+
+Usually, there is more framebuffer memory than that which is used for the current screen, which causes larger virtual resolution
+to be returned than the physical resolution. Double-buffering is achieved by changing the y-offset within that virtual frame buffer. 
+
 Programming pecularities
 =========================
 

@@ -269,7 +269,7 @@ int main(int argc, char **argv)
 
     /* Allocate and map texture memory (ADDR_H) */
     gcuVIDMEM_NODE_PTR tex_node = 0;
-    if(viv_alloc_linear_vidmem(0x100000, 0x40, gcvSURF_VERTEX, gcvPOOL_DEFAULT, &tex_node)!=0)
+    if(viv_alloc_linear_vidmem(0x100000, 0x40, gcvSURF_TEXTURE, gcvPOOL_DEFAULT, &tex_node)!=0)
     {
         fprintf(stderr, "Error allocating tex memory\n");
         exit(1);
