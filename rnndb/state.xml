@@ -1270,13 +1270,16 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x00804" name="OUTPUT_COUNT" value="0x00000000"/>
         <reg32 offset="0x00808" name="INPUT_COUNT" value="0x00000000">
-            <bitfield high="3" low="0" name="COUNT" type="uint"/>
-            <bitfield high="12" low="8" name="COUNT2" type="uint"/>
+            <bitfield high="3" low="0" name="COUNT0" type="uint"/>
+            <bitfield high="12" low="8" name="COUNT8" type="uint"/>
         </reg32>
         <reg32 offset="0x0080C" name="TEMP_REGISTER_CONTROL" brief="Temporary register control" value="0x00000000">
             <bitfield high="5" low="0" name="NUM_TEMPS" type="uint"/>
         </reg32>
-        <reg32 offset="0x00810" name="OUTPUT" value="0x00000000" length="4" stride="4"/>
+        <reg32 offset="0x00810" name="OUTPUT" value="0x00000000" length="4" stride="4">
+            <bitfield high="15" low="0" name="UNK0" type="uint"/>
+            <bitfield high="31" low="16" name="UNK16" type="uint"/>
+        </reg32>
         <reg32 offset="0x00820" name="INPUT" value="0x00000000" length="4" stride="4"/>
         <reg32 offset="0x00830" name="LOAD_BALANCING" value="0x00000000"/>
         <reg32 offset="0x00834" name="PERF_COUNTER" brief="Performance counter control"/>
@@ -1324,7 +1327,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <doc>0x11 for OpenGL</doc>
         </reg32>
         <reg32 offset="0x00A2C" name="W_CLIP_LIMIT" value="0x00000000"/>
-        <reg32 offset="0x00A30" name="ATTRIBUTE_ELEMENT_COUNT" value="0x00000000"/>
+        <reg32 offset="0x00A30" name="ATTRIBUTE_ELEMENT_COUNT" value="0x00000000">
+            <bitfield high="7" low="0" name="UNK0"/>
+            <bitfield high="15" low="8" name="UNK8"/>
+        </reg32>
         <reg32 offset="0x00A34" name="CONFIG" value="0x00000000" brief="Primitive assembly state flags" masked="yes">
             <doc>
             These can be set either per group of bits, or all at once, by using masking flags.
@@ -1362,7 +1368,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x00A38" name="LINE_UNK00A38" value="0x00000000"/>
         <reg32 offset="0x00A3C" name="LINE_UNK00A3C" value="0x00000000"/>
-        <reg32 offset="0x00A40" name="SHADER_ATTRIBUTES" value="0x00000000" length="10" stride="4"/>
+        <reg32 offset="0x00A40" name="SHADER_ATTRIBUTES" value="0x00000000" length="10" stride="4">
+            <doc>One flags word per shader attribute</doc>
+            <bitfield high="7" low="0" name="UNK0"/>
+            <bitfield high="15" low="8" name="UNK8"/>
+        </reg32>
         <reg32 offset="0x00A80" name="VIEWPORT_UNK00A80" value="0x00000000"/>
         <reg32 offset="0x00A84" name="VIEWPORT_UNK00A84" value="0x00000000"/>
     </stripe>
@@ -1383,7 +1393,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     
     <stripe name="RA" brief="Raster states">
         <doc>Configuration for the rasterizer. This mainly controls multisampling.</doc>
-        <reg32 offset="0x00E00" name="CONTROL" value="0x00000001"/>
+        <reg32 offset="0x00E00" name="CONTROL" value="0x00000001">
+            <bitfield pos="0" name="UNK0"/>
+            <bitfield pos="1" name="UNK1"><doc>Set based on number of PS varyings</doc></bitfield>
+        </reg32>
         <reg32 offset="0x00E04" name="MULTISAMPLE_UNK00E04" value="0x00000000"/>
         <reg32 offset="0x00E08" name="DEPTH_UNK00E08" value="0x00000031"/>
         <reg32 offset="0x00E10" name="MULTISAMPLE_UNK00E10" value="0x00000000" length="4" stride="4"/>
@@ -1395,8 +1408,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x01000" name="END_PC" value="0x00000000"/>
         <reg32 offset="0x01004" name="OUTPUT_REG" value="0x00000000" brief="Register that will contain output color"/>
         <reg32 offset="0x01008" name="INPUT_COUNT" value="0x00000000">
-            <bitfield high="3" low="0" name="COUNT" type="uint"/>
-            <bitfield high="12" low="8" name="COUNT2" type="uint"/>
+            <bitfield high="3" low="0" name="COUNT0" type="uint"/>
+            <bitfield high="12" low="8" name="COUNT8" type="uint"/>
         </reg32>
         <reg32 offset="0x0100C" name="TEMP_REGISTER_CONTROL" brief="Temporary register control" value="0x00000000">
             <bitfield high="5" low="0" name="NUM_TEMPS" type="uint"/>

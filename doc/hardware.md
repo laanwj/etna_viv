@@ -223,7 +223,7 @@ which only differs very little per opcode. The actual instruction fields that ar
      possibly others.
 
 - Registers:
-  - N four-component float temporary registers `tX` (actual number depends on the hardware, seems to be at least 64, but like with other GPUs
+  - N four-component float temporary registers `tX` (actual number depends on the hardware, maximum seems to be at least 64, but like with other GPUs
     using more registers will likely restrict the available paralellism)
   - 1 four-component address register `a0`
 
@@ -242,6 +242,20 @@ Programming pecularities
   - Some of the states in states.xml are labeled as format "fixp" even though the FE does conversion and
     their actual format is float, and they could be written as float as well when this is faster
     from the driver perspective. This needs to be checked.
+
+- It is quite easy to hang the GPU when making a minor programming mistake. 
+  When the GPU is stuck it is possible to submit command buffers, however nothing gets drawn and nothing 
+  ever finishes.
+
+  Ways I've already made it crash:
+
+  - Wrong number of temporaries in PS
+  - Sending 3D commands in the 2D pipe instead of 3D pipe (then using a signal waiting for them to complete)
+  - Wrong length of shader
+
+  This may be a (kernel) driver problem. It is possible to reset the GPU from user space with an ioctl, but 
+  this usually is not enough to make it un-stuck. It would probably be a better solution to introduce a kernel-based timeout
+  instead of relying on userspace to be 100% correct.
 
 Masked state
 -------------
