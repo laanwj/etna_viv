@@ -681,18 +681,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="17" low="16" name="UNK16"/>
             <bitfield pos="19" name="UNK16_MASK"/>
         </reg32>
-        <reg32 offset="0x0381C" name="VS_VARYING_NUM_COMPONENTS" brief="Number of components in varyings (VS)" value="0x00000000">
-            <doc>Number of components per varying (VS).</doc>
-            <bitfield high="2" low="0" name="VAR0"/>
-            <bitfield high="6" low="4" name="VAR1"/>
-            <bitfield high="10" low="8" name="VAR2"/>
-            <bitfield high="14" low="12" name="VAR3"/>
-            <bitfield high="18" low="16" name="VAR4"/>
-            <bitfield high="22" low="20" name="VAR5"/>
-            <bitfield high="26" low="24" name="VAR6"/>
-            <bitfield high="30" low="28" name="VAR7"/>
+        <reg32 offset="0x0381C" name="VARYING_TOTAL_COMPONENTS" brief="Total number of components in all varyings" value="0x00000000">
+            <doc>Number of components for all varyings together.</doc>
+            <bitfield high="7" low="0" name="NUM"/>
         </reg32>
-        <reg32 offset="0x03820" name="PS_VARYING_NUM_COMPONENTS" brief="Number of components in varyings (PS)" value="0x00000000">
+        <reg32 offset="0x03820" name="VARYING_NUM_COMPONENTS" brief="Number of components in varyings" value="0x00000000">
             <doc>Number of components per varying (PS).</doc>
             <bitfield high="2" low="0" name="VAR0"/>
             <bitfield high="6" low="4" name="VAR1"/>
@@ -703,7 +696,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="26" low="24" name="VAR6"/>
             <bitfield high="30" low="28" name="VAR7"/>
         </reg32>
-        <reg32 offset="0x03828" name="PS_VARYING_COMPONENT_USE" brief="Varying component usage (PS)" value="0x00000000" length="2" stride="4">
+        <reg32 offset="0x03828" name="VARYING_COMPONENT_USE" brief="Varying component usage" value="0x00000000" length="2" stride="4">
             <doc>2 bits per varying component, 16 components per 32-bit word.</doc>
             <bitfield high="1" low="0" name="COMP0" type="VARYING_COMPONENT_USE"/> 
             <bitfield high="3" low="2" name="COMP1" type="VARYING_COMPONENT_USE"/>
@@ -1329,7 +1322,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00A2C" name="W_CLIP_LIMIT" value="0x00000000"/>
         <reg32 offset="0x00A30" name="ATTRIBUTE_ELEMENT_COUNT" value="0x00000000">
             <bitfield high="7" low="0" name="UNK0"/>
-            <bitfield high="15" low="8" name="UNK8"/>
+            <bitfield high="15" low="8" name="COUNT"/>
         </reg32>
         <reg32 offset="0x00A34" name="CONFIG" value="0x00000000" brief="Primitive assembly state flags" masked="yes">
             <doc>

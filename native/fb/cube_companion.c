@@ -404,8 +404,8 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_PE_COLOR_ADDR, rt_physical); /* ADDR_A */
         etna_set_state(ctx, VIVS_PE_COLOR_STRIDE, padded_width * 4); 
         etna_set_state(ctx, VIVS_GL_MULTI_SAMPLE_CONFIG, 
-                ETNA_MASKED(VIVS_GL_MULTI_SAMPLE_CONFIG_UNK0, 0x0) &
-                ETNA_MASKED(VIVS_GL_MULTI_SAMPLE_CONFIG_UNK4, 0xf) &
+                ETNA_MASKED_INL(VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_SAMPLES, NONE) &
+                ETNA_MASKED(VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_ENABLES, 0xf) &
                 ETNA_MASKED(VIVS_GL_MULTI_SAMPLE_CONFIG_UNK12, 0x0) &
                 ETNA_MASKED(VIVS_GL_MULTI_SAMPLE_CONFIG_UNK16, 0x0)
                 ); 
@@ -524,7 +524,7 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_TE_SAMPLER_SIZE(0), 0x02000200); /*   TE.SAMPLER[0].SIZE := WIDTH=512,HEIGHT=512 */
         etna_set_state(ctx, VIVS_TE_SAMPLER_LOG_SIZE(0), 0x00048120); /*   TE.SAMPLER[0].LOG_SIZE := WIDTH=9.000000,HEIGHT=9.000000 */
         etna_set_state(ctx, VIVS_TE_SAMPLER_LOD_ADDR(0,0), tex_physical);
-        etna_set_state(ctx, VIVS_TE_SAMPLER_CONFIG_1(0), 0x00011102); /*   TE.SAMPLER[0].CONFIG_1 := 0x11102 */
+        etna_set_state(ctx, VIVS_TE_SAMPLER_CONFIG0(0), 0x00011102); /*   TE.SAMPLER[0].CONFIG_1 := 0x11102 */
         etna_set_state(ctx, VIVS_TE_SAMPLER_LOD_CONFIG(0), 0x00000000); /*   TE.SAMPLER[0].LOD_CONFIG := 0x0 */
 
         /* shader setup */
@@ -550,17 +550,17 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_PS_START_PC, 0x0);
         etna_set_state(ctx, VIVS_PA_SHADER_ATTRIBUTES(0), 0x200);
         etna_set_state(ctx, VIVS_PA_SHADER_ATTRIBUTES(1), 0x200);
-        etna_set_state(ctx, VIVS_GL_PS_VARYING_NUM_COMPONENTS,  
-                VIVS_GL_VS_VARYING_NUM_COMPONENTS_VAR0(4)| /* position */
-                VIVS_GL_VS_VARYING_NUM_COMPONENTS_VAR1(2)  /* texture coordinate */
+        etna_set_state(ctx, VIVS_GL_VARYING_NUM_COMPONENTS,  
+                VIVS_GL_VARYING_NUM_COMPONENTS_VAR0(4)| /* position */
+                VIVS_GL_VARYING_NUM_COMPONENTS_VAR1(2)  /* texture coordinate */
                 );
-        etna_set_state_multi(ctx, VIVS_GL_PS_VARYING_COMPONENT_USE(0), 2, (uint32_t[]){
-                VIVS_GL_PS_VARYING_COMPONENT_USE_COMP0(VARYING_COMPONENT_USE_USED) |
-                VIVS_GL_PS_VARYING_COMPONENT_USE_COMP1(VARYING_COMPONENT_USE_USED) |
-                VIVS_GL_PS_VARYING_COMPONENT_USE_COMP2(VARYING_COMPONENT_USE_USED) |
-                VIVS_GL_PS_VARYING_COMPONENT_USE_COMP3(VARYING_COMPONENT_USE_USED) |
-                VIVS_GL_PS_VARYING_COMPONENT_USE_COMP4(VARYING_COMPONENT_USE_USED) |
-                VIVS_GL_PS_VARYING_COMPONENT_USE_COMP5(VARYING_COMPONENT_USE_USED)
+        etna_set_state_multi(ctx, VIVS_GL_VARYING_COMPONENT_USE(0), 2, (uint32_t[]){
+                VIVS_GL_VARYING_COMPONENT_USE_COMP0(VARYING_COMPONENT_USE_USED) |
+                VIVS_GL_VARYING_COMPONENT_USE_COMP1(VARYING_COMPONENT_USE_USED) |
+                VIVS_GL_VARYING_COMPONENT_USE_COMP2(VARYING_COMPONENT_USE_USED) |
+                VIVS_GL_VARYING_COMPONENT_USE_COMP3(VARYING_COMPONENT_USE_USED) |
+                VIVS_GL_VARYING_COMPONENT_USE_COMP4(VARYING_COMPONENT_USE_USED) |
+                VIVS_GL_VARYING_COMPONENT_USE_COMP5(VARYING_COMPONENT_USE_USED)
                 , 0
                 });
         etna_set_state_multi(ctx, VIVS_PS_INST_MEM(0), ps_size/4, ps);
@@ -571,8 +571,8 @@ int main(int argc, char **argv)
                 VIVS_PS_CONTROL_UNK1
                 );
         etna_set_state(ctx, VIVS_PA_ATTRIBUTE_ELEMENT_COUNT, 0x200);
-        etna_set_state(ctx, VIVS_GL_VS_VARYING_NUM_COMPONENTS,
-                VIVS_GL_VS_VARYING_NUM_COMPONENTS_VAR0(6) /* Why 6 here, not 4,2 as for PS_VARYING_NUM_COMPONENTS? */
+        etna_set_state(ctx, VIVS_GL_VARYING_TOTAL_COMPONENTS,
+                VIVS_GL_VARYING_TOTAL_COMPONENTS_NUM(6) /* 4+2=6 total varying components */
                 );
         etna_set_state(ctx, VIVS_VS_LOAD_BALANCING, 0xf3f0542); /* depends on number of inputs/outputs/varyings? */
         etna_set_state(ctx, VIVS_VS_OUTPUT_COUNT, 3);
