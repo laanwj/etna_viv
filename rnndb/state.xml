@@ -279,6 +279,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="3" name="POINTCOORD_Y" brief="glPointCoord.y"/>
     </enum>
     <enum name="COMPARE_FUNC" brief="Compare function (for glStencilFunc and glDepthFunc)">
+        <!-- Either a coincidence or due to shared roots in DirectX: same enum as Gallium3D PIPE_FUNC -->
         <value value="0" name="NEVER"/>
         <value value="1" name="LESS"/>
         <value value="2" name="EQUAL"/>
@@ -357,6 +358,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="30" name="ETC1" brief="Ericsson Texture Compression"/>
     </enum>
     <enum name="TEXTURE_FORMAT_EXT" brief="Extended texture format">
+        <value value="0" name="NONE"/>
         <value value="7" name="A16F" brief="16-bit fp alpha format" />
         <value value="8" name="A16L16F" brief="16-bit fp alpha luminosity format" />
         <value value="9" name="A16B16G16R16F" brief="16-bit fp rgba format" />
@@ -378,6 +380,24 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="0" name="REPEAT"/>
         <value value="1" name="MIRRORED_REPEAT"/>
         <value value="2" name="CLAMP_TO_EDGE"/>
+    </enum>
+    <enum name="TEXTURE_FACE">
+        <doc>Offset into texture memory for cube map face</doc>
+        <value value="0" name="POS_X"/>
+        <value value="1" name="NEG_X"/>
+        <value value="2" name="POS_Y"/>
+        <value value="3" name="NEG_Y"/>
+        <value value="4" name="POS_Z"/>
+        <value value="5" name="NEG_Z"/>
+    </enum>
+    <enum name="TEXTURE_SWIZZLE">
+        <!-- Matches Gallium3D PIPE_SWIZZLE -->
+        <value value="0" name="RED"/>
+        <value value="1" name="GREEN"/>
+        <value value="2" name="BLUE"/>
+        <value value="3" name="ALPHA"/>
+        <value value="4" name="ZERO"/>
+        <value value="5" name="ONE"/>
     </enum>
     <enum name="ENDIAN_MODE" brief="Byte swap configuration">
         <value value="0" name="NO_SWAP" brief="No endian swap"/>
@@ -1269,7 +1289,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00804" name="OUTPUT_COUNT" value="0x00000000" type="uint" brief="Number of VS outputs"/>
         <reg32 offset="0x00808" name="INPUT_COUNT" value="0x00000000">
             <bitfield high="3" low="0" name="COUNT" type="uint" brief="Number of VS inputs"/>
-            <bitfield high="12" low="8" name="COUNT8" type="uint"/>
+            <bitfield high="12" low="8" name="UNK8" type="uint"/>
         </reg32>
         <reg32 offset="0x0080C" name="TEMP_REGISTER_CONTROL" brief="Temporary register control" value="0x00000000">
             <bitfield high="5" low="0" name="NUM_TEMPS" type="uint" brief="Number of temporary registers"/>
@@ -1559,7 +1579,29 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="9" name="UNK16_MASK"/>
             <bitfield high="31" low="16" name="UNK16"/>
         </reg32>
-        <reg32 offset="0x014A4" name="LOGIC_OP" value="0x000E400C"/>
+        <reg32 offset="0x014A4" name="LOGIC_OP" masked="yes" value="0x000E400C">
+            <!-- only supported if feature bit LOGIC_OP present. 
+                 Either a coincidence or due to shared roots in DirectX: same enum as Gallium3D PIPE_LOGICOP -->
+            <bitfield high="3" low="0" name="OP" brief="LogicOp">
+                <value value="0" name="CLEAR"/>
+                <value value="1" name="NOR"/>
+                <value value="2" name="AND_INVERTED"/>
+                <value value="3" name="COPY_INVERTED"/>
+                <value value="4" name="AND_REVERSE"/>
+                <value value="5" name="INVERT"/>
+                <value value="6" name="XOR"/>
+                <value value="7" name="NAND"/>
+                <value value="8" name="AND"/>
+                <value value="9" name="EQUIV"/>
+                <value value="10" name="NOOP"/>
+                <value value="11" name="OR_INVERTED"/>
+                <value value="12" name="COPY"/> <!-- Default -->
+                <value value="13" name="OR_REVERSE"/>
+                <value value="14" name="OR"/>
+                <value value="15" name="SET"/>
+            </bitfield>
+            <bitfield pos="4" name="OP_MASK"/>
+        </reg32>
         <reg32 offset="0x014A8" name="DITHER" value="0xFFFFFFFF" length="2"/>
         <reg32 offset="0x014B0" name="UNK014B0" value="0x00000000"/>
         <reg32 offset="0x014B4" name="UNK014B4" value="0x00000000"/>
@@ -1621,7 +1663,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="4" low="0" name="SOURCE_FORMAT" type="RS_FORMAT" brief="Source color format"/>
             <bitfield high="6" low="5" name="DOWNSAMPLE" brief="Downsampling factor">
                 <doc>
-                    A resolve operation can downsample a supersampled surface.
+                    A resolve operation can downsample a surface.
                     This functionality is also used to compute mipmaps.
                 </doc>
                 <value value="0" name="NONE"/>
@@ -1737,37 +1779,47 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x0169C" name="UNK0169C" value="0x00000000"/>
     </stripe>
 
+    <!-- register descriptions shared between TE.SAMPLER and NTE.SAMPLER -->
+    <bitset name="TE_SAMPLER_CONFIG0" inline="yes">
+        <bitfield high="2" low="0" name="TYPE" type="TEXTURE_TYPE"/>
+        <bitfield high="4" low="3" name="UWRAP" type="TEXTURE_WRAPMODE"/>
+        <bitfield high="6" low="5" name="VWRAP" type="TEXTURE_WRAPMODE"/>
+        <bitfield high="8" low="7" name="MIN" type="TEXTURE_FILTER"/>
+        <bitfield high="10" low="9" name="MIP" type="TEXTURE_FILTER"/>
+        <bitfield high="12" low="11" name="MAG" type="TEXTURE_FILTER"/>
+        <bitfield high="17" low="13" name="FORMAT" type="TEXTURE_FORMAT"/>
+    </bitset>
+    <bitset name="TE_SAMPLER_SIZE" inline="yes">
+        <bitfield high="15" low="0" name="WIDTH" type="uint"/>
+        <bitfield high="31" low="16" name="HEIGHT" type="uint"/>
+    </bitset>
+    <bitset name="TE_SAMPLER_LOG_SIZE" inline="yes">
+        <bitfield high="9" low="0" name="WIDTH" type="fixedp"/>
+        <bitfield high="19" low="10" name="HEIGHT" type="fixedp"/>
+    </bitset>
+    <bitset name="TE_SAMPLER_LOD_CONFIG" inline="yes">
+        <bitfield high="10" low="1" name="MAX" type="fixedp" brief="Maximum LOD level"/>
+        <bitfield high="20" low="11" name="MIN" type="fixedp" brief="Minimum LOD level"/>
+        <bitfield high="30" low="21" name="BIAS" type="fixedp" brief="LOD bias"/>
+    </bitset>
+    <bitset name="TE_SAMPLER_CONFIG1" inline="yes">
+        <bitfield high="4" low="0" name="FORMAT_EXT" type="TEXTURE_FORMAT_EXT"/>
+        <bitfield high="10" low="8" name="SWIZZLE_R" type="TEXTURE_SWIZZLE"/>
+        <bitfield high="14" low="12" name="SWIZZLE_G" type="TEXTURE_SWIZZLE"/>
+        <bitfield high="18" low="16" name="SWIZZLE_B" type="TEXTURE_SWIZZLE"/>
+        <bitfield high="22" low="20" name="SWIZZLE_A" type="TEXTURE_SWIZZLE"/>
+    </bitset>
     <stripe name="TE" brief="TExture sampler states">
         <doc>Texture sampling, filtering, LOD, etc</doc>
         <stripe name="SAMPLER" length="12" stride="4"> 
-            <reg32 offset="0x2000" name="CONFIG0" value="0x00000000">
-                <bitfield high="2" low="0" name="TYPE" type="TEXTURE_TYPE"/>
-                <bitfield high="4" low="3" name="UWRAP" type="TEXTURE_WRAPMODE"/>
-                <bitfield high="6" low="5" name="VWRAP" type="TEXTURE_WRAPMODE"/>
-                <bitfield high="8" low="7" name="MIN" type="TEXTURE_FILTER"/>
-                <bitfield high="10" low="9" name="MIP" type="TEXTURE_FILTER"/>
-                <bitfield high="12" low="11" name="MAG" type="TEXTURE_FILTER"/>
-                <bitfield high="17" low="13" name="FORMAT" type="TEXTURE_FORMAT"/>
-            </reg32>
-            <reg32 offset="0x2040" name="SIZE" value="0x00000000">
-                <bitfield high="15" low="0" name="WIDTH" type="uint"/>
-                <bitfield high="31" low="16" name="HEIGHT" type="uint"/>
-            </reg32>
-            <reg32 offset="0x2080" name="LOG_SIZE" value="0x00000000">
-                <bitfield high="9" low="0" name="WIDTH" type="fixedp"/>
-                <bitfield high="19" low="10" name="HEIGHT" type="fixedp"/>
-            </reg32>
-            <reg32 offset="0x20C0" name="LOD_CONFIG" value="0x00000000">
-                <bitfield high="10" low="1" name="MAX" type="fixedp" brief="Maximum LOD level"/>
-                <bitfield high="20" low="11" name="MIN" type="fixedp" brief="Minimum LOD level"/>
-                <bitfield high="30" low="21" name="BIAS" type="fixedp" brief="LOD bias"/>
-            </reg32>
+            <reg32 offset="0x2000" name="CONFIG0" value="0x00000000" type="TE_SAMPLER_CONFIG0"/>
+            <reg32 offset="0x2040" name="SIZE" value="0x00000000" type="TE_SAMPLER_SIZE"/>
+            <reg32 offset="0x2080" name="LOG_SIZE" value="0x00000000" type="TE_SAMPLER_LOG_SIZE"/>
+            <reg32 offset="0x20C0" name="LOD_CONFIG" value="0x00000000" type="TE_SAMPLER_LOD_CONFIG"/>
             <reg32 offset="0x2100" name="UNK02100" value="0x00000000"/>
             <reg32 offset="0x2140" name="UNK02140" value="0x00000000"/>
             <reg32 offset="0x2180" name="UNK02180" value="0x00000000"/>
-            <reg32 offset="0x21C0" name="CONFIG1" value="0x00321000">
-                <bitfield high="4" low="0" name="FORMAT_EXT" type="TEXTURE_FORMAT_EXT"/>
-            </reg32>
+            <reg32 offset="0x21C0" name="CONFIG1" value="0x00321000" type="TE_SAMPLER_CONFIG1"/>
             <reg32 offset="0x2200" name="UNK02200" value="0x00000000"/>
             <reg32 offset="0x2240" name="UNK02240" value="0x00000000"/>
             <reg32 offset="0x2400" name="LOD_ADDR" length="14" stride="0x40" type="VIVM"/> <!-- Base address, per LOD level -->
@@ -1777,14 +1829,14 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <stripe name="NTE" brief="New texture states">
         <doc>Extra texture states for newer hardware. These exist if chipMinorFeatures2 bit 11 set.</doc>
         <array offset="0x10000" name="SAMPLER" length="32" stride="4">
-            <reg32 offset="0x000" name="CONFIG_1" value="0x00000000"/> <!-- probably same as under TEXTURE.SAMPLER -->
-            <reg32 offset="0x080" name="SIZE" value="0x00000000"/>
-            <reg32 offset="0x100" name="LOG_SIZE" value="0x00000000"/>
-            <reg32 offset="0x180" name="LOD" value="0x00000000"/>
+            <reg32 offset="0x000" name="CONFIG0" value="0x00000000" type="TE_SAMPLER_CONFIG0"/>
+            <reg32 offset="0x080" name="SIZE" value="0x00000000" type="TE_SAMPLER_SIZE"/>
+            <reg32 offset="0x100" name="LOG_SIZE" value="0x00000000" type="TE_SAMPLER_LOG_SIZE"/>
+            <reg32 offset="0x180" name="LOD_CONFIG" value="0x00000000" type="TE_SAMPLER_LOD_CONFIG"/>
             <reg32 offset="0x200" name="UNK10200" value="0x00000000"/>
             <reg32 offset="0x280" name="UNK10280" value="0x00000000"/>
             <reg32 offset="0x300" name="UNK10300" value="0x00000000"/>
-            <reg32 offset="0x380" name="CONFIG_2" value="0x00321000"/>
+            <reg32 offset="0x380" name="CONFIG1" value="0x00321000" type="TE_SAMPLER_CONFIG1"/>
             <reg32 offset="0x400" name="UNK10400" value="0x00000000"/>
             <reg32 offset="0x480" name="UNK10480" value="0x00000000"/>
         </array>

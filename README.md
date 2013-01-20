@@ -225,7 +225,7 @@ Compatibility
 ================
 
 My primary development device is an Android tablet based on Rockchip RK2918, containing a GC800 GPU.
-It has pretty ancient kernel driver 2.2.2.
+It has pretty ancient Vivante kernel driver 2.2.2.
 
 I do not currently have a device with a newer chip or driver, so every statement about those devices
 is based on educated guesses.
