@@ -20,7 +20,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-/* Rotating, animated cube 
+/* Animated rotating "weighted companion cube", using array or indexed rendering
  */
 #include <stdio.h>
 #include <unistd.h>
@@ -31,6 +31,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <stdarg.h>
+#include <assert.h>
 
 #include <errno.h>
 
@@ -47,8 +48,11 @@
 
 #include "companion.h"
 
-//#define TEST_PATTERN
-
+//#define TEST_PATTERN /* Upload test pattern instead of texture */
+//#define EXTRA_DELAYS /* Insert extra delays (that blob does but appear unnecessary on my hw for this demo) */
+#define INDEXED /* Used indexed rendering */
+#define INDEX_BUFFER_SIZE 0x8000
+#define VERTEX_BUFFER_SIZE 0x60000
 uint32_t vs[] = {
     0x01831009, 0x00000000, 0x00000000, 0x203fc048,
     0x02031009, 0x00000000, 0x00000000, 0x203fc058,
@@ -195,7 +199,7 @@ int main(int argc, char **argv)
 
     /* allocate vertex buffer */
     gcuVIDMEM_NODE_PTR vtx_node = 0;
-    if(viv_alloc_linear_vidmem(0x60000, 0x40, gcvSURF_VERTEX, gcvPOOL_DEFAULT, &vtx_node)!=0)
+    if(viv_alloc_linear_vidmem(VERTEX_BUFFER_SIZE, 0x40, gcvSURF_VERTEX, gcvPOOL_DEFAULT, &vtx_node)!=0)
     {
         fprintf(stderr, "Error allocating vertex memory\n");
         exit(1);
@@ -210,6 +214,25 @@ int main(int argc, char **argv)
         exit(1);
     }
     printf("Locked vertex memory: phys=%08x log=%08x\n", (uint32_t)vtx_physical, (uint32_t)vtx_logical);
+#ifdef INDEXED 
+    /* allocate index buffer */
+    gcuVIDMEM_NODE_PTR idx_node = 0;
+    if(viv_alloc_linear_vidmem(INDEX_BUFFER_SIZE, 0x40, gcvSURF_INDEX, gcvPOOL_DEFAULT, &idx_node)!=0)
+    {
+        fprintf(stderr, "Error allocating index memory\n");
+        exit(1);
+    }
+    printf("Allocated index node: node=%08x\n", (uint32_t)idx_node);
+
+    viv_addr_t idx_physical = 0; 
+    void *idx_logical = 0;
+    if(viv_lock_vidmem(idx_node, &idx_physical, &idx_logical)!=0)
+    {
+        fprintf(stderr, "Error locking index memory\n");
+        exit(1);
+    }
+    printf("Locked index memory: phys=%08x log=%08x\n", (uint32_t)idx_physical, (uint32_t)idx_logical);
+#endif
 
     /* allocate aux render target */
     gcuVIDMEM_NODE_PTR aux_rt_node = 0;
@@ -289,10 +312,13 @@ int main(int argc, char **argv)
      * from GL by using a vertex buffer object.
      */
     memset(vtx_logical, 0, 0x5ef80);
+#ifndef INDEXED
+    printf("Interleaving vertices...\n");
     float *vertices_array = companion_vertices_array();
     float *texture_coordinates_array =
             companion_texture_coordinates_array();
     float *normals_array = companion_normals_array();
+    assert(COMPANION_ARRAY_COUNT*(3+3+2)*sizeof(float) < VERTEX_BUFFER_SIZE);
     for(int vert=0; vert<COMPANION_ARRAY_COUNT; ++vert)
     {
         int dest_idx = vert * (3 + 3 + 2);
@@ -303,6 +329,22 @@ int main(int argc, char **argv)
         for(int comp=0; comp<2; ++comp)
             ((float*)vtx_logical)[dest_idx+comp+6] = texture_coordinates_array[vert*2 + comp]; /* 2 */
     }
+#else
+    printf("Interleaving vertices and copying index buffer...\n");
+    assert(COMPANION_VERTEX_COUNT*(3+3+2)*sizeof(float) < VERTEX_BUFFER_SIZE);
+    for(int vert=0; vert<COMPANION_VERTEX_COUNT; ++vert)
+    {
+        int dest_idx = vert * (3 + 3 + 2);
+        for(int comp=0; comp<3; ++comp)
+            ((float*)vtx_logical)[dest_idx+comp+0] = companion_vertices[vert][comp]; /* 0 */
+        for(int comp=0; comp<3; ++comp)
+            ((float*)vtx_logical)[dest_idx+comp+3] = companion_normals[vert][comp]; /* 1 */
+        for(int comp=0; comp<2; ++comp)
+            ((float*)vtx_logical)[dest_idx+comp+6] = companion_texture_coordinates[vert][comp]; /* 2 */
+    }
+    assert(COMPANION_TRIANGLE_COUNT*3*sizeof(unsigned short) < INDEX_BUFFER_SIZE);
+    memcpy(idx_logical, &companion_triangles[0][0], COMPANION_TRIANGLE_COUNT*3*sizeof(unsigned short));
+#endif
     /* Fill in texture (convert from RGB linear to tiled) */
 #define TILE_WIDTH (4)
 #define TILE_HEIGHT (4)
@@ -436,7 +478,7 @@ int main(int argc, char **argv)
                 VIVS_TS_MEM_CONFIG_DEPTH_COMPRESSION);
         etna_set_state(ctx, VIVS_PE_DEPTH_CONFIG, ETNA_MASKED_BIT(VIVS_PE_DEPTH_CONFIG_EARLY_Z, 1));
 
-#if 0
+#ifdef EXTRA_DELAYS
         /* Warm up RS on aux render target (is this needed?) */
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
         etna_warm_up_rs(ctx, aux_rt_physical, aux_rt_ts_physical);
@@ -613,7 +655,11 @@ int main(int argc, char **argv)
         etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(20), 3, (uint32_t*)&normal[3]); /* u5.xyz */
         etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(24), 3, (uint32_t*)&normal[6]); /* u6.xyz */
         etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(28), 16, (uint32_t*)&modelview.m[0][0]);
-        etna_set_state(ctx, VIVS_FE_VERTEX_STREAM_BASE_ADDR, vtx_physical); /* ADDR_E */
+#ifdef INDEXED
+        etna_set_state(ctx, VIVS_FE_INDEX_STREAM_BASE_ADDR, idx_physical);
+        etna_set_state(ctx, VIVS_FE_INDEX_STREAM_CONTROL, VIVS_FE_INDEX_STREAM_CONTROL_TYPE_UNSIGNED_SHORT);
+#endif
+        etna_set_state(ctx, VIVS_FE_VERTEX_STREAM_BASE_ADDR, vtx_physical);
         etna_set_state(ctx, VIVS_FE_VERTEX_STREAM_CONTROL, 
                 VIVS_FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE((3 + 3 + 2)*4));
         etna_set_state(ctx, VIVS_FE_VERTEX_ELEMENT_CONFIG(0), 
@@ -644,11 +690,15 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_VS_INPUT(0), 0x20100);
         etna_set_state(ctx, VIVS_PA_CONFIG, ETNA_MASKED_BIT(VIVS_PA_CONFIG_POINT_SPRITE_ENABLE, 0));
 
+#ifdef INDEXED
+        etna_draw_indexed_primitives(ctx, PRIMITIVE_TYPE_TRIANGLES, 0, COMPANION_TRIANGLE_COUNT, 0);
+#else
         etna_draw_primitives(ctx, PRIMITIVE_TYPE_TRIANGLES, 0, COMPANION_TRIANGLE_COUNT);
+#endif
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
-
+#ifdef EXTRA_DELAYS
         etna_flush(ctx);
-
+#endif
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
         etna_set_state(ctx, VIVS_RS_CONFIG,
                 VIVS_RS_CONFIG_SOURCE_FORMAT(RS_FORMAT_A8R8G8B8) |
@@ -667,11 +717,11 @@ int main(int argc, char **argv)
                 VIVS_RS_WINDOW_SIZE_HEIGHT(padded_height) |
                 VIVS_RS_WINDOW_SIZE_WIDTH(padded_width));
         etna_set_state(ctx, VIVS_RS_KICKER, 0xbeebbeeb);
-
-        /* Submit second command buffer */
+#ifdef EXTRA_DELAYS
         etna_flush(ctx);
 
         etna_warm_up_rs(ctx, aux_rt_physical, aux_rt_ts_physical);
+#endif
 
         etna_set_state(ctx, VIVS_TS_COLOR_STATUS_BASE, rt_ts_physical); /* ADDR_B */
         etna_set_state(ctx, VIVS_TS_COLOR_SURFACE_BASE, rt_physical); /* ADDR_A */
@@ -682,9 +732,10 @@ int main(int argc, char **argv)
                 VIVS_TS_MEM_CONFIG_DEPTH_COMPRESSION);
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR);
 
-        /* Submit third command buffer, wait for pixel engine to finish */
+        /* Wait for pixel engine to finish */
         etna_finish(ctx);
 
+        /* Copy result to framebuffer */
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
         etna_set_state(ctx, VIVS_RS_CONFIG,
                 VIVS_RS_CONFIG_SOURCE_FORMAT(RS_FORMAT_A8R8G8B8) |
@@ -705,6 +756,7 @@ int main(int argc, char **argv)
                 VIVS_RS_WINDOW_SIZE_WIDTH(width));
         etna_set_state(ctx, VIVS_RS_KICKER, 0xbeebbeeb);
         etna_finish(ctx);
+
         /* switch buffers */
         fb_set_buffer(&fb, backbuffer);
         backbuffer = 1-backbuffer;

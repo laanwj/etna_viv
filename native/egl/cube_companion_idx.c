@@ -30,6 +30,7 @@
 #include <GLES2/gl2.h>
 
 #include "esUtil.h"
+#include "eglutil.h"
 #include "companion.h"
 #include "dump_gl_screen.h"
 #include "viv_hook.h"
@@ -118,11 +119,6 @@ int main(int argc, char *argv[])
 	  "{                            \n"
 	  "    gl_FragColor = 3.0 * vVaryingColor * texture2D(in_texture, coord);\n"
 	  "}                            \n";
-
-	float *vertices_array = companion_vertices_array();
-	float *texture_coordinates_array =
-		companion_texture_coordinates_array();
-	float *normals_array = companion_normals_array();
 
 	display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
 	if (display == EGL_NO_DISPLAY) {
@@ -276,14 +272,14 @@ int main(int argc, char *argv[])
 	glClearColor(0.5, 0.5, 0.5, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, vertices_array);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, &companion_vertices[0][0]);
 	glEnableVertexAttribArray(0);
 
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, normals_array);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, &companion_normals[0][0]);
 	glEnableVertexAttribArray(1);
 
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0,
-			      texture_coordinates_array);
+			      &companion_texture_coordinates[0][0]);
 	glEnableVertexAttribArray(2);
 
 	ESMatrix modelview;
@@ -320,25 +316,14 @@ int main(int argc, char *argv[])
 	glGenTextures(1, &texture);
 	glBindTexture(GL_TEXTURE_2D, texture);
 
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
 		     COMPANION_TEXTURE_WIDTH, COMPANION_TEXTURE_HEIGHT, 0,
 		     GL_RGB, GL_UNSIGNED_BYTE, companion_texture);
-        glGenerateMipmap(GL_TEXTURE_2D);
-
 	GLint modelviewmatrix_handle = glGetUniformLocation(program, "modelviewMatrix");
 	GLint modelviewprojectionmatrix_handle = glGetUniformLocation(program, "modelviewprojectionMatrix");
 	GLint normalmatrix_handle = glGetUniformLocation(program, "normalMatrix");
@@ -356,7 +341,7 @@ int main(int argc, char *argv[])
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 
-	glDrawArrays(GL_TRIANGLES, 0, COMPANION_ARRAY_COUNT);
+        glDrawElements(GL_TRIANGLES, COMPANION_TRIANGLE_COUNT*3, GL_UNSIGNED_SHORT, &companion_triangles[0][0]);
 
 	glFlush();
 

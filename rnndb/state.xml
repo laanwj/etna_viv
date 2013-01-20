@@ -602,7 +602,13 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x00640" name="CMD_STREAM_BASE_ADDR"/>
         <reg32 offset="0x00644" name="INDEX_STREAM_BASE_ADDR" value="0x00000000" type="VIVM"/>
-        <reg32 offset="0x00648" name="INDEX_STREAM_CONTROL" value="0x00000000"/>
+        <reg32 offset="0x00648" name="INDEX_STREAM_CONTROL" value="0x00000000">
+            <bitfield high="1" low="0" name="TYPE">
+                <value value="0" name="UNSIGNED_CHAR" brief="8-bit indices"/>
+                <value value="1" name="UNSIGNED_SHORT" brief="16-bit indices"/>
+                <value value="2" name="UNSIGNED_INT" brief="32-bit indices"/>
+            </bitfield>
+        </reg32>
         <reg32 offset="0x0064C" name="VERTEX_STREAM_BASE_ADDR" value="0x00000000" type="VIVM"/> <!-- vertex stream 0 -->
         <reg32 offset="0x00650" name="VERTEX_STREAM_CONTROL" value="0x00000000"> <!-- vertex stream 0 -->
             <bitfield high="7" low="0" name="VERTEX_STRIDE"/>

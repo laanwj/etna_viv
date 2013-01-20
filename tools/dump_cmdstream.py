@@ -227,6 +227,7 @@ def dump_command_buffer(f, mem, addr, end_addr, depth, state_map):
                 payload_end_ptr = payload_start_ptr + 3
             elif op == 6:
                 desc = "DRAW_INDEXED_PRIMITIVES (6)"
+                payload_end_ptr = payload_start_ptr + 4
             elif op == 7:
                 desc = "WAIT (7)"
             elif op == 8:

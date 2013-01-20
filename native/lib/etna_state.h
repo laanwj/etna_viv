@@ -42,6 +42,17 @@ static inline void etna_draw_primitives(etna_ctx *cmdbuf, uint32_t primitive_typ
     etna_reserve(cmdbuf, 4);
     ETNA_EMIT_DRAW_PRIMITIVES(cmdbuf, primitive_type, start, count);
 }
+static inline void etna_draw_indexed_primitives(etna_ctx *cmdbuf, uint32_t primitive_type, uint32_t start, uint32_t count, uint32_t offset)
+{
+#ifdef CMD_DEBUG
+    printf("draw_primitives_indexed %08x %08x %08x %08x\n",
+            VIV_FE_DRAW_PRIMITIVES_HEADER_OP_DRAW_INDEXED_PRIMITIVES,
+            primitive_type, start, count);
+#endif
+    etna_reserve(cmdbuf, 5+1);
+    ETNA_EMIT_DRAW_INDEXED_PRIMITIVES(cmdbuf, primitive_type, start, count, offset);
+    ETNA_ALIGN(cmdbuf);
+}
 
 
 #endif

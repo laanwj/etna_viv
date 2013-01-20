@@ -8,7 +8,7 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- /home/orion/projects/etna_viv/rnndb/state.xml ( 108335 bytes, from 2013-01-19 18:44:53)
+- /home/orion/projects/etna_viv/rnndb/state.xml ( 108667 bytes, from 2013-01-20 09:35:07)
 
 Copyright (C) 2013
 */
@@ -628,6 +628,11 @@ Copyright (C) 2013
 #define VIVS_FE_INDEX_STREAM_BASE_ADDR				0x00000644
 
 #define VIVS_FE_INDEX_STREAM_CONTROL				0x00000648
+#define VIVS_FE_INDEX_STREAM_CONTROL_TYPE__MASK			0x00000003
+#define VIVS_FE_INDEX_STREAM_CONTROL_TYPE__SHIFT		0
+#define VIVS_FE_INDEX_STREAM_CONTROL_TYPE_UNSIGNED_CHAR		0x00000000
+#define VIVS_FE_INDEX_STREAM_CONTROL_TYPE_UNSIGNED_SHORT	0x00000001
+#define VIVS_FE_INDEX_STREAM_CONTROL_TYPE_UNSIGNED_INT		0x00000002
 
 #define VIVS_FE_VERTEX_STREAM_BASE_ADDR				0x0000064c
 

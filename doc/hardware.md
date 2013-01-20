@@ -267,6 +267,7 @@ Programming pecularities
   - Wrong number of temporaries in PS
   - Sending 3D commands in the 2D pipe instead of 3D pipe (then using a signal waiting for them to complete)
   - Wrong length of shader
+  - Texture sampling without properly setup texture units
 
   This may be a (kernel) driver problem. It is possible to reset the GPU from user space with an ioctl, but 
   this usually is not enough to make it un-stuck. It would probably be a better solution to introduce a kernel-based timeout
