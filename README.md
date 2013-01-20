@@ -10,6 +10,7 @@ in helping develop open source drivers for the hardware, reverse engineering, or
 hardware directly. It is NOT usable as a driver for end users.
 
 Once the understanding of the hardware is good enough, we'd likely want to fork Mesa/Gallium and create a GL driver.
+All help is appreciated.
 
 Devices with Vivante GPU
 =========================
@@ -35,7 +36,7 @@ program Vivante GCxxx GPU chips.
 State map
 -----------
 
-Known render state and registers overview. Mapped in rules-ng-ng (envytools) format:
+Map of documentation for known render state and registers. Mapped in rules-ng-ng (envytools) format:
 
     rnndb/state.xml
 
@@ -59,13 +60,13 @@ pipe system like the Mali 200/400.
 Assembler and disassembler
 ----------------------------
 
-A basic disassembler for the shader instructions can be found in the tools directory:
+A basic disassembler for the shader instructions (to a custom format) can be found in the tools directory:
 
     tools/disasm.py rnn/isa.xml <shader.bin>
 
 This can be used to disassemble shaders extracted using `dump_cmdstream.py --dump-shaders`.
 
-There is also an assembler:
+There is also an assembler, which accepts the same syntax that is produced by the disassembler:
 
     tools/asm.py rnn/isa.xml <shader.asm> -o <shader.bin>
 
@@ -75,7 +76,7 @@ Command stream format
 Like many other GPUs, the primary means of programming the chip is through a command stream 
 interpreted by a DMA engine. This "Front End" takes care of distributing state changes through
 the individual modules of the GPU, kicking off primitive rendering, synchronization, 
-and also supports some primitive flow control (branch, call, return).
+and also supports basic flow control (branch, call, return).
 
 Most of the relevant bits of this command stream have been deciphered.
 
@@ -83,15 +84,14 @@ The command stream format represented in rules-ng-ng XML format can be found her
 
     rnndb/cmdstream.xml
 
-
 Command stream interception
 ----------------------------
 
 `viv_hook`: A library to intercept and log the traffic between libGAL (the Vivante user space blob) and the kernel
 driver / hardware.
 
-It uses ELF hooks to intercept only system calls such as ioctl and mmap coming from the driver, not from
-other parts of the application (unlike more crude hacks using `LD_PRELOAD`).
+This library uses ELF hooks to intercept only system calls such as ioctl and mmap coming from the driver, not from
+other parts of the application, unlike more crude hacks using `LD_PRELOAD`.
 
 At the beginning of the program call `the_hook`, at the end of the program call `end_hook` to finalize 
 and flush buffers. This should even work for native android applications that fork from the zygote.
@@ -101,7 +101,6 @@ with updates to video memory, to be parsed by the accompanying command stream du
 
     native/egl/*.c
 
-
 Command stream dumper
 ----------------------
 
@@ -109,24 +108,28 @@ Other tools live in:
 
     tools/
 
+The most useful ones are:
+
 - `show_egl2_log.sh` (uses `dump_cmdstream.py`)
 
-Decodes and dumps the intercepted command stream in human readable format, making use of rnndb state map.
+Decodes and dumps the intercepted command stream in human readable format, making use of rnndb state maps.
 
 - `fdr_dump_mem.py`
 
-Helps extract areas of video memory, images, and command buffers at certain points of execution.
+Extract areas of video memory, images, and command buffers at certain points of execution.
 
-Replay test
+Replay tests
 --------------
+
+The replay tests replay the command stream and ioctl commands of the EGL demos, to get the same output. 
 
 ![Example output](https://raw.github.com/laanwj/etna_viv/master/native/replay/cube_replay.png)
 
 ![Example output 2](https://raw.github.com/laanwj/etna_viv/master/native/replay/cube_companion_replay.png)
 
-    native/replay/
+They can be found in:
 
-Replays the command stream and ioctl commands of the EGL demos, to get the same output. 
+    native/replay/
 
 Currently this is available for the `cube` example that renders a smoothed cube, and the `cube_companion`
 example that renders a textured cube.
@@ -141,6 +144,37 @@ it to the kernel driver:
     native/replay/etna.(c|h)
     native/replay/etna_test.c (to experiment with shaders)
     native/replay/cube_etna.c (renders the GLES2 smoothed cube)
+
+Framebuffer tests
+------------------
+
+To execise the initial-stage driver there are a few framebuffer tests in:
+
+    native/fb/
+
+These do double-buffered animated rendering of 1000 frames to the framebuffer using 
+the proof-of-concept `etna` command stream building API. 
+
+- `companion_cube`: Animated rotating "weighted companion cube", using array or indexed rendering. Exercised in this demo:
+  - Array and indexed rendering of arbitrary mesh
+  - Video memory allocation
+  - Setting up render state
+  - Depth buffer
+  - Vertex / fragment shader
+  - Texturing
+  - Double-buffered rendering to framebuffer
+
+- `etna_test`: Full screen pixel shader with frame number passed in as uniform. Can be used as a visual shader sandbox.
+
+If you are executing these demos on an Android device, make sure that you are root, otherwise the framebuffer
+is not accessible.
+
+Running these tests while Android is still writing to the framebuffer will result in funny claudioscopic effects.
+To get surfaceflinger out of the way type:
+
+    adb shell stop surfaceflinger
+    (run test)
+    adb shell start surfaceflinger
 
 Vivante GPL kernel driver
 --------------------------
@@ -158,7 +192,7 @@ Envytools fork
 Envytools (https://github.com/pathscale/envytools) is a set of tools aimed at developers of the open source
 NVidia driver Nouveau, however some parts such as rnndb be more generally applied. The repository 
 contains a slightly modified subset of envytools for header generation from 
-the state / cmdstream / isa rnndb files, so they can be used from the C code, build with
+the state / cmdstream / isa rnndb files, so they can be used from the C code (etna), build with
 
     cd envytools
     mkdir build
@@ -207,7 +241,7 @@ some modifications to the build system may be necessary to make it compatible. L
 The command stream on different device GCxxx variants will also likely be slightly different; the features bit system
 allows for a ton of slightly different chips. When porting it, look for:
 
-- Tile size for textures and render targets
+- Tile size for textures and render targets (this may result in messed-up rendering and/or broken textures)
 
 - Number of bits per tile (2 on my hw), depends on `2BIT_PER_TILE` feature flag
 
@@ -218,10 +252,12 @@ allows for a ton of slightly different chips. When porting it, look for:
 
 Authors
 ========
+
 - Wladimir J. van der Laan
 
 Thanks
 =======
+
 - Luc Verhaegen (libv) of Lima project (basic framework, general idea)
 - Nouveau developers (rnndb, envytools)
  

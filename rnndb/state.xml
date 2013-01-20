@@ -39,18 +39,17 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                                    <doc> is left for longer specific documentation
          - type="fixedp": (N/2).(N/2) fixed-point value, where N is the number of bits of the bit field,
              so in case of a 32 bit field it will be a 16.16 FP value.
-         - domains can be used as types (to signify a memory address in a certain domain)
-         - for registers: masked="yes", defaults to "no"
-           mark registers that support partial state writes by using masks per bit group
-           (mask for state group A is called A_MASK)
+         - domains can be used as types (to signify a memory address in that domain)
+         - for registers: masked="yes", defaults to "no" to mark registers that support partial 
+           state writes by using masks per bit group (mask for state group A must be called A_MASK)
 
      TODO: variants are somewhat different from NV; what features are supported is determined by (most common first)
-         1) Chip features and minor feature flags
+         1) Chip (minor) feature flags
          2) Chip specs (number of instructions, pipelines, ...)
          3) Chip model (GC800, GC2000, ...)
          4) Chip revision of the form 0x1234
 
-         Generally the chip feature flags are used to distinguish functionality, as well as the specs, and not do much the model 
+         Generally the chip feature flags are used to distinguish functionality, as well as the specs, and not the model 
          and revision. Unlike NV which parametrizes everything on the model, for GC this is done only for bugfixes.
 -->
 <domain name="VIVM" brief="GPU memory domain">
@@ -112,20 +111,20 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield pos="27" name="VGTS" brief="VG tesselator is present"/>
         <bitfield pos="28" name="FE20" brief="FE 2.0 is present"/>
         <bitfield pos="29" name="BYTE_WRITE_3D" brief="3D PE has byte write capability"/>
-        <bitfield pos="30" name="RS_YUV_TARGET" brief="Supports resolveing into YUV target"/>
+        <bitfield pos="30" name="RS_YUV_TARGET" brief="Supports resolving into YUV target"/>
         <bitfield pos="31" name="32_BIT_INDICES" brief="32 bit indices can be used with indexed drawing"/>
     </bitset>
     <bitset name="chipMinorFeatures0">
         <bitfield pos="0" name="FLIP_Y" brief="Y flipping capability is added to resolve"/>
         <bitfield pos="1" name="DUAL_RETURN_BUS" brief="Dual Return Bus from HI to clients"/>
         <bitfield pos="2" name="ENDIANNESS_CONFIG" brief="Configurable endianness support"/>
-        <bitfield pos="3" name="TEXTURE_8K" brief="Large (8Kx8K) texture support"/>
-        <bitfield pos="4" name="CORRECT_TEXTURE_CONVERTER" brief="Driver hack is not needed"/>
+        <bitfield pos="3" name="TEXTURE_8K" brief="8Kx8K texture support"/>
+        <bitfield pos="4" name="CORRECT_TEXTURE_CONVERTER" brief="Driver hack is not needed (?)"/>
         <bitfield pos="5" name="SPECIAL_MSAA_LOD" brief="Special LOD calculation when MSAA is on"/>
         <bitfield pos="6" name="FAST_CLEAR_FLUSH" brief="Proper flush is done in fast clear cache"/>
         <bitfield pos="7" name="2DPE20" brief="Pixel Engine 2.0"/>
         <bitfield pos="8" name="CORRECT_AUTO_DISABLE" brief="Reserved"/>
-        <bitfield pos="9" name="RENDERTARGET_8K" brief="Large (8K) render target support"/>
+        <bitfield pos="9" name="RENDERTARGET_8K" brief="8Kx8K render target support"/>
         <bitfield pos="10" name="2BITPERTILE" brief="Two status bits per tile (instead of four)"/>
         <bitfield pos="11" name="SEPARATE_TILE_STATUS_WHEN_INTERLEAVED" brief="Use 2 separate tile status buffers in interleaved mode"/>
         <bitfield pos="12" name="SUPER_TILED" brief="32x32 super tile is available"/>
@@ -529,11 +528,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     </stripe>
 
     <stripe name="MC" brief="Memory Controller">
-        <reg32 offset="0x00400" name="MMU_FE_PAGE_TABLE"/>
-        <reg32 offset="0x00404" name="MMU_TX_PAGE_TABLE"/>
-        <reg32 offset="0x00408" name="MMU_PE_PAGE_TABLE"/>
-        <reg32 offset="0x0040C" name="MMU_PEZ_PAGE_TABLE"/>
-        <reg32 offset="0x00410" name="MMU_RA_PAGE_TABLE"/>
+        <reg32 offset="0x00400" name="MMU_FE_PAGE_TABLE" brief="Page table for DMA frontend"/>
+        <reg32 offset="0x00404" name="MMU_TX_PAGE_TABLE" brief="Page table for texture"/>
+        <reg32 offset="0x00408" name="MMU_PE_PAGE_TABLE" brief="Page table for PE color"/>
+        <reg32 offset="0x0040C" name="MMU_PEZ_PAGE_TABLE" brief="Page table for PE depth"/>
+        <reg32 offset="0x00410" name="MMU_RA_PAGE_TABLE" brief="Page table for rasterize"/>
         <reg32 offset="0x00414" name="DEBUG_MEMORY"/>
         <reg32 offset="0x00418" name="MEMORY_BASE_ADDR_RA"/>
         <reg32 offset="0x0041C" name="MEMORY_BASE_ADDR_FE"/>
@@ -1267,13 +1266,13 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00800" name="END_PC" value="0x00000000" brief="End instruction number">
             <doc>index of last instruction + 1</doc>
         </reg32>
-        <reg32 offset="0x00804" name="OUTPUT_COUNT" value="0x00000000"/>
+        <reg32 offset="0x00804" name="OUTPUT_COUNT" value="0x00000000" type="uint" brief="Number of VS outputs"/>
         <reg32 offset="0x00808" name="INPUT_COUNT" value="0x00000000">
-            <bitfield high="3" low="0" name="COUNT0" type="uint"/>
+            <bitfield high="3" low="0" name="COUNT" type="uint" brief="Number of VS inputs"/>
             <bitfield high="12" low="8" name="COUNT8" type="uint"/>
         </reg32>
         <reg32 offset="0x0080C" name="TEMP_REGISTER_CONTROL" brief="Temporary register control" value="0x00000000">
-            <bitfield high="5" low="0" name="NUM_TEMPS" type="uint"/>
+            <bitfield high="5" low="0" name="NUM_TEMPS" type="uint" brief="Number of temporary registers"/>
         </reg32>
         <reg32 offset="0x00810" name="OUTPUT" value="0x00000000" length="4" stride="4">
             <bitfield high="15" low="0" name="UNK0" type="uint"/>
@@ -1296,7 +1295,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 
     <stripe name="THREAD_WALKER" brief="Thread walker states">
         <doc>The thread walker drives shaders in a predefined grid for GPGPU computing (OpenCL).
-        This states are not used for normal rendering.</doc>
+        These states are not used for normal rendering.</doc>
         <reg32 offset="0x00900" name="UNK00900" value="0x00000000"/>
         <reg32 offset="0x00904" name="UNK00904" value="0x00000000"/>
         <reg32 offset="0x00908" name="UNK00908" value="0x00000000"/>
@@ -1306,7 +1305,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00918" name="UNK00918" value="0x00000000"/>
         <reg32 offset="0x0091C" name="UNK0091C" value="0x00000000"/>
         <reg32 offset="0x00920" name="KICKER" brief="Start thread walker">
-            <doc>Write 0xBADABEEB (or 0xBEEBBEEB, unknown if the value matters) to this register to kick off thread walker</doc>
+            <doc>Write some value to this register to kick off thread walker</doc>
         </reg32>
         <reg32 offset="0x00924" name="UNK00924" value="0x00000000"/>
     </stripe>
@@ -1335,28 +1334,22 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             These can be set either per group of bits, or all at once, by using masking flags.
             Each group of state flags has a masking flag that prevents overwriting the flags in that group.
             </doc>
-            <bitfield pos="0" name="UNK0"/>
-            <bitfield pos="1" name="UNK1"/>
             <bitfield pos="2" name="POINT_SIZE_ENABLE" brief="Enable point size"/>
             <bitfield pos="3" name="POINT_SIZE_ENABLE_MASK"/>
             <bitfield pos="4" name="POINT_SPRITE_ENABLE" brief="Enable point sprite"/>
             <bitfield pos="5" name="POINT_SPRITE_ENABLE_MASK"/>
-            <bitfield pos="6" name="UNK6"/>
-            <bitfield pos="7" name="UNK7"/>
             <bitfield high="9" low="8" name="CULL_FACE_MODE">
                 <value value="0" name="OFF" brief="Disable face culling"/>
                 <value value="1" name="CW" brief="Orientation of front-facing polygons is clockwise"/>
                 <value value="2" name="CCW" brief="Orientation of front-facing polygons is counter-clockwise"/>
             </bitfield>
             <bitfield pos="10" name="CULL_FACE_MODE_MASK"/>
-            <bitfield pos="11" name="UNK11"/>
             <bitfield high="13" low="12" name="FILL_MODE">
                 <value value="0" name="POINT"/>
                 <value value="1" name="WIREFRAME"/>
                 <value value="2" name="SOLID"/>
             </bitfield>
             <bitfield pos="14" name="FILL_MODE_MASK"/>
-            <bitfield pos="15" name="UNK15"/>
             <bitfield high="17" low="16" name="SHADE_MODEL">
                 <value value="0" name="FLAT" brief="Flat shading"/>
                 <value value="1" name="SMOOTH" brief="Gouraud shading"/>
@@ -1384,7 +1377,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00C0C" name="SCISSOR_BOTTOM" value="0x45000000" type="fixedp"/>
         <reg32 offset="0x00C10" name="DEPTH_SCALE" value="0x00000000"/>
         <reg32 offset="0x00C14" name="DEPTH_BIAS" value="0x00000000"/>
-        <reg32 offset="0x00C18" name="LAST_PIXEL_ENABLE" value="0x00000000"/>
+        <reg32 offset="0x00C18" name="LAST_PIXEL_ENABLE" value="0x00000000"><doc>Always disabled for OpenGL</doc></reg32>
         <reg32 offset="0x00C1C" name="UNK00C1C" value="0x42000000"/>
         <reg32 offset="0x00C20" name="CLIP_RIGHT" value="0x00000000" type="fixedp"/>
         <reg32 offset="0x00C24" name="CLIP_BOTTOM" value="0x00000000" type="fixedp"/>
@@ -1407,11 +1400,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x01000" name="END_PC" value="0x00000000"/>
         <reg32 offset="0x01004" name="OUTPUT_REG" value="0x00000000" brief="Register that will contain output color"/>
         <reg32 offset="0x01008" name="INPUT_COUNT" value="0x00000000">
-            <bitfield high="3" low="0" name="COUNT0" type="uint"/>
-            <bitfield high="12" low="8" name="COUNT8" type="uint"/>
+            <bitfield high="3" low="0" name="COUNT" type="uint" brief="Number of PS inputs"/>
+            <bitfield high="12" low="8" name="UNK8" type="uint"/>
         </reg32>
         <reg32 offset="0x0100C" name="TEMP_REGISTER_CONTROL" brief="Temporary register control" value="0x00000000">
-            <bitfield high="5" low="0" name="NUM_TEMPS" type="uint"/>
+            <bitfield high="5" low="0" name="NUM_TEMPS" type="uint" brief="Number of temporary registers"/>
         </reg32>
         <reg32 offset="0x01010" name="CONTROL" value="0x00000000">
             <bitfield pos="0" name="BYPASS"/>
@@ -1609,22 +1602,32 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     </stripe>     
     
     <stripe name="RS" brief="Resolve states">
-        <doc>To my current understanding, RESOLVE is a copy/fill engine that copies the render result from
-            one place to another, in memory, and manages tiles. For example, it actually clear tiles that are marked as cleared. 
+        <doc>To my current understanding, RESOLVE is a multifunctional copy/fill engine that can copy blocks of pixels from
+            one place in memory to another, actually clearing tiles that are marked as cleared in the process. 
+            Other capabilities are:
+
+            - Conversion between pixel formats
+            - Downsampling (2x horizontal or horizontal and vertical)
+            - Fill with constant value
+            - Partial fill (only clear part of the channels)
+            - Tiling / untiling, for normal tiled and supertiled surfaces
+            - Swap blue and red channels, flip image in Y
+            - Endian swapping
         </doc>
         <reg32 offset="0x01600" name="KICKER" brief="Resolve start" value="0x00000000">
             <doc>Write some value to this register to kick off resolver</doc>
         </reg32>
         <reg32 offset="0x01604" name="CONFIG" brief="Resolve configuration register" value="0x00000000">
             <bitfield high="4" low="0" name="SOURCE_FORMAT" type="RS_FORMAT" brief="Source color format"/>
-            <bitfield high="6" low="5" name="SOURCE_MSAA" brief="Source supersampling factor">
+            <bitfield high="6" low="5" name="DOWNSAMPLE" brief="Downsampling factor">
                 <doc>
                     A resolve operation can downsample a supersampled surface.
                     This functionality is also used to compute mipmaps.
                 </doc>
                 <value value="0" name="NONE"/>
-                <value value="1" name="2X"/>
-                <value value="3" name="4X"/>
+                <value value="1" name="X" brief="Downsample horizontally"/>
+                <value value="2" name="Y" brief="Downsample vertically"/>
+                <value value="3" name="XY" brief="Downsample horizontally and vertically"/>
             </bitfield>
             <bitfield pos="7" name="SOURCE_TILED" brief="Source is tiled"/>
             <bitfield high="12" low="8" name="DEST_FORMAT" type="RS_FORMAT" brief="Destination color format"/>
@@ -1644,9 +1647,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x01620" name="WINDOW_SIZE" value="0x00000000" brief="Size of area to resolve">
             <doc>
-                When resolving a supersampled rectangle to a non-supersampled destination,
-                the source and destination size will be different. In this case, the WINDOW_SIZE
-                will be the source size.
+                When downsampling the source and destination size will be different. 
+                In this case, the WINDOW_SIZE will be the (unscaled) source size.
             </doc>
             <bitfield high="31" low="16" name="HEIGHT" type="uint"/>
             <bitfield high="15" low="0" name="WIDTH" type="uint"/>

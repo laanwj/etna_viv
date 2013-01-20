@@ -40,8 +40,15 @@ For example, the command `gcvHAL_ALLOCATE_LINEAR_VIDEO_MEMORY` (I will leave off
 uses the fields in `interface->u.AllocateLinearVideoMemory` to pass in the number of bytes to allocate, but 
 also to pass out the number of bytes actually allocated. 
 
-It appears that the structure has been designed with platform-independence in mind, and so some of the fields are not used in the Linux
+What is curious about the ioctl protocol is that the communication structures contains fields that are not 
+used by the kernel at all, but only in user-space. There is no good reason why these values would need 
+to be present in kernel-facing structures at all. The line is blurry sometimes.
+It also appears that the structure has been designed with platform-independence in mind, and so some of the fields are not used in the Linux
 drivers such as `status`, `handle`, `pid`.
+
+A possibly worthwhile long-term goal would be to clean up the kernel driver interface. This would break compatibility with
+the Vivante binary blobs, though, so maybe the effort would be better spent building a fully-fledged DRM/DRI 
+infrastructure driver instead.
 
 Allocations
 ------------
@@ -65,8 +72,10 @@ Memory management happens in the kernel. Two types of memory are allocated:
   The available pools depend on the hardware; many of the devices have no local memory, and simply 
   use a part of system memory as video memory.
 
-`LOCK_VIDEO_MEMORY` locks the memory both into the GPU memory so that it can be used by the GPU as
-into CPU memory so that the application can read/write. It is interesting that these are done by
+`LOCK_VIDEO_MEMORY` locks the video memory both 
+- into the GPU memory space so that it can be used by the GPU
+- into CPU memory so that the application can read/write. 
+It is interesting that these are done by
 the same call.
 
 Command buffers
@@ -212,41 +221,22 @@ The state `FE.VERTEX_ELEMENT_CONFIG` is handled specially: write only the elemen
 
 Used fields in `struct _gcoCONTEXT` from the kernel:
 
-- `id` is used
+- `id` 
     [in] This id is used to determine wether to switch context
     [out] A unique id for the context is generated the first time a COMMIT is done, with context->id==0
 - `hint*` only used when `SECURE_USER` is set
-- `logical` and `bufferSize` are used
-- `pipe2DIndex` is used
-    if this is set, "we have to check pipes", and the pipe is set to initialPipe if needed
-- `entryPipe` is used
-    this is the pipe that has to be active on entering the passed command buffer
-    (and that holds at the end of the context buffer)
-- `initialPipe` is used 
-    this is the pipe that has to be active on entering the context command buffer
-- `currentPipe` is used
-    this is the pipe that is active after the passed command buffer
-- `inUse` is used
-    value at this address is set to gcvTRUE, to mark the context as used. The context is "used" when
-    a context switch happened.
+- `logical` and `bufferSize` 
+- `pipe2DIndex`: if this is set, "we have to check pipes", and the pipe is set to initialPipe if needed
+- `entryPipe`: this is the pipe that has to be active on entering the passed command buffer (and that holds at the end of the context buffer)
+- `initialPipe`: this is the pipe that has to be active on entering the context command buffer
+- `currentPipe`: this is the pipe that is active after the passed command buffer
+- `inUse`: value at this address is set to gcvTRUE, to mark the context as used. The context is "used" when a context switch happened.
 
 All command buffers are padded with 4 NOPs at the beginning to make place for a PIPE command if needed.
 At the end of the command buffer must be place for a LINK (1 NOP + padding).
 
-What are these used for? Seems they are the last parameters of a `LOAD_STATE` command so that it
-  can be extended, but why? Was this only used for building or does the kernel also use it?
-- `lastAddress`
-- `lastSize`
-- `lastIndex`
-- `lastFixed`
-- `postCommit`
-- `buffer` (userspace buffer for what is put into logical)
-   same as logical, except that the PIPE2D command at the end is nopped out
-   including accompanying semaphore and stall
-   (probably because we're using the 3D pipe)
-
-At least in the v2 kernel driver these fields are not used. They are used for building the buffer from the 
-userspace driver, but not for using it.
+The other fields are not used by the kernel, only by the user-space driver internally for various purposes. This makes them
+uninteresting from a viewpoint of understanding the kernel interface.
 
 Profiling
 ===============
@@ -346,5 +336,260 @@ HI (Host interface)
 Resetting the GPU
 -------------------
 
-When the GPU gets stuck, it can be reset with the `gcvHAL_RESET` ioctl command. This calls the `gckHARDWARE_Reset` kernel function.
+When the GPU gets stuck, it can be reset with the `RESET` ioctl command. This calls the `gckHARDWARE_Reset` kernel function.
+
+Detailed overview of commands
+------------------------------
+From enum `gceHAL_COMMAND_CODES`.
+Calls: function within the kernel that is called by the dispatcher upon receiving this command.
+TODO: input/output arguments.
+
+* `QUERY_VIDEO_MEMORY`
+
+        Query the amount of video memory.
+
+        Calls: gckKERNEL_QueryVideoMemory (see also gckHARDWARE_QueryMemory)
+
+* `QUERY_CHIP_IDENTITY`
+
+        Query chip identity.
+        
+        Calls: gckHARDWARE_QueryChipIdentity 
+
+* `ALLOCATE_NON_PAGED_MEMORY`
+
+        Allocate non-paged memory. 
+
+        Calls: gckOS_AllocateNonPagedMemory
+
+* `FREE_NON_PAGED_MEMORY`
+
+        Free non-paged memory.
+
+        Calls: gckOS_FreeNonPagedMemory
+
+* `ALLOCATE_CONTIGUOUS_MEMORY`
+
+        Allocate contiguous non-paged memory (used for command buffers).
+
+        Calls: gckOS_AllocateContiguous 
+
+* `FREE_CONTIGUOUS_MEMORY`
+
+        Free contiguous non-paged memory.
+
+        Calls: gckOS_FreeContiguous
+
+* `ALLOCATE_VIDEO_MEMORY`
+
+        Same as `ALLOCATE_LINEAR_VIDEO_MEMORY`, but kernel does enforced alignment.
+
+        Calls: gckHARDWARE_AlignToTile, gckHARDWARE_ConvertFormat, _AllocateMemory
+
+* `ALLOCATE_LINEAR_VIDEO_MEMORY`
+
+        Allocate video memory of a certain type. The type of memory (gcvSURF_*) is used to determine what
+        memory bank to allocate in (for performance reasons).
+        Walks all required memory pools to allocate the requested amount of video memory.
+
+        gcvPOOL_VIRTUAL: Virtual memory, allocated using gckVIDMEM_ConstructVirtual
+        gcvPOOL_CONTIGUOUS: Contiguous memory, allocated using gckVIDMEM_ConstructVirtual 
+        gcvPOOL_SYSTEM: Contiguous system memory
+        gcvPOOL_LOCAL_INTERNAL: Internal memory
+        gcvPOOL_LOCAL_EXTERNAL: External memory
+        gcvPOOL_DEFAULT: Same as gcvPOOL_LOCAL_INTERNAL
+        gcvPOOL_LOCAL: Same as gcvPOOL_LOCAL_INTERNAL
+        gcvPOOL_UNIFIED: Same as gcvPOOL_SYSTEM
+
+        If there is no available free memory in the requested pool, the pools are tried in the following order,
+        starting from the requested pool type:
+        - gcvPOOL_LOCAL_INTERNAL
+        - gcvPOOL_LOCAL_EXTERNAL
+        - gcvPOOL_SYSTEM
+        - gcvPOOL_CONTIGUOUS
+        - gcvPOOL_VIRTUAL
+
+        Calls: gckKERNEL_GetVideoMemoryPool, gckVIDMEM_AllocateLinear
+
+* `FREE_VIDEO_MEMORY`
+
+        Calls: gckVIDMEM_Free 
+
+* `MAP_MEMORY`
+
+        Map physical memory into the current process (Physical-to-logical mapping).
+
+        Calls: gckKERNEL_MapMemory (gckOS_MapMemory)
+
+* `UNMAP_MEMORY`
+
+        Unmap memory mapped with `MAP_MEMORY`.
+        
+        Calls: gckKERNEL_UnmapMemory (gckOS_UnmapMemory)
+
+* `MAP_USER_MEMORY`
+
+        Lock down a user buffer and return an DMA'able address to be used by the hardware to access it.
+        (Logical-to-physical mapping)
+
+        Calls: gckOS_MapUserMemory
+
+* `UNMAP_USER_MEMORY`
+
+        Unlock a user buffer mapped by `MAP_USER_MEMORY`.
+
+        Calls: gckOS_UnmapUserMemory
+
+* `LOCK_VIDEO_MEMORY`
+
+        Surface lock.
+
+        Calls: gckVIDMEM_Lock 
+
+* `UNLOCK_VIDEO_MEMORY`
+        
+        Surface unlock.
+        
+        Calls: gckVIDMEM_Unlock 
+
+* `EVENT_COMMIT`
+    
+        Commit an event queue.
+
+        Calls: gckEVENT_Commit
+    
+* `USER_SIGNAL`
+
+        Dispatch depends on the user signal subcommands (refer to section `User signal API`).
+        (if not USE_NEW_LINUX_SIGNAL defined)
+
+        Calls: gckOS_CreateUserSignal, gckOS_DestroyUserSignal, gckOS_SignalUserSignal, gckOS_WaitUserSignal
+
+* `SIGNAL`
+
+        Used in submitted event queues only (refer to section `User signal API`). Not handled by ioctl dispatcher.
+
+* `WRITE_DATA`
+
+        Used in submitted event queues only (refer to section `User signal API`). Not handled by ioctl handler.
+
+* `COMMIT`
+
+        Commit a command and context buffer.
+        
+        Calls: gckCOMMAND_Commit
+
+* `STALL`
+
+        Stall the command queue. This is equivalent to queueing a `SIGNAL` using `EVENT_COMMIT` then waiting for it
+        using `USER_SIGNAL.WAIT`.
+
+        Calls: gckCOMMAND_Stall
+
+* `READ_REGISTER`
+
+        Read a GPU register. Only enabled if kernel compiled with `gcdREGISTER_ACCESS_FROM_USER` (which
+        is obviously an security risk, as it allows user-space to read and write arbitrary registers).
+
+        Calls: gckOS_ReadRegister
+
+* `WRITE_REGISTER`
+        
+        Write a GPU register. Only enabled if kernel compiled with `gcdREGISTER_ACCESS_FROM_USER` (which
+        is obviously an security risk, as it allows user-space to read and write arbitrary registers).
+
+        Calls: gckOS_WriteRegister
+
+* `GET_PROFILE_SETTING`
+
+        Get profile settings. Only available if kernel compiled with `VIVANTE_PROFILER` enabled.
+        Simply copies the "kernel profile filename" to the returned structure from the kernel configuration.
+
+* `SET_PROFILE_SETTING`
+
+        Get profile settings. Only available if kernel compiled with `VIVANTE_PROFILER` enabled.
+        Simply copies the "kernel profile filename" from the passed interface structure into the kernel
+        configuration.
+
+* `READ_ALL_PROFILE_REGISTERS`
+
+        Read all 3D profile registers. Only available if kernel compiled with `VIVANTE_PROFILER` enabled.
+
+        Calls: gckHARDWARE_QueryProfileRegisters
+
+* `PROFILE_REGISTERS_2D`
+        
+        Read all 2D profile registers. Only available if kernel compiled with `VIVANTE_PROFILER` enabled.
+
+        Calls: gckHARDWARE_ProfileEngine2D
+
+* `SET_POWER_MANAGEMENT_STATE`
+
+        Set the power management state.
+
+        Calls: gckHARDWARE_SetPowerManagementState
+
+* `QUERY_POWER_MANAGEMENT_STATE`
+
+        Get the power management state.
+
+        Calls: gckHARDWARE_QueryPowerManagementState / gckHARDWARE_QueryIdle
+
+* `GET_BASE_ADDRESS`
+
+        Get physical base address.
+
+        Out:
+        - baseAddress: Physical memory address of internal memory.
+
+        Calls: gckOS_GetBaseAddress
+
+* `SET_IDLE`
+
+        Reserved. Not handled by kernel.
+
+* `QUERY_KERNEL_SETTINGS`
+
+        Get kernel settings.
+
+        Calls: gckKERNEL_QuerySettings
+
+* `RESET`
+
+        Reset the hardware.
+
+        Calls: gckHARDWARE_Reset
+
+* `MAP_PHYSICAL`
+
+        Map physical address into handle.
+
+        Not handled by the kernel on Linux.
+
+* `DEBUG`
+
+        Set debug level and zones.
+
+        Calls: gckOS_SetDebugLevel / gckOS_SetDebugZones
+
+* `CACHE`
+
+        Flush or invalidate the cache.
+        NOTE: unimplemented on Linux, and also apparently not called by the blob on Linux.
+
+        In: 
+          invalidate: If FALSE, flush the cache (the GPU is going to need the data)
+                      if TRUE, flush and invalidate the cache (if the GPU is going to modify the data)
+          process: Process handle Logical belongs to or gcvNULL if Logical belongs to the kernel.
+          logical: Logical address to flush
+          bytes: Size of the address range in bytes to flush
+
+        Calls: gckOS_CacheInvalidate / gckOS_CacheFlush
+
+* `BROADCAST_GPU_STUCK`
+
+        Broadcast GPU stuck.
+
+        Calls: gckOS_Broadcast 
+
 
