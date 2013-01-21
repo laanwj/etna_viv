@@ -143,7 +143,7 @@ int main(int argc, char **argv)
 
     /* allocate main render target */
     gcuVIDMEM_NODE_PTR rt_node = 0;
-    if(viv_alloc_linear_vidmem(0x70000, 0x40, gcvSURF_RENDER_TARGET, gcvPOOL_DEFAULT, &rt_node)!=0)
+    if(viv_alloc_linear_vidmem(0x70000, 0x40, gcvSURF_RENDER_TARGET, gcvPOOL_DEFAULT, &rt_node, NULL)!=0)
     {
         fprintf(stderr, "Error allocating render target buffer memory\n");
         exit(1);
@@ -162,7 +162,7 @@ int main(int argc, char **argv)
 
     /* allocate tile status for main render target */
     gcuVIDMEM_NODE_PTR rt_ts_node = 0;
-    if(viv_alloc_linear_vidmem(0x700, 0x40, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, &rt_ts_node)!=0)
+    if(viv_alloc_linear_vidmem(0x700, 0x40, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, &rt_ts_node, NULL)!=0)
     {
         fprintf(stderr, "Error allocating render target tile status memory\n");
         exit(1);
@@ -180,7 +180,7 @@ int main(int argc, char **argv)
 
     /* allocate depth for main render target */
     gcuVIDMEM_NODE_PTR z_node = 0;
-    if(viv_alloc_linear_vidmem(0x38000, 0x40, gcvSURF_DEPTH, gcvPOOL_DEFAULT, &z_node)!=0)
+    if(viv_alloc_linear_vidmem(0x38000, 0x40, gcvSURF_DEPTH, gcvPOOL_DEFAULT, &z_node, NULL)!=0)
     {
         fprintf(stderr, "Error allocating depth memory\n");
         exit(1);
@@ -198,7 +198,7 @@ int main(int argc, char **argv)
 
     /* allocate depth ts for main render target */
     gcuVIDMEM_NODE_PTR z_ts_node = 0;
-    if(viv_alloc_linear_vidmem(0x400, 0x40, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, &z_ts_node)!=0)
+    if(viv_alloc_linear_vidmem(0x400, 0x40, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, &z_ts_node, NULL)!=0)
     {
         fprintf(stderr, "Error allocating depth memory\n");
         exit(1);
@@ -216,7 +216,7 @@ int main(int argc, char **argv)
 
     /* allocate vertex buffer */
     gcuVIDMEM_NODE_PTR vtx_node = 0;
-    if(viv_alloc_linear_vidmem(0x60000, 0x40, gcvSURF_VERTEX, gcvPOOL_DEFAULT, &vtx_node)!=0)
+    if(viv_alloc_linear_vidmem(0x60000, 0x40, gcvSURF_VERTEX, gcvPOOL_DEFAULT, &vtx_node, NULL)!=0)
     {
         fprintf(stderr, "Error allocating vertex memory\n");
         exit(1);
@@ -234,7 +234,7 @@ int main(int argc, char **argv)
 
     /* allocate aux render target */
     gcuVIDMEM_NODE_PTR aux_rt_node = 0;
-    if(viv_alloc_linear_vidmem(0x4000, 0x40, gcvSURF_RENDER_TARGET, gcvPOOL_SYSTEM /*why?*/, &aux_rt_node)!=0)
+    if(viv_alloc_linear_vidmem(0x4000, 0x40, gcvSURF_RENDER_TARGET, gcvPOOL_SYSTEM /*why?*/, &aux_rt_node, NULL)!=0)
     {
         fprintf(stderr, "Error allocating aux render target buffer memory\n");
         exit(1);
@@ -252,7 +252,7 @@ int main(int argc, char **argv)
 
     /* allocate tile status for aux render target */
     gcuVIDMEM_NODE_PTR aux_rt_ts_node = 0;
-    if(viv_alloc_linear_vidmem(0x100, 0x40, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, &aux_rt_ts_node)!=0)
+    if(viv_alloc_linear_vidmem(0x100, 0x40, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, &aux_rt_ts_node, NULL)!=0)
     {
         fprintf(stderr, "Error allocating aux render target tile status memory\n");
         exit(1);
@@ -450,7 +450,7 @@ int main(int argc, char **argv)
 
     /* Allocate video memory for BITMAP, lock */
     gcuVIDMEM_NODE_PTR bmp_node = 0;
-    if(viv_alloc_linear_vidmem(0x5dc00, 0x40, gcvSURF_BITMAP, gcvPOOL_DEFAULT, &bmp_node)!=0)
+    if(viv_alloc_linear_vidmem(0x5dc00, 0x40, gcvSURF_BITMAP, gcvPOOL_DEFAULT, &bmp_node, NULL)!=0)
     {
         fprintf(stderr, "Error allocating bitmap status memory\n");
         exit(1);

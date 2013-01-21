@@ -20,12 +20,37 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#ifndef H_ETNA_RS
-#define H_ETNA_RS
-#include "viv.h"
+/* etna: memory management functions */
+#ifndef H_ETNA_MEM
+#define H_ETNA_MEM
 
-/* Flush RS? warm up RS on aux render target */
-void etna_warm_up_rs(etna_ctx *cmdbuf, viv_addr_t aux_rt_physical, viv_addr_t aux_rt_ts_physical);
+#include "viv.h"
+#include <stdbool.h>
+
+/* Structure describing a block of video memory */
+typedef struct _etna_vidmem {
+    size_t size;
+    gceSURF_TYPE type;
+    gcuVIDMEM_NODE_PTR node;
+    viv_addr_t address;
+    void *logical;
+} etna_vidmem;
+
+/* Structure describing a block of mapped user memory */
+typedef struct _etna_usermem {
+    void *memory;
+    size_t size;
+    gctPOINTER info;
+    viv_addr_t address;
+} etna_usermem;
+
+int etna_vidmem_alloc_linear(etna_vidmem **mem_out, size_t bytes, gceSURF_TYPE type, gcePOOL pool, bool lock);
+int etna_vidmem_lock(etna_vidmem *mem);
+int etna_vidmem_unlock(etna_vidmem *mem);
+int etna_vidmem_free(etna_vidmem *mem);
+
+int etna_usermem_map(etna_usermem **mem_out, void *memory, size_t size);
+int etna_usermem_unmap(etna_usermem *mem);
 
 #endif
 

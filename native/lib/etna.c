@@ -107,17 +107,17 @@ static int initialize_gpu_context(gcoCONTEXT vctx)
     return ETNA_OK;
 }
 
-etna_ctx *etna_create(void)
+int etna_create(etna_ctx **ctx_out)
 {
+    if(ctx_out == NULL) return ETNA_INVALID_ADDR;
     etna_ctx *ctx = malloc(sizeof(etna_ctx));
-    if(ctx == NULL)
-        return NULL;
+    if(ctx == NULL) return ETNA_OUT_OF_MEMORY;
     memset(ctx, 0, sizeof(etna_ctx));
 
     if(initialize_gpu_context(&ctx->ctx) != ETNA_OK)
     {
         free(ctx);
-        return NULL;
+        return ETNA_INTERNAL_ERROR;
     }
 
     /* Create synchronization signal */
@@ -126,7 +126,7 @@ etna_ctx *etna_create(void)
 #ifdef DEBUG
         fprintf(stderr, "Cannot create user signal\n");
 #endif
-        return NULL;
+        return ETNA_INTERNAL_ERROR;
     }
 #ifdef DEBUG
     printf("Created user signal %i\n", ctx->sig_id);
@@ -145,7 +145,7 @@ etna_ctx *etna_create(void)
 #ifdef DEBUG
             fprintf(stderr, "Error allocating host memory\n");
 #endif
-            return NULL;
+            return ETNA_OUT_OF_MEMORY;
         }
         ctx->cmdbuf[x].object.type = gcvOBJ_COMMANDBUFFER;
         ctx->cmdbuf[x].physical = (void*)buf0_physical;
@@ -158,7 +158,7 @@ etna_ctx *etna_create(void)
 #ifdef DEBUG
             fprintf(stderr, "Cannot create user signal\n");
 #endif
-            return NULL;
+            return ETNA_INTERNAL_ERROR;
         }
 #ifdef DEBUG
         printf("Allocated buffer %i: phys=%08x log=%08x bytes=%08x [signal %i]\n", x, (uint32_t)buf0_physical, (uint32_t)buf0_logical,
@@ -169,8 +169,9 @@ etna_ctx *etna_create(void)
      * queueing of commands can be started.
      */
     ctx->cur_buf = -1;
+    *ctx_out = ctx;
 
-    return ctx;
+    return ETNA_OK;
 }
 
 /* Clear a command buffer */

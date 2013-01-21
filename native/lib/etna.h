@@ -64,6 +64,7 @@ typedef enum _etna_status {
     ETNA_INVALID_VALUE,
     ETNA_OUT_OF_MEMORY,
     ETNA_INTERNAL_ERROR,
+    ETNA_ALREADY_LOCKED
 } etna_status;
 
 typedef enum _etna_pipe {
@@ -140,9 +141,9 @@ typedef struct _etna_ctx {
 
 
 /* Create new etna context.
- * Return NULL when creation fails.
+ * Return error when creation fails.
  */
-etna_ctx *etna_create(void);
+int etna_create(etna_ctx **ctx);
 
 /* Free an etna context. */
 int etna_free(etna_ctx *ctx);

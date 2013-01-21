@@ -137,7 +137,7 @@ int viv_alloc_contiguous(size_t bytes, viv_addr_t *physical, void **logical, siz
     return gcvSTATUS_OK;
 }
 
-int viv_alloc_linear_vidmem(size_t bytes, size_t alignment, gceSURF_TYPE type, gcePOOL pool, gcuVIDMEM_NODE_PTR *node)
+int viv_alloc_linear_vidmem(size_t bytes, size_t alignment, gceSURF_TYPE type, gcePOOL pool, gcuVIDMEM_NODE_PTR *node, size_t *bytes_out)
 {
     gcsHAL_INTERFACE id = {
         .command = gcvHAL_ALLOCATE_LINEAR_VIDEO_MEMORY,
@@ -154,9 +154,13 @@ int viv_alloc_linear_vidmem(size_t bytes, size_t alignment, gceSURF_TYPE type, g
     if(rv != gcvSTATUS_OK)
     {
         *node = 0;
+        if(bytes_out != NULL)
+            *bytes_out = 0;
         return rv;
     }
     *node = id.u.AllocateLinearVideoMemory.node;
+    if(bytes_out != NULL)
+        *bytes_out = id.u.AllocateLinearVideoMemory.bytes;
     return gcvSTATUS_OK; 
 }
 
@@ -324,4 +328,49 @@ int viv_reset(void)
     return viv_invoke(&id);
 }
 
+int viv_free_vidmem(gcuVIDMEM_NODE_PTR node)
+{
+    gcsHAL_INTERFACE id = {
+        .command = gcvHAL_FREE_VIDEO_MEMORY,
+        .u = {
+            .FreeVideoMemory = {
+                node = node
+            }
+        }
+    };
+    return viv_invoke(&id);
+}
+
+int viv_map_user_memory(void *memory, size_t size, gctPOINTER *info, viv_addr_t *address)
+{
+    gcsHAL_INTERFACE id = {
+        .command = gcvHAL_MAP_USER_MEMORY,
+        .u = {
+            .MapUserMemory = {
+                memory = memory,
+                size = size
+            }
+        }
+    };
+    int status = viv_invoke(&id);
+    *info = id.u.MapUserMemory.info;
+    *address = id.u.MapUserMemory.address;
+    return status;
+}
+
+int viv_unmap_user_memory(void *memory, size_t size, gctPOINTER info, viv_addr_t address)
+{
+    gcsHAL_INTERFACE id = {
+        .command = gcvHAL_UNMAP_USER_MEMORY,
+        .u = {
+            .UnmapUserMemory = {
+                memory = memory,
+                size = size,
+                info = info,
+                address = address
+            }
+        }
+    };
+    return viv_invoke(&id);
+}
 

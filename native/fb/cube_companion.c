@@ -56,6 +56,7 @@
 #include "etna_state.h"
 #include "etna_rs.h"
 #include "etna_fb.h"
+#include "etna_mem.h"
 
 #include "esUtil.h"
 
@@ -135,196 +136,46 @@ int main(int argc, char **argv)
     }
     printf("Succesfully opened device\n");
 
-    /* allocate main render target */
-    gcuVIDMEM_NODE_PTR rt_node = 0;
-    if(viv_alloc_linear_vidmem(padded_width * padded_height * 4, 0x40, gcvSURF_RENDER_TARGET, gcvPOOL_DEFAULT, &rt_node)!=0)
-    {
-        fprintf(stderr, "Error allocating render target buffer memory\n");
-        exit(1);
-    }
-    printf("Allocated render target node: node=%08x\n", (uint32_t)rt_node);
+    etna_vidmem *rt = 0; /* main render target */
+    etna_vidmem *rt_ts = 0; /* tile status for main render target */
+    etna_vidmem *z = 0; /* depth for main render target */
+    etna_vidmem *z_ts = 0; /* depth ts for main render target */
+    etna_vidmem *vtx = 0; /* vertex buffer */
+    etna_vidmem *idx = 0; /* index buffer */
+    etna_vidmem *aux_rt = 0; /* auxilary render target */
+    etna_vidmem *aux_rt_ts = 0; /* tile status for auxilary render target */
+    etna_vidmem *tex = 0; /* texture */
+    etna_vidmem *bmp = 0; /* bitmap */
 
-    viv_addr_t rt_physical = 0;
-    void *rt_logical = 0;
-    if(viv_lock_vidmem(rt_node, &rt_physical, &rt_logical)!=0)
-    {
-        fprintf(stderr, "Error locking render target memory\n");
-        exit(1);
-    }
-    printf("Locked render target: phys=%08x log=%08x\n", (uint32_t)rt_physical, (uint32_t)rt_logical);
-    memset(rt_logical, 0xff, padded_width * padded_height * 4); /* clear previous result just in case, test that clearing works */
+    /* TODO: anti aliasing (doubles width/height) */
+    size_t rt_size = padded_width * padded_height * 4;
+    size_t rt_ts_size = etna_align_up((padded_width * padded_height * 4)/0x100, 0x100);
+    size_t z_size = padded_width * padded_height * 2;
+    size_t z_ts_size = etna_align_up((padded_width * padded_height * 2)/0x100, 0x100);
+    size_t bmp_size = width * height * 4;
 
-    /* allocate tile status for main render target */
-    gcuVIDMEM_NODE_PTR rt_ts_node = 0;
-    uint32_t rt_ts_size = etna_align_up((padded_width * padded_height * 4)/0x100, 0x100);
-    if(viv_alloc_linear_vidmem(rt_ts_size, 0x40, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, &rt_ts_node)!=0)
+    if(etna_vidmem_alloc_linear(&rt, rt_size, gcvSURF_RENDER_TARGET, gcvPOOL_DEFAULT, true)!=ETNA_OK ||
+       etna_vidmem_alloc_linear(&rt_ts, rt_ts_size, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, true)!=ETNA_OK ||
+       etna_vidmem_alloc_linear(&z, z_size, gcvSURF_DEPTH, gcvPOOL_DEFAULT, true)!=ETNA_OK ||
+       etna_vidmem_alloc_linear(&z_ts, z_ts_size, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, true)!=ETNA_OK ||
+       etna_vidmem_alloc_linear(&vtx, VERTEX_BUFFER_SIZE, gcvSURF_VERTEX, gcvPOOL_DEFAULT, true)!=ETNA_OK ||
+       etna_vidmem_alloc_linear(&idx, INDEX_BUFFER_SIZE, gcvSURF_INDEX, gcvPOOL_DEFAULT, true)!=ETNA_OK ||
+       etna_vidmem_alloc_linear(&aux_rt, 0x4000, gcvSURF_RENDER_TARGET, gcvPOOL_SYSTEM, true)!=ETNA_OK ||
+       etna_vidmem_alloc_linear(&aux_rt_ts, 0x100, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, true)!=ETNA_OK ||
+       etna_vidmem_alloc_linear(&tex, 0x100000, gcvSURF_TEXTURE, gcvPOOL_DEFAULT, true)!=ETNA_OK ||
+       etna_vidmem_alloc_linear(&bmp, bmp_size, gcvSURF_BITMAP, gcvPOOL_DEFAULT, true)!=ETNA_OK
+       )
     {
-        fprintf(stderr, "Error allocating render target tile status memory\n");
+        fprintf(stderr, "Error allocating video memory\n");
         exit(1);
     }
-    printf("Allocated render target tile status node: node=%08x size=%08x\n", (uint32_t)rt_ts_node, rt_ts_size);
-
-    viv_addr_t rt_ts_physical = 0;
-    void *rt_ts_logical = 0;
-    if(viv_lock_vidmem(rt_ts_node, &rt_ts_physical, &rt_ts_logical)!=0)
-    {
-        fprintf(stderr, "Error locking render target memory\n");
-        exit(1);
-    }
-    printf("Locked render target ts: phys=%08x log=%08x\n", (uint32_t)rt_ts_physical, (uint32_t)rt_ts_logical);
-
-    /* allocate depth for main render target */
-    gcuVIDMEM_NODE_PTR z_node = 0;
-    if(viv_alloc_linear_vidmem(padded_width * padded_height * 2, 0x40, gcvSURF_DEPTH, gcvPOOL_DEFAULT, &z_node)!=0)
-    {
-        fprintf(stderr, "Error allocating depth memory\n");
-        exit(1);
-    }
-    printf("Allocated depth node: node=%08x\n", (uint32_t)z_node);
-
-    viv_addr_t z_physical = 0;
-    void *z_logical = 0;
-    if(viv_lock_vidmem(z_node, &z_physical, &z_logical)!=0)
-    {
-        fprintf(stderr, "Error locking depth target memory\n");
-        exit(1);
-    }
-    printf("Locked depth target: phys=%08x log=%08x\n", (uint32_t)z_physical, (uint32_t)z_logical);
-
-    /* allocate depth ts for main render target */
-    gcuVIDMEM_NODE_PTR z_ts_node = 0;
-    uint32_t z_ts_size = etna_align_up((padded_width * padded_height * 2)/0x100, 0x100);
-    if(viv_alloc_linear_vidmem(z_ts_size, 0x40, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, &z_ts_node)!=0)
-    {
-        fprintf(stderr, "Error allocating depth memory\n");
-        exit(1);
-    }
-    printf("Allocated depth ts node: node=%08x size=%08x\n", (uint32_t)z_ts_node, z_ts_size);
-
-    viv_addr_t z_ts_physical = 0;
-    void *z_ts_logical = 0;
-    if(viv_lock_vidmem(z_ts_node, &z_ts_physical, &z_ts_logical)!=0)
-    {
-        fprintf(stderr, "Error locking depth target ts memory\n");
-        exit(1);
-    }
-    printf("Locked depth ts target: phys=%08x log=%08x\n", (uint32_t)z_ts_physical, (uint32_t)z_ts_logical);
-
-    /* allocate vertex buffer */
-    gcuVIDMEM_NODE_PTR vtx_node = 0;
-    if(viv_alloc_linear_vidmem(VERTEX_BUFFER_SIZE, 0x40, gcvSURF_VERTEX, gcvPOOL_DEFAULT, &vtx_node)!=0)
-    {
-        fprintf(stderr, "Error allocating vertex memory\n");
-        exit(1);
-    }
-    printf("Allocated vertex node: node=%08x\n", (uint32_t)vtx_node);
-
-    viv_addr_t vtx_physical = 0;
-    void *vtx_logical = 0;
-    if(viv_lock_vidmem(vtx_node, &vtx_physical, &vtx_logical)!=0)
-    {
-        fprintf(stderr, "Error locking vertex memory\n");
-        exit(1);
-    }
-    printf("Locked vertex memory: phys=%08x log=%08x\n", (uint32_t)vtx_physical, (uint32_t)vtx_logical);
-#ifdef INDEXED 
-    /* allocate index buffer */
-    gcuVIDMEM_NODE_PTR idx_node = 0;
-    if(viv_alloc_linear_vidmem(INDEX_BUFFER_SIZE, 0x40, gcvSURF_INDEX, gcvPOOL_DEFAULT, &idx_node)!=0)
-    {
-        fprintf(stderr, "Error allocating index memory\n");
-        exit(1);
-    }
-    printf("Allocated index node: node=%08x\n", (uint32_t)idx_node);
-
-    viv_addr_t idx_physical = 0; 
-    void *idx_logical = 0;
-    if(viv_lock_vidmem(idx_node, &idx_physical, &idx_logical)!=0)
-    {
-        fprintf(stderr, "Error locking index memory\n");
-        exit(1);
-    }
-    printf("Locked index memory: phys=%08x log=%08x\n", (uint32_t)idx_physical, (uint32_t)idx_logical);
-#endif
-
-    /* allocate aux render target */
-    gcuVIDMEM_NODE_PTR aux_rt_node = 0;
-    if(viv_alloc_linear_vidmem(0x4000, 0x40, gcvSURF_RENDER_TARGET, gcvPOOL_SYSTEM /*why?*/, &aux_rt_node)!=0)
-    {
-        fprintf(stderr, "Error allocating aux render target buffer memory\n");
-        exit(1);
-    }
-    printf("Allocated aux render target node: node=%08x\n", (uint32_t)aux_rt_node);
-
-    viv_addr_t aux_rt_physical = 0;
-    void *aux_rt_logical = 0;
-    if(viv_lock_vidmem(aux_rt_node, &aux_rt_physical, &aux_rt_logical)!=0)
-    {
-        fprintf(stderr, "Error locking aux render target memory\n");
-        exit(1);
-    }
-    printf("Locked aux render target: phys=%08x log=%08x\n", (uint32_t)aux_rt_physical, (uint32_t)aux_rt_logical);
-
-    /* allocate tile status for aux render target */
-    gcuVIDMEM_NODE_PTR aux_rt_ts_node = 0;
-    if(viv_alloc_linear_vidmem(0x100, 0x40, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, &aux_rt_ts_node)!=0)
-    {
-        fprintf(stderr, "Error allocating aux render target tile status memory\n");
-        exit(1);
-    }
-    printf("Allocated aux render target tile status node: node=%08x\n", (uint32_t)aux_rt_ts_node);
-
-    viv_addr_t aux_rt_ts_physical = 0;
-    void *aux_rt_ts_logical = 0;
-    if(viv_lock_vidmem(aux_rt_ts_node, &aux_rt_ts_physical, &aux_rt_ts_logical)!=0)
-    {
-        fprintf(stderr, "Error locking aux ts render target memory\n");
-        exit(1);
-    }
-    printf("Locked aux render target ts: phys=%08x log=%08x\n", (uint32_t)aux_rt_ts_physical, (uint32_t)aux_rt_ts_logical);
-    
-    /* Allocate and map texture memory */
-    gcuVIDMEM_NODE_PTR tex_node = 0;
-    if(viv_alloc_linear_vidmem(0x100000, 0x40, gcvSURF_TEXTURE, gcvPOOL_DEFAULT, &tex_node)!=0)
-    {
-        fprintf(stderr, "Error allocating tex memory\n");
-        exit(1);
-    }
-    printf("Allocated tex: node=%08x\n", (uint32_t)tex_node);
-    viv_addr_t tex_physical = 0; 
-    void *tex_logical = 0;
-    if(viv_lock_vidmem(tex_node, &tex_physical, &tex_logical)!=0)
-    {
-        fprintf(stderr, "Error locking tex memory\n");
-        exit(1);
-    }
-    printf("Locked tex: phys=%08x log=%08x\n", (uint32_t)tex_physical, (uint32_t)tex_logical);
-
-    /* Allocate video memory for BITMAP, lock */
-    gcuVIDMEM_NODE_PTR bmp_node = 0;
-    if(viv_alloc_linear_vidmem(width*height*4, 0x40, gcvSURF_BITMAP, gcvPOOL_DEFAULT, &bmp_node)!=0)
-    {
-        fprintf(stderr, "Error allocating bitmap status memory\n");
-        exit(1);
-    }
-    printf("Allocated bitmap node: node=%08x\n", (uint32_t)bmp_node);
-
-    viv_addr_t bmp_physical = 0;
-    void *bmp_logical = 0;
-    if(viv_lock_vidmem(bmp_node, &bmp_physical, &bmp_logical)!=0)
-    {
-        fprintf(stderr, "Error locking bmp memory\n");
-        exit(1);
-    }
-    memset(bmp_logical, 0xff, width*height*4); /* clear previous result */
-    printf("Locked bmp: phys=%08x log=%08x\n", (uint32_t)bmp_physical, (uint32_t)bmp_logical);
 
     /* Phew, now we got all the memory we need.
      * Write interleaved attribute vertex stream.
      * Unlike the GL example we only do this once, not every time glDrawArrays is called, the same would be accomplished
      * from GL by using a vertex buffer object.
      */
-    memset(vtx_logical, 0, 0x5ef80);
+    memset(vtx->logical, 0, 0x5ef80);
 #ifndef INDEXED
     printf("Interleaving vertices...\n");
     float *vertices_array = companion_vertices_array();
@@ -336,11 +187,11 @@ int main(int argc, char **argv)
     {
         int dest_idx = vert * (3 + 3 + 2);
         for(int comp=0; comp<3; ++comp)
-            ((float*)vtx_logical)[dest_idx+comp+0] = vertices_array[vert*3 + comp]; /* 0 */
+            ((float*)vtx->logical)[dest_idx+comp+0] = vertices_array[vert*3 + comp]; /* 0 */
         for(int comp=0; comp<3; ++comp)
-            ((float*)vtx_logical)[dest_idx+comp+3] = normals_array[vert*3 + comp]; /* 1 */
+            ((float*)vtx->logical)[dest_idx+comp+3] = normals_array[vert*3 + comp]; /* 1 */
         for(int comp=0; comp<2; ++comp)
-            ((float*)vtx_logical)[dest_idx+comp+6] = texture_coordinates_array[vert*2 + comp]; /* 2 */
+            ((float*)vtx->logical)[dest_idx+comp+6] = texture_coordinates_array[vert*2 + comp]; /* 2 */
     }
 #else
     printf("Interleaving vertices and copying index buffer...\n");
@@ -349,14 +200,14 @@ int main(int argc, char **argv)
     {
         int dest_idx = vert * (3 + 3 + 2);
         for(int comp=0; comp<3; ++comp)
-            ((float*)vtx_logical)[dest_idx+comp+0] = companion_vertices[vert][comp]; /* 0 */
+            ((float*)vtx->logical)[dest_idx+comp+0] = companion_vertices[vert][comp]; /* 0 */
         for(int comp=0; comp<3; ++comp)
-            ((float*)vtx_logical)[dest_idx+comp+3] = companion_normals[vert][comp]; /* 1 */
+            ((float*)vtx->logical)[dest_idx+comp+3] = companion_normals[vert][comp]; /* 1 */
         for(int comp=0; comp<2; ++comp)
-            ((float*)vtx_logical)[dest_idx+comp+6] = companion_texture_coordinates[vert][comp]; /* 2 */
+            ((float*)vtx->logical)[dest_idx+comp+6] = companion_texture_coordinates[vert][comp]; /* 2 */
     }
     assert(COMPANION_TRIANGLE_COUNT*3*sizeof(unsigned short) < INDEX_BUFFER_SIZE);
-    memcpy(idx_logical, &companion_triangles[0][0], COMPANION_TRIANGLE_COUNT*3*sizeof(unsigned short));
+    memcpy(idx->logical, &companion_triangles[0][0], COMPANION_TRIANGLE_COUNT*3*sizeof(unsigned short));
 #endif
     /* Fill in texture (convert from RGB linear to tiled) */
 #define TILE_WIDTH (4)
@@ -388,14 +239,19 @@ int main(int argc, char **argv)
 #endif
                     a = 255;
 
-                    ((uint32_t*)tex_logical)[ofs] = ((a&0xFF) << 24) | ((b&0xFF) << 16) | ((g&0xFF) << 8) | (r&0xFF);
+                    ((uint32_t*)tex->logical)[ofs] = ((a&0xFF) << 24) | ((b&0xFF) << 16) | ((g&0xFF) << 8) | (r&0xFF);
                     ofs += 1;
                 }
             }
         }
     }
 
-    etna_ctx *ctx = etna_create();
+    etna_ctx *ctx = 0;
+    if(etna_create(&ctx) != ETNA_OK)
+    {
+        printf("Unable to create context\n");
+        exit(1);
+    }
 
     for(int frame=0; frame<1000; ++frame)
     {
@@ -452,7 +308,7 @@ int main(int argc, char **argv)
                 ETNA_MASKED(VIVS_PE_COLOR_FORMAT_FORMAT, RS_FORMAT_X8R8G8B8) &
                 ETNA_MASKED_BIT(VIVS_PE_COLOR_FORMAT_SUPER_TILED, 1));
 
-        etna_set_state(ctx, VIVS_PE_COLOR_ADDR, rt_physical);
+        etna_set_state(ctx, VIVS_PE_COLOR_ADDR, rt->address);
         etna_set_state(ctx, VIVS_PE_COLOR_STRIDE, padded_width * 4); 
         etna_set_state(ctx, VIVS_GL_MULTI_SAMPLE_CONFIG, 
                 ETNA_MASKED_INL(VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_SAMPLES, NONE) &
@@ -463,23 +319,23 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR);
 
         etna_set_state(ctx, VIVS_TS_COLOR_CLEAR_VALUE, 0);
-        etna_set_state(ctx, VIVS_TS_COLOR_STATUS_BASE, rt_ts_physical);
-        etna_set_state(ctx, VIVS_TS_COLOR_SURFACE_BASE, rt_physical);
+        etna_set_state(ctx, VIVS_TS_COLOR_STATUS_BASE, rt_ts->address);
+        etna_set_state(ctx, VIVS_TS_COLOR_SURFACE_BASE, rt->address);
 
         etna_set_state(ctx, VIVS_PE_DEPTH_CONFIG, 
                 ETNA_MASKED_BIT(VIVS_PE_DEPTH_CONFIG_WRITE_ENABLE, 0) &
                 ETNA_MASKED_INL(VIVS_PE_DEPTH_CONFIG_DEPTH_FORMAT, D16) &
                 ETNA_MASKED_BIT(VIVS_PE_DEPTH_CONFIG_SUPER_TILED, 1) &
                 ETNA_MASKED_BIT(VIVS_PE_DEPTH_CONFIG_EARLY_Z, 1));
-        etna_set_state(ctx, VIVS_PE_DEPTH_ADDR, z_physical);
+        etna_set_state(ctx, VIVS_PE_DEPTH_ADDR, z->address);
         etna_set_state(ctx, VIVS_PE_DEPTH_STRIDE, padded_width * 2);
         etna_set_state(ctx, VIVS_PE_HDEPTH_CONTROL, VIVS_PE_HDEPTH_CONTROL_FORMAT_DISABLED);
         etna_set_state_f32(ctx, VIVS_PE_DEPTH_NORMALIZE, 65535.0);
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_DEPTH);
 
         etna_set_state(ctx, VIVS_TS_DEPTH_CLEAR_VALUE, 0xffffffff);
-        etna_set_state(ctx, VIVS_TS_DEPTH_STATUS_BASE, z_ts_physical);
-        etna_set_state(ctx, VIVS_TS_DEPTH_SURFACE_BASE, z_physical);
+        etna_set_state(ctx, VIVS_TS_DEPTH_STATUS_BASE, z_ts->address);
+        etna_set_state(ctx, VIVS_TS_DEPTH_SURFACE_BASE, z->address);
         etna_set_state(ctx, VIVS_TS_MEM_CONFIG, 
                 VIVS_TS_MEM_CONFIG_DEPTH_FAST_CLEAR |
                 VIVS_TS_MEM_CONFIG_COLOR_FAST_CLEAR |
@@ -489,7 +345,7 @@ int main(int argc, char **argv)
 #ifdef EXTRA_DELAYS
         /* Warm up RS on aux render target (is this needed?) */
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
-        etna_warm_up_rs(ctx, aux_rt_physical, aux_rt_ts_physical);
+        etna_warm_up_rs(ctx, aux_rt->address, aux_rt_ts->address);
 
         etna_set_state(ctx, VIVS_TS_COLOR_STATUS_BASE, rt_ts_physical);
         etna_set_state(ctx, VIVS_TS_COLOR_SURFACE_BASE, rt_physical);
@@ -523,14 +379,14 @@ int main(int argc, char **argv)
                 (0xffff << VIVS_RS_CLEAR_CONTROL_BITS__SHIFT));
         etna_set_state(ctx, VIVS_RS_EXTRA_CONFIG, 0);
         /*    clear color ts */
-        etna_set_state(ctx, VIVS_RS_DEST_ADDR, rt_ts_physical);
+        etna_set_state(ctx, VIVS_RS_DEST_ADDR, rt_ts->address);
         etna_set_state(ctx, VIVS_RS_DEST_STRIDE, 0x40);
         etna_set_state(ctx, VIVS_RS_WINDOW_SIZE, 
                 ((rt_ts_size/0x40) << VIVS_RS_WINDOW_SIZE_HEIGHT__SHIFT) |
                 (16 << VIVS_RS_WINDOW_SIZE_WIDTH__SHIFT));
         etna_set_state(ctx, VIVS_RS_KICKER, 0xbeebbeeb);
         /*    clear depth ts */
-        etna_set_state(ctx, VIVS_RS_DEST_ADDR, z_ts_physical);
+        etna_set_state(ctx, VIVS_RS_DEST_ADDR, z_ts->address);
         etna_set_state(ctx, VIVS_RS_DEST_STRIDE, 0x40);
         etna_set_state(ctx, VIVS_RS_WINDOW_SIZE, 
                 ((z_ts_size/0x40) << VIVS_RS_WINDOW_SIZE_HEIGHT__SHIFT) |
@@ -541,8 +397,8 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_TS_COLOR_CLEAR_VALUE, 0xff7f7f7f);
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR);
 
-        etna_set_state(ctx, VIVS_TS_COLOR_STATUS_BASE, rt_ts_physical);
-        etna_set_state(ctx, VIVS_TS_COLOR_SURFACE_BASE, rt_physical);
+        etna_set_state(ctx, VIVS_TS_COLOR_STATUS_BASE, rt_ts->address);
+        etna_set_state(ctx, VIVS_TS_COLOR_SURFACE_BASE, rt->address);
         etna_set_state(ctx, VIVS_TS_MEM_CONFIG, 
                 VIVS_TS_MEM_CONFIG_DEPTH_FAST_CLEAR |
                 VIVS_TS_MEM_CONFIG_COLOR_FAST_CLEAR |
@@ -578,7 +434,7 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_TE_SAMPLER_LOG_SIZE(0), 
                 VIVS_TE_SAMPLER_LOG_SIZE_WIDTH(9<<5) |
                 VIVS_TE_SAMPLER_LOG_SIZE_HEIGHT(9<<5));
-        etna_set_state(ctx, VIVS_TE_SAMPLER_LOD_ADDR(0,0), tex_physical);
+        etna_set_state(ctx, VIVS_TE_SAMPLER_LOD_ADDR(0,0), tex->address);
         etna_set_state(ctx, VIVS_TE_SAMPLER_CONFIG0(0), 
                 VIVS_TE_SAMPLER_CONFIG0_TYPE(TEXTURE_TYPE_2D)|
                 VIVS_TE_SAMPLER_CONFIG0_UWRAP(TEXTURE_WRAPMODE_CLAMP_TO_EDGE)|
@@ -670,10 +526,10 @@ int main(int argc, char **argv)
         etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(24), 3, (uint32_t*)&normal[6]); /* u6.xyz */
         etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(28), 16, (uint32_t*)&modelview.m[0][0]);
 #ifdef INDEXED
-        etna_set_state(ctx, VIVS_FE_INDEX_STREAM_BASE_ADDR, idx_physical);
+        etna_set_state(ctx, VIVS_FE_INDEX_STREAM_BASE_ADDR, idx->address);
         etna_set_state(ctx, VIVS_FE_INDEX_STREAM_CONTROL, VIVS_FE_INDEX_STREAM_CONTROL_TYPE_UNSIGNED_SHORT);
 #endif
-        etna_set_state(ctx, VIVS_FE_VERTEX_STREAM_BASE_ADDR, vtx_physical);
+        etna_set_state(ctx, VIVS_FE_VERTEX_STREAM_BASE_ADDR, vtx->address);
         etna_set_state(ctx, VIVS_FE_VERTEX_STREAM_CONTROL, 
                 VIVS_FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE((3 + 3 + 2)*4));
         etna_set_state(ctx, VIVS_FE_VERTEX_ELEMENT_CONFIG(0), 
@@ -725,8 +581,8 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_RS_DITHER(1), 0xffffffff);
         etna_set_state(ctx, VIVS_RS_CLEAR_CONTROL, VIVS_RS_CLEAR_CONTROL_MODE_DISABLED);
         etna_set_state(ctx, VIVS_RS_EXTRA_CONFIG, 0); 
-        etna_set_state(ctx, VIVS_RS_SOURCE_ADDR, rt_physical);
-        etna_set_state(ctx, VIVS_RS_DEST_ADDR, rt_physical);
+        etna_set_state(ctx, VIVS_RS_SOURCE_ADDR, rt->address);
+        etna_set_state(ctx, VIVS_RS_DEST_ADDR, rt->address);
         etna_set_state(ctx, VIVS_RS_WINDOW_SIZE, 
                 VIVS_RS_WINDOW_SIZE_HEIGHT(padded_height) |
                 VIVS_RS_WINDOW_SIZE_WIDTH(padded_width));
@@ -734,11 +590,11 @@ int main(int argc, char **argv)
 #ifdef EXTRA_DELAYS
         etna_flush(ctx);
 
-        etna_warm_up_rs(ctx, aux_rt_physical, aux_rt_ts_physical);
+        etna_warm_up_rs(ctx, aux_rt->address, aux_rt_ts->address);
 #endif
 
-        etna_set_state(ctx, VIVS_TS_COLOR_STATUS_BASE, rt_ts_physical);
-        etna_set_state(ctx, VIVS_TS_COLOR_SURFACE_BASE, rt_physical);
+        etna_set_state(ctx, VIVS_TS_COLOR_STATUS_BASE, rt_ts->address);
+        etna_set_state(ctx, VIVS_TS_COLOR_SURFACE_BASE, rt->address);
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR);
         etna_set_state(ctx, VIVS_TS_MEM_CONFIG, 
                 VIVS_TS_MEM_CONFIG_DEPTH_FAST_CLEAR |
@@ -767,7 +623,7 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_RS_DITHER(1), 0xffffffff);
         etna_set_state(ctx, VIVS_RS_CLEAR_CONTROL, VIVS_RS_CLEAR_CONTROL_MODE_DISABLED);
         etna_set_state(ctx, VIVS_RS_EXTRA_CONFIG, 0);
-        etna_set_state(ctx, VIVS_RS_SOURCE_ADDR, rt_physical);
+        etna_set_state(ctx, VIVS_RS_SOURCE_ADDR, rt->address);
         etna_set_state(ctx, VIVS_RS_DEST_ADDR, fb.physical[backbuffer]);
         etna_set_state(ctx, VIVS_RS_WINDOW_SIZE, 
                 VIVS_RS_WINDOW_SIZE_HEIGHT(height) |
@@ -780,13 +636,6 @@ int main(int argc, char **argv)
         backbuffer = 1-backbuffer;
     }
     
-    /* Unlock video memory */
-    if(viv_unlock_vidmem(bmp_node, gcvSURF_BITMAP, 1) != 0)
-    {
-        fprintf(stderr, "Cannot unlock vidmem\n");
-        exit(1);
-    }
-
     etna_free(ctx);
     viv_close();
     return 0;

@@ -55,7 +55,7 @@ int viv_alloc_contiguous(size_t bytes, viv_addr_t *physical, void **logical, siz
 /** Allocate linear video memory.
   @returns a handle. To get the GPU and CPU address of the memory, use lock_vidmem
  */
-int viv_alloc_linear_vidmem(size_t bytes, size_t alignment, gceSURF_TYPE type, gcePOOL pool, gcuVIDMEM_NODE_PTR *node);
+int viv_alloc_linear_vidmem(size_t bytes, size_t alignment, gceSURF_TYPE type, gcePOOL pool, gcuVIDMEM_NODE_PTR *node, size_t *bytes_out);
 
 /** Lock (map) video memory node to GPU and CPU memory.
  */
@@ -68,6 +68,18 @@ int viv_commit(gcoCMDBUF commandBuffer, gcoCONTEXT contextBuffer);
 /**  Unlock (unmap) video memory node from GPU and CPU memory.
  */
 int viv_unlock_vidmem(gcuVIDMEM_NODE_PTR node, gceSURF_TYPE type, int async);
+
+/**  Free block of video memory previously allocated with viv_alloc_linear_vidmem.
+ */
+int viv_free_vidmem(gcuVIDMEM_NODE_PTR node);
+
+/**  Map user memory to GPU memory.
+ */
+int viv_map_user_memory(void *memory, size_t size, gctPOINTER *info, viv_addr_t *address);
+
+/**  Unmap user memory from GPU memory.
+ */
+int viv_unmap_user_memory(void *memory, size_t size, gctPOINTER info, viv_addr_t address);
 
 /** Commit event queue.
  */

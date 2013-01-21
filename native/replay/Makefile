@@ -30,7 +30,7 @@ cube_etna: cube_etna.o ../lib/write_bmp.o ../lib/viv.o ../lib/esTransform.o
 ps_sandbox_etna: ps_sandbox_etna.o ../lib/write_bmp.o ../lib/viv.o ../lib/esTransform.o
 	$(CC) $(CFLAGS) -o $@ $^  $(GL_LIBS) $(LDFLAGS)
 
-etna_test: etna_test.o ../lib/write_bmp.o ../lib/viv.o ../lib/esTransform.o ../lib/etna.o ../lib/etna_rs.o
+etna_test: etna_test.o ../lib/write_bmp.o ../lib/viv.o ../lib/esTransform.o ../lib/etna.o ../lib/etna_rs.o ../lib/etna_mem.o
 	$(CC) $(CFLAGS) -o $@ $^  $(GL_LIBS) $(LDFLAGS)
 
 reset: reset.o ../lib/viv.o

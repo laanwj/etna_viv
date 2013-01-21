@@ -33,6 +33,37 @@ Contents
 The repository contains different tools and documentation related to figuring out how to 
 program Vivante GCxxx GPU chips.
 
+Framebuffer tests
+------------------
+
+To execise the initial-stage driver there are a few framebuffer tests in:
+
+    native/fb/
+
+These do double-buffered animated rendering of 1000 frames to the framebuffer using 
+the proof-of-concept `etna` command stream building API. 
+
+- `companion_cube`: Animated rotating "weighted companion cube", using array or indexed rendering. Exercised in this demo:
+  - Array and indexed rendering of arbitrary mesh
+  - Video memory allocation
+  - Setting up render state
+  - Depth buffer
+  - Vertex / fragment shader
+  - Texturing
+  - Double-buffered rendering to framebuffer
+
+- `etna_test`: Full screen pixel shader with frame number passed in as uniform. Can be used as a visual shader sandbox.
+
+If you are executing these demos on an Android device, make sure that you are root, otherwise the framebuffer
+is not accessible.
+
+Running these tests while Android is still writing to the framebuffer will result in funny claudioscopic effects.
+To get surfaceflinger out of the way type:
+
+    adb shell stop surfaceflinger
+    (run test)
+    adb shell start surfaceflinger
+
 State map
 -----------
 
@@ -145,37 +176,6 @@ it to the kernel driver:
     native/replay/etna_test.c (to experiment with shaders)
     native/replay/cube_etna.c (renders the GLES2 smoothed cube)
 
-Framebuffer tests
-------------------
-
-To execise the initial-stage driver there are a few framebuffer tests in:
-
-    native/fb/
-
-These do double-buffered animated rendering of 1000 frames to the framebuffer using 
-the proof-of-concept `etna` command stream building API. 
-
-- `companion_cube`: Animated rotating "weighted companion cube", using array or indexed rendering. Exercised in this demo:
-  - Array and indexed rendering of arbitrary mesh
-  - Video memory allocation
-  - Setting up render state
-  - Depth buffer
-  - Vertex / fragment shader
-  - Texturing
-  - Double-buffered rendering to framebuffer
-
-- `etna_test`: Full screen pixel shader with frame number passed in as uniform. Can be used as a visual shader sandbox.
-
-If you are executing these demos on an Android device, make sure that you are root, otherwise the framebuffer
-is not accessible.
-
-Running these tests while Android is still writing to the framebuffer will result in funny claudioscopic effects.
-To get surfaceflinger out of the way type:
-
-    adb shell stop surfaceflinger
-    (run test)
-    adb shell start surfaceflinger
-
 Vivante GPL kernel driver
 --------------------------
 
@@ -186,11 +186,13 @@ The headers and implementation files for the Vivante GPL kernel drivers are also
 Three GPL kernel driver versions, `gc600_driver_dove`, `v2` and `v4`, are provided. They are useful in understanding the kernel 
 interface, and the hardware at a basic level.
 
+As open source drivers for the kernel are available, there are currently no plans to write a DRM/DRI kernel driver for Vivante.
+
 Envytools fork
 ---------------
 
 Envytools (https://github.com/pathscale/envytools) is a set of tools aimed at developers of the open source
-NVidia driver Nouveau, however some parts such as rnndb be more generally applied. The repository 
+NVidia driver Nouveau, however some parts such as rnndb can be applied more generally. The repository 
 contains a slightly modified subset of envytools for header generation from 
 the state / cmdstream / isa rnndb files, so they can be used from the C code (etna), build with
 

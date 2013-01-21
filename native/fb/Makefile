@@ -21,12 +21,12 @@ clean:
 fbtest: fbtest.o ../lib/write_bmp.o ../lib/viv.o ../lib/etna_fb.o
 	$(CC) $(CFLAGS) -o $@ $^  $(GL_LIBS) $(LDFLAGS)
 
-etna_test: etna_test.o ../lib/write_bmp.o ../lib/viv.o ../lib/etna.o ../lib/etna_rs.o ../lib/etna_fb.o
+etna_test: etna_test.o ../lib/write_bmp.o ../lib/viv.o ../lib/etna.o ../lib/etna_rs.o ../lib/etna_fb.o ../lib/etna_mem.o
 	$(CC) $(CFLAGS) -o $@ $^  $(GL_LIBS) $(LDFLAGS)
 
-rotate_cube: rotate_cube.o ../lib/write_bmp.o ../lib/viv.o ../lib/etna.o ../lib/etna_rs.o ../lib/etna_fb.o ../lib/esTransform.o
+rotate_cube: rotate_cube.o ../lib/write_bmp.o ../lib/viv.o ../lib/etna.o ../lib/etna_rs.o ../lib/etna_fb.o ../lib/etna_mem.o ../lib/esTransform.o
 	$(CC) $(CFLAGS) -o $@ $^  $(GL_LIBS) $(LDFLAGS)
 
-cube_companion: cube_companion.o ../lib/write_bmp.o ../lib/viv.o ../lib/etna.o ../lib/etna_rs.o ../lib/etna_fb.o ../lib/esTransform.o $(COMPANION_OBJS)
+cube_companion: cube_companion.o ../lib/write_bmp.o ../lib/viv.o ../lib/etna.o ../lib/etna_rs.o ../lib/etna_fb.o ../lib/etna_mem.o ../lib/esTransform.o $(COMPANION_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^  $(GL_LIBS) $(LDFLAGS)
 
