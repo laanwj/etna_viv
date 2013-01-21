@@ -51,6 +51,7 @@ the proof-of-concept `etna` command stream building API.
   - Vertex / fragment shader
   - Texturing
   - Double-buffered rendering to framebuffer
+  - MSAA (off / 2X / 4X)
 
 - `etna_test`: Full screen pixel shader with frame number passed in as uniform. Can be used as a visual shader sandbox.
 

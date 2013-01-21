@@ -383,7 +383,7 @@ Other differences when MSAA is enabled:
         -0x00000002, /*   PS.TEMP_REGISTER_CONTROL := NUM_TEMPS=2 */
         +0x00000003, /*   PS.TEMP_REGISTER_CONTROL := NUM_TEMPS=3 */
 
-Haven't yet checked what the value is that is passed in. The shader code itself is unaffected the same so the extra
+Haven't yet checked what the value is that is passed in (XXX todo). The shader code itself is unaffected the same so the extra
 input is likely added to the end.
 
 - When resolving the supersampled surface to another (normal pixmap) surface, flag `SOURCE_MSAA` must be configured appropriately to
