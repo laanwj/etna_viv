@@ -20,32 +20,46 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-/* Low-level framebuffer query / access */
-#ifndef H_ETNA_FB
-#define H_ETNA_FB
-
+#if !defined( DDS_H )
+#define DDS_H
 #include <stdint.h>
-#include <linux/fb.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <stdio.h>
 
-#define FB_MAX_BUFFERS (4)
-typedef struct
+/* Formats */
+#define FMT_A8R8G8B8 0
+#define FMT_X8R8G8B8 1
+#define FMT_R8G8B8   2
+#define FMT_A1R5G5B5 3
+#define FMT_X1R5G5B5 4
+#define FMT_R5G6B5   5
+#define FMT_DXT1     6
+#define FMT_DXT3     7
+#define FMT_DXT5     8
+
+typedef struct _dds_mipmap
 {
-    int fd;
-    int num_buffers;
-    size_t physical[FB_MAX_BUFFERS];
-    void *logical[FB_MAX_BUFFERS];
-    size_t stride;
-    size_t buffer_stride;
-    struct fb_var_screeninfo fb_var;
-    struct fb_fix_screeninfo fb_fix;
-    void *map;
-} fb_info;
+    unsigned int width, height, stride, size;
+    void *data;
+    size_t offset;
+} dds_mipmap;
 
-/* Open framebuffer and get information */
-int fb_open(int num, fb_info *out);
+typedef struct _dds_texture 
+{
+    int fmt;
+    unsigned int div_size;
+    unsigned int block_bytes;
+    int num_slices; /* number of faces or slices */
+    int num_mipmaps; /* number of mipmaps */
+    dds_mipmap **slices;
+    void *data;
+    size_t size;
+} dds_texture;
 
-/* Set currently visible buffer id */
-int fb_set_buffer(fb_info *fb, int buffer);
+bool dds_load(const char *filename, dds_texture **out);
+bool dds_load_file(FILE *f, dds_texture **out);
+void dds_free(dds_texture *tex);
 
-#endif
+#endif 
 

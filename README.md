@@ -36,6 +36,12 @@ program Vivante GCxxx GPU chips.
 Framebuffer tests
 ------------------
 
+![cube_rotate output](https://raw.github.com/laanwj/etna_viv/master/native/replay/cube_replay.png)
+
+![cube_companion output](https://raw.github.com/laanwj/etna_viv/master/native/replay/cube_companion_replay.png)
+
+![mip_cube output](https://raw.github.com/laanwj/etna_viv/master/doc/images/mipmap.png)
+
 To execise the initial-stage driver there are a few framebuffer tests in:
 
     native/fb/
@@ -54,6 +60,12 @@ the proof-of-concept `etna` command stream building API.
   - MSAA (off / 2X / 4X)
 
 - `etna_test`: Full screen pixel shader with frame number passed in as uniform. Can be used as a visual shader sandbox.
+
+- `rotate_cube`: Rotating smoothed color cube
+
+- `mip_cube`: Rotating cube with a mipmapped texture loaded from a `dds` file. This texture has a different 
+  color and number on each mipmap level, to explicitly show interpolation between mipmap levels as the surface 
+  goes nearer or farther from the camera.
 
 If you are executing these demos on an Android device, make sure that you are root, otherwise the framebuffer
 is not accessible.
@@ -154,10 +166,6 @@ Replay tests
 --------------
 
 The replay tests replay the command stream and ioctl commands of the EGL demos, to get the same output. 
-
-![Example output](https://raw.github.com/laanwj/etna_viv/master/native/replay/cube_replay.png)
-
-![Example output 2](https://raw.github.com/laanwj/etna_viv/master/native/replay/cube_companion_replay.png)
 
 They can be found in:
 

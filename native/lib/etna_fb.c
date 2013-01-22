@@ -84,11 +84,15 @@ int fb_open(int num, fb_info *out)
     out->stride = out->fb_fix.line_length;
     out->buffer_stride = out->stride * out->fb_var.yres;
     out->num_buffers = out->fb_fix.smem_len / out->buffer_stride;
+    out->map = mmap(NULL, out->fb_fix.smem_len, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+    printf("    mmap: %p\n", out->map);
+
     if(out->num_buffers > FB_MAX_BUFFERS)
         out->num_buffers = FB_MAX_BUFFERS;
     for(int idx=0; idx<out->num_buffers; ++idx)
     {
         out->physical[idx] = out->fb_fix.smem_start + idx * out->buffer_stride;
+        out->logical[idx] = (void*)((size_t)out->map + idx * out->buffer_stride);
     }
     printf("number of fb buffers: %i\n", out->num_buffers);
     return 0;
