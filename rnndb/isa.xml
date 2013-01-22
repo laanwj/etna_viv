@@ -239,7 +239,6 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             should be prefixed by a division by PI/2.
         </doc>
     </value>
-    <value value="0x24" name="POLY"/>
     <value value="0x25" name="FLOOR" brief="Largest integral value not greater than the argument"> <!-- HAS_SIGN_FLOOR_CEIL -->
         <doc>
             dst := floor(src2)
@@ -263,76 +262,6 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             Return 1.0 if the sign is positive or zero, -1.0 if negative.
         </doc>
     </value>
-    <!-- The following only exist on GLES3/OpenCL capable devices -->
-    <value value="0x28" name="ADDLO"/>
-    <value value="0x29" name="MULLO"/>
-    <value value="0x2A" name="BARRIER" brief="Thread barrier"/>
-    <value value="0x2B" name="SWIZZLE"/>
-    <value value="0x2C" name="I2I"/>
-    <value value="0x2D" name="I2F"/>
-    <value value="0x2E" name="F2I"/>
-    <value value="0x2F" name="F2IRND"/>
-    <value value="0x30" name="F2I7"/>
-    <value value="0x31" name="CMP" brief="Compare"/>
-    <value value="0x32" name="LOAD"/>
-    <value value="0x33" name="STORE"/>
-    <value value="0x34" name="COPYSIGN"/>
-    <value value="0x35" name="GETEXP"/>
-    <value value="0x36" name="GETMANT"/>
-    <value value="0x37" name="NAN"/>
-    <value value="0x38" name="NEXTAFTER"/>
-    <value value="0x39" name="ROUNDEVEN"/>
-    <value value="0x3A" name="ROUNDAWAY"/>
-    <value value="0x3B" name="IADDSAT"/>
-    <value value="0x3C" name="IMULLO0"/>
-    <value value="0x3D" name="IMULLO1"/>
-    <value value="0x3E" name="IMULLOSAT0"/>
-    <value value="0x3F" name="IMULLOSAT1"/>
-    <value value="0x40" name="IMULHI0"/>
-    <value value="0x41" name="IMULHI1"/>
-    <value value="0x42" name="IMUL0"/>
-    <value value="0x43" name="IMUL1"/>
-    <value value="0x44" name="IDIV0"/>
-    <value value="0x45" name="IDIV1"/>
-    <value value="0x46" name="IDIV2"/>
-    <value value="0x47" name="IDIV3"/>
-    <value value="0x48" name="IMOD0"/>
-    <value value="0x49" name="IMOD1"/>
-    <value value="0x4A" name="IMOD2"/>
-    <value value="0x4B" name="IMOD3"/>
-    <value value="0x4C" name="IMADLO0"/>
-    <value value="0x4D" name="IMADLO1"/>
-    <value value="0x4E" name="IMADLOSAT0"/>
-    <value value="0x4F" name="IMADLOSAT1"/>
-    <value value="0x50" name="IMADHI0"/>
-    <value value="0x51" name="IMADHI1"/>
-    <value value="0x52" name="IMADHISAT0"/>
-    <value value="0x53" name="IMADHISAT1"/>
-    <value value="0x54" name="HALFADD"/>
-    <value value="0x55" name="HALFADDINC"/>
-    <value value="0x56" name="MOVAI" brief="Move int to address register"/>
-    <value value="0x57" name="IABS"/>
-    <value value="0x58" name="LEADZERO" brief="Count leading zeros"/>
-    <value value="0x59" name="LSHIFT" brief="Bitwise left shift"/>
-    <value value="0x5A" name="RSHIFT" brief="Bitwise right shift"/>
-    <value value="0x5B" name="ROTATE" brief="Bitwise rotate"/>
-    <value value="0x5C" name="OR" brief="Bitwise or"/>
-    <value value="0x5D" name="AND" brief="Bitwise and"/>
-    <value value="0x5E" name="XOR" brief="Bitwise xor"/>
-    <value value="0x5F" name="NOT" brief="Bitwise not"/>
-    <value value="0x60" name="BITSELECT"/>
-    <value value="0x61" name="POPCOUNT"/>
-</enum>
-
-<enum name="INST_OPERAND" brief="Operand data type">
-    <value value="0x00" name="F32" brief="32-bit float"/>
-    <value value="0x01" name="F16" brief="16-bit float"/>
-    <value value="0x02" name="S32" brief="32-bit signed int"/>
-    <value value="0x03" name="S16" brief="16-bit signed int"/>
-    <value value="0x04" name="S8" brief="8-bit signed int"/>
-    <value value="0x05" name="U32" brief="32-bit unsigned int"/>
-    <value value="0x06" name="U16" brief="16-bit unsigned int"/>
-    <value value="0x07" name="U8" brief="8-bit unsigned int"/>
 </enum>
 
 <enum name="INST_CONDITION" brief="Condition code">
