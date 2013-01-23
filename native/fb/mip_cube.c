@@ -32,6 +32,7 @@
 #include <sys/mman.h>
 #include <stdarg.h>
 #include <assert.h>
+#include <math.h>
 
 #include <errno.h>
 
@@ -48,6 +49,7 @@
 #include "esUtil.h"
 #include "dds.h"
 
+#define RCPLOG2 (1.4426950408889634f)
 #define VERTEX_BUFFER_SIZE 0x60000
 
 float vVertices[] = {
@@ -260,7 +262,7 @@ int main(int argc, char **argv)
     size_t z_ts_size = etna_align_up((padded_width * padded_height * 2)/0x100, 0x100);
 
     dds_texture *dds = 0;
-    if(!dds_load("/mnt/sdcard/miprgba.dds", &dds))
+    if(argc<2 || !dds_load(argv[1], &dds))
     {
         printf("Error loading texture\n");
         exit(1);
@@ -280,13 +282,35 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    //memcpy(tex->logical, dds->data, dds->size);
-    assert(dds->fmt == FMT_X8R8G8B8 || dds->fmt == FMT_A8R8G8B8);
-    for(int ix=0; ix<dds->num_mipmaps; ++ix)
+    uint32_t tex_format = 0;
+    uint32_t tex_base_width = dds->slices[0][0].width;
+    uint32_t tex_base_height = dds->slices[0][0].height;
+    uint32_t tex_base_log_width = (int)(logf(tex_base_width) * RCPLOG2 * 32.0f + 0.5f);
+    uint32_t tex_base_log_height = (int)(logf(tex_base_height) * RCPLOG2 * 32.0f + 0.5f);
+    printf("Loading compressed texture (format %i, %ix%i) log_width=%i log_height=%i\n", dds->fmt, width, height, tex_base_log_width, tex_base_log_height);
+    if(dds->fmt == FMT_X8R8G8B8 || dds->fmt == FMT_A8R8G8B8)
     {
-        printf("%08x: Tiling mipmap %i (%ix%i)\n", dds->slices[0][ix].offset, ix, dds->slices[0][ix].width, dds->slices[0][ix].height);
-        tile_texture((void*)((size_t)tex->logical + dds->slices[0][ix].offset), 
-                dds->slices[0][ix].data, dds->slices[0][ix].width, dds->slices[0][ix].height, dds->slices[0][ix].stride, 4);
+        for(int ix=0; ix<dds->num_mipmaps; ++ix)
+        {
+            printf("%08x: Tiling mipmap %i (%ix%i)\n", dds->slices[0][ix].offset, ix, dds->slices[0][ix].width, dds->slices[0][ix].height);
+            tile_texture((void*)((size_t)tex->logical + dds->slices[0][ix].offset), 
+                    dds->slices[0][ix].data, dds->slices[0][ix].width, dds->slices[0][ix].height, dds->slices[0][ix].stride, 4);
+        }
+        tex_format = TEXTURE_FORMAT_X8R8G8B8;
+    } else if(dds->fmt == FMT_DXT1 || dds->fmt == FMT_DXT3 || dds->fmt == FMT_DXT5)
+    {
+        printf("Loading compressed texture\n");
+        memcpy(tex->logical, dds->data, dds->size);
+        switch(dds->fmt)
+        {
+        case FMT_DXT1: tex_format = TEXTURE_FORMAT_DXT1;
+        case FMT_DXT3: tex_format = TEXTURE_FORMAT_DXT2_DXT3;
+        case FMT_DXT5: tex_format = TEXTURE_FORMAT_DXT4_DXT5;
+        }
+    } else
+    {
+        printf("Unknown texture format\n");
+        exit(1);
     }
 
     /* Phew, now we got all the memory we need.
@@ -478,11 +502,11 @@ int main(int argc, char **argv)
         /* set up texture unit */
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_TEXTURE);
         etna_set_state(ctx, VIVS_TE_SAMPLER_SIZE(0), 
-                VIVS_TE_SAMPLER_SIZE_WIDTH(256)| // XXX don't hardcode this size
-                VIVS_TE_SAMPLER_SIZE_HEIGHT(256));
+                VIVS_TE_SAMPLER_SIZE_WIDTH(tex_base_width)|
+                VIVS_TE_SAMPLER_SIZE_HEIGHT(tex_base_height));
         etna_set_state(ctx, VIVS_TE_SAMPLER_LOG_SIZE(0), 
-                VIVS_TE_SAMPLER_LOG_SIZE_WIDTH(8<<5) |
-                VIVS_TE_SAMPLER_LOG_SIZE_HEIGHT(8<<5));
+                VIVS_TE_SAMPLER_LOG_SIZE_WIDTH(tex_base_log_width) |
+                VIVS_TE_SAMPLER_LOG_SIZE_HEIGHT(tex_base_log_height));
         for(int ix=0; ix<dds->num_mipmaps; ++ix)
         {
             etna_set_state(ctx, VIVS_TE_SAMPLER_LOD_ADDR(0,ix), tex->address + dds->slices[0][ix].offset);
@@ -494,7 +518,7 @@ int main(int argc, char **argv)
                 VIVS_TE_SAMPLER_CONFIG0_MIN(TEXTURE_FILTER_LINEAR)|
                 VIVS_TE_SAMPLER_CONFIG0_MIP(TEXTURE_FILTER_LINEAR)|
                 VIVS_TE_SAMPLER_CONFIG0_MAG(TEXTURE_FILTER_LINEAR)|
-                VIVS_TE_SAMPLER_CONFIG0_FORMAT(TEXTURE_FORMAT_X8R8G8B8));
+                VIVS_TE_SAMPLER_CONFIG0_FORMAT(tex_format));
         etna_set_state(ctx, VIVS_TE_SAMPLER_LOD_CONFIG(0), 
                 VIVS_TE_SAMPLER_LOD_CONFIG_MAX((dds->num_mipmaps - 1)<<5) | VIVS_TE_SAMPLER_LOD_CONFIG_MIN(0));
 
@@ -504,7 +528,9 @@ int main(int argc, char **argv)
         etna_set_state_multi(ctx, VIVS_VS_INPUT_COUNT, 3, (uint32_t[]){
                 /* VIVS_VS_INPUT_COUNT */ VIVS_VS_INPUT_COUNT_UNK8(1) | VIVS_VS_INPUT_COUNT_COUNT(3),
                 /* VIVS_VS_TEMP_REGISTER_CONTROL */ VIVS_VS_TEMP_REGISTER_CONTROL_NUM_TEMPS(6),
-                /* VIVS_VS_OUTPUT(0) */ 0x10004}); /* 0x00004 causes wrong texture coordinates */
+                /* VIVS_VS_OUTPUT(0) */ VIVS_VS_OUTPUT_O0(4) | 
+                                        VIVS_VS_OUTPUT_O1(0) | 
+                                        VIVS_VS_OUTPUT_O2(1)});
         etna_set_state_multi(ctx, VIVS_VS_INST_MEM(0), vs_size/4, vs);
         etna_set_state(ctx, VIVS_RA_CONTROL, 0x3);
         etna_set_state(ctx, VIVS_PS_START_PC, 0x0);
@@ -534,7 +560,7 @@ int main(int argc, char **argv)
         etna_set_state_multi(ctx, VIVS_PS_INST_MEM(0), ps_size/4, ps);
         etna_set_state(ctx, VIVS_VS_OUTPUT_COUNT, 3);
         etna_set_state(ctx, VIVS_PS_INPUT_COUNT, VIVS_PS_INPUT_COUNT_UNK8(31) | VIVS_PS_INPUT_COUNT_COUNT(3));
-        etna_set_state(ctx, VIVS_PS_TEMP_REGISTER_CONTROL, (3 << VIVS_PS_TEMP_REGISTER_CONTROL_NUM_TEMPS__SHIFT));
+        etna_set_state(ctx, VIVS_PS_TEMP_REGISTER_CONTROL, VIVS_PS_TEMP_REGISTER_CONTROL_NUM_TEMPS(3));
         etna_set_state(ctx, VIVS_PS_CONTROL, VIVS_PS_CONTROL_UNK1);
         etna_set_state(ctx, VIVS_VS_LOAD_BALANCING, 0xf3f0542); /* depends on number of inputs/outputs/varyings? XXX how exactly */
         
@@ -601,7 +627,9 @@ int main(int argc, char **argv)
                 VIVS_FE_VERTEX_ELEMENT_CONFIG_NORMALIZE_OFF |
                 VIVS_FE_VERTEX_ELEMENT_CONFIG_START(0x18) |
                 VIVS_FE_VERTEX_ELEMENT_CONFIG_END(0x20));
-        etna_set_state(ctx, VIVS_VS_INPUT(0), 0x20100);
+        etna_set_state(ctx, VIVS_VS_INPUT(0), VIVS_VS_INPUT_I0(0) | 
+                                        VIVS_VS_INPUT_I1(1) | 
+                                        VIVS_VS_INPUT_I2(2));
         etna_set_state(ctx, VIVS_PA_CONFIG, ETNA_MASKED_BIT(VIVS_PA_CONFIG_POINT_SPRITE_ENABLE, 0));
 
         for(int prim=0; prim<6; ++prim)

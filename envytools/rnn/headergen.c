@@ -107,7 +107,7 @@ void printdef (char *name, char *suf, int type, uint64_t val, char *file) {
 			fprintf (dst, "%"PRIu64"\n", val);
 			break;
                 case 2:
-			fprintf (dst, "((x) << %"PRIu64")\n", val);
+			fprintf (dst, "(((x) << %s__SHIFT) & %s__MASK)\n", name, name);
                         break;
 	}
 }

@@ -335,6 +335,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="7" name="YUY2"/><!-- only supported with YUY2_AVERAGING -->
     </enum>
     <enum name="TEXTURE_FORMAT" brief="Texture format">
+        <!-- 0 read as all zeros -->
         <value value="1" name="A8"/>
         <value value="2" name="L8"/>
         <value value="3" name="I8"/>
@@ -352,10 +353,17 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="15" name="UYVY" brief="YUV 4:2:2 (Alt macropixel ordering)"/>
         <value value="16" name="D16"/>
         <value value="17" name="D24S8"/>
-        <value value="19" name="DXT1" brief="S3 Block Compression 1"/>
+        <!-- 18 reads as all ones -->
+        <value value="19" name="DXT1" brief="S3 Block Compression 1">
+            <doc>DXT1: Unknown tiling.</doc>
+        </value>
         <value value="20" name="DXT2_DXT3" brief="S3 Block Compression 2"/>
-        <value value="21" name="DXT4_DXT5" brief="S3 Block Compression 3"/>
+        <value value="21" name="DXT4_DXT5" brief="S3 Block Compression 3">
+            <doc>DXT4/DXT5 compressed textures are stored untiled.</doc>
+        </value>
+        <!-- 22-29 read as all zeros -->
         <value value="30" name="ETC1" brief="Ericsson Texture Compression"/>
+        <!-- 31 read as all ones -->
     </enum>
     <enum name="TEXTURE_FORMAT_EXT" brief="Extended texture format">
         <value value="0" name="NONE"/>
@@ -373,13 +381,20 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="3" name="ANISOTROPIC"/><!-- Only supported if HALTI0 feature bit set -->
     </enum>
     <enum name="TEXTURE_TYPE">
+        <!-- 0 shows up as black -->
+        <!-- 1 crashes GPU -->
         <value value="2" name="2D"/>
+        <!-- 3 crashes GPU -->
+        <!-- 4 crashes GPU -->
         <value value="5" name="CUBE_MAP"/>
+        <!-- 6 crashes GPU -->
+        <!-- 7 crashes GPU -->
     </enum>
     <enum name="TEXTURE_WRAPMODE">
         <value value="0" name="REPEAT"/>
         <value value="1" name="MIRRORED_REPEAT"/>
         <value value="2" name="CLAMP_TO_EDGE"/>
+        <!-- 3 seems to be same as REPEAT -->
     </enum>
     <enum name="TEXTURE_FACE">
         <doc>Offset into texture memory for cube map face</doc>
@@ -1294,11 +1309,26 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x0080C" name="TEMP_REGISTER_CONTROL" brief="Temporary register control" value="0x00000000">
             <bitfield high="5" low="0" name="NUM_TEMPS" type="uint" brief="Number of temporary registers"/>
         </reg32>
-        <reg32 offset="0x00810" name="OUTPUT" value="0x00000000" length="4" stride="4">
-            <bitfield high="15" low="0" name="UNK0" type="uint"/>
-            <bitfield high="31" low="16" name="UNK16" type="uint"/>
+        <reg32 offset="0x00810" name="OUTPUT" value="0x00000000" brief="Output routing" length="4" stride="4">
+            <doc>
+                Each bitfield (up to 16 in total) contains a temporary register number that 
+                is used as output at the end of the shader for that varying.
+            </doc>
+            <bitfield high="7" low="0" name="O0" type="uint"/>
+            <bitfield high="15" low="8" name="O1" type="uint"/>
+            <bitfield high="23" low="16" name="O2" type="uint"/>
+            <bitfield high="31" low="24" name="O3" type="uint"/>
         </reg32>
-        <reg32 offset="0x00820" name="INPUT" value="0x00000000" length="4" stride="4"/>
+        <reg32 offset="0x00820" name="INPUT" value="0x00000000" brief="Input routing" length="4" stride="4">
+            <doc>
+                Each bitfield (up to 16 in total) contains a temporary register number that 
+                is assigned the input for that attribute at the beginning of shader execution.
+            </doc>
+            <bitfield high="7" low="0" name="I0" type="uint"/>
+            <bitfield high="15" low="8" name="I1" type="uint"/>
+            <bitfield high="23" low="16" name="I2" type="uint"/>
+            <bitfield high="31" low="24" name="I3" type="uint"/>
+        </reg32>
         <reg32 offset="0x00830" name="LOAD_BALANCING" value="0x00000000"/>
         <reg32 offset="0x00834" name="PERF_COUNTER" brief="Performance counter control"/>
         <reg32 offset="0x00838" name="START_PC" value="0x00000000"/>
@@ -1381,7 +1411,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00A38" name="LINE_UNK00A38" value="0x00000000"/>
         <reg32 offset="0x00A3C" name="LINE_UNK00A3C" value="0x00000000"/>
         <reg32 offset="0x00A40" name="SHADER_ATTRIBUTES" value="0x00000000" length="10" stride="4">
-            <doc>One flags word per shader attribute</doc>
+            <doc>Flags word per shader attribute</doc>
             <bitfield high="7" low="0" name="UNK0"/>
             <bitfield high="15" low="8" name="UNK8"/>
         </reg32>
@@ -1395,8 +1425,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00C04" name="SCISSOR_TOP" value="0x00000000" type="fixedp"/>
         <reg32 offset="0x00C08" name="SCISSOR_RIGHT" value="0x45000000" type="fixedp"/>
         <reg32 offset="0x00C0C" name="SCISSOR_BOTTOM" value="0x45000000" type="fixedp"/>
-        <reg32 offset="0x00C10" name="DEPTH_SCALE" value="0x00000000"/>
-        <reg32 offset="0x00C14" name="DEPTH_BIAS" value="0x00000000"/>
+        <reg32 offset="0x00C10" name="DEPTH_SCALE" value="0x00000000" type="float"/>
+        <reg32 offset="0x00C14" name="DEPTH_BIAS" value="0x00000000" type="float"/>
         <reg32 offset="0x00C18" name="LAST_PIXEL_ENABLE" value="0x00000000"><doc>Always disabled for OpenGL</doc></reg32>
         <reg32 offset="0x00C1C" name="UNK00C1C" value="0x42000000"/>
         <reg32 offset="0x00C20" name="CLIP_RIGHT" value="0x00000000" type="fixedp"/>
@@ -1798,9 +1828,23 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield high="19" low="10" name="HEIGHT" type="fixedp"/>
     </bitset>
     <bitset name="TE_SAMPLER_LOD_CONFIG" inline="yes">
-        <bitfield high="10" low="1" name="MAX" type="fixedp" brief="Maximum LOD level"/>
-        <bitfield high="20" low="11" name="MIN" type="fixedp" brief="Minimum LOD level"/>
-        <bitfield high="30" low="21" name="BIAS" type="fixedp" brief="LOD bias"/>
+        <bitfield pos="0" name="BIAS_ENABLE" brief="Enable LOD bias"/>
+        <bitfield high="10" low="1" name="MAX" type="fixedp" brief="Maximum LOD level">
+            <doc>
+            This fixed-point value is the maximum LOD level. It can be a fractional value, up to the number of defined mipmaps.
+            </doc>
+        </bitfield>
+        <bitfield high="20" low="11" name="MIN" type="fixedp" brief="Minimum LOD level">
+            <doc>
+            This fixed-point value is the minimum LOD level. It can be a fractional value.
+            </doc>
+        </bitfield>
+        <bitfield high="30" low="21" name="BIAS" type="fixedp" brief="LOD bias">
+            <doc>
+            This fixed-point value is added to the computed LOD level. It appears that it can also be 
+            negative by using two's complement arithmetic.
+            </doc>
+        </bitfield>
     </bitset>
     <bitset name="TE_SAMPLER_CONFIG1" inline="yes">
         <bitfield high="4" low="0" name="FORMAT_EXT" type="TEXTURE_FORMAT_EXT"/>

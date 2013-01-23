@@ -5,8 +5,23 @@ if [ -z "$DEMO" ]; then
     DEMO="fbtest"
     echo "Defaulting to ${DEMO}"
 fi
-ARG=/data/mine/shader.bin
+if [[ "$DEMO" == "ps_sandbox_etna" || "$DEMO" == "etna_test" ]]; then
+    ARG="/data/mine/shader.bin"
+    ../../tools/asm.py ../../rnndb/isa.xml sandbox.asm -o shader.bin
+    [ $? -ne 0 ] && exit
+    adb push shader.bin ${ARG}
+fi
+if [[ "$DEMO" == "mip_cube" ]]; then
+    #TEX="mipdxt1"
+    #TEX="test_image-dxt3"
+    TEX="mipdxt5"
+    #TEX="test_image-dxt1a"
+    #TEX="test_image-dxt1c"
+    adb push ../resources/${TEX}.dds /mnt/sdcard
+    ARG="/mnt/sdcard/${TEX}.dds"
+fi
 make ${DEMO}
+[ $? -ne 0 ] && exit
 adb push ${DEMO} /data/mine
 adb shell "/data/mine/${DEMO} ${ARG}"
 #adb pull /mnt/sdcard/egl2.fdr .
