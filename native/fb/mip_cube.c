@@ -263,6 +263,7 @@ int main(int argc, char **argv)
     if(!dds_load("/mnt/sdcard/miprgba.dds", &dds))
     {
         printf("Error loading texture\n");
+        exit(1);
     }
 
     if(etna_vidmem_alloc_linear(&rt, rt_size, gcvSURF_RENDER_TARGET, gcvPOOL_DEFAULT, true)!=ETNA_OK ||
@@ -315,8 +316,7 @@ int main(int argc, char **argv)
      * and simply submit them at once. Especially for consecutive states and masked stated this could be a big win
      * in DMA command buffer size. */
 
-    //for(int frame=0; frame<1000; ++frame)
-    int frame = 257;
+    for(int frame=0; frame<1000; ++frame)
     {
         printf("*** FRAME %i ****\n", frame);
         /* XXX part of this can be put outside the loop, but until we have usable context management
@@ -556,21 +556,14 @@ int main(int argc, char **argv)
         esMatrixLoadIdentity(&modelviewprojection);
         esMatrixMultiply(&modelviewprojection, &modelview, &projection);
 
-        float normal[9]; /* normal transformation matrix */
-        normal[0] = modelview.m[0][0];
-        normal[1] = modelview.m[0][1];
-        normal[2] = modelview.m[0][2];
-        normal[3] = modelview.m[1][0];
-        normal[4] = modelview.m[1][1];
-        normal[5] = modelview.m[1][2];
-        normal[6] = modelview.m[2][0];
-        normal[7] = modelview.m[2][1];
-        normal[8] = modelview.m[2][2];
+        ESMatrix inverse, normal; /* compute inverse transpose normal transformation matrix */
+        esMatrixInverse3x3(&inverse, &modelview);
+        esMatrixTranspose(&normal, &inverse);
         
         etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(0), 16, (uint32_t*)&modelviewprojection.m[0][0]);
-        etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(16), 3, (uint32_t*)&normal[0]); /* u4.xyz */
-        etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(20), 3, (uint32_t*)&normal[3]); /* u5.xyz */
-        etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(24), 3, (uint32_t*)&normal[6]); /* u6.xyz */
+        etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(16), 3, (uint32_t*)&normal.m[0][0]); /* u4.xyz */
+        etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(20), 3, (uint32_t*)&normal.m[1][0]); /* u5.xyz */
+        etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(24), 3, (uint32_t*)&normal.m[2][0]); /* u6.xyz */
         etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(28), 16, (uint32_t*)&modelview.m[0][0]);
         etna_set_state_f32(ctx, VIVS_VS_UNIFORMS(19), 2.0); /* u4.w */
         etna_set_state_f32(ctx, VIVS_VS_UNIFORMS(23), 20.0); /* u5.w */
@@ -578,7 +571,7 @@ int main(int argc, char **argv)
         etna_set_state_f32(ctx, VIVS_VS_UNIFORMS(45), 0.5); /* u11.y */
         etna_set_state_f32(ctx, VIVS_VS_UNIFORMS(44), 1.0); /* u11.x */
 
-        etna_set_state_f32(ctx, VIVS_PS_UNIFORMS(0), 3.0); /* u0.x */
+        etna_set_state_f32(ctx, VIVS_PS_UNIFORMS(0), 1.0); /* u0.x */
 
         etna_set_state(ctx, VIVS_FE_VERTEX_STREAM_BASE_ADDR, vtx->address); /* ADDR_E */
         etna_set_state(ctx, VIVS_FE_VERTEX_STREAM_CONTROL, 
@@ -682,9 +675,10 @@ int main(int argc, char **argv)
         fb_set_buffer(&fb, backbuffer);
         backbuffer = 1-backbuffer;
     }
-    printf("%p\n", fb.logical[1-backbuffer]);
+#if 0
     bmp_dump32(fb.logical[1-backbuffer], width, height, false, "/mnt/sdcard/fb.bmp");
     printf("Dump complete\n");
+#endif
     
     etna_free(ctx);
     viv_close();

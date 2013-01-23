@@ -506,21 +506,14 @@ int main(int argc, char **argv)
         esMatrixLoadIdentity(&modelviewprojection);
         esMatrixMultiply(&modelviewprojection, &modelview, &projection);
 
-        float normal[9]; /* normal transformation matrix */
-        normal[0] = modelview.m[0][0];
-        normal[1] = modelview.m[0][1];
-        normal[2] = modelview.m[0][2];
-        normal[3] = modelview.m[1][0];
-        normal[4] = modelview.m[1][1];
-        normal[5] = modelview.m[1][2];
-        normal[6] = modelview.m[2][0];
-        normal[7] = modelview.m[2][1];
-        normal[8] = modelview.m[2][2];
+        ESMatrix inverse, normal; /* compute inverse transpose normal transformation matrix */
+        esMatrixInverse3x3(&inverse, &modelview);
+        esMatrixTranspose(&normal, &inverse);
         
         etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(0), 16, (uint32_t*)&modelviewprojection.m[0][0]);
-        etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(16), 3, (uint32_t*)&normal[0]); /* u4.xyz */
-        etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(20), 3, (uint32_t*)&normal[3]); /* u5.xyz */
-        etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(24), 3, (uint32_t*)&normal[6]); /* u6.xyz */
+        etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(16), 3, (uint32_t*)&normal.m[0][0]); /* u4.xyz */
+        etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(20), 3, (uint32_t*)&normal.m[1][0]); /* u5.xyz */
+        etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(24), 3, (uint32_t*)&normal.m[2][0]); /* u6.xyz */
         etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(28), 16, (uint32_t*)&modelview.m[0][0]);
         etna_set_state(ctx, VIVS_FE_VERTEX_STREAM_BASE_ADDR, vtx->address); /* ADDR_E */
         etna_set_state(ctx, VIVS_FE_VERTEX_STREAM_CONTROL, 

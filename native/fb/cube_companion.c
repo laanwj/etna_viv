@@ -32,7 +32,7 @@
  * - Anti-aliasing (MSAA)
  *
  * Still TODO:
- * - Mipmapping
+ * - Mipmapping (hw generation, if possible)
  * - Cube map textures
  * - Decrease verbosity by grouping often-used commands
  */
@@ -63,7 +63,7 @@
 
 #include "companion.h"
 
-#define TEST_PATTERN /* Upload test pattern instead of texture */
+//#define TEST_PATTERN /* Upload test pattern instead of texture */
 //#define EXTRA_DELAYS /* Insert extra delays (that blob does but appear unnecessary on my hw for this demo) */
 #define INDEXED /* Used indexed rendering */
 #define INDEX_BUFFER_SIZE 0x8000
@@ -512,7 +512,7 @@ int main(int argc, char **argv)
         /* Now load the shader itself */
         etna_set_state_multi(ctx, VIVS_VS_INST_MEM(0), vs_size/4, vs);
         etna_set_state(ctx, VIVS_RA_CONTROL, 0x3);
-        etna_set_state_f32(ctx, VIVS_PS_UNIFORMS(0), 3.0); /* u0.x */
+        etna_set_state_f32(ctx, VIVS_PS_UNIFORMS(0), 1.0); /* u0.x */
         etna_set_state_multi(ctx, VIVS_PS_END_PC, 2, (uint32_t[]){
                 /* VIVS_PS_END_PC */ ps_size/16,
                 /* VIVS_PS_OUTPUT_REG */ 0x1});
@@ -560,21 +560,14 @@ int main(int argc, char **argv)
         ESMatrix modelviewprojection;
         esMatrixLoadIdentity(&modelviewprojection);
         esMatrixMultiply(&modelviewprojection, &modelview, &projection);
-        float normal[9]; /* normal transformation matrix (XXX simply taking the upper left of model-view, should ideally also normalize to get rid of scaling) */
-        normal[0] = modelview.m[0][0];
-        normal[1] = modelview.m[0][1];
-        normal[2] = modelview.m[0][2];
-        normal[3] = modelview.m[1][0];
-        normal[4] = modelview.m[1][1];
-        normal[5] = modelview.m[1][2];
-        normal[6] = modelview.m[2][0];
-        normal[7] = modelview.m[2][1];
-        normal[8] = modelview.m[2][2];
+        ESMatrix inverse, normal; /* compute inverse transpose normal transformation matrix */
+        esMatrixInverse3x3(&inverse, &modelview);
+        esMatrixTranspose(&normal, &inverse);
         
         etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(0), 16, (uint32_t*)&modelviewprojection.m[0][0]);
-        etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(16), 3, (uint32_t*)&normal[0]); /* u4.xyz */
-        etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(20), 3, (uint32_t*)&normal[3]); /* u5.xyz */
-        etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(24), 3, (uint32_t*)&normal[6]); /* u6.xyz */
+        etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(16), 3, (uint32_t*)&normal.m[0][0]); /* u4.xyz */
+        etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(20), 3, (uint32_t*)&normal.m[1][0]); /* u5.xyz */
+        etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(24), 3, (uint32_t*)&normal.m[2][0]); /* u6.xyz */
         etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(28), 16, (uint32_t*)&modelview.m[0][0]);
 #ifdef INDEXED
         etna_set_state(ctx, VIVS_FE_INDEX_STREAM_BASE_ADDR, idx->address);
