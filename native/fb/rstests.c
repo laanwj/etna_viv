@@ -210,6 +210,7 @@ int main(int argc, char **argv)
       
         etna_finish(ctx);
 
+#if 0
         /* manually fill, to figure out tiling pattern */
         for(int x=0; x<16384/4; ++x)
         {
@@ -219,6 +220,7 @@ int main(int argc, char **argv)
             ((uint32_t*)(rt->logical + 16384*6))[x] = (a & 0xFF) | ((b & 0xFF) << 8) | ((c & 0xFF) << 16);
             printf("%08x\n", (a & 0xFF) | ((b & 0xFF) << 8) | ((c & 0xFF) << 16));
         }
+#endif
 
         /* Copy image to screen */
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
