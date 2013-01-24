@@ -1,5 +1,35 @@
-Devices
-=======================
+Kernel driver
+==============
+
+Module parameters
+------------------
+
+The exact module parameters available depend on the kernel driver version
+(see respective `gc_hal_kernel_driver.c`). Important initialisation parameters are,
+along with the values on my device:
+
+    baseAddress     0           Physical memory base address
+    signal          48          Realtime signal to use for kernel-user communication (only used if USE_NEW_LINUX_SIGNAL)
+    bankSize        16777216    Bank size for video memory allocation (16777216 is the usual value)
+    contiguousBase  0x78000000  Start physical memory address for "contiguous memory" (unified gpu-cpu memory)
+    contiguousSize  0x08000000  Size of "contiguous memory" in bytes. This will be exclusive reserved for the driver from the memory available on the device!
+    registerMemSize 16384       Size of MMIO area
+    registerMemBase 0x10120000  Base address of MMIO area
+    irqLine         41          IRQ line used for signals from GPU
+    major           199         Major device node for /dev/galcore
+
+Most important to get right are registerMemSize, registerMemBase and irqLine as these allow the driver to find and
+communicate with the GPU hardware. They depend on the board, not on the GPU. For example, on a CuBox these settings are:
+    
+    irqLine         42
+    registerMemBase 0xf1840000
+    contiguousBase  0x08000000
+
+The `dove` (cubox) driver also has a `gpu_frequency` parameter that sets the AXICLK/GCCLK clock at startup,
+if compiled with `ENABLE_GPU_CLOCK_BY_DRIVER`. Some devices may need this, although not the CuBox itself (it is disabled in the makefile).
+
+User to kernel interface
+========================
 
 At startup, the application connects to galcore device using `open` with the device
 
@@ -105,7 +135,11 @@ The following structure fields of `gcoCMDBUF` are used by the kernel:
 
 User signal API
 ----------------
-Command `USER_SIGNAL` is used for synchronization signals between the kernel and userspace driver.
+Command `USER_SIGNAL` is used for synchronization signals between the kernel and userspace driver. 
+
+Note: the contents in this section only apply as-is if the kernel was *not* compiled with `USE_NEW_LINUX_SIGNAL`. If this
+flag was set, then a posix real-time signal will be used to notify the process of incoming signals, and the 
+`USER_SIGNAL_WAIT` is a no-op.
 
 The subcommands are:
 

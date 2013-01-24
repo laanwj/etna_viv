@@ -37,7 +37,6 @@ Framebuffer tests
 ------------------
 
 ![cube_rotate output](https://raw.github.com/laanwj/etna_viv/master/native/replay/cube_replay.png)
-
 ![cube_companion output](https://raw.github.com/laanwj/etna_viv/master/native/replay/cube_companion_replay.png)
 
 ![mip_cube output](https://raw.github.com/laanwj/etna_viv/master/doc/images/mipmap.png)
@@ -66,6 +65,9 @@ the proof-of-concept `etna` command stream building API.
 - `mip_cube`: Rotating cube with a mipmapped texture loaded from a `dds` file. This texture has a different 
   color and number on each mipmap level, to explicitly show interpolation between mipmap levels as the surface 
   goes nearer or farther from the camera.
+
+  - Mipmapping
+  - DXT1 / DXT3 / DXT5 / ETC1 compressed textures
 
 If you are executing these demos on an Android device, make sure that you are root, otherwise the framebuffer
 is not accessible.
@@ -196,6 +198,8 @@ Three GPL kernel driver versions, `gc600_driver_dove`, `v2` and `v4`, are provid
 interface, and the hardware at a basic level.
 
 As open source drivers for the kernel are available, there are currently no plans to write a DRM/DRI kernel driver for Vivante.
+(There may be other reasons to do this anyway, such as allowing the driver to work without losing a fixed 128MB amount of memory
+to the GPU)
 
 Envytools fork
 ---------------
@@ -235,7 +239,7 @@ Run make in `native/replay` and `native/egl` separately.
 Compatibility
 ================
 
-My primary development device is an Android tablet based on Rockchip RK2918, containing a GC800 GPU.
+Wladimir's primary development device is an Android tablet based on Rockchip RK2918, containing a GC800 GPU.
 It has pretty ancient Vivante kernel driver 2.2.2.
 
 I do not currently have a device with a newer chip or driver, so every statement about those devices
@@ -252,14 +256,19 @@ some modifications to the build system may be necessary to make it compatible. L
 The command stream on different device GCxxx variants will also likely be slightly different; the features bit system
 allows for a ton of slightly different chips. When porting it, look for:
 
-- Tile size for textures and render targets (this may result in messed-up rendering and/or broken textures)
-
 - Number of bits per tile (2 on my hw), depends on `2BIT_PER_TILE` feature flag
 
 - depth buffer (hierarchical or normal)
 
 - location of shader memory in state space (will be at 0x0C000/0x08000 or 0x20000 for recent models with more than
      256 shader instructions support)
+
+Miscellaneous
+=============
+There is currently no mailing list for this project, and looking at other GPU reverse engineering projects the mailing lists
+usually see very little traffic, so I won't bother.
+
+We usually hang out in `#lima` on `irc.freenode.net`.
 
 Authors
 ========

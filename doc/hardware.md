@@ -300,29 +300,46 @@ RGBA/RGBx textures and render targets are stored in a 4x4 tiled format.
 The stride of these tiled surfaces is the number of bytes between one row of tiles and the next. So for a surface of width
 512, it is `(512/4)*16*4=8192`.
 
-Render buffers
+Supertiling
 -------------------
+
+![supertile ordering](https://raw.github.com/laanwj/etna_viv/master/doc/images/supertile.png)
+
 It appears that the blob always pads render buffers pixel sizes to a multiple of 64, ie, a width of 400 becomes 448 and 800 becomes 832.
+This is because the render buffer is also tiled, albeit differently than the 4x4 tiling format of the textures. 
+On a fine level, every tile is the same as for normal tiled surfaces:
 
-The render buffer is also tiled, albeit differently than the 4x4 tiling format of the textures. Supertiled format = size 64x64 tiles.
+     0  1  2  3
+     4  5  6  7
+     8  9 10 11
+    12 13 14 15
 
-Original rendering:
+However, as the name 'supertiled' implies, the tiles themselves are also tiled, to be specific in this pattern:
 
-![Original rendering](https://raw.github.com/laanwj/etna_viv/master/doc/images/fsaa_result.png)
+    000 001  008 009  016 017  024 025  032 033  040 041  048 049  056 057
+    002 003  010 011  018 019  026 027  034 035  042 043  050 051  058 059
+    004 005  012 013  020 021  028 029  036 037  044 045  052 053  060 061
+    006 007  014 015  022 023  030 031  038 039  046 047  054 055  062 063
 
-Video memory representation:
+    064 065  072 073  080 081  088 089  096 097  104 105  112 113  120 121
+    066 067  074 075  082 083  090 091  098 099  106 107  114 115  122 123
+    068 069  076 077  084 085  092 093  100 101  108 109  116 117  124 125
+    070 071  078 079  086 087  094 095  102 103  110 111  118 119  126 127
 
-- No FSAA:
+    128 129  136 137  144 145  152 153  160 161  168 169  176 177  184 185
+    130 131  138 139  146 147  154 155  162 163  170 171  178 179  186 187
+    132 133  140 141  148 149  156 157  164 165  172 173  180 181  188 189
+    134 135  142 143  150 151  158 159  166 167  174 175  182 183  190 191
 
-![No FSAA](https://raw.github.com/laanwj/etna_viv/master/doc/images/fsaa1.png)
+    192 193  200 201  208 209  216 217  224 225  232 233  240 241  248 249
+    194 195  202 203  210 211  218 219  226 227  234 235  242 243  250 251
+    196 197  204 205  212 213  220 221  228 229  236 237  244 245  252 253
+    198 199  206 207  214 215  222 223  230 231  238 239  246 247  254 255
 
-- 2X FSAA:
+In total this results in size 64x64 tiles.
 
-![2X FSAA](https://raw.github.com/laanwj/etna_viv/master/doc/images/fsaa2.png)
-
-- 4X FSAA:
-
-![4X FSAA](https://raw.github.com/laanwj/etna_viv/master/doc/images/fsaa4.png)
+The GPU can render to normal tiled surfaces (such as used by textures) as well as supertiled surfaces. However,
+rendering to supertiled surfaces is likely faster.
 
 Stride, as used for resolve operations, is for a row of tiles; 0x1c00 for width 448 (originally 400), 
 0x3400 for width 832 (originally 800).

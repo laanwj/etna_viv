@@ -333,6 +333,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="5" name="X8R8G8B8"/>
         <value value="6" name="A8R8G8B8"/>
         <value value="7" name="YUY2"/><!-- only supported with YUY2_AVERAGING -->
+        <!-- 8..15 do show color and don't result in GPU crashes directly, also they don't 
+             seem to be direct aliases of 0..7, but it needs to be figured out if 
+             they're useful or just formats in range 0..7
+         -->
     </enum>
     <enum name="TEXTURE_FORMAT" brief="Texture format">
         <!-- 0 read as all zeros -->
@@ -362,8 +366,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <doc>DXT4/DXT5 compressed textures are stored untiled.</doc>
         </value>
         <!-- 22-29 read as all zeros -->
-        <value value="30" name="ETC1" brief="Ericsson Texture Compression"/>
-        <!-- 31 read as all ones -->
+        <value value="30" name="ETC1" brief="Ericsson Texture Compression">
+            <doc>ETC compressed textures are stored untiled.</doc>
+        </value>
+        <!-- 31 read as all zeros -->
     </enum>
     <enum name="TEXTURE_FORMAT_EXT" brief="Extended texture format">
         <value value="0" name="NONE"/>
@@ -772,7 +778,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
     </stripe>
 
-    <!-- PIPE_2D states, see also gcreg.h in gcx project -->
+    <!-- PIPE_2D states, mostly taken from gcreg.h in gcx project -->
     <enum name="DE_FORMAT" brief="2D pixel format">
         <value value="0" name="X4R4G4B4"/>
         <value value="1" name="A4R4G4B4"/>
@@ -1685,6 +1691,18 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             - Tiling / untiling, for normal tiled and supertiled surfaces
             - Swap blue and red channels, flip image in Y
             - Endian swapping
+            - Fill tiles that are marked as 'cleared' in the Tile Status
+
+            The following render target tilings are possible:
+
+                A   B
+                0   0   Linear
+                1   0   Tiled (4x4, like textures)
+                0   1   (same as tiled=0, supertiled=0)
+                1   1   Supertiled (64x64)
+
+             A) tiled: SOURCE_TILED, DEST_TILED in CONFIG word
+             B) supertiled: TILING bit in SOURCE_STRIDE / DEST_STRIDE
         </doc>
         <reg32 offset="0x01600" name="KICKER" brief="Resolve start" value="0x00000000">
             <doc>Write some value to this register to kick off resolver</doc>
@@ -1727,12 +1745,27 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x01630" name="DITHER" value="0x00000000" length="2" stride="4"/>
         <reg32 offset="0x0163C" name="CLEAR_CONTROL" value="0x00000000">
-            <bitfield high="15" low="0" name="BITS" brief="Affects which channels of which tiles are cleared"/>
-            <bitfield high="17" low="16" name="MODE" brief="Enable clearing (disregards source)">
+            <bitfield high="15" low="0" name="BITS" brief="Affects which channels of which tiles are cleared">
+                <doc>
+                    Four groups (per tile) of four bits (per channel) that affect which channels of which tiles are cleared.
+                    In mode 'enabled' only the lower four bits are used, in 'enabled2' all four groups are used.
+
+                    Components that are disabled are not written at all by the clear logic (they keep their old value)
+                    they are not copied from the source.
+                </doc>
+            </bitfield>
+            <bitfield high="17" low="16" name="MODE" brief="Enable clearing">
+                <doc>
+                    Depending on the clear mode, the RS does different things:
+                    - If disabled, it is a copy engine
+                    - If enabled, it fills the target area with FILL_VALUE(0) and disregards the source
+                    - If enabled2, it fills the target area with the four FILL_VALUEs (results in vertical stripes of width 4,
+                       at least with supertiled target) and disregards the source.
+                </doc>
                 <value value="0" name="DISABLED"/>
-                <value value="1" name="ENABLED"/> <!-- is there difference between these modes? -->
-                <value value="2" name="ENABLED2"/>
-                <value value="3" name="ENABLED3"/>
+                <value value="1" name="ENABLED" brief="Clear single value"/>
+                <value value="2" name="ENABLED2" brief="Clear with alternating tile values"/>
+                <value value="3" name="ENABLED3" brief="Clear with alternating tile values"/>
             </bitfield>
         </reg32>
         <reg32 offset="0x01640" name="FILL_VALUE" value="0x00000000" length="4" stride="4"/>
@@ -1753,8 +1786,15 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     </stripe>
     
     <stripe name="TS" brief="Tile Status">
-        <doc>Tile status block contains information about the tiles to be resolved.</doc>
+        <doc>
+        Tile status block contains information about the tiles to be resolved.
+        It is used by the PE (to read/update tile status) as well as the RS (to read tile status).
+        </doc>
         <reg32 offset="0x01654" name="MEM_CONFIG" brief="Memory configuration" value="0x00200000">
+            <doc>
+                Tile status config. Setting this value to 0 disables tile status and makes the resolve
+                work like a normal copy engine.
+            </doc>
             <bitfield pos="0" name="DEPTH_FAST_CLEAR" brief="Clear depth tiles on resolve"/>
             <bitfield pos="1" name="COLOR_FAST_CLEAR" brief="Clear color tiles on resolve"/>
             <bitfield pos="3" name="DEPTH_16BPP"/>

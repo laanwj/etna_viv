@@ -14,9 +14,10 @@ fi
 if [[ "$DEMO" == "mip_cube" ]]; then
     #TEX="mipdxt1"
     #TEX="test_image-dxt3"
-    TEX="mipdxt5"
+    #TEX="mipdxt5"
     #TEX="test_image-dxt1a"
     #TEX="test_image-dxt1c"
+    TEX="lavaetc1"
     adb push ../resources/${TEX}.dds /mnt/sdcard
     ARG="/mnt/sdcard/${TEX}.dds"
 fi

@@ -37,6 +37,7 @@
 #define FMT_DXT1     6
 #define FMT_DXT3     7
 #define FMT_DXT5     8
+#define FMT_ETC1     9
 
 typedef struct _dds_mipmap
 {

@@ -36,6 +36,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+//#define DEBUG
+
 //  little-endian, of course
 #define DDS_MAGIC 0x20534444
 
@@ -82,6 +84,7 @@
 #define D3DFMT_DXT3     MAKEFOURCC('D','X','T','3')    //  DXT3 compression texture format 
 #define D3DFMT_DXT4     MAKEFOURCC('D','X','T','4')    //  DXT4 compression texture format 
 #define D3DFMT_DXT5     MAKEFOURCC('D','X','T','5')    //  DXT5 compression texture format 
+#define D3DFMT_ETC1     MAKEFOURCC('E','T','C','1')    //  Custom (Ericcson Texture Compression)
 
 struct _DDS_pixelformat {
     unsigned int    dwSize;
@@ -141,7 +144,8 @@ static DdsLoadInfo loadInfo[] = {
     [FMT_R5G6B5]   = {false, 1, 2, 16, 0x0000f800, 0x000007e0, 0x0000001f, 0x00000000},
     [FMT_DXT1]     = {true, 4, 8, 0, D3DFMT_DXT1},
     [FMT_DXT3]     = {true, 4, 16, 0, D3DFMT_DXT3},
-    [FMT_DXT5]     = {true, 4, 16, 0, D3DFMT_DXT5}
+    [FMT_DXT5]     = {true, 4, 16, 0, D3DFMT_DXT5},
+    [FMT_ETC1]     = {true, 4, 8, 0, D3DFMT_ETC1}
 };
 #define NUM_FORMATS (sizeof(loadInfo) / sizeof(DdsLoadInfo))
 
@@ -185,7 +189,7 @@ bool dds_load_file(FILE *f, dds_texture **out)
     fread( &hdr, sizeof( hdr ), 1, f );
     assert( hdr.dwMagic == DDS_MAGIC );
     assert( hdr.dwSize == 124 );
-  
+
     if( hdr.dwMagic != DDS_MAGIC || hdr.dwSize != 124 ||
       !(hdr.dwFlags & DDSD_PIXELFORMAT) || !(hdr.dwFlags & DDSD_CAPS) )
     {
@@ -196,7 +200,6 @@ bool dds_load_file(FILE *f, dds_texture **out)
     unsigned int ySize = hdr.dwHeight;
     assert( !(xSize & (xSize-1)) );
     assert( !(ySize & (ySize-1)) );
-
     int fmt = find_fmt(&hdr.sPixelFormat);
     if(fmt == -1) {
 #ifdef DEBUG
@@ -214,11 +217,19 @@ bool dds_load_file(FILE *f, dds_texture **out)
     x = xSize;
     y = ySize;
     mipMapCount = (hdr.dwFlags & DDSD_MIPMAPCOUNT) ? hdr.dwMipMapCount : 1;
+#ifdef DEBUG
+    printf("Base size: %ix%i, %i mips\n", x, y, mipMapCount);
+#endif
 
     // size of first mip
     size_t size = max(li->divSize, x)/li->divSize * max(li->divSize, y)/li->divSize * li->blockBytes;
     if((hdr.dwFlags & DDSD_LINEARSIZE) && (hdr.dwPitchOrLinearSize != size))
+    {
+#ifdef DEBUG
+        printf("Size mismatch: %i versus %i\n", hdr.dwPitchOrLinearSize, size);
+#endif
         goto failure;
+    }
     if((hdr.dwFlags & DDSD_PITCH) && (hdr.dwPitchOrLinearSize != x*li->blockBytes))
         goto failure;
     
@@ -272,7 +283,13 @@ failure:
 bool dds_load(const char *filename, dds_texture **out)
 {
     FILE *f = fopen(filename, "rb");
-    if(f == NULL) return false;
+    if(f == NULL) 
+    {
+#ifdef DEBUG
+        printf("Cannot open texture file\n");
+#endif
+        return false;
+    }
     bool ret = dds_load_file(f, out);
     fclose(f);
     return ret;

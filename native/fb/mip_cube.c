@@ -297,7 +297,7 @@ int main(int argc, char **argv)
                     dds->slices[0][ix].data, dds->slices[0][ix].width, dds->slices[0][ix].height, dds->slices[0][ix].stride, 4);
         }
         tex_format = TEXTURE_FORMAT_X8R8G8B8;
-    } else if(dds->fmt == FMT_DXT1 || dds->fmt == FMT_DXT3 || dds->fmt == FMT_DXT5)
+    } else if(dds->fmt == FMT_DXT1 || dds->fmt == FMT_DXT3 || dds->fmt == FMT_DXT5 || dds->fmt == FMT_ETC1)
     {
         printf("Loading compressed texture\n");
         memcpy(tex->logical, dds->data, dds->size);
@@ -306,6 +306,7 @@ int main(int argc, char **argv)
         case FMT_DXT1: tex_format = TEXTURE_FORMAT_DXT1;
         case FMT_DXT3: tex_format = TEXTURE_FORMAT_DXT2_DXT3;
         case FMT_DXT5: tex_format = TEXTURE_FORMAT_DXT4_DXT5;
+        case FMT_ETC1: tex_format = TEXTURE_FORMAT_ETC1;
         }
     } else
     {
@@ -336,13 +337,10 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    /* XXX how important is the ordering? I suppose we could group states (except the flushes, kickers, semaphores etc)
-     * and simply submit them at once. Especially for consecutive states and masked stated this could be a big win
-     * in DMA command buffer size. */
-
     for(int frame=0; frame<1000; ++frame)
     {
-        printf("*** FRAME %i ****\n", frame);
+        if(frame%50 == 0)
+            printf("*** FRAME %i ****\n", frame);
         /* XXX part of this can be put outside the loop, but until we have usable context management
          * this is safest.
          */
@@ -465,9 +463,7 @@ int main(int argc, char **argv)
                 0xbeebbeeb);
         /** Done */
         
-        etna_set_state(ctx, VIVS_TS_COLOR_CLEAR_VALUE, 0xff7f7f7f);
-        etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR);
-        etna_set_state(ctx, VIVS_TS_COLOR_CLEAR_VALUE, 0xff7f7f7f);
+        etna_set_state(ctx, VIVS_TS_COLOR_CLEAR_VALUE, 0xff303030);
         etna_set_state(ctx, VIVS_TS_COLOR_STATUS_BASE, rt_ts->address); /* ADDR_B */
         etna_set_state(ctx, VIVS_TS_COLOR_SURFACE_BASE, rt->address); /* ADDR_A */
         etna_set_state(ctx, VIVS_TS_MEM_CONFIG, 
@@ -636,9 +632,6 @@ int main(int argc, char **argv)
         {
             etna_draw_primitives(ctx, PRIMITIVE_TYPE_TRIANGLE_STRIP, prim*4, 2);
         }
-        etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
-
-        etna_flush(ctx);
 
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
         etna_set_state(ctx, VIVS_RS_CONFIG,
@@ -659,9 +652,6 @@ int main(int argc, char **argv)
                 VIVS_RS_WINDOW_SIZE_WIDTH(padded_width));
         etna_set_state(ctx, VIVS_RS_KICKER, 0xbeebbeeb);
 
-        /* Submit second command buffer */
-        etna_flush(ctx);
-
         etna_set_state(ctx, VIVS_RS_FLUSH_CACHE, VIVS_RS_FLUSH_CACHE_FLUSH);
 
         etna_set_state(ctx, VIVS_TS_COLOR_STATUS_BASE, rt_ts->address); /* ADDR_B */
@@ -675,8 +665,7 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_PE_COLOR_FORMAT, 
                 ETNA_MASKED_BIT(VIVS_PE_COLOR_FORMAT_PARTIAL, 0));
 
-        /* Submit third command buffer, wait for pixel engine to finish */
-        etna_finish(ctx);
+        etna_stall(ctx, SYNC_RECIPIENT_FE, SYNC_RECIPIENT_PE);
 
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
         etna_set_state(ctx, VIVS_RS_CONFIG,
@@ -697,13 +686,17 @@ int main(int argc, char **argv)
                 VIVS_RS_WINDOW_SIZE_HEIGHT(height) |
                 VIVS_RS_WINDOW_SIZE_WIDTH(width));
         etna_set_state(ctx, VIVS_RS_KICKER, 0xbeebbeeb);
+        
+        /* wouldn't need a finish here if we can simply swap buffers on a signal
+         * XXX add a "Framebuffer switch" thread?
+         */
         etna_finish(ctx);
 
         /* switch buffers */
         fb_set_buffer(&fb, backbuffer);
         backbuffer = 1-backbuffer;
     }
-#if 0
+#ifdef DUMP
     bmp_dump32(fb.logical[1-backbuffer], width, height, false, "/mnt/sdcard/fb.bmp");
     printf("Dump complete\n");
 #endif
