@@ -99,6 +99,10 @@ int viv_user_signal_signal(int sig_id, int state);
  */
 int viv_user_signal_wait(int sig_id, int wait);
 
+/** Destroy signal created with viv_user_signal_create.
+ */
+int viv_user_signal_destroy(int sig_id);
+
 /** Queue synchronization signal from GPU.
  */
 int viv_event_queue_signal(int sig_id, gceKERNEL_WHERE fromWhere);

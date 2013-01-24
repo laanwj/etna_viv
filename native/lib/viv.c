@@ -281,6 +281,20 @@ int viv_user_signal_wait(int sig_id, int wait)
     return viv_invoke(&id);
 }
 
+int viv_user_signal_destroy(int sig_id)
+{
+    gcsHAL_INTERFACE id = {
+        .command = gcvHAL_USER_SIGNAL,
+        .u = {
+            .UserSignal = {
+                .command = gcvUSER_SIGNAL_DESTROY,
+                .id = sig_id
+            }
+        }
+    };
+    return viv_invoke(&id);
+}
+
 int viv_event_queue_signal(int sig_id, gceKERNEL_WHERE fromWhere)
 {
     /* gcsQUEUE is copied by the kernel, so it does not need to be kept in memory
