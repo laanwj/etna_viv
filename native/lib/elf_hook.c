@@ -10,7 +10,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #include <errno.h>
-//rename standart types for convenience
+//rename standard types for convenience
 #ifdef __x86_64
     #define Elf_Ehdr Elf64_Ehdr
     #define Elf_Shdr Elf64_Shdr
@@ -447,15 +447,22 @@ void *elf_hook(char const *module_filename, void const *module_address, char con
         {
             name_address = (size_t *)(((size_t)module_address) + rel_plt_table[i].r_offset);
             original = (void *)*name_address;
-            mprotect((void *)(((size_t)name_address) & (((size_t)-1) ^ (pagesize - 1))), pagesize, PROT_READ | PROT_WRITE);  //mark a memory page that contains the relocation as writable
+            mprotect((void *)(((size_t)name_address) & (((size_t)-1) ^ (pagesize - 1))), pagesize, PROT_READ | PROT_WRITE | PROT_EXEC);  //mark a memory page that contains the relocation as writable
             *name_address = (size_t)substitution;  //and replace it with the substitutional
-            mprotect((void *)(((size_t)name_address) & (((size_t)-1) ^ (pagesize - 1))), pagesize, PROT_READ | PROT_EXEC);  //mark a memory page that contains the relocation as executable
-
+            // Removing write protection works on some platforms (such as Android), on others the LD linker 
+            // itself uses writability of the plt memory. As security is not a concern here, leave it writable.
+            //mprotect((void *)(((size_t)name_address) & (((size_t)-1) ^ (pagesize - 1))), pagesize, PROT_READ | PROT_EXEC);  //mark a memory page that contains the relocation as executable
+#ifdef DEBUG
+            printf("Replaced %p at %p with %p\n", original, name_address, substitution);
+#endif
             break;  //the target symbol appears in ".rel.plt" only once
         }
 
     if (original)
         return original;
+#ifdef DEBUG
+    printf("non-PIC module: fallback\n");
+#endif
 //we will get here only with 32-bit non-PIC module
     for (i = 0; i < rel_dyn_amount; ++i)  //lookup the ".rel.dyn" table
         if (ELF_R_SYM(rel_dyn_table[i].r_info) == name_index)  //if we found the symbol to substitute in ".rel.dyn"

@@ -44,7 +44,7 @@
 #include "etna_fb.h"
 #include "etna_mem.h"
 
-#include "esUtil.h"
+#include "esTransform.h"
 
 #define VERTEX_BUFFER_SIZE 0x60000
 

@@ -43,11 +43,11 @@ static void
 PrintConfigs(EGLDisplay d)
 {
    EGLConfig configs[MAX_CONFIGS];
-   EGLint numConfigs, i;
+   EGLint numConfigs=0, i;
 
    eglGetConfigs(d, configs, MAX_CONFIGS, &numConfigs);
 
-   printf("Configurations:\n");
+   printf("Configurations (%i):\n", numConfigs);
    printf("     bf lv d st colorbuffer dp st  ms    vis   supported\n");
    printf("  id sz  l b ro  r  g  b  a th cl ns b    id   surfaces \n");
    printf("--------------------------------------------------------\n");

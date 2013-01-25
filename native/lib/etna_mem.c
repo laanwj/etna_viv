@@ -30,8 +30,7 @@
 int etna_vidmem_alloc_linear(etna_vidmem **mem_out, size_t bytes, gceSURF_TYPE type, gcePOOL pool, bool lock)
 {
     if(mem_out == NULL) return ETNA_INVALID_ADDR;
-    etna_vidmem *mem = malloc(sizeof(etna_vidmem));
-    memset(mem, 0, sizeof(etna_vidmem));
+    etna_vidmem *mem = ETNA_NEW(etna_vidmem);
     if(mem == NULL) return ETNA_OUT_OF_MEMORY;
 
     mem->type = type;
@@ -101,8 +100,7 @@ int etna_vidmem_free(etna_vidmem *mem)
 int etna_usermem_map(etna_usermem **mem_out, void *memory, size_t size)
 {
     if(mem_out == NULL) return ETNA_INVALID_ADDR;
-    etna_usermem *mem = malloc(sizeof(etna_usermem));
-    memset(mem, 0, sizeof(etna_usermem));
+    etna_usermem *mem = ETNA_NEW(etna_usermem);
 
     mem->memory = memory;
     mem->size = size;

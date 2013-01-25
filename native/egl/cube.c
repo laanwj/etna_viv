@@ -20,7 +20,10 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+#define HOOK
+
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <stdbool.h>
 #include <EGL/egl.h>
@@ -32,7 +35,8 @@
 #include <sys/mman.h>
 #include <stdarg.h>
 
-#include "esUtil.h"
+#include "esTransform.h"
+#include "eglutil.h"
 #include "dump_gl_screen.h"
 #include "viv_hook.h"
 
@@ -71,8 +75,9 @@ int main(int argc, char *argv[])
 	GLuint program;
 	GLint ret;
 	GLint width, height;
-
+#ifdef HOOK
         the_hook("/mnt/sdcard/egl2.fdr");
+#endif
 
 	const char *vertex_shader_source =
 	  "uniform mat4 modelviewMatrix;\n"
@@ -249,6 +254,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 	printf("PBuffer: %dx%d\n", width, height);
+        printf("GL Extensions \"%s\"\n", glGetString(GL_EXTENSIONS));
 
 	/* connect the context to the surface */
 	if (!eglMakeCurrent(display, surface, surface, context)) {
@@ -426,7 +432,9 @@ int main(int argc, char *argv[])
 	fflush(stdout);
         dump_gl_screen("/sdcard/egl2.bmp", width, height);
 
+#ifdef HOOK
         close_hook();
+#endif
 
 	return 0;
 }

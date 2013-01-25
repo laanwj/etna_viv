@@ -23,7 +23,7 @@ ARM-based:
 - Devices based on Freescale i.MX6 Series (GC2000, GC320, GC355)
 
 MIPS-based:
-- Devices based on Ingenic JZ4770 MIPS SoC (GC860), JZ4760 (GC200, 2D only)
+- Devices based on Ingenic JZ4770 MIPS SoC (GC860), JZ4760 (GC200, 2D only) such as the GCW zero.
 
 See also https://en.wikipedia.org/wiki/Vivante_Corporation
 
@@ -223,17 +223,53 @@ Then generate the headers with
 Building
 =========
 
-Install the Android NDK and define a native build environment, for example like this:
+Android
+---------
+
+To build for an Android device, install the Android NDK and define the cross-build environment by setting
+environment variables, for example like this:
 
     export NDK="/opt/ndk"
     export TOOLCHAIN="/opt/ndk/toolchains/arm-linux-androideabi-4.6/prebuilt/linux-x86"
     export SYSROOT="/opt/ndk/platforms/android-14/arch-arm"
     export PATH="$PATH:$TOOLCHAIN/bin"
 
+    export GCCPREFIX="arm-linux-androideabi-"
+    export CXXABI="armeabi-v7a"
+    export PLATFORM_CFLAGS="--sysroot=${SYSROOT} -DANDROID"
+    export PLATFORM_CXXFLAGS="--sysroot=${SYSROOT} -DANDROID -I${NDK}/sources/cxx-stl/gnu-libstdc++/4.6/include -I${NDK}/sources/cxx-stl/gnu-libstdc++/4.6/libs/${CXXABI}/include"
+    export PLATFORM_LDFLAGS="--sysroot=${SYSROOT} -L${NDK}/sources/cxx-stl/gnu-libstdc++/4.6/libs/${CXXABI} -lgnustl_static"
+    # Set GC kernel ABI to v2 (important!)
+    export GCABI="v2"
+
 To build the egl samples, you need to copy `libEGL_VIVANTE.so` `libGLESv2_VIVANTE.so` from the device `/system/lib/egl` to
 `native/lib/egl`. This is not needed if you just want to build the replay or etna tests, which do not rely in any way on the
 userspace blob.
 
+Linux
+-------
+
+For Linux ARM cross compile, create a script like this (example for CuBox) to set up the build environment. 
+Don't forget to also copy the EGL/GLES2/KDR headers from some place and put them in a directory `include` under the location
+where the script is installed, and get the `libEGL.so` and `libGLESv2.so` from the device into `lib`:
+
+    DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    export GCCPREFIX="arm-linux-gnueabi-"
+    export PLATFORM_CFLAGS="-I${DIR}/include -D_POSIX_C_SOURCE=200809 -D_GNU_SOURCE"
+    export PLATFORM_CXXFLAGS="-I${DIR}/include -D_POSIX_C_SOURCE=200809 -D_GNU_SOURCE"
+    export PLATFORM_LDFLAGS="-ldl -L${DIR}/lib"
+    export PLATFORM_GL_LIBS="-lEGL -lGLESv2 -L${TOP}/lib/egl -Xlinker --allow-shlib-undefined"
+    # Set GC kernel ABI to dove (important!)
+    export GCABI="dove"
+
+If you haven't got the `arm-linux-gnueabi-` bintools, on an Debian/Ubuntu host they can be installed with
+
+    apt-get install gcc-arm-linux-gnueabi g++-arm-linux-gnueabi
+
+On hardfloat targets you should use `gcc-arm-linux-gnueabihf-` instead.
+
+General
+--------
 Run make in `native/replay` and `native/egl` separately.
 
 Compatibility

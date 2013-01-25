@@ -1303,7 +1303,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 
     <!-- PIPE_3D states -->
     <stripe name="VS" brief="Vertex shader states">
-        <doc>The vertex shader to use is configured here.</doc>
+        <doc>The vertex shader to be used for 3D rendering is configured here.</doc>
         <reg32 offset="0x00800" name="END_PC" value="0x00000000" brief="End instruction number">
             <doc>index of last instruction + 1</doc>
         </reg32>
@@ -1477,7 +1477,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     </stripe>
     
     <stripe name="PE" brief="Pixel Engine states">
-        <doc>The Pixel Engine takes care of fragment (pixel) processing.
+        <doc>The Pixel Engine takes care of writing pixels to the framebuffer, doing 
+            blending, depth testing and alpha testing if needed.
 
             Some flags can be set either per group of bits, or all at once, by using masking flags.
             Each group of state flags has a masking flag that when set prevents overwriting the flags in that group.
@@ -1881,8 +1882,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </bitfield>
         <bitfield high="30" low="21" name="BIAS" type="fixedp" brief="LOD bias">
             <doc>
-            This fixed-point value is added to the computed LOD level. It appears that it can also be 
-            negative by using two's complement arithmetic.
+            This fixed-point value is added to the computed LOD level when BIAS_ENABLE is on.
+            It appears that it can also be negative by using two's complement arithmetic.
             </doc>
         </bitfield>
     </bitset>

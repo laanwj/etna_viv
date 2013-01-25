@@ -29,7 +29,7 @@
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
 
-#include "esUtil.h"
+#include "esTransform.h"
 #include "companion.h"
 #include "dump_gl_screen.h"
 #include "viv_hook.h"

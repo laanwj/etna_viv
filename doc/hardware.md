@@ -246,6 +246,34 @@ so in the end it may be slower. XXX this needs to be tested.
 Usually, there is more framebuffer memory than that which is used for the current screen, which causes larger virtual resolution
 to be returned than the physical resolution. Double-buffering is achieved by changing the y-offset within that virtual frame buffer. 
 
+Operations
+========================
+An attempt to figure out which operations can be triggered in the hardware, and what state is used to specify 
+their operation.
+
+- RS: Kick off resolve by writing a value with bit 0 set to `RS_KICKER`. State used:
+  - `RS_*`
+  - `TS_*` (if fast clear enabled through `TS_CONFIG`)
+
+- FE: Kick off 3D rendering by sending command `DRAW_PRIMITIVES` / `DRAW_INDEXED_PRIMITIVES`
+  - `FE_*` (vertex element layout, vertex streams, index stream, ...)
+  - `GL_*` (varyings setup, multisampling)
+  - `TS_*` (to read and update fast clear status for tiles)
+  - `PA_*` primitive assembly
+  - `SE_*` setup engine
+  - `RA_*` rasterizer
+  - `PE_*` pixel engine
+  - `VS_*` vertex shader code + uniforms + linking information
+  - `PS_*` pixel shader code + uniforms + linking information
+  - `(N)TE_*` texture samplers
+  - `SH_*` extra shader code + uniforms
+
+- DE: Kick off 2D rendering by sending command `DRAW_2D`
+  - `DE_*` 2D state
+  - `FE_*` `GL_*` possibly
+
+That's all, folks.
+
 Programming pecularities
 =========================
 

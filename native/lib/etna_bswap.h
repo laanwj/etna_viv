@@ -20,35 +20,39 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-/* Low-level framebuffer query / access */
-#ifndef H_ETNA_FB
-#define H_ETNA_FB
+/* Automatic buffer swapping */
+#ifndef H_ETNA_BUFSWAP
+#define H_ETNA_BUFSWAP
 
-#include <stdint.h>
-#include <linux/fb.h>
+#include <pthread.h>
+#include <stdbool.h>
 
-#define ETNA_FB_MAX_BUFFERS (4)
-typedef struct
-{
-    int fd;
-    int num_buffers;
-    size_t physical[ETNA_FB_MAX_BUFFERS];
-    void *logical[ETNA_FB_MAX_BUFFERS];
-    size_t stride;
-    size_t buffer_stride;
-    struct fb_var_screeninfo fb_var;
-    struct fb_fix_screeninfo fb_fix;
-    void *map;
-} fb_info;
+#define ETNA_BSWAP_NUM_BUFFERS 2
 
-/* Open framebuffer and get information */
-int fb_open(int num, fb_info *out);
+typedef struct _etna_bswap_buffer {
+    pthread_mutex_t available_mutex;
+    pthread_cond_t available_cond;
+    bool is_available;
+    int sig_id_ready;
+} etna_bswap_buffer;
 
-/* Set currently visible buffer id */
-int fb_set_buffer(fb_info *fb, int buffer);
+typedef struct _etna_bswap_buffers {
+    pthread_t thread;
+    int backbuffer, frontbuffer;
+    bool terminate;
 
-/* Close framebuffer */
-int fb_close(fb_info *fb);
+    int (*set_buffer)(void *, int);
+    void *userptr;
+    etna_bswap_buffer buf[ETNA_BSWAP_NUM_BUFFERS];
+} etna_bswap_buffers;
+
+int etna_bswap_create(etna_bswap_buffers **bufs_out, int (*set_buffer)(void *, int), void *userptr);
+
+int etna_bswap_free(etna_bswap_buffers *bufs);
+
+int etna_bswap_wait_available(etna_bswap_buffers *bufs);
+
+int etna_bswap_queue_swap(etna_bswap_buffers *bufs);
 
 #endif
 

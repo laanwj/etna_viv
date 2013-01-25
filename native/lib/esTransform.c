@@ -30,17 +30,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-// ESUtil.c
-//
-//    A utility library for OpenGL ES.  This library provides a
-//    basic common framework for the example applications in the
-//    OpenGL ES 2.0 Programming Guide.
-//
-
-///
-//  Includes
-//
-#include "esUtil.h"
+#include "esTransform.h"
 #include <math.h>
 #include <string.h>
 

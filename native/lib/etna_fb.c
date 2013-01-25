@@ -87,8 +87,8 @@ int fb_open(int num, fb_info *out)
     out->map = mmap(NULL, out->fb_fix.smem_len, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
     printf("    mmap: %p\n", out->map);
 
-    if(out->num_buffers > FB_MAX_BUFFERS)
-        out->num_buffers = FB_MAX_BUFFERS;
+    if(out->num_buffers > ETNA_FB_MAX_BUFFERS)
+        out->num_buffers = ETNA_FB_MAX_BUFFERS;
     for(int idx=0; idx<out->num_buffers; ++idx)
     {
         out->physical[idx] = out->fb_fix.smem_start + idx * out->buffer_stride;
@@ -108,6 +108,12 @@ int fb_set_buffer(fb_info *fb, int buffer)
         printf("Error: failed to run ioctl to pan display: %s\n", strerror(errno));
         return errno;
     }
+    return 0;
+}
+
+int fb_close(fb_info *fb)
+{
+    close(fb->fd);
     return 0;
 }
 

@@ -1,0 +1,3091 @@
+{
+    "_gceCHIPMODEL": {
+        "byte_size": 4,
+        "enumerators": [
+            {
+                "name": "gcv300",
+                "value": 768
+            },
+            {
+                "name": "gcv400",
+                "value": 1024
+            },
+            {
+                "name": "gcv410",
+                "value": 1040
+            },
+            {
+                "name": "gcv450",
+                "value": 1104
+            },
+            {
+                "name": "gcv500",
+                "value": 1280
+            },
+            {
+                "name": "gcv530",
+                "value": 1328
+            },
+            {
+                "name": "gcv600",
+                "value": 1536
+            },
+            {
+                "name": "gcv700",
+                "value": 1792
+            },
+            {
+                "name": "gcv800",
+                "value": 2048
+            },
+            {
+                "name": "gcv860",
+                "value": 2144
+            },
+            {
+                "name": "gcv1000",
+                "value": 4096
+            }
+        ],
+        "kind": "enumeration_type",
+        "name": "_gceCHIPMODEL"
+    },
+    "_gceCHIPPOWERSTATE": {
+        "byte_size": 4,
+        "enumerators": [
+            {
+                "name": "gcvPOWER_ON",
+                "value": 0
+            },
+            {
+                "name": "gcvPOWER_OFF",
+                "value": 1
+            },
+            {
+                "name": "gcvPOWER_IDLE",
+                "value": 2
+            },
+            {
+                "name": "gcvPOWER_SUSPEND",
+                "value": 3
+            },
+            {
+                "name": "gcvPOWER_SUSPEND_ATPOWERON",
+                "value": 4
+            },
+            {
+                "name": "gcvPOWER_OFF_ATPOWERON",
+                "value": 5
+            },
+            {
+                "name": "gcvPOWER_IDLE_BROADCAST",
+                "value": 6
+            },
+            {
+                "name": "gcvPOWER_SUSPEND_BROADCAST",
+                "value": 7
+            },
+            {
+                "name": "gcvPOWER_OFF_BROADCAST",
+                "value": 8
+            },
+            {
+                "name": "gcvPOWER_OFF_RECOVERY",
+                "value": 9
+            }
+        ],
+        "kind": "enumeration_type",
+        "name": "_gceCHIPPOWERSTATE"
+    },
+    "_gceHAL_COMMAND_CODES": {
+        "byte_size": 4,
+        "enumerators": [
+            {
+                "name": "gcvHAL_QUERY_VIDEO_MEMORY",
+                "value": 0
+            },
+            {
+                "name": "gcvHAL_QUERY_CHIP_IDENTITY",
+                "value": 1
+            },
+            {
+                "name": "gcvHAL_ALLOCATE_NON_PAGED_MEMORY",
+                "value": 2
+            },
+            {
+                "name": "gcvHAL_FREE_NON_PAGED_MEMORY",
+                "value": 3
+            },
+            {
+                "name": "gcvHAL_ALLOCATE_CONTIGUOUS_MEMORY",
+                "value": 4
+            },
+            {
+                "name": "gcvHAL_FREE_CONTIGUOUS_MEMORY",
+                "value": 5
+            },
+            {
+                "name": "gcvHAL_ALLOCATE_VIDEO_MEMORY",
+                "value": 6
+            },
+            {
+                "name": "gcvHAL_ALLOCATE_LINEAR_VIDEO_MEMORY",
+                "value": 7
+            },
+            {
+                "name": "gcvHAL_FREE_VIDEO_MEMORY",
+                "value": 8
+            },
+            {
+                "name": "gcvHAL_MAP_MEMORY",
+                "value": 9
+            },
+            {
+                "name": "gcvHAL_UNMAP_MEMORY",
+                "value": 10
+            },
+            {
+                "name": "gcvHAL_MAP_USER_MEMORY",
+                "value": 11
+            },
+            {
+                "name": "gcvHAL_UNMAP_USER_MEMORY",
+                "value": 12
+            },
+            {
+                "name": "gcvHAL_LOCK_VIDEO_MEMORY",
+                "value": 13
+            },
+            {
+                "name": "gcvHAL_UNLOCK_VIDEO_MEMORY",
+                "value": 14
+            },
+            {
+                "name": "gcvHAL_EVENT_COMMIT",
+                "value": 15
+            },
+            {
+                "name": "gcvHAL_USER_SIGNAL",
+                "value": 16
+            },
+            {
+                "name": "gcvHAL_SIGNAL",
+                "value": 17
+            },
+            {
+                "name": "gcvHAL_WRITE_DATA",
+                "value": 18
+            },
+            {
+                "name": "gcvHAL_COMMIT",
+                "value": 19
+            },
+            {
+                "name": "gcvHAL_STALL",
+                "value": 20
+            },
+            {
+                "name": "gcvHAL_READ_REGISTER",
+                "value": 21
+            },
+            {
+                "name": "gcvHAL_WRITE_REGISTER",
+                "value": 22
+            },
+            {
+                "name": "gcvHAL_GET_PROFILE_SETTING",
+                "value": 23
+            },
+            {
+                "name": "gcvHAL_SET_PROFILE_SETTING",
+                "value": 24
+            },
+            {
+                "name": "gcvHAL_READ_ALL_PROFILE_REGISTERS",
+                "value": 25
+            },
+            {
+                "name": "gcvHAL_PROFILE_REGISTERS_2D",
+                "value": 26
+            },
+            {
+                "name": "gcvHAL_SET_POWER_MANAGEMENT_STATE",
+                "value": 27
+            },
+            {
+                "name": "gcvHAL_QUERY_POWER_MANAGEMENT_STATE",
+                "value": 28
+            },
+            {
+                "name": "gcvHAL_GET_BASE_ADDRESS",
+                "value": 29
+            },
+            {
+                "name": "gcvHAL_SET_IDLE",
+                "value": 30
+            },
+            {
+                "name": "gcvHAL_QUERY_KERNEL_SETTINGS",
+                "value": 31
+            },
+            {
+                "name": "gcvHAL_RESET",
+                "value": 32
+            },
+            {
+                "name": "gcvHAL_MAP_PHYSICAL",
+                "value": 33
+            },
+            {
+                "name": "gcvHAL_DEBUG",
+                "value": 34
+            },
+            {
+                "name": "gcvHAL_CACHE",
+                "value": 35
+            },
+            {
+                "name": "gcvHAL_GC_OFF",
+                "value": 36
+            },
+            {
+                "name": "gcvHAL_GC_ON",
+                "value": 37
+            }
+        ],
+        "kind": "enumeration_type",
+        "name": "_gceHAL_COMMAND_CODES"
+    },
+    "_gceKERNEL_WHERE": {
+        "byte_size": 4,
+        "enumerators": [
+            {
+                "name": "gcvKERNEL_COMMAND",
+                "value": 0
+            },
+            {
+                "name": "gcvKERNEL_VERTEX",
+                "value": 1
+            },
+            {
+                "name": "gcvKERNEL_TRIANGLE",
+                "value": 2
+            },
+            {
+                "name": "gcvKERNEL_TEXTURE",
+                "value": 3
+            },
+            {
+                "name": "gcvKERNEL_PIXEL",
+                "value": 4
+            }
+        ],
+        "kind": "enumeration_type",
+        "name": "_gceKERNEL_WHERE"
+    },
+    "_gceOBJECT_TYPE": {
+        "byte_size": 4,
+        "enumerators": [
+            {
+                "name": "gcvOBJ_UNKNOWN",
+                "value": 0
+            },
+            {
+                "name": "gcvOBJ_2D",
+                "value": 538985522
+            },
+            {
+                "name": "gcvOBJ_3D",
+                "value": 538985523
+            },
+            {
+                "name": "gcvOBJ_ATTRIBUTE",
+                "value": 1381258305
+            },
+            {
+                "name": "gcvOBJ_BRUSHCACHE",
+                "value": 609571394
+            },
+            {
+                "name": "gcvOBJ_BRUSHNODE",
+                "value": 1851085378
+            },
+            {
+                "name": "gcvOBJ_BRUSH",
+                "value": 1867862594
+            },
+            {
+                "name": "gcvOBJ_BUFFER",
+                "value": 1380341058
+            },
+            {
+                "name": "gcvOBJ_COMMAND",
+                "value": 541347139
+            },
+            {
+                "name": "gcvOBJ_COMMANDBUFFER",
+                "value": 1111772483
+            },
+            {
+                "name": "gcvOBJ_CONTEXT",
+                "value": 1415074883
+            },
+            {
+                "name": "gcvOBJ_CONTEXTBUFFER",
+                "value": 1113084995
+            },
+            {
+                "name": "gcvOBJ_DEVICE",
+                "value": 542524740
+            },
+            {
+                "name": "gcvOBJ_DUMP",
+                "value": 1347245380
+            },
+            {
+                "name": "gcvOBJ_EVENT",
+                "value": 1414420037
+            },
+            {
+                "name": "gcvOBJ_FUNCTION",
+                "value": 1129207110
+            },
+            {
+                "name": "gcvOBJ_HAL",
+                "value": 541868360
+            },
+            {
+                "name": "gcvOBJ_HARDWARE",
+                "value": 1146241352
+            },
+            {
+                "name": "gcvOBJ_HEAP",
+                "value": 1346454856
+            },
+            {
+                "name": "gcvOBJ_INDEX",
+                "value": 1480871497
+            },
+            {
+                "name": "gcvOBJ_INTERRUPT",
+                "value": 1381256777
+            },
+            {
+                "name": "gcvOBJ_KERNEL",
+                "value": 1314014539
+            },
+            {
+                "name": "gcvOBJ_MEMORYBUFFER",
+                "value": 1112360269
+            },
+            {
+                "name": "gcvOBJ_MMU",
+                "value": 542461261
+            },
+            {
+                "name": "gcvOBJ_OS",
+                "value": 538989391
+            },
+            {
+                "name": "gcvOBJ_OUTPUT",
+                "value": 1347704143
+            },
+            {
+                "name": "gcvOBJ_PAINT",
+                "value": 542395984
+            },
+            {
+                "name": "gcvOBJ_PATH",
+                "value": 1213481296
+            },
+            {
+                "name": "gcvOBJ_QUEUE",
+                "value": 541414737
+            },
+            {
+                "name": "gcvOBJ_SAMPLER",
+                "value": 1347240275
+            },
+            {
+                "name": "gcvOBJ_SHADER",
+                "value": 1380206675
+            },
+            {
+                "name": "gcvOBJ_STREAM",
+                "value": 1297241171
+            },
+            {
+                "name": "gcvOBJ_SURF",
+                "value": 1179800915
+            },
+            {
+                "name": "gcvOBJ_TEXTURE",
+                "value": 1381259348
+            },
+            {
+                "name": "gcvOBJ_UNIFORM",
+                "value": 1179209301
+            },
+            {
+                "name": "gcvOBJ_VARIABLE",
+                "value": 1230127446
+            },
+            {
+                "name": "gcvOBJ_VERTEX",
+                "value": 1481921110
+            },
+            {
+                "name": "gcvOBJ_VIDMEM",
+                "value": 1296387414
+            },
+            {
+                "name": "gcvOBJ_VG",
+                "value": 538986326
+            }
+        ],
+        "kind": "enumeration_type",
+        "name": "_gceOBJECT_TYPE"
+    },
+    "_gcePOOL": {
+        "byte_size": 4,
+        "enumerators": [
+            {
+                "name": "gcvPOOL_UNKNOWN",
+                "value": 0
+            },
+            {
+                "name": "gcvPOOL_DEFAULT",
+                "value": 1
+            },
+            {
+                "name": "gcvPOOL_LOCAL",
+                "value": 2
+            },
+            {
+                "name": "gcvPOOL_LOCAL_INTERNAL",
+                "value": 3
+            },
+            {
+                "name": "gcvPOOL_LOCAL_EXTERNAL",
+                "value": 4
+            },
+            {
+                "name": "gcvPOOL_UNIFIED",
+                "value": 5
+            },
+            {
+                "name": "gcvPOOL_SYSTEM",
+                "value": 6
+            },
+            {
+                "name": "gcvPOOL_VIRTUAL",
+                "value": 7
+            },
+            {
+                "name": "gcvPOOL_USER",
+                "value": 8
+            },
+            {
+                "name": "gcvPOOL_CONTIGUOUS",
+                "value": 9
+            }
+        ],
+        "kind": "enumeration_type",
+        "name": "_gcePOOL"
+    },
+    "_gceSIGNAL_TYPE": {
+        "byte_size": 4,
+        "enumerators": [
+            {
+                "name": "gcvSIGNAL_NOPE",
+                "value": 0
+            },
+            {
+                "name": "gcvSIGNAL_CONTEXT_GCU",
+                "value": 1
+            },
+            {
+                "name": "gcvSIGNAL_CONTEXT",
+                "value": 2
+            },
+            {
+                "name": "gcvSIGNAL_FENCE_GCU",
+                "value": 3
+            },
+            {
+                "name": "gcvSIGNAL_FENCE",
+                "value": 4
+            },
+            {
+                "name": "gcvSIGNAL_DISPLAY_START",
+                "value": 5
+            },
+            {
+                "name": "gcvSIGNAL_DISPLAY_STOP",
+                "value": 6
+            },
+            {
+                "name": "gcvSIGNAL_WORKER_THREAD",
+                "value": 7
+            },
+            {
+                "name": "gcvSIGNAL_SYNC",
+                "value": 8
+            },
+            {
+                "name": "gcvSIGNAL_SURFACE",
+                "value": 9
+            },
+            {
+                "name": "gcvSIGNAL_TEXTURE",
+                "value": 16
+            },
+            {
+                "name": "gcvSIGNAL_STREAM",
+                "value": 17
+            },
+            {
+                "name": "gcvSIGNAL_INDEX_GROUP",
+                "value": 18
+            },
+            {
+                "name": "gcvSIGNAL_RESERVE_MEM_GROUP",
+                "value": 19
+            },
+            {
+                "name": "gcvSIGNAL_CMD_BUFFER",
+                "value": 20
+            },
+            {
+                "name": "gcvSIGNAL_CONTEXT_BUFFER",
+                "value": 21
+            },
+            {
+                "name": "gcvSIGNAL_INDEX_DYNAMIC",
+                "value": 22
+            },
+            {
+                "name": "gcvSIGNAL_STREAM_DYNAMIC",
+                "value": 23
+            },
+            {
+                "name": "gcvSIGNAL_STALL",
+                "value": 24
+            },
+            {
+                "name": "gcvSIGNAL_RESERVED",
+                "value": 25
+            }
+        ],
+        "kind": "enumeration_type",
+        "name": "_gceSIGNAL_TYPE"
+    },
+    "_gceSTATUS": {
+        "byte_size": 4,
+        "enumerators": [
+            {
+                "name": "gcvSTATUS_OK",
+                "value": 0
+            },
+            {
+                "name": "gcvSTATUS_FALSE",
+                "value": 0
+            },
+            {
+                "name": "gcvSTATUS_TRUE",
+                "value": 1
+            },
+            {
+                "name": "gcvSTATUS_NO_MORE_DATA",
+                "value": 2
+            },
+            {
+                "name": "gcvSTATUS_CACHED",
+                "value": 3
+            },
+            {
+                "name": "gcvSTATUS_MIPMAP_TOO_LARGE",
+                "value": 4
+            },
+            {
+                "name": "gcvSTATUS_NAME_NOT_FOUND",
+                "value": 5
+            },
+            {
+                "name": "gcvSTATUS_NOT_OUR_INTERRUPT",
+                "value": 6
+            },
+            {
+                "name": "gcvSTATUS_MISMATCH",
+                "value": 7
+            },
+            {
+                "name": "gcvSTATUS_MIPMAP_TOO_SMALL",
+                "value": 8
+            },
+            {
+                "name": "gcvSTATUS_LARGER",
+                "value": 9
+            },
+            {
+                "name": "gcvSTATUS_SMALLER",
+                "value": 10
+            },
+            {
+                "name": "gcvSTATUS_CHIP_NOT_READY",
+                "value": 11
+            },
+            {
+                "name": "gcvSTATUS_NEED_CONVERSION",
+                "value": 12
+            },
+            {
+                "name": "gcvSTATUS_SKIP",
+                "value": 13
+            },
+            {
+                "name": "gcvSTATUS_DATA_TOO_LARGE",
+                "value": 14
+            },
+            {
+                "name": "gcvSTATUS_INVALID_CONFIG",
+                "value": 15
+            },
+            {
+                "name": "gcvSTATUS_CHANGED",
+                "value": 16
+            },
+            {
+                "name": "gcvSTATUS_INVALID_ARGUMENT",
+                "value": -1
+            },
+            {
+                "name": "gcvSTATUS_INVALID_OBJECT",
+                "value": -2
+            },
+            {
+                "name": "gcvSTATUS_OUT_OF_MEMORY",
+                "value": -3
+            },
+            {
+                "name": "gcvSTATUS_MEMORY_LOCKED",
+                "value": -4
+            },
+            {
+                "name": "gcvSTATUS_MEMORY_UNLOCKED",
+                "value": -5
+            },
+            {
+                "name": "gcvSTATUS_HEAP_CORRUPTED",
+                "value": -6
+            },
+            {
+                "name": "gcvSTATUS_GENERIC_IO",
+                "value": -7
+            },
+            {
+                "name": "gcvSTATUS_INVALID_ADDRESS",
+                "value": -8
+            },
+            {
+                "name": "gcvSTATUS_CONTEXT_LOSSED",
+                "value": -9
+            },
+            {
+                "name": "gcvSTATUS_TOO_COMPLEX",
+                "value": -10
+            },
+            {
+                "name": "gcvSTATUS_BUFFER_TOO_SMALL",
+                "value": -11
+            },
+            {
+                "name": "gcvSTATUS_INTERFACE_ERROR",
+                "value": -12
+            },
+            {
+                "name": "gcvSTATUS_NOT_SUPPORTED",
+                "value": -13
+            },
+            {
+                "name": "gcvSTATUS_MORE_DATA",
+                "value": -14
+            },
+            {
+                "name": "gcvSTATUS_TIMEOUT",
+                "value": -15
+            },
+            {
+                "name": "gcvSTATUS_OUT_OF_RESOURCES",
+                "value": -16
+            },
+            {
+                "name": "gcvSTATUS_INVALID_DATA",
+                "value": -17
+            },
+            {
+                "name": "gcvSTATUS_INVALID_MIPMAP",
+                "value": -18
+            },
+            {
+                "name": "gcvSTATUS_NOT_FOUND",
+                "value": -19
+            },
+            {
+                "name": "gcvSTATUS_NOT_ALIGNED",
+                "value": -20
+            },
+            {
+                "name": "gcvSTATUS_INVALID_REQUEST",
+                "value": -21
+            },
+            {
+                "name": "gcvSTATUS_GPU_NOT_RESPONDING",
+                "value": -22
+            },
+            {
+                "name": "gcvSTATUS_GLOBAL_TYPE_MISMATCH",
+                "value": -1000
+            },
+            {
+                "name": "gcvSTATUS_TOO_MANY_ATTRIBUTES",
+                "value": -1001
+            },
+            {
+                "name": "gcvSTATUS_TOO_MANY_UNIFORMS",
+                "value": -1002
+            },
+            {
+                "name": "gcvSTATUS_TOO_MANY_VARYINGS",
+                "value": -1003
+            },
+            {
+                "name": "gcvSTATUS_UNDECLARED_VARYING",
+                "value": -1004
+            },
+            {
+                "name": "gcvSTATUS_VARYING_TYPE_MISMATCH",
+                "value": -1005
+            },
+            {
+                "name": "gcvSTATUS_MISSING_MAIN",
+                "value": -1006
+            },
+            {
+                "name": "gcvSTATUS_NAME_MISMATCH",
+                "value": -1007
+            },
+            {
+                "name": "gcvSTATUS_INVALID_INDEX",
+                "value": -1008
+            }
+        ],
+        "kind": "enumeration_type",
+        "name": "_gceSTATUS"
+    },
+    "_gceSURF_FORMAT": {
+        "byte_size": 4,
+        "enumerators": [
+            {
+                "name": "gcvSURF_UNKNOWN",
+                "value": 0
+            },
+            {
+                "name": "gcvSURF_INDEX1",
+                "value": 100
+            },
+            {
+                "name": "gcvSURF_INDEX4",
+                "value": 101
+            },
+            {
+                "name": "gcvSURF_INDEX8",
+                "value": 102
+            },
+            {
+                "name": "gcvSURF_A2R2G2B2",
+                "value": 200
+            },
+            {
+                "name": "gcvSURF_R3G3B2",
+                "value": 201
+            },
+            {
+                "name": "gcvSURF_A8R3G3B2",
+                "value": 202
+            },
+            {
+                "name": "gcvSURF_X4R4G4B4",
+                "value": 203
+            },
+            {
+                "name": "gcvSURF_A4R4G4B4",
+                "value": 204
+            },
+            {
+                "name": "gcvSURF_R4G4B4A4",
+                "value": 205
+            },
+            {
+                "name": "gcvSURF_X1R5G5B5",
+                "value": 206
+            },
+            {
+                "name": "gcvSURF_A1R5G5B5",
+                "value": 207
+            },
+            {
+                "name": "gcvSURF_R5G5B5A1",
+                "value": 208
+            },
+            {
+                "name": "gcvSURF_R5G6B5",
+                "value": 209
+            },
+            {
+                "name": "gcvSURF_R8G8B8",
+                "value": 210
+            },
+            {
+                "name": "gcvSURF_X8R8G8B8",
+                "value": 211
+            },
+            {
+                "name": "gcvSURF_A8R8G8B8",
+                "value": 212
+            },
+            {
+                "name": "gcvSURF_R8G8B8A8",
+                "value": 213
+            },
+            {
+                "name": "gcvSURF_G8R8G8B8",
+                "value": 214
+            },
+            {
+                "name": "gcvSURF_R8G8B8G8",
+                "value": 215
+            },
+            {
+                "name": "gcvSURF_X2R10G10B10",
+                "value": 216
+            },
+            {
+                "name": "gcvSURF_A2R10G10B10",
+                "value": 217
+            },
+            {
+                "name": "gcvSURF_X12R12G12B12",
+                "value": 218
+            },
+            {
+                "name": "gcvSURF_A12R12G12B12",
+                "value": 219
+            },
+            {
+                "name": "gcvSURF_X16R16G16B16",
+                "value": 220
+            },
+            {
+                "name": "gcvSURF_A16R16G16B16",
+                "value": 221
+            },
+            {
+                "name": "gcvSURF_R8G8B8X8",
+                "value": 222
+            },
+            {
+                "name": "gcvSURF_R5G5B5X1",
+                "value": 223
+            },
+            {
+                "name": "gcvSURF_R4G4B4X4",
+                "value": 224
+            },
+            {
+                "name": "gcvSURF_A4B4G4R4",
+                "value": 300
+            },
+            {
+                "name": "gcvSURF_A1B5G5R5",
+                "value": 301
+            },
+            {
+                "name": "gcvSURF_B5G6R5",
+                "value": 302
+            },
+            {
+                "name": "gcvSURF_B8G8R8",
+                "value": 303
+            },
+            {
+                "name": "gcvSURF_X8B8G8R8",
+                "value": 304
+            },
+            {
+                "name": "gcvSURF_A8B8G8R8",
+                "value": 305
+            },
+            {
+                "name": "gcvSURF_A2B10G10R10",
+                "value": 306
+            },
+            {
+                "name": "gcvSURF_A16B16G16R16",
+                "value": 307
+            },
+            {
+                "name": "gcvSURF_G16R16",
+                "value": 308
+            },
+            {
+                "name": "gcvSURF_B4G4R4A4",
+                "value": 309
+            },
+            {
+                "name": "gcvSURF_B5G5R5A1",
+                "value": 310
+            },
+            {
+                "name": "gcvSURF_B8G8R8X8",
+                "value": 311
+            },
+            {
+                "name": "gcvSURF_B8G8R8A8",
+                "value": 312
+            },
+            {
+                "name": "gcvSURF_X4B4G4R4",
+                "value": 313
+            },
+            {
+                "name": "gcvSURF_X1B5G5R5",
+                "value": 314
+            },
+            {
+                "name": "gcvSURF_B4G4R4X4",
+                "value": 315
+            },
+            {
+                "name": "gcvSURF_B5G5R5X1",
+                "value": 316
+            },
+            {
+                "name": "gcvSURF_DXT1",
+                "value": 400
+            },
+            {
+                "name": "gcvSURF_DXT2",
+                "value": 401
+            },
+            {
+                "name": "gcvSURF_DXT3",
+                "value": 402
+            },
+            {
+                "name": "gcvSURF_DXT4",
+                "value": 403
+            },
+            {
+                "name": "gcvSURF_DXT5",
+                "value": 404
+            },
+            {
+                "name": "gcvSURF_CXV8U8",
+                "value": 405
+            },
+            {
+                "name": "gcvSURF_ETC1",
+                "value": 406
+            },
+            {
+                "name": "gcvSURF_YUY2",
+                "value": 500
+            },
+            {
+                "name": "gcvSURF_UYVY",
+                "value": 501
+            },
+            {
+                "name": "gcvSURF_YV12",
+                "value": 502
+            },
+            {
+                "name": "gcvSURF_I420",
+                "value": 503
+            },
+            {
+                "name": "gcvSURF_NV12",
+                "value": 504
+            },
+            {
+                "name": "gcvSURF_NV21",
+                "value": 505
+            },
+            {
+                "name": "gcvSURF_NV16",
+                "value": 506
+            },
+            {
+                "name": "gcvSURF_NV61",
+                "value": 507
+            },
+            {
+                "name": "gcvSURF_YVYU",
+                "value": 508
+            },
+            {
+                "name": "gcvSURF_VYUY",
+                "value": 509
+            },
+            {
+                "name": "gcvSURF_D16",
+                "value": 600
+            },
+            {
+                "name": "gcvSURF_D24S8",
+                "value": 601
+            },
+            {
+                "name": "gcvSURF_D32",
+                "value": 602
+            },
+            {
+                "name": "gcvSURF_D24X8",
+                "value": 603
+            },
+            {
+                "name": "gcvSURF_A4",
+                "value": 700
+            },
+            {
+                "name": "gcvSURF_A8",
+                "value": 701
+            },
+            {
+                "name": "gcvSURF_A12",
+                "value": 702
+            },
+            {
+                "name": "gcvSURF_A16",
+                "value": 703
+            },
+            {
+                "name": "gcvSURF_A32",
+                "value": 704
+            },
+            {
+                "name": "gcvSURF_A1",
+                "value": 705
+            },
+            {
+                "name": "gcvSURF_L4",
+                "value": 800
+            },
+            {
+                "name": "gcvSURF_L8",
+                "value": 801
+            },
+            {
+                "name": "gcvSURF_L12",
+                "value": 802
+            },
+            {
+                "name": "gcvSURF_L16",
+                "value": 803
+            },
+            {
+                "name": "gcvSURF_L32",
+                "value": 804
+            },
+            {
+                "name": "gcvSURF_L1",
+                "value": 805
+            },
+            {
+                "name": "gcvSURF_A4L4",
+                "value": 900
+            },
+            {
+                "name": "gcvSURF_A2L6",
+                "value": 901
+            },
+            {
+                "name": "gcvSURF_A8L8",
+                "value": 902
+            },
+            {
+                "name": "gcvSURF_A4L12",
+                "value": 903
+            },
+            {
+                "name": "gcvSURF_A12L12",
+                "value": 904
+            },
+            {
+                "name": "gcvSURF_A16L16",
+                "value": 905
+            },
+            {
+                "name": "gcvSURF_L6V5U5",
+                "value": 1000
+            },
+            {
+                "name": "gcvSURF_V8U8",
+                "value": 1001
+            },
+            {
+                "name": "gcvSURF_X8L8V8U8",
+                "value": 1002
+            },
+            {
+                "name": "gcvSURF_Q8W8V8U8",
+                "value": 1003
+            },
+            {
+                "name": "gcvSURF_A2W10V10U10",
+                "value": 1004
+            },
+            {
+                "name": "gcvSURF_V16U16",
+                "value": 1005
+            },
+            {
+                "name": "gcvSURF_Q16W16V16U16",
+                "value": 1006
+            },
+            {
+                "name": "gcvSURF_R16F",
+                "value": 1100
+            },
+            {
+                "name": "gcvSURF_G16R16F",
+                "value": 1101
+            },
+            {
+                "name": "gcvSURF_A16B16G16R16F",
+                "value": 1102
+            },
+            {
+                "name": "gcvSURF_R32F",
+                "value": 1103
+            },
+            {
+                "name": "gcvSURF_G32R32F",
+                "value": 1104
+            },
+            {
+                "name": "gcvSURF_A32B32G32R32F",
+                "value": 1105
+            }
+        ],
+        "kind": "enumeration_type",
+        "name": "_gceSURF_FORMAT"
+    },
+    "_gceSURF_TYPE": {
+        "byte_size": 4,
+        "enumerators": [
+            {
+                "name": "gcvSURF_TYPE_UNKNOWN",
+                "value": 0
+            },
+            {
+                "name": "gcvSURF_INDEX",
+                "value": 1
+            },
+            {
+                "name": "gcvSURF_VERTEX",
+                "value": 2
+            },
+            {
+                "name": "gcvSURF_TEXTURE",
+                "value": 3
+            },
+            {
+                "name": "gcvSURF_RENDER_TARGET",
+                "value": 4
+            },
+            {
+                "name": "gcvSURF_DEPTH",
+                "value": 5
+            },
+            {
+                "name": "gcvSURF_BITMAP",
+                "value": 6
+            },
+            {
+                "name": "gcvSURF_TILE_STATUS",
+                "value": 7
+            },
+            {
+                "name": "gcvSURF_MASK",
+                "value": 8
+            },
+            {
+                "name": "gcvSURF_SCISSOR",
+                "value": 9
+            },
+            {
+                "name": "gcvSURF_HIERARCHICAL_DEPTH",
+                "value": 10
+            },
+            {
+                "name": "gcvSURF_NUM_TYPES",
+                "value": 11
+            },
+            {
+                "name": "gcvSURF_NO_TILE_STATUS",
+                "value": 256
+            },
+            {
+                "name": "gcvSURF_RENDER_TARGET_NO_TILE_STATUS",
+                "value": 260
+            },
+            {
+                "name": "gcvSURF_DEPTH_NO_TILE_STATUS",
+                "value": 261
+            }
+        ],
+        "kind": "enumeration_type",
+        "name": "_gceSURF_TYPE"
+    },
+    "_gceUSER_SIGNAL_COMMAND_CODES": {
+        "byte_size": 4,
+        "enumerators": [
+            {
+                "name": "gcvUSER_SIGNAL_CREATE",
+                "value": 0
+            },
+            {
+                "name": "gcvUSER_SIGNAL_DESTROY",
+                "value": 1
+            },
+            {
+                "name": "gcvUSER_SIGNAL_SIGNAL",
+                "value": 2
+            },
+            {
+                "name": "gcvUSER_SIGNAL_WAIT",
+                "value": 3
+            }
+        ],
+        "kind": "enumeration_type",
+        "name": "_gceUSER_SIGNAL_COMMAND_CODES"
+    },
+    "_gcoCMDBUF": {
+        "byte_size": 36,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "object",
+                "offset": 0,
+                "type": "_gcsOBJECT"
+            },
+            {
+                "indirection": 1,
+                "name": "os",
+                "offset": 4,
+                "type": "_gcoOS"
+            },
+            {
+                "indirection": 1,
+                "name": "hardware",
+                "offset": 8,
+                "type": "_gcoHARDWARE"
+            },
+            {
+                "indirection": 1,
+                "name": "physical",
+                "offset": 12,
+                "type": "void"
+            },
+            {
+                "indirection": 1,
+                "name": "logical",
+                "offset": 16,
+                "type": "void"
+            },
+            {
+                "indirection": 0,
+                "name": "bytes",
+                "offset": 20,
+                "type": "long unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "startOffset",
+                "offset": 24,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "offset",
+                "offset": 28,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "free",
+                "offset": 32,
+                "type": "long unsigned int"
+            }
+        ],
+        "name": "_gcoCMDBUF"
+    },
+    "_gcoCONTEXT": {
+        "byte_size": 216,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "object",
+                "offset": 0,
+                "type": "_gcsOBJECT"
+            },
+            {
+                "indirection": 1,
+                "name": "os",
+                "offset": 4,
+                "type": "_gcoOS"
+            },
+            {
+                "indirection": 1,
+                "name": "hardware",
+                "offset": 8,
+                "type": "_gcoHARDWARE"
+            },
+            {
+                "indirection": 0,
+                "name": "id",
+                "offset": 16,
+                "type": "long long unsigned int"
+            },
+            {
+                "indirection": 1,
+                "name": "map",
+                "offset": 24,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "stateCount",
+                "offset": 28,
+                "type": "long unsigned int"
+            },
+            {
+                "indirection": 1,
+                "name": "hint",
+                "offset": 32,
+                "type": "unsigned char"
+            },
+            {
+                "indirection": 0,
+                "name": "hintValue",
+                "offset": 36,
+                "type": "unsigned char"
+            },
+            {
+                "indirection": 0,
+                "name": "hintCount",
+                "offset": 40,
+                "type": "long unsigned int"
+            },
+            {
+                "indirection": 1,
+                "name": "buffer",
+                "offset": 44,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "pipe3DIndex",
+                "offset": 48,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "pipe2DIndex",
+                "offset": 52,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "linkIndex",
+                "offset": 56,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "inUseIndex",
+                "offset": 60,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "bufferSize",
+                "offset": 64,
+                "type": "long unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "ctxbufArray",
+                "offset": 68,
+                "type": "array_type_7022"
+            },
+            {
+                "indirection": 0,
+                "name": "ctxbufSignal",
+                "offset": 108,
+                "type": "array_type_7038"
+            },
+            {
+                "indirection": 0,
+                "name": "ctxbufSize",
+                "offset": 148,
+                "type": "int"
+            },
+            {
+                "indirection": 0,
+                "name": "ctxbufIndex",
+                "offset": 152,
+                "type": "int"
+            },
+            {
+                "indirection": 1,
+                "name": "logical",
+                "offset": 156,
+                "type": "void"
+            },
+            {
+                "indirection": 1,
+                "name": "link",
+                "offset": 160,
+                "type": "void"
+            },
+            {
+                "indirection": 0,
+                "name": "initialPipe",
+                "offset": 164,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "entryPipe",
+                "offset": 168,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "currentPipe",
+                "offset": 172,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "postCommit",
+                "offset": 176,
+                "type": "int"
+            },
+            {
+                "indirection": 1,
+                "name": "inUse",
+                "offset": 180,
+                "type": "int"
+            },
+            {
+                "indirection": 0,
+                "name": "lastAddress",
+                "offset": 184,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "lastSize",
+                "offset": 188,
+                "type": "long unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "lastIndex",
+                "offset": 192,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "lastFixed",
+                "offset": 196,
+                "type": "int"
+            },
+            {
+                "indirection": 1,
+                "name": "hintArray",
+                "offset": 200,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 1,
+                "name": "hintIndex",
+                "offset": 204,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "skipContext",
+                "offset": 208,
+                "type": "int"
+            }
+        ],
+        "name": "_gcoCONTEXT"
+    },
+    "_gcoHARDWARE": {
+        "byte_size": null,
+        "kind": "structure_type",
+        "members": [],
+        "name": "_gcoHARDWARE"
+    },
+    "_gcoOS": {
+        "byte_size": null,
+        "kind": "structure_type",
+        "members": [],
+        "name": "_gcoOS"
+    },
+    "_gcsHAL_ALLOCATE_CONTIGUOUS_MEMORY": {
+        "byte_size": 12,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "bytes",
+                "offset": 0,
+                "type": "long unsigned int"
+            },
+            {
+                "indirection": 1,
+                "name": "physical",
+                "offset": 4,
+                "type": "void"
+            },
+            {
+                "indirection": 1,
+                "name": "logical",
+                "offset": 8,
+                "type": "void"
+            }
+        ],
+        "name": "_gcsHAL_ALLOCATE_CONTIGUOUS_MEMORY"
+    },
+    "_gcsHAL_ALLOCATE_LINEAR_VIDEO_MEMORY": {
+        "byte_size": 20,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "bytes",
+                "offset": 0,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "alignment",
+                "offset": 4,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "type",
+                "offset": 8,
+                "type": "_gceSURF_TYPE"
+            },
+            {
+                "indirection": 0,
+                "name": "pool",
+                "offset": 12,
+                "type": "_gcePOOL"
+            },
+            {
+                "indirection": 1,
+                "name": "node",
+                "offset": 16,
+                "type": "_gcuVIDMEM_NODE"
+            }
+        ],
+        "name": "_gcsHAL_ALLOCATE_LINEAR_VIDEO_MEMORY"
+    },
+    "_gcsHAL_ALLOCATE_NON_PAGED_MEMORY": {
+        "byte_size": 12,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "bytes",
+                "offset": 0,
+                "type": "long unsigned int"
+            },
+            {
+                "indirection": 1,
+                "name": "physical",
+                "offset": 4,
+                "type": "void"
+            },
+            {
+                "indirection": 1,
+                "name": "logical",
+                "offset": 8,
+                "type": "void"
+            }
+        ],
+        "name": "_gcsHAL_ALLOCATE_NON_PAGED_MEMORY"
+    },
+    "_gcsHAL_ALLOCATE_VIDEO_MEMORY": {
+        "byte_size": 28,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "width",
+                "offset": 0,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "height",
+                "offset": 4,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "depth",
+                "offset": 8,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "format",
+                "offset": 12,
+                "type": "_gceSURF_FORMAT"
+            },
+            {
+                "indirection": 0,
+                "name": "type",
+                "offset": 16,
+                "type": "_gceSURF_TYPE"
+            },
+            {
+                "indirection": 0,
+                "name": "pool",
+                "offset": 20,
+                "type": "_gcePOOL"
+            },
+            {
+                "indirection": 1,
+                "name": "node",
+                "offset": 24,
+                "type": "_gcuVIDMEM_NODE"
+            }
+        ],
+        "name": "_gcsHAL_ALLOCATE_VIDEO_MEMORY"
+    },
+    "_gcsHAL_CACHE": {
+        "byte_size": 16,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "invalidate",
+                "offset": 0,
+                "type": "int"
+            },
+            {
+                "indirection": 1,
+                "name": "process",
+                "offset": 4,
+                "type": "void"
+            },
+            {
+                "indirection": 1,
+                "name": "logical",
+                "offset": 8,
+                "type": "void"
+            },
+            {
+                "indirection": 0,
+                "name": "bytes",
+                "offset": 12,
+                "type": "long unsigned int"
+            }
+        ],
+        "name": "_gcsHAL_CACHE"
+    },
+    "_gcsHAL_COMMIT": {
+        "byte_size": 12,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 1,
+                "name": "commandBuffer",
+                "offset": 0,
+                "type": "_gcoCMDBUF"
+            },
+            {
+                "indirection": 1,
+                "name": "contextBuffer",
+                "offset": 4,
+                "type": "_gcoCONTEXT"
+            },
+            {
+                "indirection": 1,
+                "name": "process",
+                "offset": 8,
+                "type": "void"
+            }
+        ],
+        "name": "_gcsHAL_COMMIT"
+    },
+    "_gcsHAL_DEBUG": {
+        "byte_size": 96,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "set",
+                "offset": 0,
+                "type": "int"
+            },
+            {
+                "indirection": 0,
+                "name": "level",
+                "offset": 4,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "zones",
+                "offset": 8,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "enable",
+                "offset": 12,
+                "type": "int"
+            },
+            {
+                "indirection": 0,
+                "name": "message",
+                "offset": 16,
+                "type": "array_type_6517"
+            }
+        ],
+        "name": "_gcsHAL_DEBUG"
+    },
+    "_gcsHAL_EVENT_COMMIT": {
+        "byte_size": 4,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 1,
+                "name": "queue",
+                "offset": 0,
+                "type": "_gcsQUEUE"
+            }
+        ],
+        "name": "_gcsHAL_EVENT_COMMIT"
+    },
+    "_gcsHAL_FREE_CONTIGUOUS_MEMORY": {
+        "byte_size": 12,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "bytes",
+                "offset": 0,
+                "type": "long unsigned int"
+            },
+            {
+                "indirection": 1,
+                "name": "physical",
+                "offset": 4,
+                "type": "void"
+            },
+            {
+                "indirection": 1,
+                "name": "logical",
+                "offset": 8,
+                "type": "void"
+            }
+        ],
+        "name": "_gcsHAL_FREE_CONTIGUOUS_MEMORY"
+    },
+    "_gcsHAL_FREE_NON_PAGED_MEMORY": {
+        "byte_size": 12,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "bytes",
+                "offset": 0,
+                "type": "long unsigned int"
+            },
+            {
+                "indirection": 1,
+                "name": "physical",
+                "offset": 4,
+                "type": "void"
+            },
+            {
+                "indirection": 1,
+                "name": "logical",
+                "offset": 8,
+                "type": "void"
+            }
+        ],
+        "name": "_gcsHAL_FREE_NON_PAGED_MEMORY"
+    },
+    "_gcsHAL_FREE_VIDEO_MEMORY": {
+        "byte_size": 4,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 1,
+                "name": "node",
+                "offset": 0,
+                "type": "_gcuVIDMEM_NODE"
+            }
+        ],
+        "name": "_gcsHAL_FREE_VIDEO_MEMORY"
+    },
+    "_gcsHAL_GET_BASE_ADDRESS": {
+        "byte_size": 4,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "baseAddress",
+                "offset": 0,
+                "type": "unsigned int"
+            }
+        ],
+        "name": "_gcsHAL_GET_BASE_ADDRESS"
+    },
+    "_gcsHAL_GET_PROFILE_SETTING": {
+        "byte_size": 132,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "enable",
+                "offset": 0,
+                "type": "int"
+            },
+            {
+                "indirection": 0,
+                "name": "fileName",
+                "offset": 4,
+                "type": "array_type_6164"
+            }
+        ],
+        "name": "_gcsHAL_GET_PROFILE_SETTING"
+    },
+    "_gcsHAL_INTERFACE": {
+        "byte_size": 216,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "command",
+                "offset": 0,
+                "type": "_gceHAL_COMMAND_CODES"
+            },
+            {
+                "indirection": 0,
+                "name": "status",
+                "offset": 4,
+                "type": "_gceSTATUS"
+            },
+            {
+                "indirection": 1,
+                "name": "handle",
+                "offset": 8,
+                "type": "void"
+            },
+            {
+                "indirection": 0,
+                "name": "pid",
+                "offset": 12,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "u",
+                "offset": 16,
+                "type": "_u"
+            }
+        ],
+        "name": "_gcsHAL_INTERFACE"
+    },
+    "_gcsHAL_LOCK_VIDEO_MEMORY": {
+        "byte_size": 12,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 1,
+                "name": "node",
+                "offset": 0,
+                "type": "_gcuVIDMEM_NODE"
+            },
+            {
+                "indirection": 0,
+                "name": "address",
+                "offset": 4,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 1,
+                "name": "memory",
+                "offset": 8,
+                "type": "void"
+            }
+        ],
+        "name": "_gcsHAL_LOCK_VIDEO_MEMORY"
+    },
+    "_gcsHAL_MAP_MEMORY": {
+        "byte_size": 12,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 1,
+                "name": "physical",
+                "offset": 0,
+                "type": "void"
+            },
+            {
+                "indirection": 0,
+                "name": "bytes",
+                "offset": 4,
+                "type": "long unsigned int"
+            },
+            {
+                "indirection": 1,
+                "name": "logical",
+                "offset": 8,
+                "type": "void"
+            }
+        ],
+        "name": "_gcsHAL_MAP_MEMORY"
+    },
+    "_gcsHAL_MAP_PHYSICAL": {
+        "byte_size": 8,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "map",
+                "offset": 0,
+                "type": "int"
+            },
+            {
+                "indirection": 1,
+                "name": "physical",
+                "offset": 4,
+                "type": "void"
+            }
+        ],
+        "name": "_gcsHAL_MAP_PHYSICAL"
+    },
+    "_gcsHAL_MAP_USER_MEMORY": {
+        "byte_size": 16,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 1,
+                "name": "memory",
+                "offset": 0,
+                "type": "void"
+            },
+            {
+                "indirection": 0,
+                "name": "size",
+                "offset": 4,
+                "type": "long unsigned int"
+            },
+            {
+                "indirection": 1,
+                "name": "info",
+                "offset": 8,
+                "type": "void"
+            },
+            {
+                "indirection": 0,
+                "name": "address",
+                "offset": 12,
+                "type": "unsigned int"
+            }
+        ],
+        "name": "_gcsHAL_MAP_USER_MEMORY"
+    },
+    "_gcsHAL_PROFILE_REGISTERS_2D": {
+        "byte_size": 4,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 1,
+                "name": "hwProfile2D",
+                "offset": 0,
+                "type": "gcs2D_PROFILE"
+            }
+        ],
+        "name": "_gcsHAL_PROFILE_REGISTERS_2D"
+    },
+    "_gcsHAL_QUERY_CHIP_IDENTITY": {
+        "byte_size": 44,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "chipModel",
+                "offset": 0,
+                "type": "_gceCHIPMODEL"
+            },
+            {
+                "indirection": 0,
+                "name": "chipRevision",
+                "offset": 4,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "chipFeatures",
+                "offset": 8,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "chipMinorFeatures",
+                "offset": 12,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "chipMinorFeatures1",
+                "offset": 16,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "streamCount",
+                "offset": 20,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "registerMax",
+                "offset": 24,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "threadCount",
+                "offset": 28,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "shaderCoreCount",
+                "offset": 32,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "vertexCacheSize",
+                "offset": 36,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "vertexOutputBufferSize",
+                "offset": 40,
+                "type": "unsigned int"
+            }
+        ],
+        "name": "_gcsHAL_QUERY_CHIP_IDENTITY"
+    },
+    "_gcsHAL_QUERY_KERNEL_SETTINGS": {
+        "byte_size": 4,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "settings",
+                "offset": 0,
+                "type": "_gcsKERNEL_SETTINGS"
+            }
+        ],
+        "name": "_gcsHAL_QUERY_KERNEL_SETTINGS"
+    },
+    "_gcsHAL_QUERY_POWER_MANAGEMENT": {
+        "byte_size": 8,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "state",
+                "offset": 0,
+                "type": "_gceCHIPPOWERSTATE"
+            },
+            {
+                "indirection": 0,
+                "name": "isIdle",
+                "offset": 4,
+                "type": "int"
+            }
+        ],
+        "name": "_gcsHAL_QUERY_POWER_MANAGEMENT"
+    },
+    "_gcsHAL_QUERY_VIDEO_MEMORY": {
+        "byte_size": 24,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 1,
+                "name": "internalPhysical",
+                "offset": 0,
+                "type": "void"
+            },
+            {
+                "indirection": 0,
+                "name": "internalSize",
+                "offset": 4,
+                "type": "long unsigned int"
+            },
+            {
+                "indirection": 1,
+                "name": "externalPhysical",
+                "offset": 8,
+                "type": "void"
+            },
+            {
+                "indirection": 0,
+                "name": "externalSize",
+                "offset": 12,
+                "type": "long unsigned int"
+            },
+            {
+                "indirection": 1,
+                "name": "contiguousPhysical",
+                "offset": 16,
+                "type": "void"
+            },
+            {
+                "indirection": 0,
+                "name": "contiguousSize",
+                "offset": 20,
+                "type": "long unsigned int"
+            }
+        ],
+        "name": "_gcsHAL_QUERY_VIDEO_MEMORY"
+    },
+    "_gcsHAL_READ_ALL_PROFILE_REGISTERS": {
+        "byte_size": 200,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "counters",
+                "offset": 0,
+                "type": "_gcsPROFILER_COUNTERS"
+            }
+        ],
+        "name": "_gcsHAL_READ_ALL_PROFILE_REGISTERS"
+    },
+    "_gcsHAL_READ_REGISTER": {
+        "byte_size": 8,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "address",
+                "offset": 0,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "data",
+                "offset": 4,
+                "type": "unsigned int"
+            }
+        ],
+        "name": "_gcsHAL_READ_REGISTER"
+    },
+    "_gcsHAL_SET_POWER_MANAGEMENT": {
+        "byte_size": 4,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "state",
+                "offset": 0,
+                "type": "_gceCHIPPOWERSTATE"
+            }
+        ],
+        "name": "_gcsHAL_SET_POWER_MANAGEMENT"
+    },
+    "_gcsHAL_SET_PROFILE_SETTING": {
+        "byte_size": 132,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "enable",
+                "offset": 0,
+                "type": "int"
+            },
+            {
+                "indirection": 0,
+                "name": "fileName",
+                "offset": 4,
+                "type": "array_type_6164"
+            }
+        ],
+        "name": "_gcsHAL_SET_PROFILE_SETTING"
+    },
+    "_gcsHAL_SIGNAL": {
+        "byte_size": 16,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 1,
+                "name": "signal",
+                "offset": 0,
+                "type": "void"
+            },
+            {
+                "indirection": 1,
+                "name": "auxSignal",
+                "offset": 4,
+                "type": "void"
+            },
+            {
+                "indirection": 1,
+                "name": "process",
+                "offset": 8,
+                "type": "void"
+            },
+            {
+                "indirection": 0,
+                "name": "fromWhere",
+                "offset": 12,
+                "type": "_gceKERNEL_WHERE"
+            }
+        ],
+        "name": "_gcsHAL_SIGNAL"
+    },
+    "_gcsHAL_UNLOCK_VIDEO_MEMORY": {
+        "byte_size": 12,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 1,
+                "name": "node",
+                "offset": 0,
+                "type": "_gcuVIDMEM_NODE"
+            },
+            {
+                "indirection": 0,
+                "name": "type",
+                "offset": 4,
+                "type": "_gceSURF_TYPE"
+            },
+            {
+                "indirection": 0,
+                "name": "asynchroneous",
+                "offset": 8,
+                "type": "int"
+            }
+        ],
+        "name": "_gcsHAL_UNLOCK_VIDEO_MEMORY"
+    },
+    "_gcsHAL_UNMAP_MEMORY": {
+        "byte_size": 12,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 1,
+                "name": "physical",
+                "offset": 0,
+                "type": "void"
+            },
+            {
+                "indirection": 0,
+                "name": "bytes",
+                "offset": 4,
+                "type": "long unsigned int"
+            },
+            {
+                "indirection": 1,
+                "name": "logical",
+                "offset": 8,
+                "type": "void"
+            }
+        ],
+        "name": "_gcsHAL_UNMAP_MEMORY"
+    },
+    "_gcsHAL_UNMAP_USER_MEMORY": {
+        "byte_size": 16,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 1,
+                "name": "memory",
+                "offset": 0,
+                "type": "void"
+            },
+            {
+                "indirection": 0,
+                "name": "size",
+                "offset": 4,
+                "type": "long unsigned int"
+            },
+            {
+                "indirection": 1,
+                "name": "info",
+                "offset": 8,
+                "type": "void"
+            },
+            {
+                "indirection": 0,
+                "name": "address",
+                "offset": 12,
+                "type": "unsigned int"
+            }
+        ],
+        "name": "_gcsHAL_UNMAP_USER_MEMORY"
+    },
+    "_gcsHAL_USER_SIGNAL": {
+        "byte_size": 24,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "command",
+                "offset": 0,
+                "type": "_gceUSER_SIGNAL_COMMAND_CODES"
+            },
+            {
+                "indirection": 0,
+                "name": "id",
+                "offset": 4,
+                "type": "int"
+            },
+            {
+                "indirection": 0,
+                "name": "manualReset",
+                "offset": 8,
+                "type": "int"
+            },
+            {
+                "indirection": 0,
+                "name": "signalType",
+                "offset": 12,
+                "type": "_gceSIGNAL_TYPE"
+            },
+            {
+                "indirection": 0,
+                "name": "wait",
+                "offset": 16,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "state",
+                "offset": 20,
+                "type": "int"
+            }
+        ],
+        "name": "_gcsHAL_USER_SIGNAL"
+    },
+    "_gcsHAL_WRITE_DATA": {
+        "byte_size": 12,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "address",
+                "offset": 0,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 1,
+                "name": "kernelAddress",
+                "offset": 4,
+                "type": "void"
+            },
+            {
+                "indirection": 0,
+                "name": "data",
+                "offset": 8,
+                "type": "unsigned int"
+            }
+        ],
+        "name": "_gcsHAL_WRITE_DATA"
+    },
+    "_gcsHAL_WRITE_REGISTER": {
+        "byte_size": 8,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "address",
+                "offset": 0,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "data",
+                "offset": 4,
+                "type": "unsigned int"
+            }
+        ],
+        "name": "_gcsHAL_WRITE_REGISTER"
+    },
+    "_gcsKERNEL_SETTINGS": {
+        "byte_size": 4,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "signal",
+                "offset": 0,
+                "type": "int"
+            }
+        ],
+        "name": "_gcsKERNEL_SETTINGS"
+    },
+    "_gcsOBJECT": {
+        "byte_size": 4,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "type",
+                "offset": 0,
+                "type": "_gceOBJECT_TYPE"
+            }
+        ],
+        "name": "_gcsOBJECT"
+    },
+    "_gcsPROFILER_COUNTERS": {
+        "byte_size": 200,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "gpuClock",
+                "offset": 0,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "axiClock",
+                "offset": 4,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "shaderClock",
+                "offset": 8,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "gpuClockStart",
+                "offset": 12,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "gpuClockEnd",
+                "offset": 16,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "gpuCyclesCounter",
+                "offset": 20,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "gpuTotalRead64BytesPerFrame",
+                "offset": 24,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "gpuTotalWrite64BytesPerFrame",
+                "offset": 28,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "pe_pixel_count_killed_by_color_pipe",
+                "offset": 32,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "pe_pixel_count_killed_by_depth_pipe",
+                "offset": 36,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "pe_pixel_count_drawn_by_color_pipe",
+                "offset": 40,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "pe_pixel_count_drawn_by_depth_pipe",
+                "offset": 44,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "ps_inst_counter",
+                "offset": 48,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "rendered_pixel_counter",
+                "offset": 52,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "vs_inst_counter",
+                "offset": 56,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "rendered_vertice_counter",
+                "offset": 60,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "vtx_branch_inst_counter",
+                "offset": 64,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "vtx_texld_inst_counter",
+                "offset": 68,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "pxl_branch_inst_counter",
+                "offset": 72,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "pxl_texld_inst_counter",
+                "offset": 76,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "pa_input_vtx_counter",
+                "offset": 80,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "pa_input_prim_counter",
+                "offset": 84,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "pa_output_prim_counter",
+                "offset": 88,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "pa_depth_clipped_counter",
+                "offset": 92,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "pa_trivial_rejected_counter",
+                "offset": 96,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "pa_culled_counter",
+                "offset": 100,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "se_culled_triangle_count",
+                "offset": 104,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "se_culled_lines_count",
+                "offset": 108,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "ra_valid_pixel_count",
+                "offset": 112,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "ra_total_quad_count",
+                "offset": 116,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "ra_valid_quad_count_after_early_z",
+                "offset": 120,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "ra_total_primitive_count",
+                "offset": 124,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "ra_pipe_cache_miss_counter",
+                "offset": 128,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "ra_prefetch_cache_miss_counter",
+                "offset": 132,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "ra_eez_culled_counter",
+                "offset": 136,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "tx_total_bilinear_requests",
+                "offset": 140,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "tx_total_trilinear_requests",
+                "offset": 144,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "tx_total_discarded_texture_requests",
+                "offset": 148,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "tx_total_texture_requests",
+                "offset": 152,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "tx_mem_read_count",
+                "offset": 156,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "tx_mem_read_in_8B_count",
+                "offset": 160,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "tx_cache_miss_count",
+                "offset": 164,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "tx_cache_hit_texel_count",
+                "offset": 168,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "tx_cache_miss_texel_count",
+                "offset": 172,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "mc_total_read_req_8B_from_pipeline",
+                "offset": 176,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "mc_total_read_req_8B_from_IP",
+                "offset": 180,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "mc_total_write_req_8B_from_pipeline",
+                "offset": 184,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "hi_axi_cycles_read_request_stalled",
+                "offset": 188,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "hi_axi_cycles_write_request_stalled",
+                "offset": 192,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "hi_axi_cycles_write_data_stalled",
+                "offset": 196,
+                "type": "unsigned int"
+            }
+        ],
+        "name": "_gcsPROFILER_COUNTERS"
+    },
+    "_gcsQUEUE": {
+        "byte_size": 220,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 1,
+                "name": "next",
+                "offset": 0,
+                "type": "_gcsQUEUE"
+            },
+            {
+                "indirection": 0,
+                "name": "iface",
+                "offset": 4,
+                "type": "_gcsHAL_INTERFACE"
+            }
+        ],
+        "name": "_gcsQUEUE"
+    },
+    "_gcuVIDMEM_NODE": {
+        "byte_size": null,
+        "kind": "union_type",
+        "members": [],
+        "name": "_gcuVIDMEM_NODE"
+    },
+    "_u": {
+        "byte_size": 200,
+        "kind": "union_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "GetBaseAddress",
+                "offset": 0,
+                "type": "_gcsHAL_GET_BASE_ADDRESS"
+            },
+            {
+                "indirection": 0,
+                "name": "QueryVideoMemory",
+                "offset": 0,
+                "type": "_gcsHAL_QUERY_VIDEO_MEMORY"
+            },
+            {
+                "indirection": 0,
+                "name": "QueryChipIdentity",
+                "offset": 0,
+                "type": "_gcsHAL_QUERY_CHIP_IDENTITY"
+            },
+            {
+                "indirection": 0,
+                "name": "MapMemory",
+                "offset": 0,
+                "type": "_gcsHAL_MAP_MEMORY"
+            },
+            {
+                "indirection": 0,
+                "name": "UnmapMemory",
+                "offset": 0,
+                "type": "_gcsHAL_UNMAP_MEMORY"
+            },
+            {
+                "indirection": 0,
+                "name": "AllocateLinearVideoMemory",
+                "offset": 0,
+                "type": "_gcsHAL_ALLOCATE_LINEAR_VIDEO_MEMORY"
+            },
+            {
+                "indirection": 0,
+                "name": "AllocateVideoMemory",
+                "offset": 0,
+                "type": "_gcsHAL_ALLOCATE_VIDEO_MEMORY"
+            },
+            {
+                "indirection": 0,
+                "name": "FreeVideoMemory",
+                "offset": 0,
+                "type": "_gcsHAL_FREE_VIDEO_MEMORY"
+            },
+            {
+                "indirection": 0,
+                "name": "LockVideoMemory",
+                "offset": 0,
+                "type": "_gcsHAL_LOCK_VIDEO_MEMORY"
+            },
+            {
+                "indirection": 0,
+                "name": "UnlockVideoMemory",
+                "offset": 0,
+                "type": "_gcsHAL_UNLOCK_VIDEO_MEMORY"
+            },
+            {
+                "indirection": 0,
+                "name": "AllocateNonPagedMemory",
+                "offset": 0,
+                "type": "_gcsHAL_ALLOCATE_NON_PAGED_MEMORY"
+            },
+            {
+                "indirection": 0,
+                "name": "FreeNonPagedMemory",
+                "offset": 0,
+                "type": "_gcsHAL_FREE_NON_PAGED_MEMORY"
+            },
+            {
+                "indirection": 0,
+                "name": "Event",
+                "offset": 0,
+                "type": "_gcsHAL_EVENT_COMMIT"
+            },
+            {
+                "indirection": 0,
+                "name": "Commit",
+                "offset": 0,
+                "type": "_gcsHAL_COMMIT"
+            },
+            {
+                "indirection": 0,
+                "name": "MapUserMemory",
+                "offset": 0,
+                "type": "_gcsHAL_MAP_USER_MEMORY"
+            },
+            {
+                "indirection": 0,
+                "name": "UnmapUserMemory",
+                "offset": 0,
+                "type": "_gcsHAL_UNMAP_USER_MEMORY"
+            },
+            {
+                "indirection": 0,
+                "name": "UserSignal",
+                "offset": 0,
+                "type": "_gcsHAL_USER_SIGNAL"
+            },
+            {
+                "indirection": 0,
+                "name": "Signal",
+                "offset": 0,
+                "type": "_gcsHAL_SIGNAL"
+            },
+            {
+                "indirection": 0,
+                "name": "WriteData",
+                "offset": 0,
+                "type": "_gcsHAL_WRITE_DATA"
+            },
+            {
+                "indirection": 0,
+                "name": "AllocateContiguousMemory",
+                "offset": 0,
+                "type": "_gcsHAL_ALLOCATE_CONTIGUOUS_MEMORY"
+            },
+            {
+                "indirection": 0,
+                "name": "FreeContiguousMemory",
+                "offset": 0,
+                "type": "_gcsHAL_FREE_CONTIGUOUS_MEMORY"
+            },
+            {
+                "indirection": 0,
+                "name": "ReadRegisterData",
+                "offset": 0,
+                "type": "_gcsHAL_READ_REGISTER"
+            },
+            {
+                "indirection": 0,
+                "name": "WriteRegisterData",
+                "offset": 0,
+                "type": "_gcsHAL_WRITE_REGISTER"
+            },
+            {
+                "indirection": 0,
+                "name": "GetProfileSetting",
+                "offset": 0,
+                "type": "_gcsHAL_GET_PROFILE_SETTING"
+            },
+            {
+                "indirection": 0,
+                "name": "SetProfileSetting",
+                "offset": 0,
+                "type": "_gcsHAL_SET_PROFILE_SETTING"
+            },
+            {
+                "indirection": 0,
+                "name": "RegisterProfileData",
+                "offset": 0,
+                "type": "_gcsHAL_READ_ALL_PROFILE_REGISTERS"
+            },
+            {
+                "indirection": 0,
+                "name": "RegisterProfileData2D",
+                "offset": 0,
+                "type": "_gcsHAL_PROFILE_REGISTERS_2D"
+            },
+            {
+                "indirection": 0,
+                "name": "SetPowerManagement",
+                "offset": 0,
+                "type": "_gcsHAL_SET_POWER_MANAGEMENT"
+            },
+            {
+                "indirection": 0,
+                "name": "QueryPowerManagement",
+                "offset": 0,
+                "type": "_gcsHAL_QUERY_POWER_MANAGEMENT"
+            },
+            {
+                "indirection": 0,
+                "name": "QueryKernelSettings",
+                "offset": 0,
+                "type": "_gcsHAL_QUERY_KERNEL_SETTINGS"
+            },
+            {
+                "indirection": 0,
+                "name": "MapPhysical",
+                "offset": 0,
+                "type": "_gcsHAL_MAP_PHYSICAL"
+            },
+            {
+                "indirection": 0,
+                "name": "Debug",
+                "offset": 0,
+                "type": "_gcsHAL_DEBUG"
+            },
+            {
+                "indirection": 0,
+                "name": "Cache",
+                "offset": 0,
+                "type": "_gcsHAL_CACHE"
+            }
+        ],
+        "name": "_u"
+    },
+    "array_type_6164": {
+        "indirection": 0,
+        "kind": "array_type",
+        "length": 128,
+        "name": "array_type_6164",
+        "type": "char"
+    },
+    "array_type_6517": {
+        "indirection": 0,
+        "kind": "array_type",
+        "length": 80,
+        "name": "array_type_6517",
+        "type": "char"
+    },
+    "array_type_7022": {
+        "indirection": 1,
+        "kind": "array_type",
+        "length": 10,
+        "name": "array_type_7022",
+        "type": "_gcoCTXBUF"
+    },
+    "array_type_7038": {
+        "indirection": 1,
+        "kind": "array_type",
+        "length": 10,
+        "name": "array_type_7038",
+        "type": "void"
+    },
+    "gcs2D_PROFILE": {
+        "byte_size": 8,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "cycleCount",
+                "offset": 0,
+                "type": "unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "pixelsRendered",
+                "offset": 4,
+                "type": "unsigned int"
+            }
+        ],
+        "name": "gcs2D_PROFILE"
+    },
+    "int": {
+        "byte_size": 4,
+        "encoding": "signed",
+        "kind": "base_type",
+        "name": "int"
+    },
+    "long long unsigned int": {
+        "byte_size": 8,
+        "encoding": "unsigned",
+        "kind": "base_type",
+        "name": "long long unsigned int"
+    },
+    "long unsigned int": {
+        "byte_size": 4,
+        "encoding": "unsigned",
+        "kind": "base_type",
+        "name": "long unsigned int"
+    },
+    "unsigned char": {
+        "byte_size": 1,
+        "encoding": "unsigned_char",
+        "kind": "base_type",
+        "name": "unsigned char"
+    },
+    "unsigned int": {
+        "byte_size": 4,
+        "encoding": "unsigned",
+        "kind": "base_type",
+        "name": "unsigned int"
+    }
+}

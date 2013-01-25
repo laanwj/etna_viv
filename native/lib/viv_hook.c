@@ -44,6 +44,9 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <stdarg.h>
+#include <stdint.h>
+#include <string.h>
+#include <sys/ioctl.h>
 
 flightrec_t _fdr;
 
@@ -170,14 +173,12 @@ void log_interface_in(flightrec_event_t evctx, gcsHAL_INTERFACE *id)
     case gcvHAL_COMMIT:
         fdr_event_add_oneshot_range(evctx, id->u.Commit.commandBuffer, sizeof(struct _gcoCMDBUF));
         //fdr_event_add_oneshot_range(evctx, id->u.Commit.commandBuffer->logical, id->u.Commit.commandBuffer->offset);
-#ifndef V4
+#ifndef GCABI_v4
         fdr_event_add_oneshot_range(evctx, id->u.Commit.contextBuffer, sizeof(struct _gcoCONTEXT));
         if(id->u.Commit.contextBuffer->map) /* state map */
             fdr_event_add_oneshot_range(evctx, id->u.Commit.contextBuffer->map, id->u.Commit.contextBuffer->stateCount*4);
         if(id->u.Commit.contextBuffer->buffer) /* context command temp buffer */
             fdr_event_add_oneshot_range(evctx, id->u.Commit.contextBuffer->buffer, id->u.Commit.contextBuffer->bufferSize);
-        //if(id->u.Commit.contextBuffer->logical) /* context command gpu buffer */
-        //    fdr_event_add_oneshot_range(evctx, id->u.Commit.contextBuffer->logical, id->u.Commit.contextBuffer->bufferSize);
 #endif
         break;
     case gcvHAL_EVENT_COMMIT: { /* log entire event chain */
@@ -279,7 +280,6 @@ int my_ioctl(int d, int request, vivante_ioctl_data_t *ptr)
         fdr_event_add_oneshot_range(evctx, ptr->in_buf, ptr->in_buf_size);
         log_interface_in(evctx, ptr->in_buf);
         fdr_log_event(_fdr, evctx);
-        /* if gcvHAL_LOCK_VIDEO_MEMORY, look up size in node */
     }
     ret = ioctl(d, request, ptr);
     if(request == IOCTL_GCHAL_INTERFACE)
@@ -303,14 +303,13 @@ void the_hook(const char *filename)
     char *mali_path = NULL; // path to libMali.so
     void *mali_base = NULL;
 
-    _fdr = fdr_open("/mnt/sdcard/egl2.fdr");
+    _fdr = fdr_open(filename);
 
     if(parse_maps("libGAL.so", &mali_path, &mali_base))
     {
         fprintf(stderr, "Could not find libMali library in process map\n");
         return;
     }
-    printf("Mali base is %p\n", mali_base);
     
     printf("Hooking %s at %p\n", mali_path, mali_base);
     if(elf_hook(mali_path, mali_base, "open", &my_open) == NULL)
@@ -339,5 +338,6 @@ void the_hook(const char *filename)
 void close_hook()
 {
     fdr_close(_fdr);
+    _fdr = 0;
 }
 

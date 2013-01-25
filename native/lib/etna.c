@@ -110,9 +110,8 @@ static int initialize_gpu_context(gcoCONTEXT vctx)
 int etna_create(etna_ctx **ctx_out)
 {
     if(ctx_out == NULL) return ETNA_INVALID_ADDR;
-    etna_ctx *ctx = malloc(sizeof(etna_ctx));
+    etna_ctx *ctx = ETNA_NEW(etna_ctx);
     if(ctx == NULL) return ETNA_OUT_OF_MEMORY;
-    memset(ctx, 0, sizeof(etna_ctx));
 
     if(initialize_gpu_context(&ctx->ctx) != ETNA_OK)
     {

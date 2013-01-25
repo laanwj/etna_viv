@@ -259,7 +259,7 @@ Used fields in `struct _gcoCONTEXT` from the kernel:
     [in] This id is used to determine wether to switch context
     [out] A unique id for the context is generated the first time a COMMIT is done, with context->id==0
 - `hint*` only used when `SECURE_USER` is set
-- `logical` and `bufferSize` 
+- `logical` and `bufferSize`  (note: `physical` is not used; the dove version of the driver doesn't even have this field in the default configuration)
 - `pipe2DIndex`: if this is set, "we have to check pipes", and the pipe is set to initialPipe if needed
 - `entryPipe`: this is the pipe that has to be active on entering the passed command buffer (and that holds at the end of the context buffer)
 - `initialPipe`: this is the pipe that has to be active on entering the context command buffer

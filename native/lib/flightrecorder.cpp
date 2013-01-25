@@ -30,8 +30,13 @@
 #include <sys/stat.h>
 #include <string.h>
 #include <fcntl.h>
+#include <stdint.h>
+#include <stdlib.h>
 
-//#include <stdio.h>
+//#define DEBUG
+#ifdef DEBUG
+#include <stdio.h>
+#endif
 
 #include <vector>
 #include <string>
@@ -64,7 +69,7 @@ typedef std::vector<fdr_parameters> ParameterList;
 
 inline void write_record_type(int fd, uint8_t record_type)
 {
-    write(fd, &record_type, sizeof(uint8_t));
+    (void)write(fd, &record_type, sizeof(uint8_t));
 }
 
 class Event {
@@ -76,7 +81,8 @@ public:
     ParameterList parameters;
 
     Event(const char *event_type): valid(true) {
-        strlcpy(this->event_type, event_type, ID_LEN);
+        strncpy(this->event_type, event_type, ID_LEN);
+        this->event_type[ID_LEN-1] = 0;
     }
     ~Event() {}
 
@@ -85,7 +91,8 @@ public:
     flightrec_status add_parameter(const char *name, size_t value)
     {
         fdr_parameters params = {};
-        strlcpy(params.name, name, ID_LEN);
+        strncpy(params.name, name, ID_LEN);
+        params.name[ID_LEN-1] = 0;
         params.value = value;
         parameters.push_back(params);
         return FDR_OK;
@@ -122,9 +129,9 @@ class FlightRecorder {
     void write_mem_range(size_t start, size_t end)
     {
         write_record_type(fd, RTYPE_RANGE_DATA);
-        write(fd, &start, sizeof(size_t));
-        write(fd, &end, sizeof(size_t));
-        write(fd, (void*)start, end - start);
+        (void)write(fd, &start, sizeof(size_t));
+        (void)write(fd, &end, sizeof(size_t));
+        (void)write(fd, (void*)start, end - start);
     }
 
     /* Binary diff between two memory areas.
@@ -135,7 +142,9 @@ class FlightRecorder {
         size_t mismatch_start = 0;
         size_t mismatch_end = 0;
         bool in_difference = false;
+#ifdef DEBUG
         //printf("bdiff %08x %08x %08x %08x\n", (uint32_t)from, (uint32_t)to, (uint32_t)size, (uint32_t)granularity);
+#endif
         for(size_t ptr = 0; ptr < size; ptr += granularity)
         {
             size_t compsize = std::min(size-ptr, granularity);
@@ -182,7 +191,9 @@ class FlightRecorder {
                  * so that we can compare against it later. */
                 void *block = malloc(i->end - i->start);
                 memcpy(block, (void*)i->start, i->end - i->start);
-
+#ifdef DEBUG
+                printf("storing %p: %p %p\n", block, i->start, i->end);
+#endif
                 stored.insert(std::make_pair(*i, block));
             } else {
                 if(j->first.start != i->start || j->first.end != i->end)
@@ -245,12 +256,15 @@ public:
     flightrec_status add_monitored_range(size_t addr_start, size_t addr_end)
     {
         pthread_mutex_lock(&mutex);
+#ifdef DEBUG
+        printf("-> add_monitored_range %p %p\n", addr_start, addr_end);
+#endif
         std::pair<MemIntervalSet::iterator, bool> rv = persistent.insert(MemInterval(addr_start, addr_end));
         if(rv.second)
         {
             write_record_type(fd, RTYPE_ADD_UPDATED_RANGE);
-            write(fd, &addr_start, sizeof(size_t));
-            write(fd, &addr_end, sizeof(size_t));
+            (void)write(fd, &addr_start, sizeof(size_t));
+            (void)write(fd, &addr_end, sizeof(size_t));
         }
         pthread_mutex_unlock(&mutex);
         return rv.second ? FDR_OK : FDR_OVERLAP;
@@ -264,8 +278,8 @@ public:
         if(ret)
         {
             write_record_type(fd, RTYPE_REMOVE_UPDATED_RANGE);
-            write(fd, &addr_start, sizeof(size_t));
-            write(fd, &addr_end, sizeof(size_t));
+            (void)write(fd, &addr_start, sizeof(size_t));
+            (void)write(fd, &addr_end, sizeof(size_t));
         }
         pthread_mutex_unlock(&mutex);
         return ret ? FDR_OK : FDR_NOT_FOUND;
@@ -284,24 +298,24 @@ public:
         for(MemIntervalSet::const_iterator i=context->temp.begin(); i!=context->temp.end(); ++i)
         {
             write_record_type(fd, RTYPE_RANGE_TEMP_DATA);
-            write(fd, &i->start, sizeof(size_t));
-            write(fd, &i->end, sizeof(size_t));
-            write(fd, (void*)i->start, i->end - i->start);
+            (void)write(fd, &i->start, sizeof(size_t));
+            (void)write(fd, &i->end, sizeof(size_t));
+            (void)write(fd, (void*)i->start, i->end - i->start);
         }
 
         write_record_type(fd, RTYPE_EVENT);
         uint8_t name_len = strlen(context->event_type);
-        write(fd, &name_len, sizeof(uint8_t));
-        write(fd, context->event_type, name_len);
+        (void)write(fd, &name_len, sizeof(uint8_t));
+        (void)write(fd, context->event_type, name_len);
 
         /* log parameters */
-        write(fd, &num_parameters, sizeof(uint32_t));
+        (void)write(fd, &num_parameters, sizeof(uint32_t));
         for(size_t i=0; i<num_parameters; ++i)
         {
             uint8_t name_len = strlen(context->parameters[i].name);
-            write(fd, &name_len, sizeof(uint8_t));
-            write(fd, context->parameters[i].name, name_len);
-            write(fd, &context->parameters[i].value, sizeof(size_t));
+            (void)write(fd, &name_len, sizeof(uint8_t));
+            (void)write(fd, context->parameters[i].name, name_len);
+            (void)write(fd, &context->parameters[i].value, sizeof(size_t));
         }
         delete context;
         pthread_mutex_unlock(&mutex);
@@ -312,8 +326,8 @@ public:
     {
         pthread_mutex_lock(&mutex);
         write_record_type(fd, RTYPE_COMMENT);
-        write(fd, &size, sizeof(size_t));
-        write(fd, data, size);
+        (void)write(fd, &size, sizeof(size_t));
+        (void)write(fd, data, size);
         pthread_mutex_unlock(&mutex);
         return FDR_OK;
     }
@@ -348,6 +362,8 @@ flightrec_status fdr_remove_monitored_range(flightrec_t self, void *addr_start, 
 
 flightrec_event_t fdr_new_event(flightrec_t self, const char *event_type)
 {
+    if(self == NULL)
+        return NULL;
     Event *rv = new Event(event_type);
     if(rv->is_valid()) {
         return (flightrec_event_t) rv;

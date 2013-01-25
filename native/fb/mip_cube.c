@@ -33,7 +33,6 @@
 #include <stdarg.h>
 #include <assert.h>
 #include <math.h>
-#include <pthread.h>
 
 #include <errno.h>
 
@@ -46,8 +45,9 @@
 #include "etna_rs.h"
 #include "etna_fb.h"
 #include "etna_mem.h"
+#include "etna_bswap.h"
 
-#include "esUtil.h"
+#include "esTransform.h"
 #include "dds.h"
 
 #define RCPLOG2 (1.4426950408889634f)
@@ -220,110 +220,6 @@ void tile_texture(void *dest, void *src, unsigned width, unsigned height, unsign
     }
 }
 
-#define ETNA_FB_NUM_BUFFERS 2
-struct etna_fb_buffer {
-    pthread_mutex_t available_mutex;
-    pthread_cond_t available_cond;
-    bool is_available;
-    int sig_id_ready;
-};
-struct etna_fb_buffers {
-    pthread_t thread;
-    int backbuffer, frontbuffer;
-    bool terminate;
-    fb_info *fb;
-    struct etna_fb_buffer buf[ETNA_FB_NUM_BUFFERS];
-};
-
-static void bufferswap_init_buffer(struct etna_fb_buffer *buf)
-{
-    pthread_mutex_init(&buf->available_mutex, NULL);
-    pthread_cond_init(&buf->available_cond, NULL);
-
-    buf->is_available = 1;
-    if(viv_user_signal_create(0, &buf->sig_id_ready) != 0)
-    {
-        fprintf(stderr, "Cannot create user signal for framebuffer sync\n");
-        exit(1);
-    }
-}
-
-static void bufferswap_destroy_buffer(struct etna_fb_buffer *buf)
-{
-    (void)pthread_mutex_destroy(&buf->available_mutex);
-    (void)pthread_cond_destroy(&buf->available_cond);
-    (void)viv_user_signal_destroy(buf->sig_id_ready);
-}
-
-static void bufferswap_thread(struct etna_fb_buffers *bufs)
-{
-    int cur = 0;
-    while(!bufs->terminate)
-    {
-        /* wait for "buffer ready" signal for buffer X (and clear it) */
-        if(viv_user_signal_wait(bufs->buf[cur].sig_id_ready, SIG_WAIT_INDEFINITE) != 0)
-        {
-            fprintf(stderr, "Error waiting for framebuffer sync signal\n");
-            exit(1);
-        }
-        /* switch buffers */
-        fb_set_buffer(bufs->fb, cur);
-        bufs->frontbuffer = cur;
-        /* X = (X+1)%buffers */
-        cur = (cur+1) % ETNA_FB_NUM_BUFFERS;
-        /* set "buffer available" for buffer X, signal condition */
-        pthread_mutex_lock(&bufs->buf[cur].available_mutex);
-        bufs->buf[cur].is_available = 1;
-        pthread_cond_signal(&bufs->buf[cur].available_cond);
-        pthread_mutex_unlock(&bufs->buf[cur].available_mutex);
-    }
-}
-
-void bufferswap_init(struct etna_fb_buffers *bufs, fb_info *fb)
-{
-    bufs->fb = fb;
-    bufs->backbuffer = bufs->frontbuffer = 0;
-    bufs->terminate = false;
-    for(int idx=0; idx<ETNA_FB_NUM_BUFFERS; ++idx)
-        bufferswap_init_buffer(&bufs->buf[idx]);
-    pthread_create(&bufs->thread, NULL, (void * (*)(void *))&bufferswap_thread, bufs);
-}
-
-void bufferswap_exit(struct etna_fb_buffers *bufs)
-{
-    bufs->terminate = true;
-    /* signal ready signals, to prevent thread from waiting forever for buffer to become ready */
-    for(int idx=0; idx<ETNA_FB_NUM_BUFFERS; ++idx)
-        (void)viv_user_signal_signal(bufs->buf[idx].sig_id_ready, 1); 
-    (void)pthread_join(bufs->thread, NULL);
-    for(int idx=0; idx<ETNA_FB_NUM_BUFFERS; ++idx)
-        bufferswap_destroy_buffer(&bufs->buf[idx]);
-}
-
-/* wait until current backbuffer is available to render to */
-void bufferswap_wait_available(struct etna_fb_buffers *bufs)
-{
-    struct etna_fb_buffer *buf = &bufs->buf[bufs->backbuffer];
-    /* Wait until buffer buf is available */
-    pthread_mutex_lock(&buf->available_mutex);
-    while(!buf->is_available)
-    {
-        pthread_cond_wait(&buf->available_cond, &buf->available_mutex);
-    }
-    pthread_mutex_unlock(&buf->available_mutex);
-}
-
-/* queue buffer swap when GPU ready with rendering to buf */
-void bufferswap_queue_swap(struct etna_fb_buffers *bufs)
-{
-    if(viv_event_queue_signal(bufs->buf[bufs->backbuffer].sig_id_ready, gcvKERNEL_PIXEL) != 0)
-    {
-        fprintf(stderr, "Unable to queue framebuffer sync signal\n");
-        exit(1);
-    }
-    bufs->backbuffer = (bufs->backbuffer + 1) % ETNA_FB_NUM_BUFFERS;
-}
-
 int main(int argc, char **argv)
 {
     int rv;
@@ -352,8 +248,12 @@ int main(int argc, char **argv)
     printf("Succesfully opened device\n");
 
     /* Initialize buffers synchronization structure */
-    struct etna_fb_buffers buffers;
-    bufferswap_init(&buffers, &fb);
+    etna_bswap_buffers *buffers = 0;
+    if(etna_bswap_create(&buffers, (int (*)(void *, int))&fb_set_buffer, &fb) < 0)
+    {
+        fprintf(stderr, "Error creating buffer swapper\n");
+        exit(1);
+    }
 
     /* Allocate video memory */
     etna_vidmem *rt = 0; /* main render target */
@@ -741,7 +641,7 @@ int main(int argc, char **argv)
         etna_stall(ctx, SYNC_RECIPIENT_FE, SYNC_RECIPIENT_PE);
 
         /* copy to screen */
-        bufferswap_wait_available(&buffers);
+        etna_bswap_wait_available(buffers);
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
         etna_set_state(ctx, VIVS_RS_CONFIG,
                 VIVS_RS_CONFIG_SOURCE_FORMAT(RS_FORMAT_X8R8G8B8) |
@@ -756,19 +656,19 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_RS_EXTRA_CONFIG, 
                 0); /* no AA, no endian switch */
         etna_set_state(ctx, VIVS_RS_SOURCE_ADDR, rt->address); /* ADDR_A */
-        etna_set_state(ctx, VIVS_RS_DEST_ADDR, fb.physical[buffers.backbuffer]); /* ADDR_J */
+        etna_set_state(ctx, VIVS_RS_DEST_ADDR, fb.physical[buffers->backbuffer]); /* ADDR_J */
         etna_set_state(ctx, VIVS_RS_WINDOW_SIZE, 
                 VIVS_RS_WINDOW_SIZE_HEIGHT(height) |
                 VIVS_RS_WINDOW_SIZE_WIDTH(width));
         etna_set_state(ctx, VIVS_RS_KICKER, 0xbeebbeeb);
 
-        bufferswap_queue_swap(&buffers);
+        etna_bswap_queue_swap(buffers);
     }
 #ifdef DUMP
     bmp_dump32(fb.logical[1-backbuffer], width, height, false, "/mnt/sdcard/fb.bmp");
     printf("Dump complete\n");
 #endif
-    bufferswap_exit(&buffers);
+    etna_bswap_free(buffers);
     etna_free(ctx);
     viv_close();
     return 0;

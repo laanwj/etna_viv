@@ -13,7 +13,7 @@
 #include "etna/cmdstream.xml.h"
 #include "write_bmp.h"
 #include "viv.h"
-#include "esUtil.h"
+#include "esTransform.h"
 
 /* Print generated command buffer */
 //#define CMD_DEBUG

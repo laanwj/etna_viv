@@ -107,7 +107,7 @@ bmp_dump32(char *buffer, unsigned width, unsigned height, bool bgra, const char 
 {
 	int fd;
 
-	fd = open(filename, O_WRONLY| O_TRUNC | O_CREAT);
+	fd = open(filename, O_WRONLY| O_TRUNC | O_CREAT, 0666);
 	if (fd == -1) {
 		printf("Failed to open %s: %s\n", filename, strerror(errno));
 		return;

@@ -46,7 +46,7 @@
 #include "etna_fb.h"
 #include "etna_mem.h"
 
-#include "esUtil.h"
+#include "esTransform.h"
 
 GLfloat vVertices[] = {
   -1.0f, -1.0f, +0.0f,

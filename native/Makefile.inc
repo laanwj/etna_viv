@@ -1,22 +1,12 @@
-TOOLCHAIN ?= ~/android/toolchain
-SDK ?= ~/android/android-sdk-linux/
-NDK ?= ~/android/ndk
-ANDROID_TARGET ?= android-10
-ANDROID_TARGET_NDK ?= android-9
-SYSROOT ?= $(TOOLCHAIN)/sysroot/
-CXXABI ?= armeabi-v7a
+GCABI ?= v2
+PLATFORM_GL_LIBS ?= -lEGL_VIVANTE -lGLESv2_VIVANTE -L$(TOP)/lib/egl -Xlinker --allow-shlib-undefined
 
-CC = $(TOOLCHAIN)/bin/arm-linux-androideabi-gcc
-CXX = $(TOOLCHAIN)/bin/arm-linux-androideabi-g++
-LD = $(TOOLCHAIN)/bin/arm-linux-androideabi-ld
-AR = $(TOOLCHAIN)/bin/arm-linux-androideabi-ar
-ADB = $(SDK)/platform-tools/adb
+CC = $(GCCPREFIX)gcc
+CXX = $(GCCPREFIX)g++
+LD = $(GCCPREFIX)ld
+AR = $(GCCPREFIX)ar
 
-SYSTEM = android
-ARCH = arm
-
-CFLAGS += --sysroot=$(SYSROOT) -O2 -g -Wall 
-CXXFLAGS += --sysroot=$(SYSROOT) -O2 -g -Wall 
-LDFLAGS += --sysroot=$(SYSROOT)
-#-nodefaultlibs
+CFLAGS += $(PLATFORM_CFLAGS) -O2 -g -Wall 
+CXXFLAGS += $(PLATFORM_CXXFLAGS) -O2 -g -Wall 
+LDFLAGS += $(PLATFORM_LDFLAGS)
 

@@ -33,7 +33,7 @@
 #include <sys/mman.h>
 #include <stdarg.h>
 
-#include "esUtil.h"
+#include "esTransform.h"
 #include "eglutil.h"
 #include "dump_gl_screen.h"
 #include "viv_hook.h"
