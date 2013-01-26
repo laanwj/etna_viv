@@ -26,6 +26,9 @@ and revision. Unlike NV, which parametrizes everything on the model and revision
 
 For an overview of the feature bits see the enumerations in `state.xml`.
 
+For the Vivante GPUs on some platforms the detailed features and specs are known, these can be found in `doc/gpus_comparison.html`
+(`tools/data/gpus.json` for the raw source data).
+
 Modules
 ==============
 (from Vivante SoCIP 2011 presentation [1])

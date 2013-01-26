@@ -25,7 +25,9 @@ ARM-based:
 MIPS-based:
 - Devices based on Ingenic JZ4770 MIPS SoC (GC860), JZ4760 (GC200, 2D only) such as the GCW zero.
 
-See also https://en.wikipedia.org/wiki/Vivante_Corporation
+See also https://en.wikipedia.org/wiki/Vivante_Corporation.
+
+For the Vivante GPUs on some platforms the detailed features and specs are known, these can be found in `doc/gpus_comparison.html`.
 
 Contents
 ==========

@@ -1,0 +1,96 @@
+[
+    {
+        "platform": "Rockchip 2918",
+        "chips": [{
+            "type": "GC800",
+            "chipModel": "0x0800",
+            "chipRevision": "0x4604",
+            "chipFeatures": "0xa02c6eed",
+            "chipMinorFeatures": "0xe1399fff",
+            "chipMinorFeatures1": "0x19",
+            "chipMinorFeatures2": "0x0",
+            "chipMinorFeatures3": "0x0",
+            "streamCount": "0x1",
+            "registerMax": "0x40",
+            "threadCount": "0x100",
+            "shaderCoreCount": "0x1",
+            "vertexCacheSize": "0x8",
+            "vertexOutputBufferSize": "0x200"
+        }]
+    },
+    {
+        "platform": "Marvell Armada 510 (88AP510)",
+        "chips": [{
+            "type": "GC600",
+            "chipModel": "0x0600",
+            "chipRevision": "0x19",
+            "chipFeatures": "0x87ecd",
+            "chipMinorFeatures": "0x7",
+            "chipMinorFeatures1": "0x0",
+            "chipMinorFeatures2": "0x0",
+            "chipMinorFeatures3": "0x0",
+            "streamCount": "0x1",
+            "registerMax": "0x40",
+            "threadCount": "0x100",
+            "shaderCoreCount": "0x1",
+            "vertexCacheSize": "0x8",
+            "vertexOutputBufferSize": "0x200"
+        }]
+    },
+    {
+        "platform": "Marvell Armada 620 (88AP2128-B0)",
+        "chips": [{
+            "type": "GC2000",
+            "chipModel": "0x00002000",
+            "chipRevision": "0x00005026",
+            "chipFeatures": "0xE0286CAD",
+            "chipMinorFeatures": "0xC3799EFF",
+            "chipMinorFeatures1": "0x2E13B2D9",
+            "chipMinorFeatures2": "0x02000000",
+            "chipMinorFeatures3": "0x00000000"
+        }, {
+            "type": "GC300",
+            "chipModel": "0x00000300",
+            "chipRevision": "0x00004634",
+            "chipFeatures": "0xE02C7ECA",
+            "chipMinorFeatures": "0xE1399FFF",
+            "chipMinorFeatures1": "0x2E13B219",
+            "chipMinorFeatures2": "0x00010000",
+            "chipMinorFeatures3": "0x00000000"
+        }]
+    },
+    {
+        "platform": "Marvell Armada XXX (OLPC XO-1.75, model: 1C2)",
+        "chips": [{
+            "type": "GC860",
+            "chipModel": "0x860",
+            "chipRevision": "0x4603",
+            "chipFeatures": "0xe02c6eed",
+            "chipMinorFeatures": "0xcbf99fff",
+            "streamCount": "1",
+            "registerMax": "64",
+            "threadCount": "256",
+            "shaderCoreCount": "1",
+            "vertexCacheSize": "8",
+            "vertexOutputBufferSize": "512"
+        }]
+    },
+    {
+        "platform": "Marvell 88SV331x",
+        "chips": [{
+            "type": "GC530",
+            "chipModel": "0x530",
+            "chipRevision": "0x4303",
+            "chipFeatures": "0x212c66ed",
+            "chipMinorFeatures": "0x17f",
+            "streamCount": "1",
+            "registerMax": "64",
+            "threadCount": "128",
+            "shaderCoreCount": "1",
+            "vertexCacheSize": "8",
+            "vertexOutputBufferSize": "128"
+        }]
+    }
+]
+
+

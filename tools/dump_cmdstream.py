@@ -335,8 +335,6 @@ def parse_arguments():
             help='Structures definition file')
     parser.add_argument('rules_file', metavar='RULESFILE', type=str, 
             help='State map definition file (rules-ng-ng)')
-    parser.add_argument('isa_file', metavar='ISAFILE', type=str, 
-            help='Shader ISA definition file (rules-ng-ng)')
     parser.add_argument('-l', '--hide-load-state', dest='hide_load_state',
             default=False, action='store_const', const=True,
             help='Hide "LOAD_STATE" entries, this can make command stream a bit easier to read')
@@ -384,8 +382,6 @@ def main():
     fdr = FDRLoader(args.input)
     global options
     options = args
-    global isa
-    isa = parse_rng_file(args.isa_file)
 
     def handle_comment(f, val, depth):
         '''Annotate value with a comment'''
