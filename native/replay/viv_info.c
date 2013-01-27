@@ -173,7 +173,8 @@ const char *vivante_power_state(gceCHIPPOWERSTATE state)
     case gcvPOWER_OFF: return "OFF";
     case gcvPOWER_IDLE: return "IDLE";
     case gcvPOWER_SUSPEND: return "SUSPEND";
-#ifndef GC_dove
+#ifndef GCABI_dove_old
+#ifndef GCABI_dove
     case gcvPOWER_ON_BROADCAST: return "ON_BROADCAST";
 #endif
     case gcvPOWER_SUSPEND_ATPOWERON: return "SUSPEND_ATPOWERON";
@@ -182,6 +183,7 @@ const char *vivante_power_state(gceCHIPPOWERSTATE state)
     case gcvPOWER_SUSPEND_BROADCAST: return "SUSPEND_BROADCAST";
     case gcvPOWER_OFF_BROADCAST: return "OFF_BROADCAST";
     case gcvPOWER_OFF_RECOVERY: return "OFF_RECOVERY";
+#endif
     default:
         return "UNKNOWN";
     }
@@ -204,8 +206,8 @@ int main()
     memset((void*)&id, 0, sizeof(id));
     id.command = gcvHAL_QUERY_CHIP_IDENTITY;
 
-#ifndef GC_dove
-    // Size must be 64 to work on Rockchip
+#ifndef GCABI_dove
+    // HACK size must be 64 to work on Rockchip
     ic.in_buf = &id;
     ic.in_buf_size = 64;//sizeof(id);
     ic.out_buf = &id;
@@ -249,7 +251,7 @@ int main()
         printf("  %c %s\n", flag?'+':'-', vivante_chipMinorFeatures1[i]);
     }
     printf("\n");
-#ifndef GC_dove
+#if !defined(GCABI_dove) && !defined(GCABI_dove_old)
     printf("Chip minor features 2: 0x%08x\n", id.u.QueryChipIdentity.chipMinorFeatures2);
     for(int i=0; i<32; ++i)
     {

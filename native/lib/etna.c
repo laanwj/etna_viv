@@ -27,11 +27,11 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
-//#define DEBUG
-//#ifdef DEBUG
+#include <string.h>
 #include <stdio.h>
-//#endif
 
+//#define DEBUG
+//#define DEBUG_CMDBUF
 
 /* TODO: don't forget to handle FE.VERTEX_ELEMENT_CONFIG (0x0600....0x0063c) specially;
  * fields need to be written in the right order, and only as many should be written as there are
@@ -70,8 +70,10 @@ static int initialize_gpu_context(gcoCONTEXT vctx)
     vctx->linkIndex = 0x1076; // XXX should not be hardcoded
     vctx->inUseIndex = 0x1078; // XXX should not be hardcoded
     vctx->bufferSize = sizeof(contextbuf);
+#ifndef GCABI_dove /* Are these used by the kernel on other platforms? otherwise better to remove them completely */
     vctx->bytes = 0x0; // Number of bytes at actually allocated for physical, logical
     vctx->physical = (void*)0x0;
+#endif
     vctx->logical = (void*)0x0;
     vctx->link = (void*)0x0; // Logical address of link (within consecutive array)
     vctx->initialPipe = ETNA_PIPE_2D;
@@ -95,8 +97,10 @@ static int initialize_gpu_context(gcoCONTEXT vctx)
     printf("Allocated buffer (size 0x%x) for context: phys=%08x log=%08x\n", (int)cbuf0_bytes, (int)cbuf0_physical, (int)cbuf0_logical);
 #endif
 
+#ifndef GCABI_dove
     vctx->bytes = cbuf0_bytes; /* actual size of buffer */
     vctx->physical = (void*)cbuf0_physical;
+#endif
     vctx->logical = cbuf0_logical;
     vctx->link = ((uint32_t*)cbuf0_logical) + vctx->linkIndex;
     vctx->inUse = (gctBOOL*)(((uint32_t*)cbuf0_logical) + vctx->inUseIndex);
@@ -185,9 +189,15 @@ static void clear_buffer(gcoCMDBUF cmdbuf)
 /* Switch to next buffer, optionally wait for it to be available */
 static int switch_next_buffer(etna_ctx *ctx)
 {
+#ifdef DEBUG
+    printf("Switching to new buffer\n");
+#endif
     int next_buf_id = (ctx->cur_buf + 1) % NUM_COMMAND_BUFFERS;
     if(viv_user_signal_wait(ctx->cmdbuf_sig[next_buf_id], SIG_WAIT_INDEFINITE) != 0)
     {
+#ifdef DEBUG
+        printf("Error waiting for command buffer sync signal\n");
+#endif
         return ETNA_INTERNAL_ERROR;
     }
     clear_buffer(&ctx->cmdbuf[next_buf_id]);
@@ -225,6 +235,9 @@ int _etna_reserve_internal(etna_ctx *ctx, size_t n)
 #endif
     if(ctx->cur_buf != -1)
     {
+#ifdef DEBUG
+        printf("Submitting old buffer\n");
+#endif
         /* Otherwise, if there is something to be committed left in the current command buffer, commit it */
         if((status = etna_flush(ctx)) != ETNA_OK)
             return status;
@@ -253,7 +266,7 @@ int etna_flush(etna_ctx *ctx)
     if(ctx->offset*4 <= (cur_buf->startOffset + BEGIN_COMMIT_CLEARANCE))
         return ETNA_OK; /* Nothing to do */
     cur_buf->offset = ctx->offset*4; /* Copy over current ending offset into CMDBUF, for kernel */
-#ifdef DEBUG
+#ifdef DEBUG_CMDBUF
     printf("    {");
     for(size_t i=cur_buf->startOffset; i<cur_buf->offset; i+=4)
     {
@@ -300,7 +313,9 @@ int etna_finish(etna_ctx *ctx)
     {
         return ETNA_INTERNAL_ERROR;
     }
-
+#ifdef DEBUG
+    printf("finish: Waiting for signal...\n");
+#endif
     /* Wait for signal */
     if(viv_user_signal_wait(ctx->sig_id, SIG_WAIT_INDEFINITE) != 0)
     {

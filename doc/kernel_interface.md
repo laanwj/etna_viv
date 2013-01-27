@@ -149,6 +149,8 @@ The subcommands are:
      If set to gcvTRUE, the `SIGNAL` command must be used with state false to
      reset the signal. If set to gcvFALSE, the signal automatically resets
      after waiting for it with `WAIT`.
+     - signalType (more recent dove kernel only), type of signal, appearantly only used for debugging
+
   Outputs: id
 
 - `USER_SIGNAL_DESTROY` Destroy the signal

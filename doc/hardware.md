@@ -299,6 +299,8 @@ Programming pecularities
   - Sending 3D commands in the 2D pipe instead of 3D pipe (then using a signal waiting for them to complete)
   - Wrong length of shader
   - Texture sampling without properly setup texture units
+  - `SE_SCISSOR`: setting SCISSOR bottom/right to `(x<<16)|5` instead of `(x<<16)-1` causes crashes for higher resolutions 
+    such as 1920x1080 on gc600. I don't know why, maybe some buffer or cache overflow. The rockchip vivante driver always uses |5 AFAIK.
 
   This may be a (kernel) driver problem. It is possible to reset the GPU from user space with an ioctl, but 
   this usually is not enough to make it un-stuck. It would probably be a better solution to introduce a kernel-based timeout

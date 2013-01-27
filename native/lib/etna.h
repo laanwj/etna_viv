@@ -33,6 +33,7 @@
 #include "etna/cmdstream.xml.h"
 
 #include <stdint.h>
+#include <stdlib.h>
 
 /* Number of command buffers, to be used in a circular fashion.
  */

@@ -20,8 +20,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-/* Rotating, animated cube.
- * Adapted to work on gc600 (4 bit per tile, no supertiling) as well as gc800.
+/* Experimentation with non-supertiled, 4-bit-per-tile rendering on cubox.
+ * This succesfully renders the cube on the dove gc600!
  */
 #include <stdio.h>
 #include <unistd.h>
@@ -187,20 +187,9 @@ int main(int argc, char **argv)
     int rv;
     int width = 256;
     int height = 256;
-    int padded_width, padded_height;
-    int backbuffer = 0;
+    int padded_width = etna_align_up(width, 64);
+    int padded_height = etna_align_up(height, 64);
     
-    fb_info fb;
-    rv = fb_open(0, &fb);
-    if(rv!=0)
-    {
-        exit(1);
-    }
-    width = fb.fb_var.xres;
-    height = fb.fb_var.yres;
-    padded_width = etna_align_up(width, 64);
-    padded_height = etna_align_up(height, 64);
-
     printf("padded_width %i padded_height %i\n", padded_width, padded_height);
     rv = viv_open();
     if(rv!=0)
@@ -209,9 +198,11 @@ int main(int argc, char **argv)
         exit(1);
     }
     printf("Succesfully opened device\n");
+    
     bool supertiled = VIV_FEATURE(chipMinorFeatures0,SUPER_TILED);
     unsigned bits_per_tile = VIV_FEATURE(chipMinorFeatures0,2BITPERTILE)?2:4;
-    printf("supertiled: %i bits per tile: %i\n", supertiled, bits_per_tile);
+
+    printf("Supertile: %i, bits per tile: %i\n", supertiled, bits_per_tile);
 
     etna_vidmem *rt = 0; /* main render target */
     etna_vidmem *rt_ts = 0; /* tile status for main render target */
@@ -270,10 +261,10 @@ int main(int argc, char **argv)
      * and simply submit them at once. Especially for consecutive states and masked stated this could be a big win
      * in DMA command buffer size. */
 
-    for(int frame=0; frame<1000; ++frame)
+
+    for(int frame=0; frame<1; ++frame)
     {
-        if(frame % 50 == 0)
-            printf("*** FRAME %i ****\n", frame);
+        printf("*** FRAME %i ****\n", frame);
         /* XXX part of this can be put outside the loop, but until we have usable context management
          * this is safest.
          */
@@ -317,6 +308,7 @@ int main(int argc, char **argv)
                                                 ETNA_MASKED(VIVS_PE_STENCIL_OP_DEPTH_FAIL_BACK, STENCIL_OP_KEEP) &
                                                 ETNA_MASKED(VIVS_PE_STENCIL_OP_PASS_FRONT, STENCIL_OP_KEEP) &
                                                 ETNA_MASKED(VIVS_PE_STENCIL_OP_PASS_BACK, STENCIL_OP_KEEP));
+
         etna_set_state(ctx, VIVS_PE_COLOR_FORMAT, ETNA_MASKED(VIVS_PE_COLOR_FORMAT_COMPONENTS, 0xf));
 
         etna_set_state(ctx, VIVS_PE_DEPTH_CONFIG, ETNA_MASKED_BIT(VIVS_PE_DEPTH_CONFIG_EARLY_Z, 0));
@@ -392,8 +384,8 @@ int main(int argc, char **argv)
          * XXX need to clear the depth ts too.
          * */
         etna_set_state(ctx, VIVS_RS_CONFIG,
-                (RS_FORMAT_A8R8G8B8 << VIVS_RS_CONFIG_SOURCE_FORMAT__SHIFT) |
-                (RS_FORMAT_A8R8G8B8 << VIVS_RS_CONFIG_DEST_FORMAT__SHIFT)
+                (RS_FORMAT_X8R8G8B8 << VIVS_RS_CONFIG_SOURCE_FORMAT__SHIFT) |
+                (RS_FORMAT_X8R8G8B8 << VIVS_RS_CONFIG_DEST_FORMAT__SHIFT)
                 );
         etna_set_state_multi(ctx, VIVS_RS_DITHER(0), 2, (uint32_t[]){0xffffffff, 0xffffffff});
         etna_set_state(ctx, VIVS_RS_DEST_ADDR, rt_ts->address); /* ADDR_B */
@@ -411,7 +403,6 @@ int main(int argc, char **argv)
                 0xbeebbeeb);
         /** Done */
         
-        etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR);
         etna_set_state(ctx, VIVS_TS_COLOR_CLEAR_VALUE, 0xff7f7f7f);
         etna_set_state(ctx, VIVS_TS_COLOR_STATUS_BASE, rt_ts->address); /* ADDR_B */
         etna_set_state(ctx, VIVS_TS_COLOR_SURFACE_BASE, rt->address); /* ADDR_A */
@@ -442,12 +433,8 @@ int main(int argc, char **argv)
         etna_set_state_fixp(ctx, VIVS_PA_VIEWPORT_SCALE_Y, height << 15);
         etna_set_state_fixp(ctx, VIVS_SE_SCISSOR_LEFT, 0);
         etna_set_state_fixp(ctx, VIVS_SE_SCISSOR_TOP, 0);
-        //etna_set_state_fixp(ctx, VIVS_SE_SCISSOR_RIGHT, (width << 16) | 5);
-        //etna_set_state_fixp(ctx, VIVS_SE_SCISSOR_BOTTOM, (height << 16) | 5);
-        /// XXX really important; setting SCISSOR to |5 as above causes crashes for higher resolutions such as
-        /// 1920x1080. I don't know why.
-        etna_set_state_fixp(ctx, VIVS_SE_SCISSOR_RIGHT, (width << 16)-1);
-        etna_set_state_fixp(ctx, VIVS_SE_SCISSOR_BOTTOM, (height << 16)-1);
+        etna_set_state_fixp(ctx, VIVS_SE_SCISSOR_RIGHT, (width << 16) | 5);
+        etna_set_state_fixp(ctx, VIVS_SE_SCISSOR_BOTTOM, (height << 16) | 5);
 
         /* shader setup */
         etna_set_state(ctx, VIVS_VS_END_PC, vs_size/16);
@@ -557,8 +544,6 @@ int main(int argc, char **argv)
         {
             etna_draw_primitives(ctx, PRIMITIVE_TYPE_TRIANGLE_STRIP, prim*4, 2);
         }
-        //etna_finish(ctx);
-        //exit(1);
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
 
         etna_flush(ctx);
@@ -601,7 +586,6 @@ int main(int argc, char **argv)
         /* Submit third command buffer, wait for pixel engine to finish */
         etna_finish(ctx);
 
-
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
         etna_set_state(ctx, VIVS_RS_CONFIG,
                 VIVS_RS_CONFIG_SOURCE_FORMAT(RS_FORMAT_X8R8G8B8) |
@@ -609,23 +593,21 @@ int main(int argc, char **argv)
                 VIVS_RS_CONFIG_DEST_FORMAT(RS_FORMAT_X8R8G8B8) /*|
                 VIVS_RS_CONFIG_SWAP_RB*/);
         etna_set_state(ctx, VIVS_RS_SOURCE_STRIDE, (padded_width * 4 * 4) | (supertiled?VIVS_RS_SOURCE_STRIDE_TILING:0));
-        etna_set_state(ctx, VIVS_RS_DEST_STRIDE, fb.fb_fix.line_length);
+        etna_set_state(ctx, VIVS_RS_DEST_STRIDE, width * 4);
         etna_set_state(ctx, VIVS_RS_DITHER(0), 0xffffffff);
         etna_set_state(ctx, VIVS_RS_DITHER(1), 0xffffffff);
         etna_set_state(ctx, VIVS_RS_CLEAR_CONTROL, VIVS_RS_CLEAR_CONTROL_MODE_DISABLED);
-        etna_set_state(ctx, VIVS_RS_EXTRA_CONFIG, 
-                0); /* no AA, no endian switch */
-        etna_set_state(ctx, VIVS_RS_SOURCE_ADDR, rt->address); /* ADDR_A */
-        etna_set_state(ctx, VIVS_RS_DEST_ADDR, fb.physical[backbuffer]); /* ADDR_J */
+        etna_set_state(ctx, VIVS_RS_EXTRA_CONFIG, 0); /* no AA, no endian switch */
+        etna_set_state(ctx, VIVS_RS_SOURCE_ADDR, rt->address);
+        etna_set_state(ctx, VIVS_RS_DEST_ADDR, bmp->address);
         etna_set_state(ctx, VIVS_RS_WINDOW_SIZE, 
                 VIVS_RS_WINDOW_SIZE_HEIGHT(height) |
                 VIVS_RS_WINDOW_SIZE_WIDTH(width));
         etna_set_state(ctx, VIVS_RS_KICKER, 0xbeebbeeb);
         etna_finish(ctx);
-        /* switch buffers */
-        fb_set_buffer(&fb, backbuffer);
-        backbuffer = 1-backbuffer;
     }
+    bmp_dump32(bmp->logical, width, height, false, "/tmp/fb.bmp");
+    printf("Dump complete\n");
     
     /* Unlock video memory */
     if(etna_vidmem_unlock(bmp) != 0)

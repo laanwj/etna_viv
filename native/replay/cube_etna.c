@@ -1,4 +1,5 @@
-/* like cube, but try to generate the command stream ourselves using etna_XXX */
+/* like cube, an exact reproducation of egl command stream
+ * but try to generate the command stream ourselves using etna_XXX */
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>

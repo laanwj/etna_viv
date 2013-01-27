@@ -25,7 +25,7 @@ ARM-based:
 MIPS-based:
 - Devices based on Ingenic JZ4770 MIPS SoC (GC860), JZ4760 (GC200, 2D only) such as the GCW zero.
 
-See also https://en.wikipedia.org/wiki/Vivante_Corporation.
+See also [wikipedia](https://en.wikipedia.org/wiki/Vivante_Corporation).
 
 For the Vivante GPUs on some platforms the detailed features and specs are known, these can be found in `doc/gpus_comparison.html`.
 
@@ -48,7 +48,8 @@ To execise the initial-stage driver there are a few framebuffer tests in:
     native/fb/
 
 These do double-buffered animated rendering of 1000 frames to the framebuffer using 
-the proof-of-concept `etna` command stream building API. 
+the proof-of-concept `etna` command stream building API. The goal of this API is to provide an low-level interface
+to the Vivante hardware while abstracting away kernel interface details.
 
 - `companion_cube`: Animated rotating "weighted companion cube", using array or indexed rendering. Exercised in this demo:
   - Array and indexed rendering of arbitrary mesh
@@ -225,6 +226,21 @@ Then generate the headers with
 Building
 =========
 
+The build process is complicated by the existence of many different kernel drivers, with their subtly different interface (different headers,
+different offsets for fields, different management of context, and so on). These values for environment variable `GCABI` are supported out of the box:
+
+- `dove`: Marvell Dove, newer drivers (0.8.0.3184)
+- `dove_old`: Marvell Dove, older drivers (0.8.0.1998, 0.8.0.1123)
+- `v2`: Various Android, for older chips
+- `v4`: Various Android, for newer chips
+
+If possible get the `gc_*.h` headers for your specific kernel version. If that's not possible, try to find which of the above is most similar,
+and adapt that.
+
+It would be really nice to have an auto-detection of the Vivante kernel version, to prevent crashes and such from wrong
+interfaces. However, I don't currently know any way to do this. The kernel does check the size of the passed ioctl structure, however
+this guarantees nothing about the field offsets. There is `/proc/driver/gc` that in some cases contains a version number.
+
 Android
 ---------
 
@@ -262,7 +278,8 @@ where the script is installed, and get the `libEGL.so` and `libGLESv2.so` from t
     export PLATFORM_LDFLAGS="-ldl -L${DIR}/lib"
     export PLATFORM_GL_LIBS="-lEGL -lGLESv2 -L${TOP}/lib/egl -Xlinker --allow-shlib-undefined"
     # Set GC kernel ABI to dove (important!)
-    export GCABI="dove"
+    #export GCABI="dove"      # 0.8.0.3184
+    export GCABI="dove_old"  # 0.8.0.1998, 0.8.0.1123
 
 If you haven't got the `arm-linux-gnueabi-` bintools, on an Debian/Ubuntu host they can be installed with
 

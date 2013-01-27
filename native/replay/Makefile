@@ -2,7 +2,7 @@ TOP=..
 
 include $(TOP)/Makefile.inc
 
-COMMON_FLAGS = -I$(TOP)/lib -I$(TOP)/include_$(GCABI) -g -std=c99 -fPIC  -I../resources -I ../include -DGC_$(GCABI)
+COMMON_FLAGS = -I$(TOP)/lib -I$(TOP)/include_$(GCABI) -g -std=c99 -fPIC  -I../resources -I ../include
 CFLAGS += $(COMMON_FLAGS) 
 CXXFLAGS += $(COMMON_FLAGS) 
 LDFLAGS += -lm
@@ -23,6 +23,9 @@ cube_companion: cube_companion.o ../lib/write_bmp.o ../lib/viv.o $(COMPANION_OBJ
 	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 
 cube_etna: cube_etna.o ../lib/write_bmp.o ../lib/viv.o ../lib/esTransform.o
+	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
+
+cube_etna2: cube_etna2.o ../lib/write_bmp.o ../lib/viv.o ../lib/esTransform.o ../lib/etna.o ../lib/etna_rs.o ../lib/etna_mem.o
 	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 
 ps_sandbox_etna: ps_sandbox_etna.o ../lib/write_bmp.o ../lib/viv.o ../lib/esTransform.o

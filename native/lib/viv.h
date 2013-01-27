@@ -30,8 +30,19 @@
 #include "gc_hal_user_context.h"
 #include "gc_hal_types.h"
 #include <stdint.h>
+#include <stdlib.h>
+#include <stdbool.h>
 
 #define SIG_WAIT_INDEFINITE (0xffffffff)
+
+enum viv_features_word
+{
+    viv_chipFeatures,
+    viv_chipMinorFeatures0,
+    viv_chipMinorFeatures1,
+    viv_chipMinorFeatures2,
+    viv_chipMinorFeatures3
+};
 
 /* Type for GPU physical address */
 typedef uint32_t viv_addr_t;
@@ -113,6 +124,15 @@ void viv_show_chip_info(void);
  */
 int viv_reset(void);
 
+/** Query for a GPU feature.
+ */
+bool viv_query_feature(enum viv_features_word, uint32_t bits);
+
+/** Convenience macro to probe featurs from state.xml.h: 
+ * VIV_FEATURE(chipFeatures, FAST_CLEAR) 
+ * VIV_FEATURE(chipMinorFeatures1, AUTO_DISABLE) 
+ */
+#define VIV_FEATURE(word, feature) viv_query_feature(viv_ ## word, word ## _ ## feature)
 
 #endif
 

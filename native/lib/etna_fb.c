@@ -30,7 +30,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
+#include <sys/ioctl.h>
 #include <stdarg.h>
+#include <string.h>
 
 #include <errno.h>
 
@@ -39,6 +41,12 @@
 #else
 #define FBDEV_DEV "/dev/fb%i"
 #endif
+
+/* XXX:
+ * If you get "Error: failed to run ioctl to pan display", use
+ *     fbset -vyres 2160
+ * replace 2160 by 2* y resolution.
+ */
 
 /* Open framebuffer and get information */
 int fb_open(int num, fb_info *out)
@@ -102,7 +110,6 @@ int fb_open(int num, fb_info *out)
 int fb_set_buffer(fb_info *fb, int buffer)
 {
     fb->fb_var.yoffset = buffer * fb->fb_var.yres;
-
     if (ioctl(fb->fd, FBIOPAN_DISPLAY, &fb->fb_var))
     {
         printf("Error: failed to run ioctl to pan display: %s\n", strerror(errno));

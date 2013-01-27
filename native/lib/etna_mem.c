@@ -24,7 +24,10 @@
 #include "etna.h"
 
 #include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
+//#define DEBUG
 #define ETNA_VIDMEM_ALIGNMENT (0x40) 
 
 int etna_vidmem_alloc_linear(etna_vidmem **mem_out, size_t bytes, gceSURF_TYPE type, gcePOOL pool, bool lock)

@@ -26,6 +26,7 @@
 
 #include <stdint.h>
 #include <linux/fb.h>
+#include <unistd.h>
 
 #define ETNA_FB_MAX_BUFFERS (4)
 typedef struct
