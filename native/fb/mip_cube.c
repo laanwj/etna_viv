@@ -188,7 +188,7 @@ uint32_t ps[] = { /* texture sampling */
 size_t vs_size = sizeof(vs);
 size_t ps_size = sizeof(ps);
 
-void tile_texture(void *dest, void *src, unsigned width, unsigned height, unsigned src_stride, unsigned elmtsize)
+void etna_texture_tile(void *dest, void *src, unsigned width, unsigned height, unsigned src_stride, unsigned elmtsize)
 {
 #define TEX_TILE_WIDTH (4)
 #define TEX_TILE_HEIGHT (4)
@@ -302,7 +302,7 @@ int main(int argc, char **argv)
         for(int ix=0; ix<dds->num_mipmaps; ++ix)
         {
             printf("%08x: Tiling mipmap %i (%ix%i)\n", dds->slices[0][ix].offset, ix, dds->slices[0][ix].width, dds->slices[0][ix].height);
-            tile_texture((void*)((size_t)tex->logical + dds->slices[0][ix].offset), 
+            etna_texture_tile((void*)((size_t)tex->logical + dds->slices[0][ix].offset), 
                     dds->slices[0][ix].data, dds->slices[0][ix].width, dds->slices[0][ix].height, dds->slices[0][ix].stride, 4);
         }
         tex_format = TEXTURE_FORMAT_X8R8G8B8;
@@ -413,7 +413,7 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_PA_SHADER_ATTRIBUTES(0), 0x200);
         etna_set_state(ctx, VIVS_PA_SHADER_ATTRIBUTES(1), 0x200);
 
-        etna_set_state(ctx, VIVS_SE_LAST_PIXEL_ENABLE, 0x0);
+        etna_set_state(ctx, VIVS_SE_CONFIG, 0x0);
         etna_set_state(ctx, VIVS_SE_DEPTH_SCALE, 0x0);
         etna_set_state(ctx, VIVS_SE_DEPTH_BIAS, 0x0);
         etna_set_state_fixp(ctx, VIVS_SE_SCISSOR_LEFT, 0);
@@ -493,13 +493,13 @@ int main(int argc, char **argv)
                 (16 << VIVS_RS_WINDOW_SIZE_WIDTH__SHIFT));
         etna_set_state(ctx, VIVS_RS_FILL_VALUE(0), 0x55555555);
         etna_set_state(ctx, VIVS_RS_CLEAR_CONTROL, 
-                VIVS_RS_CLEAR_CONTROL_MODE_ENABLED |
+                VIVS_RS_CLEAR_CONTROL_MODE_ENABLED1 |
                 (0xffff << VIVS_RS_CLEAR_CONTROL_BITS__SHIFT));
         etna_set_state(ctx, VIVS_RS_EXTRA_CONFIG, 0);
         etna_set_state(ctx, VIVS_RS_KICKER, 0xbeebbeeb);
         /** Done */
        
-        /* New set up TS */
+        /* Now set up TS */
         etna_set_state(ctx, VIVS_TS_MEM_CONFIG, 
                 VIVS_TS_MEM_CONFIG_DEPTH_FAST_CLEAR |
                 VIVS_TS_MEM_CONFIG_COLOR_FAST_CLEAR |

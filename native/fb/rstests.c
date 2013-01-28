@@ -137,7 +137,7 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_PA_SYSTEM_MODE, 0x11);
         etna_set_state(ctx, VIVS_PA_CONFIG, ETNA_MASKED_BIT(VIVS_PA_CONFIG_UNK22, 0));
 
-        etna_set_state(ctx, VIVS_SE_LAST_PIXEL_ENABLE, 0x0);
+        etna_set_state(ctx, VIVS_SE_CONFIG, 0x0);
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR);
        
         /* Does this affect the RS? It appears not. */
@@ -198,11 +198,11 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_RS_SOURCE_ADDR, 0); /* fill disregards source anyway */
         etna_set_state(ctx, VIVS_RS_DEST_ADDR, rt->address + 64*64*4); /* Offset one entire 64*64 tile. Interesting things happen if only a partial tile is offset. */
         /* Pure FILL_VALUE(0) */
-        //etna_set_state(ctx, VIVS_RS_CLEAR_CONTROL, VIVS_RS_CLEAR_CONTROL_MODE_ENABLED | VIVS_RS_CLEAR_CONTROL_BITS(0xffff));
+        //etna_set_state(ctx, VIVS_RS_CLEAR_CONTROL, VIVS_RS_CLEAR_CONTROL_MODE_ENABLED1 | VIVS_RS_CLEAR_CONTROL_BITS(0xffff));
         /* Vertical line pattern */
-        etna_set_state(ctx, VIVS_RS_CLEAR_CONTROL, VIVS_RS_CLEAR_CONTROL_MODE_ENABLED2 | VIVS_RS_CLEAR_CONTROL_BITS(0xffff));
+        etna_set_state(ctx, VIVS_RS_CLEAR_CONTROL, VIVS_RS_CLEAR_CONTROL_MODE_ENABLED4 | VIVS_RS_CLEAR_CONTROL_BITS(0xffff));
         /* Same as ENABLED2 */
-        //etna_set_state(ctx, VIVS_RS_CLEAR_CONTROL, VIVS_RS_CLEAR_CONTROL_MODE_ENABLED3 | VIVS_RS_CLEAR_CONTROL_BITS(0xffff));
+        //etna_set_state(ctx, VIVS_RS_CLEAR_CONTROL, VIVS_RS_CLEAR_CONTROL_MODE_ENABLED4_2 | VIVS_RS_CLEAR_CONTROL_BITS(0xffff));
 
         etna_set_state(ctx, VIVS_RS_EXTRA_CONFIG, 0);
         etna_set_state(ctx, VIVS_RS_KICKER, 

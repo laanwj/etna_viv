@@ -144,7 +144,7 @@ int main(int argc, char **argv)
     etna_set_state(ctx, VIVS_PA_W_CLIP_LIMIT, 0x34000001);
     etna_set_state(ctx, VIVS_PA_SYSTEM_MODE, 0x11);
     etna_set_state(ctx, VIVS_PA_CONFIG, ETNA_MASKED_BIT(VIVS_PA_CONFIG_UNK22, 0));
-    etna_set_state(ctx, VIVS_SE_LAST_PIXEL_ENABLE, 0x0);
+    etna_set_state(ctx, VIVS_SE_CONFIG, 0x0);
     etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR);
 
     /* Set up pixel engine */
@@ -277,7 +277,7 @@ int main(int argc, char **argv)
                 VIVS_RS_WINDOW_SIZE_WIDTH(64));
         etna_set_state(ctx, VIVS_RS_FILL_VALUE(0), 0x55555555);
         etna_set_state(ctx, VIVS_RS_CLEAR_CONTROL, 
-                VIVS_RS_CLEAR_CONTROL_MODE_ENABLED |
+                VIVS_RS_CLEAR_CONTROL_MODE_ENABLED1 |
                 VIVS_RS_CLEAR_CONTROL_BITS(0xffff));
         etna_set_state(ctx, VIVS_RS_EXTRA_CONFIG, 
                 0); /* no AA, no endian switch */

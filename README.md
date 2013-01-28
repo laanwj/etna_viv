@@ -65,8 +65,9 @@ to the Vivante hardware while abstracting away kernel interface details.
 
 - `rotate_cube`: Rotating smoothed color cube
 
-- `mip_cube`: Rotating cube with a mipmapped texture loaded from a `dds` file. This texture has a different 
-  color and number on each mipmap level, to explicitly show interpolation between mipmap levels as the surface 
+- `mip_cube`: Rotating cube with a mipmapped texture loaded from a `dds` file provided on the command line. One 
+  of the example textures have a different color and number on each mipmap level, to explicitly show interpolation 
+  between mipmap levels as the surface 
   goes nearer or farther from the camera.
 
   - Mipmapping
@@ -75,7 +76,7 @@ to the Vivante hardware while abstracting away kernel interface details.
 If you are executing these demos on an Android device, make sure that you are root, otherwise the framebuffer
 is not accessible.
 
-Running these tests while Android is still writing to the framebuffer will result in funny claudioscopic effects.
+Running these tests while Android is still writing to the framebuffer will result in stroboscopic effects.
 To get surfaceflinger out of the way type:
 
     adb shell stop surfaceflinger
