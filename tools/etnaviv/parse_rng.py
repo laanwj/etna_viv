@@ -28,6 +28,7 @@ import os, sys, struct
 from collections import OrderedDict
 from lxml import etree as ET # parsing
 from itertools import izip
+from os import path
 
 ns = "{http://nouveau.freedesktop.org/}"
 XML_BOOL = {'1':True, '0':False, 'false':False, 'true':True, 'yes':True, 'no':False}
@@ -557,6 +558,7 @@ class Tag:
     USE_GROUP = ns+'use-group'
     BRIEF = ns+'brief'
     DOC = ns+'doc'
+    IMPORT = ns+'import'
     
     REG_TO_SIZE = {REG8:8, REG16:16, REG32:32, REG64:64}
 
@@ -587,7 +589,7 @@ def intdh(s):
     else:
         return int(s)
 
-def visit_xml(syms, type_resolve_list, parent, root):
+def visit_xml(syms, type_resolve_list, parent, root, imports):
     '''
     Visit an xml element, build an in-memory object for it,
     and add it to the in-memory parent object.
@@ -596,8 +598,11 @@ def visit_xml(syms, type_resolve_list, parent, root):
     if root.tag == Tag.BRIEF:
         parent.brief += root.text
         return None
-    if root.tag in Tag.DOC:
+    if root.tag == Tag.DOC:
         parent.doc += root.text
+        return None
+    if root.tag == Tag.IMPORT:
+        imports.append(root.attrib['file'])
         return None
 
     # Pre-process attributes
@@ -613,31 +618,37 @@ def visit_xml(syms, type_resolve_list, parent, root):
         attr['size'] = Tag.REG_TO_SIZE[root.tag]
 
     # Instantiate object from tag
-    obj = visit[root.tag](parent, **attr)
+    if root.tag == Tag.DOMAIN and attr['name'] in syms:
+        # allow re-opening a domain that was created before, to add more
+        # state
+        obj = syms[attr['name']]
+        assert(isinstance(obj, Domain))
+    else:
+        obj = visit[root.tag](parent, **attr)
 
-    # Add this object to parent object
-    if parent is not None and obj is not None:
-        if not parent.add_child(obj):
-            raise ValueError('Cannot add child %s to %s' %
-                    (obj.__class__.__name__, parent.__class__.__name__))
+        # Add this object to parent object
+        if parent is not None and obj is not None:
+            if not parent.add_child(obj):
+                raise ValueError('Cannot add child %s to %s' %
+                        (obj.__class__.__name__, parent.__class__.__name__))
 
-    # If a type, add object to symbol table
-    if isinstance(obj, Type):
-        if not obj.name in syms:
-            syms[obj.name] = obj
-        else:
-            raise ValueError('Duplicate type name %s' % obj.name)
+        # If a type, add object to symbol table
+        if isinstance(obj, Type):
+            if not obj.name in syms:
+                syms[obj.name] = obj
+            else:
+                raise ValueError('Duplicate type name %s' % obj.name)
 
-    # If it has a type attribute, add it to the type resolve list
-    if isinstance(obj, TypedValue):
-        type_resolve_list.append(obj)
+        # If it has a type attribute, add it to the type resolve list
+        if isinstance(obj, TypedValue):
+            type_resolve_list.append(obj)
 
     # Visit children
     for child in root.iterchildren(tag=ET.Element):
-        visit_xml(syms, type_resolve_list, obj, child)
+        visit_xml(syms, type_resolve_list, obj, child, imports)
     return obj
 
-def parse_rng(f):
+def parse_rng(f, import_path=''):
     '''
     Parse a rules-ng-ng XML tree from a file object.
 
@@ -658,10 +669,25 @@ def parse_rng(f):
     # and patch them into the right place in the second pass
     type_table = OrderedDict()
     type_resolve_list = []
+    imports = []
 
-    retval = visit_xml(type_table, type_resolve_list, None, root)
+    retval = visit_xml(type_table, type_resolve_list, None, root, imports)
     if not isinstance(retval, Database):
         raise ValueError('Top-level element must be database')
+
+    # Load imports
+    already_imported = set()
+    while imports:
+        filename = imports.pop()
+        if filename in already_imported:
+            continue
+        with open(path.join(import_path,filename), 'r') as f:
+            tree = ET.parse(f)
+            root = tree.getroot()
+        # import, merging duplicate domains
+        visit_xml(type_table, type_resolve_list, None, root, imports)
+
+    # add types list to toplevel database
     retval.types = type_table 
 
     # Resolve types pass
@@ -694,8 +720,9 @@ def parse_rng(f):
     return retval
 
 def parse_rng_file(filename):
+    import_path = path.dirname(filename)
     with open(filename, 'r') as f:
-        return parse_rng(f) 
+        return parse_rng(f, import_path) 
 
 def format_path(path):
     '''Format path into state space as string'''

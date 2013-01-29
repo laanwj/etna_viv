@@ -8,7 +8,8 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- /home/orion/projects/etna_viv/rnndb/cmdstream.xml (  11994 bytes, from 2013-01-11 16:54:24)
+- /home/orion/projects/etna_viv/rnndb/cmdstream.xml (  11642 bytes, from 2013-02-01 10:02:25)
+- /home/orion/projects/etna_viv/rnndb/common.xml    (  15637 bytes, from 2013-02-01 10:14:07)
 
 Copyright (C) 2013
 */
@@ -34,10 +35,6 @@ Copyright (C) 2013
 #define PRIMITIVE_TYPE_TRIANGLE_FAN				0x00000006
 #define PRIMITIVE_TYPE_LINE_LOOP				0x00000007
 #define PRIMITIVE_TYPE_QUADS					0x00000008
-#define SYNC_RECIPIENT_FE					0x00000001
-#define SYNC_RECIPIENT_RA					0x00000005
-#define SYNC_RECIPIENT_PE					0x00000007
-#define SYNC_RECIPIENT_DE					0x0000000b
 #define VIV_FE_LOAD_STATE					0x00000000
 
 #define VIV_FE_LOAD_STATE_HEADER				0x00000000

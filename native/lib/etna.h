@@ -30,6 +30,8 @@
 #include "gc_hal_driver.h"
 #include "gc_hal_user_context.h"
 #include "gc_hal_types.h"
+
+#include "etna/common.xml.h"
 #include "etna/cmdstream.xml.h"
 
 #include <stdint.h>

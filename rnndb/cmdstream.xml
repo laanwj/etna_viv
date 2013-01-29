@@ -24,6 +24,7 @@
 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 <!-- Vivante GCxxxx FE command stream format -->
+<import file="common.xml"/>
 
 <enum name="FE_OPCODE">
     <value value="1" name="LOAD_STATE" brief="Load GPU state"/>
@@ -50,16 +51,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <value value="7" name="LINE_LOOP" brief="Line loop (GL_LINE_LOOP)"/>
     <value value="8" name="QUADS" brief="Quadliterals (GL_QUADS)"/>
 </enum>
-<domain name="VIVS">
-    <!-- should be import... -->
-</domain>
-<!-- same as in state.xml. should be import -->
-<enum name="SYNC_RECIPIENT" brief="Synchronization source/destination">
-    <value value="1" name="FE" brief="Front End"/>
-    <value value="5" name="RA" brief="Raster"/>
-    <value value="7" name="PE" brief="Pixel Engine"/>
-    <value value="11" name="DE" brief="Drawing Engine"/>
-</enum>
+<domain name="VIVS"/>
 
 <domain name="VIV_FE">
     <!-- A stripe for each command follows. 

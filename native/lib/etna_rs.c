@@ -3,6 +3,7 @@
 #include "etna_rs.h"
 
 #include "etna/state.xml.h"
+#include "etna/state_3d.xml.h"
 
 void etna_warm_up_rs(etna_ctx *cmdbuf, viv_addr_t aux_rt_physical, viv_addr_t aux_rt_ts_physical)
 {

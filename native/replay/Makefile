@@ -7,7 +7,7 @@ CFLAGS += $(COMMON_FLAGS)
 CXXFLAGS += $(COMMON_FLAGS) 
 LDFLAGS += -lm
 
-TARGETS = cube cube_companion cube_etna ps_sandbox_etna etna_test reset viv_info
+TARGETS = cube cube_companion cube_etna ps_sandbox_etna etna_test reset viv_info cube_etna2
 COMPANION_OBJS = ../resources/companion_array.o ../resources/companion_mesh.o ../resources/companion_texture.o
 
 all: $(TARGETS)

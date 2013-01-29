@@ -7,7 +7,7 @@ CFLAGS += $(COMMON_FLAGS)
 CXXFLAGS += $(COMMON_FLAGS) 
 LDFLAGS += -lm
 
-TARGETS = fbtest etna_test rotate_cube cube_companion mip_cube rstests
+TARGETS = fbtest etna_test rotate_cube cube_companion mip_cube rstests mip_cube_state
 COMPANION_OBJS = ../resources/companion_array.o ../resources/companion_mesh.o ../resources/companion_texture.o
 
 all: $(TARGETS)
@@ -26,6 +26,9 @@ rotate_cube: rotate_cube.o ../lib/write_bmp.o ../lib/viv.o ../lib/etna.o ../lib/
 	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 
 mip_cube: mip_cube.o ../lib/write_bmp.o ../lib/viv.o ../lib/etna.o ../lib/etna_rs.o ../lib/etna_fb.o ../lib/etna_mem.o ../lib/esTransform.o ../lib/dds.o ../lib/etna_bswap.o
+	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
+
+mip_cube_state: mip_cube_state.o ../lib/write_bmp.o ../lib/viv.o ../lib/etna.o ../lib/etna_rs.o ../lib/etna_fb.o ../lib/etna_mem.o ../lib/esTransform.o ../lib/dds.o ../lib/etna_bswap.o
 	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 
 cube_companion: cube_companion.o ../lib/write_bmp.o ../lib/viv.o ../lib/etna.o ../lib/etna_rs.o ../lib/etna_fb.o ../lib/etna_mem.o ../lib/esTransform.o $(COMPANION_OBJS)

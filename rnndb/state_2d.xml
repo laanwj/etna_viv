@@ -1,0 +1,556 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright (c) 2012-2013 The Etnaviv Project
+
+ Permission is hereby granted, free of charge, to any person obtaining a
+ copy of this software and associated documentation files (the "Software"),
+ to deal in the Software without restriction, including without limitation
+ the rights to use, copy, modify, merge, publish, distribute, sub license,
+ and/or sell copies of the Software, and to permit persons to whom the
+ Software is furnished to do so, subject to the following conditions:
+
+ The above copyright notice and this permission notice (including the
+ next paragraph) shall be included in all copies or substantial portions
+ of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL
+ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ DEALINGS IN THE SOFTWARE.
+-->
+<!-- Vivante GCxxxx render states and registers overview:
+     PIPE_2D states, mostly taken from gcreg.h in gcx project
+  -->
+<database xmlns="http://nouveau.freedesktop.org/"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
+
+<domain name="VIVS" brief="GPU state">
+    <enum name="DE_FORMAT" brief="2D pixel format">
+        <value value="0" name="X4R4G4B4"/>
+        <value value="1" name="A4R4G4B4"/>
+        <value value="2" name="X1R5G5B5"/>
+        <value value="3" name="A1R5G5B5"/>
+        <value value="4" name="R5G6B5"/>
+        <value value="5" name="X8R8G8B8"/>
+        <value value="6" name="A8R8G8B8"/>
+        <value value="7" name="YUY2"/>
+        <value value="8" name="UYVY"/>
+        <value value="9" name="INDEX8"/>
+        <value value="10" name="MONOCHROME"/>
+        <value value="15" name="YV12"/>
+        <value value="16" name="A8"/>
+        <value value="17" name="NV12"/>
+        <value value="18" name="NV16"/>
+        <value value="19" name="RG16"/>
+    </enum>
+    <enum name="DE_SWIZZLE" brief="2D swizzle">
+        <value value="0" name="ARGB"/>
+        <value value="1" name="RGBA"/>
+        <value value="2" name="ABGR"/>
+        <value value="3" name="BGRA"/>
+    </enum>
+    <enum name="DE_BLENDMODE" brief="2D blending mode">
+        <value value="0" name="ZERO"/>
+        <value value="1" name="ONE"/>
+        <value value="2" name="NORMAL"/>
+        <value value="3" name="INVERSED"/>
+        <value value="4" name="COLOR"/>
+        <value value="5" name="COLOR_INVERSED"/>
+        <value value="6" name="SATURATED_ALPHA"/>
+        <value value="7" name="SATURATED_DEST_ALPHA"/>
+    </enum>
+    <bitset name="DE_COLOR" brief="2D engine color"> <!-- 2D engine uses BGRA everywhere -->
+        <bitfield high="7" low="0" name="BLUE"/>
+        <bitfield high="15" low="8" name="GREEN"/>
+        <bitfield high="23" low="16" name="RED"/>
+        <bitfield high="31" low="24" name="ALPHA"/>
+    </bitset>
+    <enum name="DE_COMPONENT" brief="2D engine color component">
+        <value value="0" name="BLUE"/>
+        <value value="1" name="GREEN"/>
+        <value value="2" name="RED"/>
+        <value value="3" name="ALPHA"/>
+    </enum>
+    <enum name="DE_ROT_MODE" brief="2D rotation mode">
+        <value value="0" name="ROT0"/>
+        <value value="1" name="FLIP_X"/>
+        <value value="2" name="FLIP_Y"/>
+        <value value="4" name="ROT90"/>
+        <value value="5" name="ROT180"/>
+        <value value="6" name="ROT270"/>
+    </enum>
+    <enum name="DE_MIRROR_MODE" brief="2D mirror mode">
+        <value value="0" name="NONE"/>
+        <value value="1" name="MIRROR_X"/>
+        <value value="2" name="MIRROR_Y"/>
+        <value value="3" name="MIRROR_XY"/>
+    </enum>
+    <enum name="2D_TRANSPARENCY_KIND" inline="yes">
+        <value value="0" name="OPAQUE"/>
+        <value value="1" name="MASK"/>
+        <value value="2" name="KEY"/>
+    </enum>
+    <enum name="2D_TRANSPARENCY_OVERRIDE" inline="yes">
+        <value value="0" name="DEFAULT"/>
+        <value value="1" name="USE_ENABLE"/>
+        <value value="2" name="USE_DISABLE"/>
+    </enum>
+    <!-- These register patterns are repeated many times -->
+    <bitset name="2D_SRC_STRIDE" inline="yes">
+        <bitfield high="17" low="0" name="STRIDE"/>
+    </bitset>
+    <bitset name="2D_SRC_ROTATION_CONFIG" inline="yes" brief="Source rotation configuration">
+        <bitfield high="15" low="0" name="WIDTH"/>
+        <bitfield high="16" low="16" name="ROTATION" type="ENABLE_DISABLE" brief="Enable rotation"/>
+    </bitset>
+    <bitset name="2D_SRC_CONFIG" inline="yes" brief="Source configuration">
+        <bitfield high="6" low="6" name="SRC_RELATIVE">
+            <value value="0" name="ABSOLUTE"/>
+            <value value="1" name="RELATIVE"/>
+        </bitfield>
+        <bitfield high="7" low="7" name="TILED" type="ENABLE_DISABLE"/>
+        <bitfield high="8" low="8" name="LOCATION">
+            <value value="0" name="MEMORY" brief="From memory"/>
+            <value value="1" name="STREAM" brief="From command stream: set for mono expansion blits or masked blits"/>
+        </bitfield>
+        <bitfield high="13" low="12" name="PACK">
+            <value value="0" name="PACKED8"/>
+            <value value="1" name="PACKED16"/>
+            <value value="2" name="PACKED32"/>
+            <value value="3" name="UNPACKED"/>
+        </bitfield>
+        <bitfield high="15" low="15" name="MONO_TRANSPARENCY">
+            <value value="0" name="BACKGROUND"/>
+            <value value="1" name="FOREGROUND"/>
+        </bitfield>
+        <bitfield high="21" low="20" name="SWIZZLE" type="DE_SWIZZLE"/>
+        <bitfield high="28" low="24" name="SOURCE_FORMAT" type="DE_FORMAT"/>
+        <bitfield high="29" low="29" name="DISABLE420_L2_CACHE" type="ENABLE_DISABLE"/> <!-- if chip has 420 L2 cache -->
+        <bitfield high="31" low="30" name="ENDIAN_CONTROL" type="ENDIAN_MODE"/>
+    </bitset>
+    <bitset name="2D_SRC_ORIGIN" inline="yes" brief="Source origin">
+        <bitfield high="15" low="0" name="X"/>
+        <bitfield high="31" low="16" name="Y"/>
+    </bitset>
+    <bitset name="2D_SRC_SIZE" inline="yes" brief="Source size">
+        <bitfield high="15" low="0" name="X"/>
+        <bitfield high="31" low="16" name="Y"/>
+    </bitset>
+    <bitset name="2D_ROP" inline="yes" brief="Raster operation">
+        <bitfield high="7" low="0" name="ROP_FG"/>
+        <bitfield high="15" low="8" name="ROP_BG"/>
+        <bitfield high="21" low="20" name="TYPE">
+            <value value="0" name="ROP2_PATTERN"/>
+            <value value="1" name="ROP2_SOURCE"/>
+            <value value="2" name="ROP3"/>
+            <value value="3" name="ROP4"/>
+        </bitfield>
+    </bitset>
+    <bitset name="2D_ALPHA_CONTROL" inline="yes">
+        <bitfield high="0" low="0" name="ENABLE">
+            <value value="0" name="OFF"/>
+            <value value="1" name="ON"/>
+        </bitfield>
+    </bitset>
+    <bitset name="2D_ALPHA_MODES" inline="yes">
+        <bitfield high="0" low="0" name="SRC_ALPHA_MODE">
+            <value value="0" name="NORMAL"/>
+            <value value="1" name="INVERSED"/>
+        </bitfield>
+        <bitfield high="4" low="4" name="DST_ALPHA_MODE">
+            <value value="0" name="NORMAL"/>
+            <value value="1" name="INVERSED"/>
+        </bitfield>
+        <bitfield high="9" low="8" name="GLOBAL_SRC_ALPHA_MODE">
+            <value value="0" name="NORMAL"/>
+            <value value="1" name="GLOBAL"/>
+            <value value="2" name="SCALED"/>
+        </bitfield>
+        <bitfield high="13" low="12" name="GLOBAL_DST_ALPHA_MODE">
+            <value value="0" name="NORMAL"/>
+            <value value="1" name="GLOBAL"/>
+            <value value="2" name="SCALED"/>
+        </bitfield>
+        <bitfield high="26" low="24" name="SRC_BLENDING_MODE" type="DE_BLENDMODE"/>
+        <bitfield high="27" low="27" name="SRC_ALPHA_FACTOR" type="ENABLE_DISABLE"/>
+        <bitfield high="30" low="28" name="DST_BLENDING_MODE" type="DE_BLENDMODE"/>
+        <bitfield high="31" low="31" name="DST_ALPHA_FACTOR" type="ENABLE_DISABLE"/>
+    </bitset>
+    <bitset name="2D_SRC_ROTATION_HEIGHT" inline="yes">
+        <bitfield high="15" low="0" name="HEIGHT"/>
+    </bitset>
+    <bitset name="2D_ROT_ANGLE" masked="yes" inline="yes">
+        <bitfield high="2" low="0" name="SRC" type="DE_ROT_MODE"/>
+        <bitfield high="5" low="3" name="DST" type="DE_ROT_MODE"/>
+        <bitfield high="8" low="8" name="SRC_MASK"/>
+        <bitfield high="9" low="9" name="DST_MASK"/>
+        <bitfield high="13" low="12" name="SRC_MIRROR" type="DE_MIRROR_MODE"/>
+        <bitfield high="15" low="15" name="SRC_MIRROR_MASK"/>
+        <bitfield high="17" low="16" name="DST_MIRROR" type="DE_MIRROR_MODE"/>
+        <bitfield high="19" low="19" name="DST_MIRROR_MASK"/>
+    </bitset>
+    <bitset name="2D_COLOR_MULTIPLY_MODES" inline="yes">
+        <bitfield high="0" low="0" name="SRC_PREMULTIPLY" type="ENABLE_DISABLE"/>
+        <bitfield high="4" low="4" name="DST_PREMULTIPLY" type="ENABLE_DISABLE"/>
+        <bitfield high="9" low="8" name="SRC_GLOBAL_PREMULTIPLY">
+            <value value="0" name="DISABLE"/>
+            <value value="1" name="ALPHA"/>
+            <value value="2" name="COLOR"/>
+        </bitfield>
+        <bitfield high="20" low="20" name="DST_DEMULTIPLY" type="ENABLE_DISABLE"/>
+    </bitset>
+    <bitset name="2D_PE_TRANSPARENCY" inline="yes"> <!-- XXX support masking for multiple fields for one mask -->
+        <bitfield high="1" low="0" name="SOURCE" type="2D_TRANSPARENCY_KIND"/>
+        <bitfield high="5" low="4" name="PATTERN" type="2D_TRANSPARENCY_KIND"/>
+        <bitfield high="9" low="8" name="DESTINATION" type="2D_TRANSPARENCY_KIND"/>
+        <bitfield high="12" low="12" name="TRANSPARENCY_MASK"/>
+        <bitfield high="17" low="16" name="USE_SRC_OVERRIDE" type="2D_TRANSPARENCY_OVERRIDE"/>
+        <bitfield high="21" low="20" name="USE_PAT_OVERRIDE" type="2D_TRANSPARENCY_OVERRIDE"/>
+        <bitfield high="25" low="24" name="USE_DST_OVERRIDE" type="2D_TRANSPARENCY_OVERRIDE"/>
+        <bitfield high="28" low="28" name="RESOURCE_OVERRIDE_MASK"/>
+        <bitfield high="29" low="29" name="DFB_COLOR_KEY" type="ENABLE_DISABLE"/>
+        <bitfield high="31" low="31" name="DFB_COLOR_KEY_MASK"/>
+    </bitset>
+    <bitset name="2D_PE_CONTROL" masked="yes" inline="yes">
+        <bitfield high="0" low="0" name="YUV">
+            <value value="0" name="601"/>
+            <value value="1" name="709"/>
+        </bitfield>
+        <bitfield high="3" low="3" name="YUV_MASK"/>
+        <bitfield high="4" low="4" name="UV_SWIZZLE">
+            <value value="0" name="UV"/>
+            <value value="1" name="VU"/>
+        </bitfield>
+        <bitfield high="7" low="7" name="UV_SWIZZLE_MASK"/>
+        <bitfield high="8" low="8" name="YUVRGB" type="ENABLE_DISABLE"/>
+        <bitfield high="11" low="11" name="YUVRGB_MASK"/>
+    </bitset>
+    <bitset name="2D_SRC_EX_CONFIG" masked="yes" inline="yes">
+        <bitfield high="0" low="0" name="MULTI_TILED" type="ENABLE_DISABLE"/>
+        <bitfield high="3" low="3" name="SUPER_TILED" type="ENABLE_DISABLE"/>
+        <bitfield high="8" low="8" name="MINOR_TILED" type="ENABLE_DISABLE"/>
+    </bitset>
+    <stripe name="DE" brief="2D Drawing Engine">
+        <doc>2D drawing engine: conversion, scaling, filtering, rotation, blending of 2D images.</doc>
+        <reg32 offset="0x01200" name="SRC_ADDRESS" type="VIVM" brief="Source address"/>
+        <reg32 offset="0x01204" name="SRC_STRIDE" brief="Source stride" type="2D_SRC_STRIDE"/>
+        <reg32 offset="0x01208" name="SRC_ROTATION_CONFIG" type="2D_SRC_ROTATION_CONFIG"/>
+        <reg32 offset="0x0120C" name="SRC_CONFIG" type="2D_SRC_CONFIG"/>
+        <reg32 offset="0x01210" name="SRC_ORIGIN" type="2D_SRC_ORIGIN"/>
+        <reg32 offset="0x01214" name="SRC_SIZE" type="2D_SRC_SIZE"/>
+        <reg32 offset="0x01218" name="SRC_COLOR_BG" type="DE_COLOR"/>
+        <reg32 offset="0x0121C" name="SRC_COLOR_FG" type="DE_COLOR"/>
+        <reg32 offset="0x01220" name="STRETCH_FACTOR_LOW">
+            <bitfield high="30" low="0" name="X"/>
+        </reg32>
+        <reg32 offset="0x01224" name="STRETCH_FACTOR_HIGH">
+            <bitfield high="30" low="0" name="Y"/>
+        </reg32>
+        <reg32 offset="0x01228" name="DEST_ADDRESS" type="VIVM"/>
+        <reg32 offset="0x0122C" name="DEST_STRIDE" type="2D_SRC_STRIDE"/>
+        <reg32 offset="0x01230" name="DEST_ROTATION_CONFIG" type="2D_SRC_ROTATION_CONFIG"/>
+        <reg32 offset="0x01234" name="DEST_CONFIG">
+            <bitfield high="4" low="0" name="FORMAT" type="DE_FORMAT"/>
+            <bitfield high="8" low="8" name="TILED" type="ENABLE_DISABLE"/>
+            <bitfield high="15" low="12" name="COMMAND">
+                <value value="0" name="CLEAR"/>
+                <value value="1" name="LINE"/>
+                <value value="2" name="BIT_BLT"/>
+                <value value="3" name="BIT_BLT_REVERSED"/>
+                <value value="4" name="STRETCH_BLT"/>
+                <value value="5" name="HOR_FILTER_BLT"/>
+                <value value="6" name="VER_FILTER_BLT"/>
+                <value value="7" name="ONE_PASS_FILTER_BLT"/>
+                <value value="8" name="MULTI_SOURCE_BLT"/>
+            </bitfield>
+            <bitfield high="17" low="16" name="SWIZZLE" type="DE_SWIZZLE"/>
+            <bitfield high="21" low="20" name="ENDIAN_CONTROL" type="ENDIAN_MODE"/>
+            <bitfield high="24" low="24" name="GDI_STRE" type="ENABLE_DISABLE"/>
+            <bitfield high="25" low="25" name="INTER_TILE_PER_FIX">
+                <value value="1" name="DISABLED"/>
+                <value value="0" name="ENABLED"/>
+            </bitfield>
+            <bitfield high="26" low="26" name="MINOR_TILED" type="ENABLE_DISABLE"/>
+        </reg32>
+        <reg32 offset="0x0125C" name="ROP" type="2D_ROP"/>
+        <reg32 offset="0x01260" name="CLIP_TOP_LEFT">
+            <bitfield high="14" low="0" name="X"/>
+            <bitfield high="30" low="16" name="Y"/>
+        </reg32>
+        <reg32 offset="0x01264" name="CLIP_BOTTOM_RIGHT">
+            <bitfield high="14" low="0" name="X"/>
+            <bitfield high="30" low="16" name="Y"/>
+        </reg32>
+        <reg32 offset="0x0126C" name="CONFIG">
+            <bitfield high="0" low="0" name="MIRROR_BLT_ENABLE">
+                <value value="0" name="OFF"/>
+                <value value="1" name="ON"/>
+            </bitfield>
+            <bitfield high="5" low="4" name="MIRROR_BLT_MODE">
+                <value value="0" name="NORMAL"/>
+                <value value="1" name="HMIRROR"/>
+                <value value="2" name="VMIRROR"/>
+                <value value="3" name="FULL_MIRROR"/>
+            </bitfield>
+            <bitfield high="18" low="16" name="SOURCE_SELECT"/>
+            <bitfield high="21" low="20" name="DESTINATION_SELECT"/>
+        </reg32>
+        <reg32 offset="0x01278" name="SRC_ORIGIN_FRACTION">
+            <bitfield high="15" low="0" name="X"/>
+            <bitfield high="31" low="16" name="Y"/>
+        </reg32>
+        <reg32 offset="0x0127C" name="ALPHA_CONTROL" type="2D_ALPHA_CONTROL"/>
+        <reg32 offset="0x01280" name="ALPHA_MODES" type="2D_ALPHA_MODES"/>
+        <reg32 offset="0x01284" name="UPLANE_ADDRESS" type="VIVM"/>
+        <reg32 offset="0x01288" name="UPLANE_STRIDE" type="2D_SRC_STRIDE"/>
+        <reg32 offset="0x0128C" name="VPLANE_ADDRESS" type="VIVM"/>
+        <reg32 offset="0x01290" name="VPLANE_STRIDE" type="2D_SRC_STRIDE"/>
+        <reg32 offset="0x01294" name="VR_CONFIG" masked="yes">
+            <bitfield high="1" low="0" name="START">
+                <value value="0" name="HORIZONTAL_BLIT"/>
+                <value value="1" name="VERTICAL_BLIT"/>
+                <value value="2" name="ONE_PASS_BLIT"/>
+            </bitfield>
+            <bitfield high="3" low="3" name="START_MASK"/>
+        </reg32>
+        <reg32 offset="0x01298" name="VR_SOURCE_IMAGE_LOW">
+            <bitfield high="15" low="0" name="LEFT"/>
+            <bitfield high="31" low="16" name="TOP"/>
+        </reg32>
+        <reg32 offset="0x0129C" name="VR_SOURCE_IMAGE_HIGH">
+            <bitfield high="15" low="0" name="RIGHT"/>
+            <bitfield high="31" low="16" name="BOTTOM"/>
+        </reg32>
+        <reg32 offset="0x012A0" name="VR_SOURCE_ORIGIN_LOW">
+            <bitfield high="31" low="0" name="X"/>
+        </reg32>
+        <reg32 offset="0x012A4" name="VR_SOURCE_ORIGIN_HIGH">
+            <bitfield high="31" low="0" name="Y"/>
+        </reg32>
+        <reg32 offset="0x012A8" name="VR_TARGET_WINDOW_LOW">
+            <bitfield high="15" low="0" name="LEFT"/>
+            <bitfield high="31" low="16" name="TOP"/>
+        </reg32>
+        <reg32 offset="0x012AC" name="VR_TARGET_WINDOW_HIGH">
+            <bitfield high="15" low="0" name="RIGHT"/>
+            <bitfield high="31" low="16" name="BOTTOM"/>
+        </reg32>
+        <reg32 offset="0x012B0" name="PE_CONFIG" masked="yes">
+            <bitfield high="1" low="0" name="DESTINATION_FETCH">
+                <value value="0" name="DISABLE"/>
+                <value value="1" name="DEFAULT"/>
+                <value value="2" name="ALWAYS"/>
+            </bitfield>
+            <bitfield high="3" low="3" name="DESTINATION_FETCH_MASK"/>
+        </reg32>
+        <reg32 offset="0x012B4" name="DST_ROTATION_HEIGHT">
+            <bitfield high="15" low="0" name="HEIGHT"/>
+        </reg32>
+        <reg32 offset="0x012B8" name="SRC_ROTATION_HEIGHT" type="2D_SRC_ROTATION_HEIGHT"/>
+        <reg32 offset="0x012BC" name="ROT_ANGLE" type="2D_ROT_ANGLE"/>
+        <reg32 offset="0x012C0" name="CLEAR_PIXEL_VALUE32" type="DE_COLOR"/>
+        <reg32 offset="0x012C4" name="DEST_COLOR_KEY" type="DE_COLOR"/>
+        <reg32 offset="0x012C8" name="GLOBAL_SRC_COLOR" type="DE_COLOR"/>
+        <reg32 offset="0x012CC" name="GLOBAL_DEST_COLOR" type="DE_COLOR"/>
+        <reg32 offset="0x012D0" name="COLOR_MULTIPLY_MODES" type="2D_COLOR_MULTIPLY_MODES"/>
+        <reg32 offset="0x012D4" name="PE_TRANSPARENCY" type="2D_PE_TRANSPARENCY"/>
+        <reg32 offset="0x012D8" name="PE_CONTROL" type="2D_PE_CONTROL"/>
+        <reg32 offset="0x012DC" name="SRC_COLOR_KEY_HIGH" type="DE_COLOR"/>
+        <reg32 offset="0x012E0" name="DEST_COLOR_KEY_HIGH" type="DE_COLOR"/>
+        <reg32 offset="0x012E4" name="VR_CONFIG_EX" masked="yes">
+            <bitfield high="1" low="0" name="VERTICAL_LINE_WIDTH">
+                <value value="0" name="AUTO"/>
+                <value value="1" name="PIXELS16"/>
+                <value value="2" name="PIXELS32"/>
+            </bitfield>
+            <bitfield high="3" low="3" name="VERTICAL_LINE_WIDTH_MASK"/>
+            <bitfield high="7" low="4" name="FILTER_TAP"/>
+            <bitfield high="8" low="8" name="FILTER_TAP_MASK"/>
+        </reg32>
+        <reg32 offset="0x012E8" name="PE_DITHER_LOW">
+            <bitfield high="3" low="0" name="PIXEL_X0_Y0"/>
+            <bitfield high="7" low="4" name="PIXEL_X1_Y0"/>
+            <bitfield high="11" low="8" name="PIXEL_X2_Y0"/>
+            <bitfield high="15" low="12" name="PIXEL_X3_Y0"/>
+            <bitfield high="19" low="16" name="PIXEL_X0_Y1"/>
+            <bitfield high="23" low="20" name="PIXEL_X1_Y1"/>
+            <bitfield high="27" low="24" name="PIXEL_X2_Y1"/>
+            <bitfield high="31" low="28" name="PIXEL_X3_Y1"/>
+        </reg32>
+        <reg32 offset="0x012EC" name="PE_DITHER_HIGH">
+            <bitfield high="3" low="0" name="PIXEL_X0_Y2"/>
+            <bitfield high="7" low="4" name="PIXEL_X1_Y2"/>
+            <bitfield high="11" low="8" name="PIXEL_X2_Y2"/>
+            <bitfield high="15" low="12" name="PIXEL_X3_Y2"/>
+            <bitfield high="19" low="16" name="PIXEL_X0_Y3"/>
+            <bitfield high="23" low="20" name="PIXEL_X1_Y3"/>
+            <bitfield high="27" low="24" name="PIXEL_X2_Y3"/>
+            <bitfield high="31" low="28" name="PIXEL_X3_Y3"/>
+        </reg32>
+        <reg32 offset="0x012F0" name="BW_CONFIG" masked="yes">
+            <bitfield high="0" low="0" name="BLOCK_CONFIG">
+                <value value="0" name="AUTO"/>
+                <value value="1" name="CUSTOMIZE"/>
+            </bitfield>
+            <bitfield high="3" low="3" name="BLOCK_CONFIG_MASK"/>
+            <bitfield high="4" low="4" name="BLOCK_WALK_DIRECTION">
+                <value value="0" name="RIGHT_BOTTOM"/>
+                <value value="1" name="BOTTOM_RIGHT"/>
+            </bitfield>
+            <bitfield high="7" low="7" name="BLOCK_WALK_DIRECTION_MASK"/>
+            <bitfield high="8" low="8" name="TILE_WALK_DIRECTION">
+                <value value="0" name="RIGHT_BOTTOM"/>
+                <value value="1" name="BOTTOM_RIGHT"/>
+            </bitfield>
+            <bitfield high="11" low="11" name="TILE_WALK_DIRECTION_MASK"/>
+            <bitfield high="12" low="12" name="PIXEL_WALK_DIRECTION">
+                <value value="0" name="RIGHT_BOTTOM"/>
+                <value value="1" name="BOTTOM_RIGHT"/>
+            </bitfield>
+            <bitfield high="15" low="15" name="PIXEL_WALK_DIRECTION_MASK"/>
+        </reg32>
+        <reg32 offset="0x012F4" name="BW_BLOCK_SIZE">
+            <bitfield high="15" low="0" name="WIDTH"/>
+            <bitfield high="31" low="16" name="HEIGHT"/>
+        </reg32>
+        <reg32 offset="0x012F8" name="BW_TILE_SIZE">
+            <bitfield high="15" low="0" name="WIDTH"/>
+            <bitfield high="31" low="16" name="HEIGHT"/>
+        </reg32>
+        <reg32 offset="0x012FC" name="BW_BLOCK_MASK">
+            <bitfield high="15" low="0" name="HORIZONTAL"/>
+            <bitfield high="31" low="16" name="VERTICAL"/>
+        </reg32>
+        <reg32 offset="0x01300" name="SRC_EX_CONFIG">
+            <bitfield high="0" low="0" name="MULTI_TILED" type="ENABLE_DISABLE"/>
+            <bitfield high="3" low="3" name="SUPER_TILED" type="ENABLE_DISABLE"/>
+            <bitfield high="8" low="8" name="MINOR_TILED" type="ENABLE_DISABLE"/>
+        </reg32>
+        <reg32 offset="0x01304" name="SRC_EX_ADDRESS" type="VIVM"/>
+        <reg32 offset="0x01308" name="DE_MULTI_SOURCE">
+            <bitfield high="2" low="0" name="MAX_SOURCE"/>
+            <bitfield high="10" low="8" name="HORIZONTAL_BLOCK">
+                <value value="0" name="PIXEL16"/>
+                <value value="1" name="PIXEL32"/>
+                <value value="2" name="PIXEL64"/>
+                <value value="3" name="PIXEL128"/>
+                <value value="4" name="PIXEL256"/>
+                <value value="5" name="PIXEL512"/>
+            </bitfield>
+            <bitfield high="18" low="16" name="VERTICAL_BLOCK">
+                <value value="0" name="LINE1"/>
+                <value value="1" name="LINE2"/>
+                <value value="2" name="LINE4"/>
+                <value value="3" name="LINE8"/>
+                <value value="4" name="LINE16"/>
+                <value value="5" name="LINE32"/>
+                <value value="6" name="LINE64"/>
+                <value value="7" name="LINE128"/>
+            </bitfield>
+        </reg32>
+        <reg32 offset="0x0130C" name="DEYUV_CONVERSION">
+            <bitfield high="1" low="0" name="ENABLE">
+                <value value="0" name="OFF"/>
+                <value value="1" name="PLANE1"/>
+                <value value="2" name="PLANE2"/>
+                <value value="3" name="PLANE3"/>
+            </bitfield>
+            <bitfield high="3" low="2" name="PLANE1_COUNT" type="uint"/>
+            <bitfield high="5" low="4" name="PLANE2_COUNT" type="uint"/>
+            <bitfield high="7" low="6" name="PLANE3_COUNT" type="uint"/>
+            <bitfield high="9" low="8" name="PLANE1_SWIZZLE_B" type="DE_COMPONENT"/>
+            <bitfield high="11" low="10" name="PLANE1_SWIZZLE_G" type="DE_COMPONENT"/>
+            <bitfield high="13" low="12" name="PLANE1_SWIZZLE_R" type="DE_COMPONENT"/>
+            <bitfield high="15" low="14" name="PLANE1_SWIZZLE_A" type="DE_COMPONENT"/>
+            <bitfield high="17" low="16" name="PLANE2_SWIZZLE_B" type="DE_COMPONENT"/>
+            <bitfield high="19" low="18" name="PLANE2_SWIZZLE_G" type="DE_COMPONENT"/>
+            <bitfield high="21" low="20" name="PLANE2_SWIZZLE_R" type="DE_COMPONENT"/>
+            <bitfield high="23" low="22" name="PLANE2_SWIZZLE_A" type="DE_COMPONENT"/>
+            <bitfield high="25" low="24" name="PLANE3_SWIZZLE_B" type="DE_COMPONENT"/>
+            <bitfield high="27" low="26" name="PLANE3_SWIZZLE_G" type="DE_COMPONENT"/>
+            <bitfield high="29" low="28" name="PLANE3_SWIZZLE_R" type="DE_COMPONENT"/>
+            <bitfield high="31" low="30" name="PLANE3_SWIZZLE_A" type="DE_COMPONENT"/>
+        </reg32>
+        <reg32 offset="0x01310" name="DE_PLANE2_ADDRESS" type="VIVM"/>
+        <reg32 offset="0x01314" name="DE_PLANE2_STRIDE" type="2D_SRC_STRIDE"/>
+        <reg32 offset="0x01318" name="DE_PLANE3_ADDRESS" type="VIVM"/>
+        <reg32 offset="0x0131C" name="DE_PLANE3_STRIDE" type="2D_SRC_STRIDE"/>
+        <reg32 offset="0x01320" name="DE_STALL_DE">
+            <bitfield high="0" low="0" name="ENABLE" type="ENABLE_DISABLE"/>
+        </reg32>
+        <reg32 offset="0x01800" name="FILTER_KERNEL" length="128">
+            <bitfield high="15" low="0" name="COEFFICIENT0"/>
+            <bitfield high="31" low="16" name="COEFFICIENT1"/>
+        </reg32>
+        <reg32 offset="0x01C00" name="INDEX_COLOR_TABLE" length="256" type="DE_COLOR"/>
+        <reg32 offset="0x02800" name="HORI_FILTER_KERNEL" length="128">
+            <bitfield high="15" low="0" name="COEFFICIENT0"/>
+            <bitfield high="31" low="16" name="COEFFICIENT1"/>
+        </reg32>
+        <reg32 offset="0x02A00" name="VERTI_FILTER_KERNEL" length="128">
+            <bitfield high="15" low="0" name="COEFFICIENT0"/>
+            <bitfield high="31" low="16" name="COEFFICIENT1"/>
+        </reg32>
+        <reg32 offset="0x03400" name="INDEX_COLOR_TABLE32" length="256" type="DE_COLOR"/>
+        <!-- Multi-source blend -->
+        <stripe name="BLOCK4">
+            <reg32 offset="0x12800" name="SRC_ADDRESS" length="4" type="VIVM"/>
+            <reg32 offset="0x12810" name="SRC_STRIDE" length="4" type="2D_SRC_STRIDE"/>
+            <reg32 offset="0x12820" name="SRC_ROTATION_CONFIG" length="4" type="2D_SRC_ROTATION_CONFIG"/>
+            <reg32 offset="0x12830" name="SRC_CONFIG" length="4" type="2D_SRC_CONFIG"/>
+            <reg32 offset="0x12840" name="SRC_ORIGIN" length="4" type="2D_SRC_ORIGIN"/>
+            <reg32 offset="0x12850" name="SRC_SIZE" length="4" type="2D_SRC_SIZE"/>
+            <reg32 offset="0x12860" name="SRC_COLOR_BG" length="4" type="DE_COLOR"/>
+            <reg32 offset="0x12870" name="ROP" length="4" type="2D_ROP"/>
+            <reg32 offset="0x12880" name="ALPHA_CONTROL" length="4" type="2D_ALPHA_CONTROL"/>
+            <reg32 offset="0x12890" name="ALPHA_MODES" length="4" type="2D_ALPHA_MODES"/>
+            <reg32 offset="0x128A0" name="ADDRESS_U" length="4" type="VIVM"/>
+            <reg32 offset="0x128B0" name="STRIDE_U" length="4" type="2D_SRC_STRIDE"/>
+            <reg32 offset="0x128C0" name="ADDRESS_V" length="4" type="VIVM"/>
+            <reg32 offset="0x128D0" name="STRIDE_V" length="4" type="2D_SRC_STRIDE"/>
+            <reg32 offset="0x128E0" name="SRC_ROTATION_HEIGHT" length="4" type="2D_SRC_ROTATION_HEIGHT"/>
+            <reg32 offset="0x128F0" name="ROT_ANGLE" length="4" type="2D_ROT_ANGLE"/>
+            <reg32 offset="0x12900" name="GLOBAL_SRC_COLOR" length="4" type="DE_COLOR"/>
+            <reg32 offset="0x12910" name="GLOBAL_DEST_COLOR" length="4" type="DE_COLOR"/>
+            <reg32 offset="0x12920" name="COLOR_MULTIPLY_MODES" length="4" type="2D_COLOR_MULTIPLY_MODES"/>
+            <reg32 offset="0x12930" name="TRANSPARENCY" length="4" type="2D_PE_TRANSPARENCY"/>
+            <reg32 offset="0x12940" name="CONTROL" length="4" type="2D_PE_CONTROL"/>
+            <reg32 offset="0x12950" name="SRC_COLOR_KEY_HIGH" length="4" type="DE_COLOR"/>
+            <reg32 offset="0x12960" name="SRC_EX_CONFIG" length="4" type="2D_SRC_EX_CONFIG"/>
+            <reg32 offset="0x12970" name="SRC_EX_ADDRESS" length="4" type="VIVM"/>
+        </stripe>
+        <stripe name="BLOCK8">
+            <reg32 offset="0x12A00" name="SRC_ADDRESS" length="8" type="VIVM"/>
+            <reg32 offset="0x12A20" name="SRC_STRIDE" length="8" type="2D_SRC_STRIDE"/>
+            <reg32 offset="0x12A40" name="SRC_ROTATION_CONFIG" length="8" type="2D_SRC_ROTATION_CONFIG"/>
+            <reg32 offset="0x12A60" name="SRC_CONFIG" length="8" type="2D_SRC_CONFIG"/>
+            <reg32 offset="0x12A80" name="SRC_ORIGIN" length="8" type="2D_SRC_ORIGIN"/>
+            <reg32 offset="0x12AA0" name="SRC_SIZE" length="8" type="2D_SRC_SIZE"/>
+            <reg32 offset="0x12AC0" name="SRC_COLOR_BG" length="8" type="DE_COLOR"/>
+            <reg32 offset="0x12AE0" name="ROP" length="8" type="2D_ROP"/>
+            <reg32 offset="0x12B00" name="ALPHA_CONTROL" length="8" type="2D_ALPHA_CONTROL"/>
+            <reg32 offset="0x12B20" name="ALPHA_MODES" length="8" type="2D_ALPHA_MODES"/>
+            <reg32 offset="0x12B40" name="ADDRESS_U" length="8" type="VIVM"/>
+            <reg32 offset="0x12B60" name="STRIDE_U" length="8" type="2D_SRC_STRIDE"/>
+            <reg32 offset="0x12B80" name="ADDRESS_V" length="8" type="VIVM"/>
+            <reg32 offset="0x12BA0" name="STRIDE_V" length="8" type="2D_SRC_STRIDE"/>
+            <reg32 offset="0x12BC0" name="SRC_ROTATION_HEIGHT" length="8" type="2D_SRC_ROTATION_HEIGHT"/>
+            <reg32 offset="0x12BE0" name="ROT_ANGLE" length="8" type="2D_ROT_ANGLE"/>
+            <reg32 offset="0x12C00" name="GLOBAL_SRC_COLOR" length="8" type="DE_COLOR"/>
+            <reg32 offset="0x12C20" name="GLOBAL_DEST_COLOR" length="8" type="DE_COLOR"/>
+            <reg32 offset="0x12C40" name="COLOR_MULTIPLY_MODES" length="8" type="2D_COLOR_MULTIPLY_MODES"/>
+            <reg32 offset="0x12C60" name="TRANSPARENCY" length="8" type="2D_PE_TRANSPARENCY"/>
+            <reg32 offset="0x12C80" name="CONTROL" length="8" type="2D_PE_CONTROL"/>
+            <reg32 offset="0x12CA0" name="SRC_COLOR_KEY_HIGH" length="8" type="DE_COLOR"/>
+            <reg32 offset="0x12CC0" name="SRC_EX_CONFIG" length="8" type="2D_SRC_EX_CONFIG"/>
+            <reg32 offset="0x12CE0" name="SRC_EX_ADDRESS" length="8" type="VIVM"/>
+        </stripe>
+    </stripe>
+</domain>
+</database>
+
+
+

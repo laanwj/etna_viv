@@ -21,6 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 /* Rotating, mipmapped cube. Load mipmaps from .dds file.
+ * Automatic state management.
  */
 #include <stdio.h>
 #include <unistd.h>
@@ -223,6 +224,272 @@ void etna_texture_tile(void *dest, void *src, unsigned width, unsigned height, u
     }
 }
 
+enum etna_surface_tiling
+{
+    ETNA_TILING_LINEAR = 0,
+    ETNA_TILING_TILED = 1,
+    ETNA_TILING_SUPERTILED = 3
+};
+
+#define GL_NUM_VARYINGS 8
+#define GL_NUM_VARYING_COMPONENTS 32
+struct gl_state
+{
+    uint32_t vertex_element_config;
+    uint32_t msaa_samples; /* 0, 2 or 4 */
+    uint32_t msaa_bits;
+    uint32_t varying_total_components;
+    uint32_t varying_num_components[GL_NUM_VARYINGS];
+    uint32_t varying_use[GL_NUM_VARYING_COMPONENTS];
+};
+struct rs_state
+{
+    uint8_t source_format; // RS_FORMAT_XXX
+    uint8_t downsample_x; // Downsample in x direction
+    uint8_t downsample_y; // Downsample in y direction
+    uint8_t source_tiling; // ETNA_TILING_XXX
+    uint8_t dest_tiling;   // ETNA_TILING_XXX
+    uint8_t dest_format;  // RS_FORMAT_XXX
+    uint8_t swap_rb;
+    uint8_t flip;
+    uint32_t source_addr;
+    uint32_t source_stride;
+    uint32_t dest_addr;
+    uint32_t dest_stride;
+    uint16_t width;
+    uint16_t height;
+    uint32_t dither[2];
+    uint32_t clear_bits;
+    uint32_t clear_mode; // VIVS_RS_CLEAR_CONTROL_MODE_XXX
+    uint32_t clear_value[4];
+    uint8_t aa;
+    uint8_t endian_mode; // ENDIAN_MODE_XXX
+};
+#define VS_NUM_INPUTS 16
+#define VS_NUM_OUTPUTS 16
+struct vs_state
+{
+    uint32_t end_pc;
+    uint32_t output_count;
+    uint32_t input_count;
+    uint32_t input_count_unk8;
+    uint32_t num_temps;
+    uint8_t outputs[VS_NUM_OUTPUTS];
+    uint8_t inputs[VS_NUM_INPUTS];
+    uint32_t load_balancing;
+    uint32_t start_pc;
+};
+struct ps_state
+{
+    uint32_t end_pc;
+    uint32_t output_reg;
+    uint32_t input_count;
+    uint32_t input_count_unk8;
+    uint32_t num_temps;
+    uint32_t start_pc;
+};
+#define PA_NUM_SHADER_ATTRIBUTES 10
+struct pa_state
+{
+    float viewport_scale_x;
+    float viewport_scale_y;
+    float viewport_scale_z;
+    float viewport_offset_x;
+    float viewport_offset_y;
+    float viewport_offset_z;
+    float line_width;
+    float point_size;
+    int attribute_element_count;
+    int attribute_element_count_unk0;
+    bool point_size_enable;
+    bool point_sprite_enable;
+    uint32_t cull_face_mode; // PA_CONFIG_CULL_FACE_MODE_*
+    uint32_t fill_mode; // PA_CONFIG_FILL_MODE_*
+    uint32_t shade_model; // PA_CONFIG_SHADE_MODEL_*
+    uint32_t shader_attributes[PA_NUM_SHADER_ATTRIBUTES];
+};
+struct se_state
+{
+    float scissor_left;
+    float scissor_top;
+    float scissor_right;
+    float scissor_bottom;
+    float depth_scale;
+    float depth_bias;
+    bool last_pixel_enable;
+    float clip_right;
+    float clip_bottom;
+};
+
+
+/* XXX autogenerate this 
+ * XXX also need fixp flag somewhere 
+ */
+uint16_t rs_states[] = {
+    /* 01604-01617 */ VIVS_RS_CONFIG>>2, 5,        /* SOURCE_ADDR, SOURCE_STRIDE, DEST_ADDR, DEST_STRIDE */
+    /* 01620-01623 */ VIVS_RS_WINDOW_SIZE>>2, 1,   /* WINDOW_SIZE */
+    /* 01630-01637 */ VIVS_RS_DITHER(0)>>2, 2,     /* DITHER(0,1) */
+    /* 0163C-0164F */ VIVS_RS_CLEAR_CONTROL>>2, 5, /* CLEAR_CONTROL, FILL_VALUE(0..3) */
+    /* 016A0-016A3 */ VIVS_RS_EXTRA_CONFIG>>2, 1,  /* EXTRA_CONFIG */
+};
+
+/* state packet description / metadata */
+struct state_packet_desc
+{
+    int map_len;
+    uint16_t *map;
+    int values_len;
+};
+
+/* state packet values */
+/* A state packet is a subset of the GPU state, can be regarded as a list of tuples
+ * (addr, value), sorted by address. 
+ */
+struct state_packet
+{
+    bool invalidate;
+    int values_len;
+    uint32_t *values;
+};
+
+struct state_packet_desc rs_state_packet_desc = {
+    .map_len = (sizeof(rs_states) / sizeof(uint16_t)),
+    .map = rs_states,
+    .values_len = 14
+};
+
+int create_state_packet(struct state_packet_desc *desc, struct state_packet **out)
+{
+    struct state_packet *rv = ETNA_NEW(struct state_packet);
+    rv->values_len = desc->values_len;
+    rv->values = malloc(desc->values_len * 4);
+    *out = rv;
+    return ETNA_OK;
+}
+
+/* compile RS state struct to state packet - will always write 14 words */
+void compile_rs_state(struct state_packet *pkt, const struct rs_state *rs)
+{
+    uint32_t *state = pkt->values;
+    int ptr = 0;
+    /* VIVS_RS_CONFIG */
+    state[ptr++] = VIVS_RS_CONFIG_SOURCE_FORMAT(rs->source_format) |
+                            (rs->downsample_x?VIVS_RS_CONFIG_DOWNSAMPLE_X:0) |
+                            (rs->downsample_y?VIVS_RS_CONFIG_DOWNSAMPLE_Y:0) |
+                            ((rs->source_tiling&1)?VIVS_RS_CONFIG_SOURCE_TILED:0) |
+                            VIVS_RS_CONFIG_DEST_FORMAT(rs->dest_format) |
+                            ((rs->dest_tiling&1)?VIVS_RS_CONFIG_DEST_TILED:0) |
+                            ((rs->swap_rb)?VIVS_RS_CONFIG_SWAP_RB:0) |
+                            ((rs->flip)?VIVS_RS_CONFIG_FLIP:0);
+    /* VIVS_RS_SOURCE_ADDR */
+    state[ptr++] = rs->source_addr;
+    /* VIVS_RS_SOURCE_STRIDE */
+    state[ptr++] = rs->source_stride | ((rs->source_tiling&2)?VIVS_RS_SOURCE_STRIDE_TILING:0);
+    /* VIVS_RS_DST_ADDR */
+    state[ptr++] = rs->dest_addr;
+    /* VIVS_RS_DEST_STRIDE */
+    state[ptr++] = rs->dest_stride | ((rs->dest_tiling&2)?VIVS_RS_DEST_STRIDE_TILING:0);
+    /* VIVS_RS_WINDOW_SIZE */
+    state[ptr++] = VIVS_RS_WINDOW_SIZE_WIDTH(rs->width) | VIVS_RS_WINDOW_SIZE_HEIGHT(rs->height);
+    /* VIVS_RS_DITHER(0..1) */
+    state[ptr++] = rs->dither[0];
+    state[ptr++] = rs->dither[1];
+    /* VIVS_RS_CLEAR_CONTROL */
+    state[ptr++] = VIVS_RS_CLEAR_CONTROL_BITS(rs->clear_bits) | rs->clear_mode;
+    /* VIVS_RS_FILL_VALUE(0..3) */
+    state[ptr++] = rs->clear_value[0];
+    state[ptr++] = rs->clear_value[1];
+    state[ptr++] = rs->clear_value[2];
+    state[ptr++] = rs->clear_value[3];
+    /* VIVS_RS_EXTRA_CONFIG */
+    state[ptr++] = VIVS_RS_EXTRA_CONFIG_AA(rs->aa) | VIVS_RS_EXTRA_CONFIG_ENDIAN(rs->endian_mode);
+}
+
+/* compare old and new state packet, submit difference to queue */
+void diff_state_packet(etna_ctx *restrict ctx, const struct state_packet_desc *restrict pdesc, const uint32_t *restrict oldvalues, const uint32_t *restrict newvalues)
+{
+    int values_ptr = 0;
+        
+    uint32_t start_addr = 0x10000;
+    uint32_t next_addr = 0x10000;
+    uint32_t cur_count = 0;
+
+    etna_reserve(ctx, pdesc->values_len*2); /* worst case */
+    for(int map_ptr=0; map_ptr < pdesc->map_len; map_ptr += 2)
+    {
+        uint16_t addr = pdesc->map[map_ptr];
+        uint16_t sub_count = pdesc->map[map_ptr+1];
+        for(int idx=0; idx<sub_count; ++idx)
+        {
+            uint32_t newvalue = newvalues[values_ptr];
+            if(oldvalues[values_ptr] != newvalue)
+            {
+                if(addr != next_addr) /* non-consecutive */
+                {
+                    if(cur_count != 0) /* emit state load */
+                    {
+                        ETNA_EMIT_LOAD_STATE(ctx, start_addr, cur_count, 0 /*fixp*/);
+                        ctx->offset += cur_count;
+                        ETNA_ALIGN(ctx);
+                    }
+                    cur_count = 0;
+                    start_addr = addr;
+                }
+                ctx->buf[ctx->offset + 1 + cur_count] = newvalue;
+                next_addr = addr + 1;
+                cur_count += 1;
+            }
+            ++values_ptr;
+            ++addr;
+        }
+    }
+    if(cur_count != 0) /* close final state_load */
+    {
+        ETNA_EMIT_LOAD_STATE(ctx, start_addr, cur_count, 0 /*fixp*/);
+        ctx->offset += cur_count;
+        ETNA_ALIGN(ctx);
+    }
+}
+
+/* print command buffer for debugging */
+void dump_cmd_buffer(uint32_t *buf, size_t size)
+{
+    printf("cmdbuf:");
+    for(unsigned idx=0; idx<size; ++idx)
+    {
+        printf(":%08x ", buf[idx]);
+        printf("\n");
+    }
+}
+
+/* send contents of state packet, without comparison to any current state */
+void send_state_packet(etna_ctx *restrict ctx, const struct state_packet_desc *restrict pdesc, const uint32_t *restrict newvalues)
+{
+    int values_ptr = 0;
+        
+    etna_reserve(ctx, 1 + pdesc->values_len + pdesc->map_len/2 + 1); /* worst case */
+    unsigned start_offset = ctx->offset;
+    for(int map_ptr=0; map_ptr < pdesc->map_len; map_ptr += 2)
+    {
+        uint16_t addr = pdesc->map[map_ptr];
+        uint16_t sub_count = pdesc->map[map_ptr+1];
+        ETNA_EMIT_LOAD_STATE(ctx, addr, sub_count, 0 /*fixp*/);
+        memcpy(&ctx->buf[ctx->offset], &newvalues[values_ptr], sub_count*4);
+        ctx->offset += sub_count;
+        ETNA_ALIGN(ctx);
+        values_ptr += sub_count;
+    }
+    //dump_cmd_buffer(&ctx->buf[start_offset], ctx->offset - start_offset);
+}
+
+void submit_state_packet(etna_ctx *restrict ctx, const struct state_packet_desc *restrict pdesc, struct state_packet *restrict cur, const struct state_packet *restrict new)
+{
+    /* XXX handle invalidate */
+    //diff_state_packet(ctx, pdesc, cur->values, new->values);
+    send_state_packet(ctx, pdesc, new->values);
+    /* XXX copy new to cur */
+}
+
 int main(int argc, char **argv)
 {
     int rv;
@@ -348,6 +615,42 @@ int main(int argc, char **argv)
         printf("Unable to create context\n");
         exit(1);
     }
+
+    /* create RS states */
+    struct state_packet *cur_rs_state=0;
+    create_state_packet(&rs_state_packet_desc, &cur_rs_state);
+    struct state_packet *clear_rt=0;
+    struct state_packet *copy_to_screen=0;
+    create_state_packet(&rs_state_packet_desc, &clear_rt);
+    compile_rs_state(clear_rt, &(struct rs_state){
+                .source_format = RS_FORMAT_X8R8G8B8,
+                .dest_format = RS_FORMAT_X8R8G8B8,
+                .dest_addr = rt_ts->address,
+                .dest_stride = 0x40,
+                .dither = {0xffffffff, 0xffffffff},
+                .width = 16,
+                .height = rt_ts_size/0x40,
+                .clear_value = {0x55555555},
+                .clear_mode = VIVS_RS_CLEAR_CONTROL_MODE_ENABLED1,
+                .clear_bits = 0xffff
+            });
+
+    create_state_packet(&rs_state_packet_desc, &copy_to_screen);
+    compile_rs_state(copy_to_screen, &(struct rs_state){
+                .source_format = RS_FORMAT_X8R8G8B8,
+                .source_tiling = ETNA_TILING_SUPERTILED,
+                .source_addr = rt->address,
+                .source_stride = padded_width * 4 * 4,
+                .dest_format = RS_FORMAT_X8R8G8B8,
+                .dest_tiling = ETNA_TILING_LINEAR,
+                .dest_addr = fb.physical[buffers->backbuffer],
+                .dest_stride = fb.fb_fix.line_length,
+                .swap_rb = true,
+                .dither = {0xffffffff, 0xffffffff},
+                .clear_mode = VIVS_RS_CLEAR_CONTROL_MODE_DISABLED,
+                .width = width,
+                .height = height
+            });
 
     for(int frame=0; frame<1000; ++frame)
     {
@@ -479,28 +782,9 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_RS_FLUSH_CACHE, VIVS_RS_FLUSH_CACHE_FLUSH);
         etna_stall(ctx, SYNC_RECIPIENT_RA, SYNC_RECIPIENT_PE);
 
-        /* Set up the resolve to clear tile status for main render target 
-         * Regard the TS plane as an image of width 16 with 4 bytes per pixel (64 bytes per row)
-         * XXX need to clear the depth ts too? we don't really use depth buffer in this sample
-         * */
-        etna_set_state(ctx, VIVS_TS_MEM_CONFIG, 0);
-        etna_set_state(ctx, VIVS_RS_CONFIG,
-                VIVS_RS_CONFIG_SOURCE_FORMAT(RS_FORMAT_X8R8G8B8) |
-                VIVS_RS_CONFIG_DEST_FORMAT(RS_FORMAT_X8R8G8B8)
-                );
-        etna_set_state_multi(ctx, VIVS_RS_DITHER(0), 2, (uint32_t[]){0xffffffff, 0xffffffff});
-        etna_set_state(ctx, VIVS_RS_DEST_ADDR, rt_ts->address); /* ADDR_B */
-        etna_set_state(ctx, VIVS_RS_DEST_STRIDE, 0x40);
-        etna_set_state(ctx, VIVS_RS_WINDOW_SIZE, 
-                ((rt_ts_size/0x40) << VIVS_RS_WINDOW_SIZE_HEIGHT__SHIFT) |
-                (16 << VIVS_RS_WINDOW_SIZE_WIDTH__SHIFT));
-        etna_set_state(ctx, VIVS_RS_FILL_VALUE(0), 0x55555555);
-        etna_set_state(ctx, VIVS_RS_CLEAR_CONTROL, 
-                VIVS_RS_CLEAR_CONTROL_MODE_ENABLED1 |
-                (0xffff << VIVS_RS_CLEAR_CONTROL_BITS__SHIFT));
-        etna_set_state(ctx, VIVS_RS_EXTRA_CONFIG, 0);
+        /* Clear render target */
+        submit_state_packet(ctx, &rs_state_packet_desc, cur_rs_state, clear_rt);
         etna_set_state(ctx, VIVS_RS_KICKER, 0xbeebbeeb);
-        /** Done */
        
         /* Now set up TS */
         etna_set_state(ctx, VIVS_TS_MEM_CONFIG, 
@@ -645,24 +929,7 @@ int main(int argc, char **argv)
 
         /* copy to screen */
         etna_bswap_wait_available(buffers);
-        etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
-        etna_set_state(ctx, VIVS_RS_CONFIG,
-                VIVS_RS_CONFIG_SOURCE_FORMAT(RS_FORMAT_X8R8G8B8) |
-                VIVS_RS_CONFIG_SOURCE_TILED |
-                VIVS_RS_CONFIG_DEST_FORMAT(RS_FORMAT_X8R8G8B8) |
-                VIVS_RS_CONFIG_SWAP_RB);
-        etna_set_state(ctx, VIVS_RS_SOURCE_STRIDE, (padded_width * 4 * 4) | VIVS_RS_SOURCE_STRIDE_TILING);
-        etna_set_state(ctx, VIVS_RS_DEST_STRIDE, fb.fb_fix.line_length);
-        etna_set_state(ctx, VIVS_RS_DITHER(0), 0xffffffff);
-        etna_set_state(ctx, VIVS_RS_DITHER(1), 0xffffffff);
-        etna_set_state(ctx, VIVS_RS_CLEAR_CONTROL, VIVS_RS_CLEAR_CONTROL_MODE_DISABLED);
-        etna_set_state(ctx, VIVS_RS_EXTRA_CONFIG, 
-                0); /* no AA, no endian switch */
-        etna_set_state(ctx, VIVS_RS_SOURCE_ADDR, rt->address); /* ADDR_A */
-        etna_set_state(ctx, VIVS_RS_DEST_ADDR, fb.physical[buffers->backbuffer]); /* ADDR_J */
-        etna_set_state(ctx, VIVS_RS_WINDOW_SIZE, 
-                VIVS_RS_WINDOW_SIZE_HEIGHT(height) |
-                VIVS_RS_WINDOW_SIZE_WIDTH(width));
+        submit_state_packet(ctx, &rs_state_packet_desc, cur_rs_state, copy_to_screen);
         etna_set_state(ctx, VIVS_RS_KICKER, 0xbeebbeeb);
 
         etna_bswap_queue_swap(buffers);
