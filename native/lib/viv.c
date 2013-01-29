@@ -36,11 +36,7 @@
 #define DEBUG
 
 #define GALCORE_DEVICE "/dev/galcore"
-#ifdef GCABI_v2 /* HACK */
-#define INTERFACE_SIZE (64)
-#else
 #define INTERFACE_SIZE (sizeof(gcsHAL_INTERFACE))
-#endif
 
 int viv_fd = -1;
 viv_addr_t viv_base_address = 0;
@@ -254,7 +250,7 @@ int viv_user_signal_create(int manualReset, int *id_out)
             .UserSignal = {
                 .command = gcvUSER_SIGNAL_CREATE,
                 .manualReset = manualReset,
-#ifdef GCABI_dove
+#ifdef GCABI_USER_SIGNAL_HAS_TYPE
                 .signalType = 0 /* only used for debugging and error messages inside kernel */
 #endif
             }
@@ -341,7 +337,7 @@ void viv_show_chip_info(void)
     printf("  Chip features: 0x%08x\n", viv_chip.chipFeatures);
     printf("  Chip minor features 0: 0x%08x\n", viv_chip.chipMinorFeatures);
     printf("  Chip minor features 1: 0x%08x\n", viv_chip.chipMinorFeatures1);
-#if !defined(GCABI_dove) && !defined(GCABI_dove_old)
+#ifdef GCABI_HAS_MINOR_FEATURES_2
     printf("  Chip minor features 2: 0x%08x\n", viv_chip.chipMinorFeatures2);
 #endif
     printf("  Stream count: 0x%08x\n", viv_chip.streamCount);
@@ -414,10 +410,10 @@ bool viv_query_feature(enum viv_features_word word, uint32_t bits)
     case viv_chipFeatures: val = viv_chip.chipFeatures; break;
     case viv_chipMinorFeatures0: val = viv_chip.chipMinorFeatures; break;
     case viv_chipMinorFeatures1: val = viv_chip.chipMinorFeatures1; break;
-#if !defined(GCABI_dove) && !defined(GCABI_dove_old)
+#ifdef GCABI_HAS_MINOR_FEATURES_2
     case viv_chipMinorFeatures2: val = viv_chip.chipMinorFeatures2; break;
 #endif
-#ifdef GCABI_v4
+#ifdef GCABI_HAS_MINOR_FEATURES_3
     case viv_chipMinorFeatures3: val = viv_chip.chipMinorFeatures3; break;
 #endif
     default: ;

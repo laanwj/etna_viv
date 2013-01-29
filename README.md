@@ -232,11 +232,24 @@ different offsets for fields, different management of context, and so on). These
 
 - `dove`: Marvell Dove, newer drivers (0.8.0.3184)
 - `dove_old`: Marvell Dove, older drivers (0.8.0.1998, 0.8.0.1123)
-- `v2`: Various Android, for older chips
-- `v4`: Various Android, for newer chips
+- `arnova`: Android, Arnova 10B G3 tablet (RK2918)
+- `v2`: Various Android, for older chips (RK2918 etc)
+- `v4`: Various Android, for newer chips (i.MX6 etc)
 
 If possible get the `gc_*.h` headers for your specific kernel version. If that's not possible, try to find which of the above is most similar,
 and adapt that.
+
+gc_abi.h
+----------
+`gc_abi.h` is an extra header that defines the following flags describing the kernel interface to etna, for a certain
+setting of the environment variable `GCABI`:
+
+- `GCABI_CONTEXT_HAS_PHYSICAL`: `struct _gcoCONTEXT` has `physical` and `bytes` fields
+- `GCABI_HAS_MINOR_FEATURES_2`: `struct _gcsHAL_QUERY_CHIP_IDENTITY` has `chipMinorFeatures2` field
+- `GCABI_HAS_MINOR_FEATURES_3`: `struct _gcsHAL_QUERY_CHIP_IDENTITY` has `chipMinorFeatures3` field
+- `GCABI_USER_SIGNAL_HAS_TYPE`: `struct _gcsHAL_USER_SIGNAL` has `signalType` field
+- `GCABI_HAS_CONTEXT`: `struct _gcsHAL_COMMIT` has `contextBuffer` field
+- `GCABI_HAS_STATE_DELTAS`: `struct _gcsHAL_COMMIT` has `delta` field
 
 It would be really nice to have an auto-detection of the Vivante kernel version, to prevent crashes and such from wrong
 interfaces. However, I don't currently know any way to do this. The kernel does check the size of the passed ioctl structure, however
@@ -258,8 +271,10 @@ environment variables, for example like this:
     export PLATFORM_CFLAGS="--sysroot=${SYSROOT} -DANDROID"
     export PLATFORM_CXXFLAGS="--sysroot=${SYSROOT} -DANDROID -I${NDK}/sources/cxx-stl/gnu-libstdc++/4.6/include -I${NDK}/sources/cxx-stl/gnu-libstdc++/4.6/libs/${CXXABI}/include"
     export PLATFORM_LDFLAGS="--sysroot=${SYSROOT} -L${NDK}/sources/cxx-stl/gnu-libstdc++/4.6/libs/${CXXABI} -lgnustl_static"
-    # Set GC kernel ABI to v2 (important!)
-    export GCABI="v2"
+    # Set GC kernel ABI (important!)
+    #export GCABI="v2"
+    #export GCABI="v4"
+    export GCABI="arnova"
 
 To build the egl samples, you need to copy `libEGL_VIVANTE.so` `libGLESv2_VIVANTE.so` from the device `/system/lib/egl` to
 `native/lib/egl`. This is not needed if you just want to build the replay or etna tests, which do not rely in any way on the
@@ -295,7 +310,7 @@ Run make in `native/replay` and `native/egl` separately.
 Compatibility
 ================
 
-Wladimir's primary development device is an Android tablet based on Rockchip RK2918, containing a GC800 GPU.
+Wladimir's primary development device is an Android tablet based on Rockchip RK2918 (Arnova 10B G3), containing a GC800 GPU.
 It has pretty ancient Vivante kernel driver 2.2.2.
 
 I do not currently have a device with a newer chip or driver, so every statement about those devices
@@ -304,7 +319,7 @@ is based on educated guesses.
 In case your kernel uses 4.x kernel driver
 - use the state dumper with `gcs_hal_interface_v4.json` instead of `gcs_hal_interface_v2.json`
 - provide the right kernel headers when building the `egl` samples
-- define `V4` in `viv_hook.c` (context is handled with state deltas in v4)
+- adapt `viv_hook.c` to log state deltas
 
 If you have a different device, or one based on a different operating system than Android (such as bare Linux), 
 some modifications to the build system may be necessary to make it compatible. Let me know if you get it to work.

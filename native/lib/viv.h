@@ -24,6 +24,7 @@
 #ifndef H_VIV
 #define H_VIV
 
+#include "gc_abi.h"
 #include "gc_hal_base.h"
 #include "gc_hal.h"
 #include "gc_hal_driver.h"

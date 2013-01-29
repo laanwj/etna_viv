@@ -70,7 +70,7 @@ static int initialize_gpu_context(gcoCONTEXT vctx)
     vctx->linkIndex = 0x1076; // XXX should not be hardcoded
     vctx->inUseIndex = 0x1078; // XXX should not be hardcoded
     vctx->bufferSize = sizeof(contextbuf);
-#ifndef GCABI_dove /* Are these used by the kernel on other platforms? otherwise better to remove them completely */
+#ifdef GCABI_CONTEXT_HAS_PHYSICAL /* Are these used by the kernel on other platforms? otherwise better to remove them completely */
     vctx->bytes = 0x0; // Number of bytes at actually allocated for physical, logical
     vctx->physical = (void*)0x0;
 #endif
@@ -97,7 +97,7 @@ static int initialize_gpu_context(gcoCONTEXT vctx)
     printf("Allocated buffer (size 0x%x) for context: phys=%08x log=%08x\n", (int)cbuf0_bytes, (int)cbuf0_physical, (int)cbuf0_logical);
 #endif
 
-#ifndef GCABI_dove
+#ifndef GCABI_HAS_PHYSICAL
     vctx->bytes = cbuf0_bytes; /* actual size of buffer */
     vctx->physical = (void*)cbuf0_physical;
 #endif

@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <stdarg.h>
+#include <string.h>
 
 #include "etna/state.xml.h"
 #include "etna/cmdstream.xml.h"

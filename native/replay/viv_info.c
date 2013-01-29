@@ -206,19 +206,11 @@ int main()
     memset((void*)&id, 0, sizeof(id));
     id.command = gcvHAL_QUERY_CHIP_IDENTITY;
 
-#ifndef GCABI_dove
-    // HACK size must be 64 to work on Rockchip
-    ic.in_buf = &id;
-    ic.in_buf_size = 64;//sizeof(id);
-    ic.out_buf = &id;
-    ic.out_buf_size = 64;//sizeof(id);
-#else
     ic.in_buf = &id;
     ic.in_buf_size = sizeof(id);
     ic.out_buf = &id;
     ic.out_buf_size = sizeof(id);
-#endif
-    printf("gcsHAL_INTERFACE size real %i sending %i\n", sizeof(id), ic.in_buf_size);
+    printf("gcsHAL_INTERFACE size %i\n", sizeof(id));
 
     rv = ioctl(fd, IOCTL_GCHAL_INTERFACE, &ic);
     if(rv < 0)
@@ -251,7 +243,7 @@ int main()
         printf("  %c %s\n", flag?'+':'-', vivante_chipMinorFeatures1[i]);
     }
     printf("\n");
-#if !defined(GCABI_dove) && !defined(GCABI_dove_old)
+#ifdef GCABI_HAS_MINOR_FEATURES_2
     printf("Chip minor features 2: 0x%08x\n", id.u.QueryChipIdentity.chipMinorFeatures2);
     for(int i=0; i<32; ++i)
     {

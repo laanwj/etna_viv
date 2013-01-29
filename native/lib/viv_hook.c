@@ -24,11 +24,12 @@
 #include "flightrecorder.h"
 /* hooking / logging functionality for Vivante GL driver
  */
+#include "gc_abi.h"
 #include "gc_hal_base.h"
 #include "gc_hal.h"
 #include "gc_hal_driver.h"
 
-#ifdef V4
+#ifdef GCABI_HAS_STATE_DELTAS
 #include "gc_hal_kernel_buffer.h"
 #else /* V2 */
 #include "gc_hal_user_context.h"
@@ -173,7 +174,7 @@ void log_interface_in(flightrec_event_t evctx, gcsHAL_INTERFACE *id)
     case gcvHAL_COMMIT:
         fdr_event_add_oneshot_range(evctx, id->u.Commit.commandBuffer, sizeof(struct _gcoCMDBUF));
         //fdr_event_add_oneshot_range(evctx, id->u.Commit.commandBuffer->logical, id->u.Commit.commandBuffer->offset);
-#ifndef GCABI_v4
+#ifndef GCABI_HAS_STATE_DELTAS
         fdr_event_add_oneshot_range(evctx, id->u.Commit.contextBuffer, sizeof(struct _gcoCONTEXT));
         if(id->u.Commit.contextBuffer->map) /* state map */
             fdr_event_add_oneshot_range(evctx, id->u.Commit.contextBuffer->map, id->u.Commit.contextBuffer->stateCount*4);
