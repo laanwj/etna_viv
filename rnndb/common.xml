@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright (c) 2012-2013 The Etnaviv Project
+
+ Permission is hereby granted, free of charge, to any person obtaining a
+ copy of this software and associated documentation files (the "Software"),
+ to deal in the Software without restriction, including without limitation
+ the rights to use, copy, modify, merge, publish, distribute, sub license,
+ and/or sell copies of the Software, and to permit persons to whom the
+ Software is furnished to do so, subject to the following conditions:
+
+ The above copyright notice and this permission notice (including the
+ next paragraph) shall be included in all copies or substantial portions
+ of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL
+ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ DEALINGS IN THE SOFTWARE.
+-->
+<database xmlns="http://nouveau.freedesktop.org/"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
+<!-- Shared enums and type definitions.
+  -->
+    <enum name="ENABLE_DISABLE" inline="yes"> 
+        <!-- Generic type for functionality that can be enabled/disabled, it can be somewhat clearer than a
+             boolean (RNN default type for 1-bit values) in some cases.
+          -->
+        <value value="0" name="DISABLE"/>
+        <value value="1" name="ENABLE"/>
+    </enum>
+    <enum name="PIPE_ID">
+        <value value="0" name="PIPE_3D"/>
+        <value value="1" name="PIPE_2D"/> <!-- DE only -->
+    </enum>
+    <enum name="SYNC_RECIPIENT" brief="Synchronization source/destination">
+        <doc>This is used for synchronization primitives, for example for semaphores and stalling</doc>
+        <value value="1" name="FE" brief="Front End"/>
+        <value value="5" name="RA" brief="Raster"/>
+        <value value="7" name="PE" brief="Pixel Engine"/>
+        <value value="11" name="DE" brief="Drawing Engine"/>
+    </enum>
+    <enum name="ENDIAN_MODE" brief="Byte swap configuration">
+        <value value="0" name="NO_SWAP" brief="No endian swap"/>
+        <value value="1" name="SWAP_16" brief="Swap per 16 bit unit"/>
+        <value value="2" name="SWAP_32" brief="Swap per 32 bit unit"/>
+    </enum>
+    <bitset name="RGBA_BITS" brief="RGBA bits">
+        <bitfield pos="0" name="R"/>
+        <bitfield pos="1" name="G"/>
+        <bitfield pos="2" name="B"/>
+        <bitfield pos="3" name="A"/>
+    </bitset>
+    
+    <enum name="chipModel">
+        <value value="0x0300" name="GC300"/> <!-- 2D graphics -->
+        <value value="0x0320" name="GC320"/> <!-- 2D graphics + Compose engine -->
+        <value value="0x0350" name="GC350"/> <!-- OpenVG -->
+        <value value="0x0355" name="GC355"/> <!-- OpenVG -->
+        <value value="0x0400" name="GC400"/> <!-- 3D graphics, 1 core, according to Vivante it is "the smallest OpenGL ES 2.0 compliant GPU available today" -->
+        <value value="0x0410" name="GC410"/>
+        <value value="0x0420" name="GC420"/>
+        <value value="0x0450" name="GC450"/>
+        <value value="0x0500" name="GC500"/>
+        <value value="0x0530" name="GC530"/>
+        <value value="0x0600" name="GC600"/>
+        <value value="0x0700" name="GC700"/>
+        <value value="0x0800" name="GC800"/> <!-- 3D graphics, 1 core -->
+        <value value="0x0860" name="GC860"/>
+        <value value="0x0880" name="GC880"/>
+        <value value="0x1000" name="GC1000"/> <!-- 3D graphics, 2 cores -->
+        <value value="0x2000" name="GC2000"/> <!-- 3D graphics, 4 cores -->
+        <value value="0x2100" name="GC2100"/>
+        <value value="0x4000" name="GC4000"/> <!-- 3D graphics, 8 cores -->
+    </enum>
+    <bitset name="chipFeatures">
+        <bitfield pos="0" name="FAST_CLEAR" brief="Fast clear available"/>
+        <bitfield pos="1" name="SPECIAL_ANTI_ALIASING" brief="Special AA (FSAA)"/>
+        <bitfield pos="2" name="PIPE_3D" brief="3D engine is present"/>
+        <bitfield pos="3" name="DXT_TEXTURE_COMPRESSION" brief="DXT texture compression"/>
+        <bitfield pos="4" name="DEBUG_MODE" brief="Debug registers present"/>
+        <bitfield pos="5" name="Z_COMPRESSION" brief="Depth and color compression"/>
+        <bitfield pos="6" name="YUV420_SCALER" brief="YUV 4:2:0 support in filter blit"/>
+        <bitfield pos="7" name="MSAA" brief="Multi Sample Anti-Aliasing"/>
+        <bitfield pos="8" name="DC" brief="Display controller"/>
+        <bitfield pos="9" name="PIPE_2D" brief="2D engine is present"/>
+        <bitfield pos="10" name="ETC1_TEXTURE_COMPRESSION" brief="Ericcson texture compression"/>
+        <bitfield pos="11" name="FAST_SCALER" brief="HD scaler present"/>
+        <bitfield pos="12" name="HIGH_DYNAMIC_RANGE" brief="High dynamic range support"/>
+        <bitfield pos="13" name="YUV420_TILER" brief="YUV 4:2:0 tiler is available"/>
+        <bitfield pos="14" name="MODULE_CG" brief="Second-level clock gating available"/>
+        <bitfield pos="15" name="MIN_AREA" brief="Optimized for minimum area"/>
+        <bitfield pos="16" name="NO_EARLY_Z" brief="No early-Z"/>
+        <bitfield pos="17" name="NO_422_TEXTURE" brief="No 4:2:2 YUV texture input format"/>
+        <bitfield pos="18" name="BUFFER_INTERLEAVING" brief="Supports interleaving depth and color buffers"/>
+        <bitfield pos="19" name="BYTE_WRITE_2D" brief="Supports byte write in 2D"/>
+        <bitfield pos="20" name="NO_SCALER" brief="No 2D scaler"/>
+        <bitfield pos="21" name="YUY2_AVERAGING" brief="YUY2 averaging support in resolve"/>
+        <bitfield pos="22" name="HALF_PE_CACHE" brief="PE cache is half"/>
+        <bitfield pos="23" name="HALF_TX_CACHE" brief="TX cache is half"/>
+        <bitfield pos="24" name="YUY2_RENDER_TARGET" brief="YUY2 support in PE and YUY2 to RGB conversion in resolve"/>
+        <bitfield pos="25" name="MEM32" brief="32 bit memory address support"/>
+        <bitfield pos="26" name="PIPE_VG" brief="OpenVG engine is present"/>
+        <bitfield pos="27" name="VGTS" brief="VG tesselator is present"/>
+        <bitfield pos="28" name="FE20" brief="FE 2.0 is present"/>
+        <bitfield pos="29" name="BYTE_WRITE_3D" brief="3D PE has byte write capability"/>
+        <bitfield pos="30" name="RS_YUV_TARGET" brief="Supports resolving into YUV target"/>
+        <bitfield pos="31" name="32_BIT_INDICES" brief="32 bit indices can be used with indexed drawing"/>
+    </bitset>
+    <bitset name="chipMinorFeatures0">
+        <bitfield pos="0" name="FLIP_Y" brief="Y flipping capability is added to resolve"/>
+        <bitfield pos="1" name="DUAL_RETURN_BUS" brief="Dual Return Bus from HI to clients"/>
+        <bitfield pos="2" name="ENDIANNESS_CONFIG" brief="Configurable endianness support"/>
+        <bitfield pos="3" name="TEXTURE_8K" brief="8Kx8K texture support"/>
+        <bitfield pos="4" name="CORRECT_TEXTURE_CONVERTER" brief="Driver hack is not needed (?)"/>
+        <bitfield pos="5" name="SPECIAL_MSAA_LOD" brief="Special LOD calculation when MSAA is on"/>
+        <bitfield pos="6" name="FAST_CLEAR_FLUSH" brief="Proper flush is done in fast clear cache"/>
+        <bitfield pos="7" name="2DPE20" brief="Pixel Engine 2.0"/>
+        <bitfield pos="8" name="CORRECT_AUTO_DISABLE" brief="Reserved"/>
+        <bitfield pos="9" name="RENDERTARGET_8K" brief="8Kx8K render target support"/>
+        <bitfield pos="10" name="2BITPERTILE" brief="Two status bits per tile (instead of four)"/>
+        <bitfield pos="11" name="SEPARATE_TILE_STATUS_WHEN_INTERLEAVED" brief="Use 2 separate tile status buffers in interleaved mode"/>
+        <bitfield pos="12" name="SUPER_TILED" brief="32x32 super tile is available"/>
+        <bitfield pos="13" name="VG_20" brief="Major updates to VG pipe (TS buffer tiling, state masking)"/>
+        <bitfield pos="14" name="TS_EXTENDED_COMMANDS" brief="New commands added to the VG tessellator"/>
+        <bitfield pos="15" name="COMPRESSION_FIFO_FIXED"/>
+        <bitfield pos="16" name="HAS_SIGN_FLOOR_CEIL" brief="Has SIGN, FLOOR and CEIL shader instructions"/>
+        <bitfield pos="17" name="VG_FILTER" brief="VG filter is available"/>
+        <bitfield pos="18" name="VG_21" brief="Minor updates to VG pipe (Event generation from VG, TS, PE, tiled image support)"/>
+        <bitfield pos="19" name="SHADER_HAS_W" brief="W is sent to SH from RA"/>
+        <bitfield pos="20" name="HAS_SQRT_TRIG" brief="Has SQRT, SIN, COS instructions"/>
+        <bitfield pos="21" name="MORE_MINOR_FEATURES" brief="Chip has CHIP_MINOR_FEATURE_(1|2|3)">
+            <doc>Also, in the shader unavailable registers will return 0</doc>
+        </bitfield>
+        <bitfield pos="22" name="MC20" brief="New style MC with separate paths for color and depth"/>
+        <bitfield pos="23" name="MSAA_SIDEBAND" brief="Put the MSAA data into sideband fifo"/>
+        <bitfield pos="24" name="BUG_FIXES0"/>
+        <bitfield pos="25" name="VAA" brief="Coverage anti-aliasing"/>
+        <bitfield pos="26" name="BYPASS_IN_MSAA" brief="Shader supports bypass mode when MSAA is enabled"/>
+        <bitfield pos="27" name="HZ" brief="Hierarchical Z-buffer"/>
+        <bitfield pos="28" name="NEW_TEXTURE" brief="New texture unit is available"/>
+        <bitfield pos="29" name="2D_A8_TARGET" brief="2D engine supports A8 target"/>
+        <bitfield pos="30" name="CORRECT_STENCIL" brief="Correct stencil behavior in depth only"/>
+        <bitfield pos="31" name="ENHANCE_VR" brief="Enhance video rasterizer"/>
+    </bitset>
+    <bitset name="chipMinorFeatures1">
+        <bitfield pos="0" name="RSUV_SWIZZLE" brief="Resolve UV swizzle"/>
+        <bitfield pos="1" name="V2_COMPRESSION" brief="V2 compression"/>
+        <bitfield pos="2" name="VG_DOUBLE_BUFFER" brief="Double buffering support for VG (second TS-->VG semaphore is present)"/>
+        <bitfield pos="3" name="EXTRA_EVENT_STATES"/>
+        <bitfield pos="4" name="NO_STRIPING_NEEDED"/>
+        <bitfield pos="5" name="TEXTURE_STRIDE" brief="Texture has stride and memory addressing"/>
+        <bitfield pos="6" name="BUG_FIXES3"/>
+        <bitfield pos="7" name="AUTO_DISABLE"/>
+        <bitfield pos="8" name="AUTO_RESTART_TS"/>
+        <bitfield pos="9" name="DISABLE_PE_GATING"/>
+        <bitfield pos="10" name="L2_WINDOWING"/>
+        <bitfield pos="11" name="HALF_FLOAT" brief="Supports 16-bit floating point type"/>
+        <bitfield pos="12" name="PIXEL_DITHER"/>
+        <bitfield pos="13" name="TWO_STENCIL_REFERENCE"/>
+        <bitfield pos="14" name="EXTENDED_PIXEL_FORMAT"/>
+        <bitfield pos="15" name="CORRECT_MIN_MAX_DEPTH" brief="EEZ and HZ are correct"/>
+        <bitfield pos="16" name="2D_DITHER" brief="2D dither and filter+alpha available"/>
+        <bitfield pos="17" name="BUG_FIXES5"/>
+        <bitfield pos="18" name="NEW_2D" brief="Mirror extension available"/>
+        <bitfield pos="19" name="NEW_FP" brief="New floating point arithmetic"/>
+        <bitfield pos="20" name="TEXTURE_ALIGN_4" brief="Textures can be aligned to 4 instead of 16"/>
+        <bitfield pos="21" name="NON_POWER_OF_TWO" brief="Non power-of-two texture support"/>
+        <bitfield pos="22" name="LINEAR_TEXTURE_SUPPORT"/>
+        <bitfield pos="23" name="HALTI0" brief="Various features related to texturing and vertex processing">
+            <doc>
+                - Anisotropic texture filtering
+                - 3D texture support
+                - Texture array support
+                - GL_(INT|UNSIGNED)_10_10_10_2_OES texture / vertex support
+                - 16 attr per vertex i.s.o. 10, and 12 varyings i.s.o. 8
+            </doc>
+        </bitfield>
+        <bitfield pos="24" name="CORRECT_OVERFLOW_VG"/>
+        <bitfield pos="25" name="NEGATIVE_LOG_FIX"/>
+        <bitfield pos="26" name="RESOLVE_OFFSET"/>
+        <bitfield pos="27" name="OK_TO_GATE_AXI_CLOCK"/>
+        <bitfield pos="28" name="MMU_VERSION"/>
+        <bitfield pos="29" name="WIDE_LINE"/>
+        <bitfield pos="30" name="BUG_FIXES6"/>
+        <bitfield pos="31" name="FC_FLUSH_STALL"/>
+    </bitset>
+    <bitset name="chipMinorFeatures2">
+        <bitfield pos="0" name="LINE_LOOP"/>
+        <bitfield pos="1" name="LOGIC_OP"/>
+        <bitfield pos="2" name="UNK2"/>
+        <bitfield pos="3" name="SUPERTILED_TEXTURE"/>
+        <bitfield pos="4" name="UNK4"/>
+        <bitfield pos="5" name="RECT_PRIMITIVE"/>
+        <bitfield pos="6" name="COMPOSITION" brief="Compose engine present"/>
+        <bitfield pos="7" name="CORRECT_AUTO_DISABLE_COUNT"/>
+        <bitfield pos="8" name="UNK8"/>
+        <bitfield pos="9" name="UNK9"/>
+        <bitfield pos="10" name="UNK10"/>
+        <bitfield pos="11" name="SAMPLERBASE_16" brief="New texture block exists (0x10000 - 0x11000)"/>
+        <bitfield pos="12" name="UNK12"/>
+        <bitfield pos="13" name="UNK13"/>
+        <bitfield pos="14" name="UNK14"/>
+        <bitfield pos="15" name="EXTRA_TEXTURE_STATE" brief="Extra texture state (0x12000)"/>
+        <bitfield pos="16" name="FULL_DIRECTFB"/>
+        <bitfield pos="17" name="2D_TILING" brief="2D tiling and YUV blit"/>
+        <bitfield pos="18" name="THREAD_WALKER_IN_PS"/>
+        <bitfield pos="19" name="TILE_FILLER"/>
+        <bitfield pos="20" name="UNK20"/>
+        <bitfield pos="21" name="2D_MULTI_SOURCE_BLIT"/>
+        <bitfield pos="22" name="UNK22"/>
+        <bitfield pos="23" name="UNK23"/>
+        <bitfield pos="24" name="UNK24"/>
+        <bitfield pos="25" name="MIXED_STREAMS"/>
+        <bitfield pos="26" name="2D_420_L2CACHE"/>
+        <bitfield pos="27" name="UNK27"/>
+        <bitfield pos="28" name="2D_NO_INDEX8_BRUSH"/>
+        <bitfield pos="29" name="TEXTURE_TILED_READ" brief="Tiled read also available with COMPOSITION"/>
+        <bitfield pos="30" name="UNK30"/>
+        <bitfield pos="31" name="UNK31"/>
+    </bitset>
+    <bitset name="chipMinorFeatures3"> <!-- Only for newer hardware/drivers (gc1000+?) -->
+        <bitfield pos="0" name="ROTATION_STALL_FIX"/>
+        <bitfield pos="1" name="UNK1"/>
+        <bitfield pos="2" name="2D_MULTI_SOURCE_BLT_EX" brief="8 instead of 4 multisource blit sources"/>
+        <bitfield pos="3" name="UNK3"/>
+        <bitfield pos="4" name="UNK4"/>
+        <bitfield pos="5" name="UNK5"/>
+        <bitfield pos="6" name="UNK6"/>
+        <bitfield pos="7" name="UNK7"/>
+        <bitfield pos="8" name="UNK8"/>
+        <bitfield pos="9" name="UNK9"/>
+        <bitfield pos="10" name="BUG_FIXES10"/>
+        <bitfield pos="11" name="UNK11"/>
+        <bitfield pos="12" name="BUG_FIXES11"/>
+        <bitfield pos="13" name="UNK13"/>
+        <bitfield pos="14" name="UNK14"/>
+        <bitfield pos="15" name="UNK15"/>
+        <bitfield pos="16" name="UNK16"/>
+        <bitfield pos="17" name="UNK17"/>
+        <bitfield pos="18" name="UNK18"/>
+        <bitfield pos="19" name="UNK19"/>
+        <bitfield pos="20" name="UNK20"/>
+        <bitfield pos="21" name="UNK21"/>
+        <bitfield pos="22" name="UNK22"/>
+        <bitfield pos="23" name="UNK23"/>
+        <bitfield pos="24" name="UNK24"/>
+        <bitfield pos="25" name="UNK25"/>
+        <bitfield pos="26" name="UNK26"/>
+        <bitfield pos="27" name="UNK27"/>
+        <bitfield pos="28" name="UNK28"/>
+        <bitfield pos="29" name="UNK29"/>
+        <bitfield pos="30" name="UNK30"/>
+        <bitfield pos="31" name="UNK31"/>
+    </bitset>
+</database>
+

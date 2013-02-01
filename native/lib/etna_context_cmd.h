@@ -5,7 +5,7 @@ typedef struct
 } address_index_t;
 
 /* global state map */
-address_index_t contextbuf_addr[] = {
+static address_index_t contextbuf_addr[] = {
     {0x2e9, 0x00600}, /* FE.VERTEX_ELEMENT_CONFIG[0] */
     {0x2ea, 0x00604}, /* FE.VERTEX_ELEMENT_CONFIG[1] */
     {0x2eb, 0x00608}, /* FE.VERTEX_ELEMENT_CONFIG[2] */
@@ -4073,7 +4073,7 @@ address_index_t contextbuf_addr[] = {
     {0xefe, 0x073FC}  /* PS.UNIFORMS[255] */
 };
 
-uint32_t contextbuf[] = {
+static uint32_t contextbuf[] = {
     0x08010e03, /* LOAD_STATE (1) Base: 0x0380C Size: 1 Fixp: 0 */
     0x00000007, /*   GLOBAL.FLUSH_CACHE := DEPTH=1,COLOR=1,3D_TEXTURE=1,2D=0,UNK4=0,SHADER_L1=0,SHADER_L2=0 */
     0x08010e02, /* LOAD_STATE (1) Base: 0x03808 Size: 1 Fixp: 0 */

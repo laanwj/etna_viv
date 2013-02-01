@@ -9,6 +9,7 @@ LDFLAGS += -lm
 
 TARGETS = cube cube_companion cube_etna ps_sandbox_etna etna_test reset viv_info cube_etna2
 COMPANION_OBJS = ../resources/companion_array.o ../resources/companion_mesh.o ../resources/companion_texture.o
+ETNA_OBJS = ../lib/viv.o ../lib/etna.o ../lib/etna_rs.o ../lib/etna_fb.o ../lib/etna_mem.o ../lib/etna_bswap.o ../lib/etna_tex.o 
 
 all: $(TARGETS)
 
@@ -25,13 +26,13 @@ cube_companion: cube_companion.o ../lib/write_bmp.o ../lib/viv.o $(COMPANION_OBJ
 cube_etna: cube_etna.o ../lib/write_bmp.o ../lib/viv.o ../lib/esTransform.o
 	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 
-cube_etna2: cube_etna2.o ../lib/write_bmp.o ../lib/viv.o ../lib/esTransform.o ../lib/etna.o ../lib/etna_rs.o ../lib/etna_mem.o
+cube_etna2: cube_etna2.o ../lib/write_bmp.o ../lib/esTransform.o $(ETNA_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 
 ps_sandbox_etna: ps_sandbox_etna.o ../lib/write_bmp.o ../lib/viv.o ../lib/esTransform.o
 	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 
-etna_test: etna_test.o ../lib/write_bmp.o ../lib/viv.o ../lib/esTransform.o ../lib/etna.o ../lib/etna_rs.o ../lib/etna_mem.o
+etna_test: etna_test.o ../lib/write_bmp.o ../lib/esTransform.o $(ETNA_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 
 reset: reset.o ../lib/viv.o

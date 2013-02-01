@@ -8,11 +8,11 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- /home/orion/projects/etna_viv/rnndb/state.xml    (  14962 bytes, from 2013-02-01 10:02:25)
-- /home/orion/projects/etna_viv/rnndb/common.xml   (  15637 bytes, from 2013-02-01 10:14:07)
+- /home/orion/projects/etna_viv/rnndb/state.xml    (  14962 bytes, from 2013-02-02 08:24:22)
+- /home/orion/projects/etna_viv/rnndb/common.xml   (  15601 bytes, from 2013-02-01 12:03:20)
 - /home/orion/projects/etna_viv/rnndb/state_hi.xml (  11825 bytes, from 2013-02-01 10:14:08)
 - /home/orion/projects/etna_viv/rnndb/state_2d.xml (  30577 bytes, from 2013-02-01 10:02:25)
-- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  48941 bytes, from 2013-01-31 20:55:33)
+- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  48960 bytes, from 2013-02-02 16:37:28)
 
 Copyright (C) 2013
 */
@@ -111,6 +111,22 @@ Copyright (C) 2013
 #define TEXTURE_SWIZZLE_ALPHA					0x00000003
 #define TEXTURE_SWIZZLE_ZERO					0x00000004
 #define TEXTURE_SWIZZLE_ONE					0x00000005
+#define LOGIC_OP_CLEAR						0x00000000
+#define LOGIC_OP_NOR						0x00000001
+#define LOGIC_OP_AND_INVERTED					0x00000002
+#define LOGIC_OP_COPY_INVERTED					0x00000003
+#define LOGIC_OP_AND_REVERSE					0x00000004
+#define LOGIC_OP_INVERT						0x00000005
+#define LOGIC_OP_XOR						0x00000006
+#define LOGIC_OP_NAND						0x00000007
+#define LOGIC_OP_AND						0x00000008
+#define LOGIC_OP_EQUIV						0x00000009
+#define LOGIC_OP_NOOP						0x0000000a
+#define LOGIC_OP_OR_INVERTED					0x0000000b
+#define LOGIC_OP_COPY						0x0000000c
+#define LOGIC_OP_OR_REVERSE					0x0000000d
+#define LOGIC_OP_OR						0x0000000e
+#define LOGIC_OP_SET						0x0000000f
 #define VIVS_VS							0x00000000
 
 #define VIVS_VS_END_PC						0x00000800
@@ -451,6 +467,10 @@ Copyright (C) 2013
 #define VIVS_PE_ALPHA_OP_ALPHA_FUNC__SHIFT			4
 #define VIVS_PE_ALPHA_OP_ALPHA_FUNC(x)				(((x) << VIVS_PE_ALPHA_OP_ALPHA_FUNC__SHIFT) & VIVS_PE_ALPHA_OP_ALPHA_FUNC__MASK)
 #define VIVS_PE_ALPHA_OP_ALPHA_FUNC_MASK			0x00000080
+#define VIVS_PE_ALPHA_OP_ALPHA_REF__MASK			0x0000ff00
+#define VIVS_PE_ALPHA_OP_ALPHA_REF__SHIFT			8
+#define VIVS_PE_ALPHA_OP_ALPHA_REF(x)				(((x) << VIVS_PE_ALPHA_OP_ALPHA_REF__SHIFT) & VIVS_PE_ALPHA_OP_ALPHA_REF__MASK)
+#define VIVS_PE_ALPHA_OP_ALPHA_REF_MASKFUNC_MASK		0x00010000
 
 #define VIVS_PE_ALPHA_BLEND_COLOR				0x00001424
 #define VIVS_PE_ALPHA_BLEND_COLOR_B__MASK			0x000000ff
@@ -481,8 +501,8 @@ Copyright (C) 2013
 #define VIVS_PE_ALPHA_CONFIG_EQ_COLOR__SHIFT			12
 #define VIVS_PE_ALPHA_CONFIG_EQ_COLOR(x)			(((x) << VIVS_PE_ALPHA_CONFIG_EQ_COLOR__SHIFT) & VIVS_PE_ALPHA_CONFIG_EQ_COLOR__MASK)
 #define VIVS_PE_ALPHA_CONFIG_EQ_COLOR_MASK			0x00008000
-#define VIVS_PE_ALPHA_CONFIG_BLEND_ENABLE_ALPHA			0x00010000
-#define VIVS_PE_ALPHA_CONFIG_BLEND_ENABLE_ALPHA_MASK		0x00020000
+#define VIVS_PE_ALPHA_CONFIG_BLEND_SEPARATE_ALPHA		0x00010000
+#define VIVS_PE_ALPHA_CONFIG_BLEND_SEPARATE_ALPHA_MASK		0x00020000
 #define VIVS_PE_ALPHA_CONFIG_SRC_FUNC_ALPHA_MASK		0x00040000
 #define VIVS_PE_ALPHA_CONFIG_DST_FUNC_ALPHA_MASK		0x00080000
 #define VIVS_PE_ALPHA_CONFIG_SRC_FUNC_ALPHA__MASK		0x00f00000
@@ -550,22 +570,7 @@ Copyright (C) 2013
 #define VIVS_PE_LOGIC_OP					0x000014a4
 #define VIVS_PE_LOGIC_OP_OP__MASK				0x0000000f
 #define VIVS_PE_LOGIC_OP_OP__SHIFT				0
-#define VIVS_PE_LOGIC_OP_OP_CLEAR				0x00000000
-#define VIVS_PE_LOGIC_OP_OP_NOR					0x00000001
-#define VIVS_PE_LOGIC_OP_OP_AND_INVERTED			0x00000002
-#define VIVS_PE_LOGIC_OP_OP_COPY_INVERTED			0x00000003
-#define VIVS_PE_LOGIC_OP_OP_AND_REVERSE				0x00000004
-#define VIVS_PE_LOGIC_OP_OP_INVERT				0x00000005
-#define VIVS_PE_LOGIC_OP_OP_XOR					0x00000006
-#define VIVS_PE_LOGIC_OP_OP_NAND				0x00000007
-#define VIVS_PE_LOGIC_OP_OP_AND					0x00000008
-#define VIVS_PE_LOGIC_OP_OP_EQUIV				0x00000009
-#define VIVS_PE_LOGIC_OP_OP_NOOP				0x0000000a
-#define VIVS_PE_LOGIC_OP_OP_OR_INVERTED				0x0000000b
-#define VIVS_PE_LOGIC_OP_OP_COPY				0x0000000c
-#define VIVS_PE_LOGIC_OP_OP_OR_REVERSE				0x0000000d
-#define VIVS_PE_LOGIC_OP_OP_OR					0x0000000e
-#define VIVS_PE_LOGIC_OP_OP_SET					0x0000000f
+#define VIVS_PE_LOGIC_OP_OP(x)					(((x) << VIVS_PE_LOGIC_OP_OP__SHIFT) & VIVS_PE_LOGIC_OP_OP__MASK)
 #define VIVS_PE_LOGIC_OP_OP_MASK				0x00000010
 
 #define VIVS_PE_DITHER(i0)				       (0x000014a8 + 0x4*(i0))

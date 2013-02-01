@@ -1,28 +1,32 @@
 GCxxx hardware
 ===============
 
-Major optional blocks. Each of these can be present or not depending on the specific chip:
+Major optional blocks: each of these can be present or not depending on the specific chip:
 
 - 2D engine
-- Composition engine (multi source blit)
+- Composition engine
 - 3D engine
 - VG engine
+
+Some SoCs have multiple GPU cores, and have distributed these blocks over the cores (I suppose for extra parallelism and/or
+granularity in power switching). For example the Marvell Armada 620 has a GC2000 with only the 3D engine as well 
+as a GC300 with only the 2D engine.
 
 Feature bits
 =================
 
-Variants are somewhat different from NV; what features are supported is not so much determined by the model number 
-(which mainly determines the performance), but determined by various properties that can be found in
-read-only registers in the hardware:
+Which features are supported on a certain Vivante core is not only determined by the model number 
+(which AFAIK mainly determines the performance), but determined by a combination of feature bits:
 
  1) Chip features and minor feature flags
  2) Chip specs (number of instructions, pipelines, ...)
  3) Chip model (GC800, GC2000, ...)
  4) Chip revision of the form 0x1234
 
-Generally the chip feature flags are used to distinguish functionality, as well as the specs, and not do much the model 
-and revision. Unlike NV, which parametrizes everything on the model and revision, for GC this is left for bugfixes 
-(but even these sometimes have their own feature bit).
+All of these are available in read-only registers on the hardware. On most cases it suffices to check the feature flags.
+
+Unlike NV, which parametrizes everything on the model and revision, for GC this is left for bugfixes (but 
+even these sometimes have their own feature bit).
 
 For an overview of the feature bits see the enumerations in `state.xml`.
 
@@ -90,7 +94,7 @@ Thread walker = Rectangle walker? (seems to have to do with OpenCL)
 
 Connections 
 -------------
-Follows the OpenGL pipeline design [3].
+Connections between the different module follow the OpenGL pipeline design [3].
 
 - FE2VS (FE-VS) fetch engine to vertex shader: attributes
 - RA2SH (RA-PS) rasterizer to shader engine: varyings
@@ -100,7 +104,7 @@ Overall:
 
     FE -> VS -> PA -> SE -> RA -> PS -> PE -> RS
 
-How does PA/SE fit in this picture? Connection seems to be VS -> PA -> SE -> RA [1]
+See also [1]
 
 - PA assembles 3D primitives from vertices, culls based on trivial rejection and clips based on near Z-plane
 - PA transforms from 3D view frustum into 2D screen space

@@ -50,9 +50,11 @@
 #include "etna_fb.h"
 #include "etna_mem.h"
 #include "etna_bswap.h"
+#include "etna_tex.h"
 
 #include "esTransform.h"
 #include "dds.h"
+#include "minigallium.h"
 
 #define RCPLOG2 (1.4426950408889634f)
 #define VERTEX_BUFFER_SIZE 0x60000
@@ -192,37 +194,6 @@ uint32_t ps[] = { /* texture sampling */
 size_t vs_size = sizeof(vs);
 size_t ps_size = sizeof(ps);
 
-void etna_texture_tile(void *dest, void *src, unsigned width, unsigned height, unsigned src_stride, unsigned elmtsize)
-{
-#define TEX_TILE_WIDTH (4)
-#define TEX_TILE_HEIGHT (4)
-#define TEX_TILE_WORDS (TEX_TILE_WIDTH*TEX_TILE_HEIGHT)
-    unsigned ytiles = height / TEX_TILE_HEIGHT;
-    unsigned xtiles = width / TEX_TILE_WIDTH;
-    unsigned dst_stride = xtiles * TEX_TILE_WORDS;
-    if(elmtsize == 4)
-    {
-        src_stride >>= 2;
-
-        for(unsigned ty=0; ty<ytiles; ++ty)
-        {
-            for(unsigned tx=0; tx<xtiles; ++tx)
-            {
-                unsigned ofs = ty * dst_stride + tx * TEX_TILE_WORDS;
-                for(unsigned y=0; y<TEX_TILE_HEIGHT; ++y)
-                {
-                    for(unsigned x=0; x<TEX_TILE_WIDTH; ++x)
-                    {
-                        unsigned srcy = ty*TEX_TILE_HEIGHT + y;
-                        unsigned srcx = tx*TEX_TILE_WIDTH + x;
-                        ((uint32_t*)dest)[ofs] = ((uint32_t*)src)[srcy*src_stride+srcx];
-                        ofs += 1;
-                    }
-                }
-            }
-        }
-    }
-}
 
 enum etna_surface_tiling
 {
@@ -404,6 +375,542 @@ void compile_rs_state(struct state_packet *pkt, const struct rs_state *rs)
     /* VIVS_RS_EXTRA_CONFIG */
     state[ptr++] = VIVS_RS_EXTRA_CONFIG_AA(rs->aa) | VIVS_RS_EXTRA_CONFIG_ENDIAN(rs->endian_mode);
 }
+
+/*********************************************************************/
+/** Gallium state translation, WIP */
+
+/* Define state */
+#define SET_STATE(addr, value) state[addr/4] = (value)
+#define SET_STATE_FIXP(addr, value) state[addr/4] = (value)
+#define SET_STATE_F32(addr, value) state[addr/4] = f32_to_u32(value)
+/* [0.0 .. 1.0] -> [0 .. 255] */
+static inline uint8_t cfloat_to_uint8(float f)
+{
+    if(f<=0.0f) return 0;
+    if(f>=1.0f) return 255;
+    return f * 256.0f;
+}
+
+/* float to fixp 5.5 */
+static inline uint32_t float_to_fixp55(float f)
+{
+    return (uint32_t) (f * 32.0f + 0.5f);
+}
+
+/* texture size to log2 in fixp 5.5 format */
+static inline uint32_t log2_fixp55(unsigned width)
+{
+    return float_to_fixp55(logf((float)width) * RCPLOG2);
+}
+
+static inline uint32_t f32_to_u32(float value)
+{
+    union {
+        uint32_t u32;
+        float f32;
+    } x = { .f32 = value };
+    return x.u32;
+}
+
+static inline uint32_t translate_cull_face(unsigned cull_face, unsigned front_ccw)
+{
+    switch(cull_face) /* XXX verify this is the right way around */
+    {
+    case PIPE_FACE_NONE: return VIVS_PA_CONFIG_CULL_FACE_MODE_OFF;
+    case PIPE_FACE_FRONT: return front_ccw ? VIVS_PA_CONFIG_CULL_FACE_MODE_CCW : VIVS_PA_CONFIG_CULL_FACE_MODE_CW;
+    case PIPE_FACE_BACK: return front_ccw ? VIVS_PA_CONFIG_CULL_FACE_MODE_CW : VIVS_PA_CONFIG_CULL_FACE_MODE_CCW;
+    default: printf("Unhandled cull face mode %i\n", cull_face); return 0;
+    }
+}
+
+static inline uint32_t translate_polygon_mode(unsigned polygon_mode)
+{
+    switch(polygon_mode)
+    {
+    case PIPE_POLYGON_MODE_FILL: return VIVS_PA_CONFIG_FILL_MODE_SOLID;
+    case PIPE_POLYGON_MODE_LINE: return VIVS_PA_CONFIG_FILL_MODE_WIREFRAME;
+    case PIPE_POLYGON_MODE_POINT: return VIVS_PA_CONFIG_FILL_MODE_POINT;
+    default: printf("Unhandled polygon mode %i\n", polygon_mode); return 0;
+    }
+}
+
+static inline uint32_t translate_stencil_mode(bool enable_0, bool enable_1)
+{
+    if(enable_0)
+    {
+        return enable_1 ? VIVS_PE_STENCIL_CONFIG_MODE_TWO_SIDED : 
+                          VIVS_PE_STENCIL_CONFIG_MODE_ONE_SIDED;
+    } else {
+        return VIVS_PE_STENCIL_CONFIG_MODE_DISABLED;
+    }
+}
+
+static inline uint32_t translate_stencil_op(unsigned stencil_op)
+{
+    switch(stencil_op)
+    {
+    case PIPE_STENCIL_OP_KEEP:    return STENCIL_OP_KEEP;
+    case PIPE_STENCIL_OP_ZERO:    return STENCIL_OP_ZERO;
+    case PIPE_STENCIL_OP_REPLACE: return STENCIL_OP_REPLACE;
+    case PIPE_STENCIL_OP_INCR:    return STENCIL_OP_INCR;
+    case PIPE_STENCIL_OP_DECR:    return STENCIL_OP_DECR;
+    case PIPE_STENCIL_OP_INCR_WRAP: return STENCIL_OP_INCR_WRAP;
+    case PIPE_STENCIL_OP_DECR_WRAP: return STENCIL_OP_DECR_WRAP;
+    case PIPE_STENCIL_OP_INVERT:  return STENCIL_OP_INVERT;
+    default: printf("Unhandled stencil op: %i\n", stencil_op); return 0;
+    }
+}
+
+static inline uint32_t translate_blend(unsigned blend)
+{
+    switch(blend)
+    {
+    case PIPE_BLEND_ADD: return BLEND_EQ_ADD;
+    case PIPE_BLEND_SUBTRACT: return BLEND_EQ_SUBTRACT;
+    case PIPE_BLEND_REVERSE_SUBTRACT: return BLEND_EQ_REVERSE_SUBTRACT;
+    case PIPE_BLEND_MIN: return BLEND_EQ_MIN;
+    case PIPE_BLEND_MAX: return BLEND_EQ_MAX;
+    default: printf("Unhandled blend: %i\n", blend); return 0;
+    }
+}
+
+static inline uint32_t translate_blend_factor(unsigned blend_factor)
+{
+    switch(blend_factor)
+    {
+    case PIPE_BLENDFACTOR_ONE:         return BLEND_FUNC_ONE;
+    case PIPE_BLENDFACTOR_SRC_COLOR:   return BLEND_FUNC_SRC_COLOR;
+    case PIPE_BLENDFACTOR_SRC_ALPHA:   return BLEND_FUNC_SRC_ALPHA;
+    case PIPE_BLENDFACTOR_DST_ALPHA:   return BLEND_FUNC_DST_ALPHA;
+    case PIPE_BLENDFACTOR_DST_COLOR:   return BLEND_FUNC_DST_COLOR;
+    case PIPE_BLENDFACTOR_SRC_ALPHA_SATURATE: return BLEND_FUNC_SRC_ALPHA_SATURATE;
+    case PIPE_BLENDFACTOR_CONST_COLOR: return BLEND_FUNC_CONSTANT_COLOR;
+    case PIPE_BLENDFACTOR_CONST_ALPHA: return BLEND_FUNC_CONSTANT_ALPHA;
+    case PIPE_BLENDFACTOR_ZERO:        return BLEND_FUNC_ZERO;
+    case PIPE_BLENDFACTOR_INV_SRC_COLOR: return BLEND_FUNC_ONE_MINUS_SRC_COLOR;
+    case PIPE_BLENDFACTOR_INV_SRC_ALPHA: return BLEND_FUNC_ONE_MINUS_SRC_ALPHA;
+    case PIPE_BLENDFACTOR_INV_DST_ALPHA: return BLEND_FUNC_ONE_MINUS_DST_ALPHA;
+    case PIPE_BLENDFACTOR_INV_DST_COLOR: return BLEND_FUNC_ONE_MINUS_DST_COLOR;
+    case PIPE_BLENDFACTOR_INV_CONST_COLOR: return BLEND_FUNC_ONE_MINUS_CONSTANT_COLOR;
+    case PIPE_BLENDFACTOR_INV_CONST_ALPHA: return BLEND_FUNC_ONE_MINUS_CONSTANT_ALPHA;
+    case PIPE_BLENDFACTOR_SRC1_COLOR: 
+    case PIPE_BLENDFACTOR_SRC1_ALPHA:
+    case PIPE_BLENDFACTOR_INV_SRC1_COLOR:
+    case PIPE_BLENDFACTOR_INV_SRC1_ALPHA:
+    default: printf("Unhandled blend factor: %i\n", blend_factor); return 0;
+    }
+}
+
+static inline uint32_t translate_texture_wrapmode(unsigned wrap)
+{
+    switch(wrap)
+    {
+    case PIPE_TEX_WRAP_REPEAT:          return TEXTURE_WRAPMODE_REPEAT;
+    case PIPE_TEX_WRAP_CLAMP:           return TEXTURE_WRAPMODE_CLAMP_TO_EDGE;
+    case PIPE_TEX_WRAP_CLAMP_TO_EDGE:   return TEXTURE_WRAPMODE_CLAMP_TO_EDGE;
+    case PIPE_TEX_WRAP_CLAMP_TO_BORDER: return TEXTURE_WRAPMODE_CLAMP_TO_EDGE; /* XXX */
+    case PIPE_TEX_WRAP_MIRROR_REPEAT:   return TEXTURE_WRAPMODE_MIRRORED_REPEAT;
+    case PIPE_TEX_WRAP_MIRROR_CLAMP:    return TEXTURE_WRAPMODE_MIRRORED_REPEAT; /* XXX */
+    case PIPE_TEX_WRAP_MIRROR_CLAMP_TO_EDGE:   return TEXTURE_WRAPMODE_MIRRORED_REPEAT; /* XXX */
+    case PIPE_TEX_WRAP_MIRROR_CLAMP_TO_BORDER: return TEXTURE_WRAPMODE_MIRRORED_REPEAT; /* XXX */
+    default: printf("Unhandled texture wrapmode: %i\n", wrap); return 0;
+    }
+}
+
+static inline uint32_t translate_texture_mipfilter(unsigned filter)
+{
+    switch(filter)
+    {
+    case PIPE_TEX_MIPFILTER_NEAREST: return TEXTURE_FILTER_NEAREST;
+    case PIPE_TEX_MIPFILTER_LINEAR:  return TEXTURE_FILTER_LINEAR;
+    case PIPE_TEX_MIPFILTER_NONE:    return TEXTURE_FILTER_NONE;
+    default: printf("Unhandled texture mipfilter: %i\n", filter); return 0;
+    }
+}
+
+static inline uint32_t translate_texture_filter(unsigned filter)
+{
+    switch(filter)
+    {
+    case PIPE_TEX_FILTER_NEAREST: return TEXTURE_FILTER_NEAREST;
+    case PIPE_TEX_FILTER_LINEAR:  return TEXTURE_FILTER_LINEAR;
+    default: printf("Unhandled texture filter: %i\n", filter); return 0;
+    }
+}
+
+static inline uint32_t translate_texture_format(enum pipe_format fmt)
+{
+    /* XXX these are all reversed - does it matter? */
+    switch(fmt) /* XXX with TEXTURE_FORMAT_EXT and swizzle on newer chips we can support much more */
+    {
+    case PIPE_FORMAT_A8_UNORM: return TEXTURE_FORMAT_A8;
+    case PIPE_FORMAT_L8_UNORM: return TEXTURE_FORMAT_L8;
+    case PIPE_FORMAT_I8_UNORM: return TEXTURE_FORMAT_I8;
+    case PIPE_FORMAT_L8A8_UNORM: return TEXTURE_FORMAT_A8L8;
+    case PIPE_FORMAT_B4G4R4A4_UNORM: return TEXTURE_FORMAT_A4R4G4B4;
+    case PIPE_FORMAT_B4G4R4X4_UNORM: return TEXTURE_FORMAT_X4R4G4B4;
+    case PIPE_FORMAT_A8R8G8B8_UNORM: return TEXTURE_FORMAT_A8R8G8B8;
+    case PIPE_FORMAT_X8R8G8B8_UNORM: return TEXTURE_FORMAT_X8R8G8B8;
+    case PIPE_FORMAT_A8B8G8R8_UNORM: return TEXTURE_FORMAT_A8B8G8R8;
+    case PIPE_FORMAT_R8G8B8X8_UNORM: return TEXTURE_FORMAT_X8B8G8R8;
+    case PIPE_FORMAT_B5G6R5_UNORM: return TEXTURE_FORMAT_R5G6B5;
+    case PIPE_FORMAT_B5G5R5A1_UNORM: return TEXTURE_FORMAT_A1R5G5B5;
+    case PIPE_FORMAT_B5G5R5X1_UNORM: return TEXTURE_FORMAT_X1R5G5B5;
+    case PIPE_FORMAT_YUYV: return TEXTURE_FORMAT_YUY2;
+    case PIPE_FORMAT_UYVY: return TEXTURE_FORMAT_UYVY;
+    case PIPE_FORMAT_Z16_UNORM: return TEXTURE_FORMAT_D16;
+    case PIPE_FORMAT_Z24X8_UNORM: return TEXTURE_FORMAT_D24S8;
+    case PIPE_FORMAT_Z24_UNORM_S8_UINT: return TEXTURE_FORMAT_D24S8;
+    case PIPE_FORMAT_DXT1_RGB:  return TEXTURE_FORMAT_DXT1;
+    case PIPE_FORMAT_DXT1_RGBA: return TEXTURE_FORMAT_DXT1;
+    case PIPE_FORMAT_DXT3_RGBA: return TEXTURE_FORMAT_DXT2_DXT3;
+    case PIPE_FORMAT_DXT5_RGBA: return TEXTURE_FORMAT_DXT4_DXT5;
+    case PIPE_FORMAT_ETC1_RGB8: return TEXTURE_FORMAT_ETC1;
+    default: printf("Unhandled texture format: %i\n", fmt); return 0;
+    }
+}
+
+/* render target format */
+static inline uint32_t translate_rt_format(enum pipe_format fmt)
+{
+    /* XXX these are all reversed - does it matter? */
+    switch(fmt) 
+    {
+    case PIPE_FORMAT_B4G4R4X4_UNORM: return RS_FORMAT_X4R4G4B4;
+    case PIPE_FORMAT_B4G4R4A4_UNORM: return RS_FORMAT_A4R4G4B4;
+    case PIPE_FORMAT_B5G5R5X1_UNORM: return RS_FORMAT_X1R5G5B5;
+    case PIPE_FORMAT_B5G5R5A1_UNORM: return RS_FORMAT_A1R5G5B5;
+    case PIPE_FORMAT_B5G6R5_UNORM: return RS_FORMAT_R5G6B5;
+    case PIPE_FORMAT_X8R8G8B8_UNORM: return RS_FORMAT_X8R8G8B8;
+    case PIPE_FORMAT_A8R8G8B8_UNORM: return RS_FORMAT_A8R8G8B8;
+    case PIPE_FORMAT_YUYV: return RS_FORMAT_YUY2;
+    default: printf("Unhandled rs surface format: %i\n", fmt); return 0;
+    }
+}
+
+static inline uint32_t translate_depth_format(enum pipe_format fmt)
+{
+    switch(fmt) 
+    {
+    case PIPE_FORMAT_Z16_UNORM: return VIVS_PE_DEPTH_CONFIG_DEPTH_FORMAT_D16;
+    case PIPE_FORMAT_Z24X8_UNORM: return VIVS_PE_DEPTH_CONFIG_DEPTH_FORMAT_D24S8;
+    case PIPE_FORMAT_Z24_UNORM_S8_UINT: return VIVS_PE_DEPTH_CONFIG_DEPTH_FORMAT_D24S8;
+    default: printf("Unhandled depth format: %i\n", fmt); return 0;
+    }
+}
+
+/* render target format for MSAA */
+static inline uint32_t translate_msaa_format(enum pipe_format fmt)
+{
+    switch(fmt) 
+    {
+    case PIPE_FORMAT_B4G4R4X4_UNORM: return VIVS_TS_MEM_CONFIG_MSAA_FORMAT_A4R4G4B4;
+    case PIPE_FORMAT_B4G4R4A4_UNORM: return VIVS_TS_MEM_CONFIG_MSAA_FORMAT_A4R4G4B4;
+    case PIPE_FORMAT_B5G5R5X1_UNORM: return VIVS_TS_MEM_CONFIG_MSAA_FORMAT_A1R5G5B5;
+    case PIPE_FORMAT_B5G5R5A1_UNORM: return VIVS_TS_MEM_CONFIG_MSAA_FORMAT_A1R5G5B5;
+    case PIPE_FORMAT_B5G6R5_UNORM:   return VIVS_TS_MEM_CONFIG_MSAA_FORMAT_R5G6B5;
+    case PIPE_FORMAT_X8R8G8B8_UNORM: return VIVS_TS_MEM_CONFIG_MSAA_FORMAT_X8R8G8B8;
+    case PIPE_FORMAT_A8R8G8B8_UNORM: return VIVS_TS_MEM_CONFIG_MSAA_FORMAT_A8R8G8B8;
+    /* MSAA with YUYV not supported */
+    default: printf("Unhandled msaa surface format: %i\n", fmt); return 0;
+    }
+}
+
+static inline uint32_t translate_texture_target(enum pipe_texture_target tgt)
+{
+    switch(tgt)
+    {
+    case PIPE_TEXTURE_2D: return TEXTURE_TYPE_2D;
+    case PIPE_TEXTURE_CUBE: return TEXTURE_TYPE_CUBE_MAP;
+    default: printf("Unhandled texture target: %i\n", tgt); return 0;
+    }
+}
+
+/*********************************************************************/
+/** Gallium state compilation, WIP */
+
+/* extra state not represented in pipe_framebuffer_state */
+struct etna_framebuffer_state
+{
+    unsigned padded_width;
+    unsigned padded_height;
+    uint32_t color_rt; 
+    uint32_t color_ts; 
+    uint32_t depth_rt; 
+    uint32_t depth_ts;
+};
+/* extra state not represented in pipe_resource */
+struct etna_resource
+{
+    uint32_t lod_addr[VIVS_TE_SAMPLER_LOD_ADDR__LEN];
+};
+
+void compile_rasterizer_state(struct state_packet *pkt, const struct pipe_rasterizer_state *rs)
+{
+    uint32_t state[65536];
+    int ptr = 0;
+    if(rs->fill_front != rs->fill_back)
+    {
+        printf("Different front and back fill mode not supported\n");
+    }
+    SET_STATE(VIVS_PA_CONFIG, 
+            (rs->flatshade ? VIVS_PA_CONFIG_SHADE_MODEL_FLAT : VIVS_PA_CONFIG_SHADE_MODEL_SMOOTH) | 
+            translate_cull_face(rs->cull_face, rs->front_ccw) |
+            translate_polygon_mode(rs->fill_front) |
+            (rs->point_quad_rasterization ? VIVS_PA_CONFIG_POINT_SPRITE_ENABLE : 0) |
+            (rs->point_size_per_vertex ? VIVS_PA_CONFIG_POINT_SIZE_ENABLE : 0));
+    SET_STATE(VIVS_SE_CONFIG, 
+            (rs->line_last_pixel ? VIVS_SE_CONFIG_LAST_PIXEL_ENABLE : 0) 
+            /* XXX anything else? */
+            );
+    SET_STATE_F32(VIVS_PA_LINE_WIDTH, rs->line_width);
+    SET_STATE_F32(VIVS_PA_POINT_SIZE, rs->point_size);
+    SET_STATE_F32(VIVS_SE_DEPTH_SCALE, rs->offset_scale);
+    SET_STATE_F32(VIVS_SE_DEPTH_BIAS, rs->offset_units);
+    /* XXX rs->gl_rasterization_rules is likely one of the bits in VIVS_PA_SYSTEM_MODE */
+    /* XXX rs->scissor as well as pipe_scissor_state affects VIVS_SE_SCISSOR_* */
+}
+
+
+void compile_depth_stencil_alpha_state(struct state_packet *pkt, const struct pipe_depth_stencil_alpha_state *dsa)
+{
+    uint32_t state[65536];
+    int ptr = 0;
+    /* XXX does stencil[0] / stencil[1] depend on rs->front_ccw? */
+    /* compare funcs have 1 to 1 mapping */
+    SET_STATE(VIVS_PE_DEPTH_CONFIG, 
+            VIVS_PE_DEPTH_CONFIG_DEPTH_FUNC(dsa->depth.enabled ? dsa->depth.func : PIPE_FUNC_ALWAYS) |
+            (dsa->depth.writemask ? VIVS_PE_DEPTH_CONFIG_WRITE_ENABLE : 0)
+            /* XXX DEPTH_FORMAT, DEPTH_MODE, SUPER_TILED, EARLY_Z */
+            );
+    SET_STATE(VIVS_PE_ALPHA_OP, 
+            (dsa->alpha.enabled ? VIVS_PE_ALPHA_OP_ALPHA_TEST : 0) |
+            VIVS_PE_ALPHA_OP_ALPHA_FUNC(dsa->alpha.func) |
+            VIVS_PE_ALPHA_OP_ALPHA_REF(cfloat_to_uint8(dsa->alpha.ref_value)));
+    SET_STATE(VIVS_PE_STENCIL_OP, 
+            VIVS_PE_STENCIL_OP_FUNC_FRONT(dsa->stencil[0].func) |
+            VIVS_PE_STENCIL_OP_FUNC_BACK(dsa->stencil[1].func) |
+            VIVS_PE_STENCIL_OP_FAIL_FRONT(translate_stencil_op(dsa->stencil[0].fail_op)) | 
+            VIVS_PE_STENCIL_OP_FAIL_BACK(translate_stencil_op(dsa->stencil[1].fail_op)) |
+            VIVS_PE_STENCIL_OP_DEPTH_FAIL_FRONT(translate_stencil_op(dsa->stencil[0].zfail_op)) |
+            VIVS_PE_STENCIL_OP_DEPTH_FAIL_BACK(translate_stencil_op(dsa->stencil[1].zfail_op)) |
+            VIVS_PE_STENCIL_OP_PASS_FRONT(translate_stencil_op(dsa->stencil[0].zpass_op)) |
+            VIVS_PE_STENCIL_OP_PASS_BACK(translate_stencil_op(dsa->stencil[1].zpass_op)));
+    SET_STATE(VIVS_PE_STENCIL_CONFIG, 
+            translate_stencil_mode(dsa->stencil[0].enabled, dsa->stencil[1].enabled) |
+            VIVS_PE_STENCIL_CONFIG_MASK_FRONT(dsa->stencil[0].valuemask) | 
+            VIVS_PE_STENCIL_CONFIG_WRITE_MASK(dsa->stencil[0].writemask) 
+            /* XXX back masks in VIVS_PE_DEPTH_CONFIG_EXT? */
+            /* XXX VIVS_PE_STENCIL_CONFIG_REF_FRONT comes from pipe_stencil_ref */
+            );
+    /* XXX PE_COLOR_FORMAT_PARTIAL? */
+}
+
+
+void compile_blend_state(struct state_packet *pkt, const struct pipe_blend_state *bs)
+{
+    uint32_t state[65536];
+    int ptr = 0;
+    const struct pipe_rt_blend_state *rt0 = &bs->rt[0];
+    bool enable = rt0->blend_enable && !(rt0->rgb_src_factor == PIPE_BLENDFACTOR_ONE && rt0->rgb_dst_factor == PIPE_BLENDFACTOR_ZERO &&
+                                         rt0->alpha_src_factor == PIPE_BLENDFACTOR_ONE && rt0->alpha_dst_factor == PIPE_BLENDFACTOR_ZERO);
+    bool separate_alpha = enable && !(rt0->rgb_src_factor == rt0->alpha_src_factor &&
+                                      rt0->rgb_dst_factor == rt0->alpha_dst_factor);
+    SET_STATE(VIVS_PE_ALPHA_CONFIG, 
+            (enable ? VIVS_PE_ALPHA_CONFIG_BLEND_ENABLE_COLOR : 0) | 
+            (separate_alpha ? VIVS_PE_ALPHA_CONFIG_BLEND_SEPARATE_ALPHA : 0) |
+            VIVS_PE_ALPHA_CONFIG_SRC_FUNC_COLOR(translate_blend_factor(rt0->rgb_src_factor)) |
+            VIVS_PE_ALPHA_CONFIG_SRC_FUNC_ALPHA(translate_blend_factor(rt0->alpha_src_factor)) |
+            VIVS_PE_ALPHA_CONFIG_DST_FUNC_COLOR(translate_blend_factor(rt0->rgb_dst_factor)) |
+            VIVS_PE_ALPHA_CONFIG_DST_FUNC_ALPHA(translate_blend_factor(rt0->alpha_dst_factor)) |
+            VIVS_PE_ALPHA_CONFIG_EQ_COLOR(translate_blend(rt0->rgb_func)) |
+            VIVS_PE_ALPHA_CONFIG_EQ_ALPHA(translate_blend(rt0->alpha_func))
+            );
+    SET_STATE(VIVS_PE_COLOR_FORMAT, 
+            VIVS_PE_COLOR_FORMAT_COMPONENTS(rt0->colormask)
+            /* XXX COLOR_FORMAT, PARTIAL, SUPER_TILED */
+            );
+    SET_STATE(VIVS_PE_LOGIC_OP, 
+            VIVS_PE_LOGIC_OP_OP(bs->logicop_enable ? bs->logicop_func : LOGIC_OP_COPY) /* 1-to-1 mapping */ |
+            0x000E4000 /* ??? */
+            );
+    /* independent_blend_enable not needed: only one rt supported */
+    /* XXX alpha_to_coverage / alpha_to_one? */
+    /* XXX dither? VIVS_PE_DITHER(...) and/or VIVS_RS_DITHER(...) on resolve */
+}
+
+void compile_blend_color(struct state_packet *pkt, const struct pipe_blend_color *bc)
+{
+    uint32_t state[65536];
+    int ptr = 0;
+    SET_STATE(VIVS_PE_ALPHA_BLEND_COLOR, 
+            VIVS_PE_ALPHA_BLEND_COLOR_R(cfloat_to_uint8(bc->color[0])) |
+            VIVS_PE_ALPHA_BLEND_COLOR_G(cfloat_to_uint8(bc->color[1])) |
+            VIVS_PE_ALPHA_BLEND_COLOR_B(cfloat_to_uint8(bc->color[2])) |
+            VIVS_PE_ALPHA_BLEND_COLOR_A(cfloat_to_uint8(bc->color[3]))
+            );
+}
+
+void compile_stencil_ref(struct state_packet *pkt, const struct pipe_stencil_ref *sr)
+{
+    uint32_t state[65536];
+    int ptr = 0;
+    SET_STATE(VIVS_PE_STENCIL_CONFIG, 
+            VIVS_PE_STENCIL_CONFIG_REF_FRONT(sr->ref_value[0]) 
+            /* XXX rest comes from depth_stencil_alpha, need to merge in */
+            );
+    SET_STATE(VIVS_PE_STENCIL_CONFIG_EXT, 
+            VIVS_PE_STENCIL_CONFIG_EXT_REF_BACK(sr->ref_value[0]) 
+            );
+}
+
+void compile_scissor_state(struct state_packet *pkt, const struct pipe_scissor_state *ss)
+{
+    uint32_t state[65536];
+    int ptr = 0;
+    SET_STATE_FIXP(VIVS_SE_SCISSOR_LEFT, (ss->minx << 16));
+    SET_STATE_FIXP(VIVS_SE_SCISSOR_TOP, (ss->miny << 16));
+    SET_STATE_FIXP(VIVS_SE_SCISSOR_RIGHT, (ss->maxx << 16)-1);
+    SET_STATE_FIXP(VIVS_SE_SCISSOR_BOTTOM, (ss->maxy << 16)-1);
+    /* XXX note that rasterizer state scissor also affects this, if it's disabled scissor spans the full framebuffer 
+     * also, this is affected by framebuffer: scissor is always bounded by framebuffer */
+}
+
+void compile_viewport_state(struct state_packet *pkt, const struct pipe_viewport_state *vs)
+{
+    uint32_t state[65536];
+    int ptr = 0;
+    /**
+     * For Vivante GPU, viewport z transformation is 0..1 to 0..1 instead of -1..1 to 0..1.
+     * scaling and translation to 0..1 already happened, so remove that
+     *
+     * z' = (z * 2 - 1) * scale + translate
+     *    = z * (2 * scale) + (translate - scale)
+     *
+     * scale' = 2 * scale
+     * translate' = translate - scale
+     */
+    SET_STATE_F32(VIVS_PA_VIEWPORT_SCALE_X, vs->scale[0]); /* XXX must this be fixp? */
+    SET_STATE_F32(VIVS_PA_VIEWPORT_SCALE_Y, vs->scale[1]); /* XXX must this be fixp? */
+    SET_STATE_F32(VIVS_PA_VIEWPORT_SCALE_Z, vs->scale[2] * 2.0f);
+    SET_STATE_F32(VIVS_PA_VIEWPORT_OFFSET_X, vs->translate[0]); /* XXX must this be fixp? */
+    SET_STATE_F32(VIVS_PA_VIEWPORT_OFFSET_Y, vs->translate[1]); /* XXX must this be fixp? */
+    SET_STATE_F32(VIVS_PA_VIEWPORT_OFFSET_Z, vs->translate[2] - vs->scale[2]);
+
+    SET_STATE_F32(VIVS_PE_DEPTH_NEAR, 0.0); /* not affected if depth mode is Z (as in GL) */
+    SET_STATE_F32(VIVS_PE_DEPTH_FAR, 1.0);
+}
+
+void compile_sample_mask(struct state_packet *pkt, unsigned sample_mask)
+{
+    uint32_t state[65536];
+    int ptr = 0;
+    SET_STATE(VIVS_GL_MULTI_SAMPLE_CONFIG, 
+            /* XXX to be merged with render target state */
+            VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_ENABLES(sample_mask));
+}
+
+/* sampler offset +4*sampler */
+void compile_sampler_state(struct state_packet *pkt, const struct pipe_sampler_state *ss)
+{
+    uint32_t state[65536];
+    int ptr = 0;
+    SET_STATE(VIVS_TE_SAMPLER_CONFIG0(0), 
+                /* XXX get from sampler view: VIVS_TE_SAMPLER_CONFIG0_TYPE(TEXTURE_TYPE_2D)| */
+                VIVS_TE_SAMPLER_CONFIG0_UWRAP(translate_texture_wrapmode(ss->wrap_s))|
+                VIVS_TE_SAMPLER_CONFIG0_VWRAP(translate_texture_wrapmode(ss->wrap_t))|
+                VIVS_TE_SAMPLER_CONFIG0_MIN(translate_texture_filter(ss->min_img_filter))|
+                VIVS_TE_SAMPLER_CONFIG0_MIP(translate_texture_mipfilter(ss->min_mip_filter))|
+                VIVS_TE_SAMPLER_CONFIG0_MAG(translate_texture_filter(ss->mag_img_filter))
+                /* XXX get from sampler view: VIVS_TE_SAMPLER_CONFIG0_FORMAT(tex_format) */
+            );
+    /* VIVS_TE_SAMPLER_CONFIG1 (swizzle, extended format) fully determined by sampler view */
+    SET_STATE(VIVS_TE_SAMPLER_LOD_CONFIG(0),
+            (ss->lod_bias != 0.0 ? VIVS_TE_SAMPLER_LOD_CONFIG_BIAS_ENABLE : 0) | 
+            VIVS_TE_SAMPLER_LOD_CONFIG_MAX(float_to_fixp55(ss->max_lod)) | /* XXX min((sampler_view->last_level<<5) - 1, ...) or you're in for some crashes */
+            VIVS_TE_SAMPLER_LOD_CONFIG_MIN(float_to_fixp55(ss->min_lod)) | /* XXX max((sampler_view->first_level<<5), ...) */
+            VIVS_TE_SAMPLER_LOD_CONFIG_BIAS(float_to_fixp55(ss->lod_bias))
+            );
+}
+
+void compile_sampler_view(struct state_packet *pkt, const struct pipe_sampler_view *sv,
+        struct etna_resource *esv)
+{
+    uint32_t state[65536];
+    int ptr = 0;
+    struct pipe_resource *res = sv->texture;
+    assert(res != NULL && esv != NULL);
+
+    SET_STATE(VIVS_TE_SAMPLER_CONFIG0(0), 
+                VIVS_TE_SAMPLER_CONFIG0_TYPE(translate_texture_target(res->target)) |
+                VIVS_TE_SAMPLER_CONFIG0_FORMAT(translate_texture_format(sv->format)) 
+                /* XXX merged with sampler state */
+            );
+    /* XXX VIVS_TE_SAMPLER_CONFIG1 (swizzle, extended format), swizzle_(r|g|b|a) */
+    SET_STATE(VIVS_TE_SAMPLER_SIZE(0), 
+            VIVS_TE_SAMPLER_SIZE_WIDTH(res->width0)|
+            VIVS_TE_SAMPLER_SIZE_HEIGHT(res->height0));
+    SET_STATE(VIVS_TE_SAMPLER_LOG_SIZE(0), 
+            VIVS_TE_SAMPLER_LOG_SIZE_WIDTH(log2_fixp55(res->width0)) |
+            VIVS_TE_SAMPLER_LOG_SIZE_HEIGHT(log2_fixp55(res->height0)));
+    /* XXX in principle we only have to define lods sv->first_level .. sv->last_level */
+    for(int lod=0; lod<=res->last_level; ++lod)
+    {
+        SET_STATE(VIVS_TE_SAMPLER_LOD_ADDR(0, lod), esv->lod_addr[lod]);
+    }
+}
+
+void compile_framebuffer_state(struct state_packet *pkt, const struct pipe_framebuffer_state *sv,
+        const struct etna_framebuffer_state *esv)
+{
+    uint32_t state[65536];
+    int ptr = 0;
+    /* XXX support Z24S8 depth format */
+    struct pipe_surface *cbuf = (sv->nr_cbufs > 0) ? sv->cbufs[0] : NULL;
+    struct pipe_surface *zsbuf = sv->zsbuf;
+    /* XXX rendering with only color or only depth */
+    assert(cbuf != NULL && zsbuf != NULL && esv != NULL);
+    unsigned depth_bits = 16; 
+
+    SET_STATE(VIVS_PE_COLOR_FORMAT, 
+            VIVS_PE_COLOR_FORMAT_FORMAT(translate_rt_format(cbuf->format)) |
+            VIVS_PE_COLOR_FORMAT_SUPER_TILED /* XXX depends on layout */
+            /* XXX VIVS_PE_COLOR_FORMAT_PARTIAL and the rest comes from depth_stencil_alpha */
+            ); /* merged with depth_stencil_alpha */
+    SET_STATE(VIVS_PE_DEPTH_CONFIG, 
+            translate_depth_format(zsbuf->format) |
+            VIVS_PE_DEPTH_CONFIG_SUPER_TILED | /* XXX depends on layout */
+            VIVS_PE_DEPTH_CONFIG_EARLY_Z |
+            VIVS_PE_DEPTH_CONFIG_DEPTH_MODE_Z
+            /* VIVS_PE_DEPTH_CONFIG_ONLY_DEPTH */
+            ); /* merged with depth_stencil_alpha */
+    SET_STATE(VIVS_PE_DEPTH_ADDR, esv->depth_rt);
+    SET_STATE(VIVS_PE_DEPTH_STRIDE, esv->padded_width * 2); // XXX should depend on depth format
+    SET_STATE(VIVS_PE_HDEPTH_CONTROL, VIVS_PE_HDEPTH_CONTROL_FORMAT_DISABLED);
+    SET_STATE_F32(VIVS_PE_DEPTH_NORMALIZE, exp2f(depth_bits) - 1.0f);
+    SET_STATE(VIVS_PE_COLOR_ADDR, esv->color_rt);
+    SET_STATE(VIVS_PE_COLOR_STRIDE, esv->padded_width * 4); // XXX should depend on color format
+       
+    SET_STATE_FIXP(VIVS_SE_SCISSOR_LEFT, 0); /* affected by rasterizer and scissor state as well */
+    SET_STATE_FIXP(VIVS_SE_SCISSOR_TOP, 0);
+    SET_STATE_FIXP(VIVS_SE_SCISSOR_RIGHT, (sv->width << 16)-1);
+    SET_STATE_FIXP(VIVS_SE_SCISSOR_BOTTOM, (sv->height << 16)-1);
+
+    /* Set up TS as well */
+    SET_STATE(VIVS_TS_MEM_CONFIG, 
+            VIVS_TS_MEM_CONFIG_DEPTH_FAST_CLEAR |
+            VIVS_TS_MEM_CONFIG_COLOR_FAST_CLEAR |
+            (depth_bits == 16 ? VIVS_TS_MEM_CONFIG_DEPTH_16BPP : 0) | 
+            VIVS_TS_MEM_CONFIG_DEPTH_COMPRESSION);
+    SET_STATE(VIVS_TS_DEPTH_CLEAR_VALUE, 0xffffffff); // XXX remember depth/stencil clear value from ->clear
+    SET_STATE(VIVS_TS_DEPTH_STATUS_BASE, esv->depth_ts);
+    SET_STATE(VIVS_TS_DEPTH_SURFACE_BASE, esv->depth_rt);
+    SET_STATE(VIVS_TS_COLOR_CLEAR_VALUE, 0xff303030); // XXX remember clear color from ->clear
+    SET_STATE(VIVS_TS_COLOR_STATUS_BASE, esv->color_ts);
+    SET_STATE(VIVS_TS_COLOR_SURFACE_BASE, esv->color_rt);
+}
+
+/*********************************************************************/
 
 /* compare old and new state packet, submit difference to queue */
 void diff_state_packet(etna_ctx *restrict ctx, const struct state_packet_desc *restrict pdesc, const uint32_t *restrict oldvalues, const uint32_t *restrict newvalues)
@@ -824,7 +1331,6 @@ int main(int argc, char **argv)
                 VIVS_TE_SAMPLER_LOD_CONFIG_MAX((dds->num_mipmaps - 1)<<5) | VIVS_TE_SAMPLER_LOD_CONFIG_MIN(0));
 
         /* shader setup */
-
         etna_set_state(ctx, VIVS_VS_START_PC, 0x0);
         etna_set_state(ctx, VIVS_VS_END_PC, vs_size/16);
         etna_set_state_multi(ctx, VIVS_VS_INPUT_COUNT, 3, (uint32_t[]){

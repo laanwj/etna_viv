@@ -1,0 +1,821 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright (c) 2012-2013 The Etnaviv Project
+
+ Permission is hereby granted, free of charge, to any person obtaining a
+ copy of this software and associated documentation files (the "Software"),
+ to deal in the Software without restriction, including without limitation
+ the rights to use, copy, modify, merge, publish, distribute, sub license,
+ and/or sell copies of the Software, and to permit persons to whom the
+ Software is furnished to do so, subject to the following conditions:
+
+ The above copyright notice and this permission notice (including the
+ next paragraph) shall be included in all copies or substantial portions
+ of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL
+ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ DEALINGS IN THE SOFTWARE.
+-->
+<database xmlns="http://nouveau.freedesktop.org/"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
+<!-- Vivante GCxxxx render states and registers overview:
+     PIPE_3D (3D rendering) state. Based on reverse engineering, guesswork and experimentation.
+  -->
+<domain name="VIVS" brief="GPU state">
+    <enum name="COMPARE_FUNC" brief="Compare function (for glStencilFunc and glDepthFunc)">
+        <!-- Either a coincidence or due to shared roots in DirectX: same enum as Gallium3D PIPE_FUNC -->
+        <value value="0" name="NEVER"/>
+        <value value="1" name="LESS"/>
+        <value value="2" name="EQUAL"/>
+        <value value="3" name="LEQUAL"/>
+        <value value="4" name="GREATER"/>
+        <value value="5" name="NOTEQUAL"/>
+        <value value="6" name="GEQUAL"/>
+        <value value="7" name="ALWAYS"/>
+    </enum>
+    <enum name="STENCIL_OP" brief="Stencil operation">
+        <value value="0" name="KEEP" brief="Keeps the current value"/>
+        <value value="1" name="ZERO" brief="Sets the stencil buffer value to 0"/>
+        <value value="2" name="REPLACE" brief="Sets the stencil value to ref"/>
+        <value value="3" name="INCR" brief="Increments stencil buffer value, clamps to max"/>
+        <value value="4" name="DECR" brief="Descrements stencil buffer value, clamps to min"/>
+        <value value="5" name="INVERT" brief="Bitwise inverts the current stencil buffer value"/>
+        <value value="6" name="INCR_WRAP" brief="Increments stencil buffer value, wraps around"/>
+        <value value="7" name="DECR_WRAP" brief="Decrements stencil buffer value, wraps around"/>
+    </enum>
+    <enum name="BLEND_EQ" brief="Blend equation">
+        <doc>determines how pixel blending combines source and destination</doc>
+        <value value="0" name="ADD"/>
+        <value value="1" name="SUBTRACT"/>
+        <value value="2" name="REVERSE_SUBTRACT"/>
+        <value value="3" name="MIN"/>
+        <value value="4" name="MAX"/>
+    </enum>
+    <enum name="BLEND_FUNC" brief="glBlendFunc">
+        <value value="0" name="ZERO"/>
+        <value value="1" name="ONE"/>
+        <value value="2" name="SRC_COLOR"/>
+        <value value="3" name="ONE_MINUS_SRC_COLOR"/>
+        <value value="4" name="SRC_ALPHA"/>
+        <value value="5" name="ONE_MINUS_SRC_ALPHA"/>
+        <value value="6" name="DST_ALPHA"/>
+        <value value="7" name="ONE_MINUS_DST_ALPHA"/>
+        <value value="8" name="DST_COLOR"/>
+        <value value="9" name="ONE_MINUS_DST_COLOR"/>
+        <value value="10" name="SRC_ALPHA_SATURATE"/>
+        <value value="11" name="CONSTANT_ALPHA"/>
+        <value value="12" name="ONE_MINUS_CONSTANT_ALPHA"/>
+        <value value="13" name="CONSTANT_COLOR"/>
+        <value value="14" name="ONE_MINUS_CONSTANT_COLOR"/>
+    </enum>
+    <enum name="RS_FORMAT" brief="Resolve pixel format">
+        <value value="0" name="X4R4G4B4"/>
+        <value value="1" name="A4R4G4B4"/>
+        <value value="2" name="X1R5G5B5"/>
+        <value value="3" name="A1R5G5B5"/>
+        <value value="4" name="R5G6B5"/>
+        <value value="5" name="X8R8G8B8"/>
+        <value value="6" name="A8R8G8B8"/>
+        <value value="7" name="YUY2"/><!-- only supported with YUY2_AVERAGING -->
+        <!-- 8..15 do show color and don't result in GPU crashes directly, also they don't 
+             seem to be direct aliases of 0..7, but it needs to be figured out if 
+             they're useful or just alternative names for formats in range 0..7
+         -->
+    </enum>
+    <enum name="TEXTURE_FORMAT" brief="Texture format">
+        <!-- 0 read as all zeros -->
+        <value value="1" name="A8"/>
+        <value value="2" name="L8"/>
+        <value value="3" name="I8"/>
+        <value value="4" name="A8L8"/>
+        <value value="5" name="A4R4G4B4"/>
+        <value value="6" name="X4R4G4B4"/>
+        <value value="7" name="A8R8G8B8"/>
+        <value value="8" name="X8R8G8B8"/>
+        <value value="9" name="A8B8G8R8"/>
+        <value value="10" name="X8B8G8R8"/>
+        <value value="11" name="R5G6B5"/>
+        <value value="12" name="A1R5G5B5"/>
+        <value value="13" name="X1R5G5B5"/>
+        <value value="14" name="YUY2" brief="YUV 4:2:2"/>
+        <value value="15" name="UYVY" brief="YUV 4:2:2 (Alt macropixel ordering)"/>
+        <value value="16" name="D16"/>
+        <value value="17" name="D24S8"/>
+        <!-- 18 reads as all ones -->
+        <value value="19" name="DXT1" brief="S3 Block Compression 1">
+            <doc>DXT1: Unknown tiling.</doc>
+        </value>
+        <value value="20" name="DXT2_DXT3" brief="S3 Block Compression 2"/>
+        <value value="21" name="DXT4_DXT5" brief="S3 Block Compression 3">
+            <doc>DXT4/DXT5 compressed textures are stored untiled.</doc>
+        </value>
+        <!-- 22-29 read as all zeros -->
+        <value value="30" name="ETC1" brief="Ericsson Texture Compression">
+            <doc>ETC compressed textures are stored untiled.</doc>
+        </value>
+        <!-- 31 read as all zeros -->
+    </enum>
+    <enum name="TEXTURE_FORMAT_EXT" brief="Extended texture format">
+        <value value="0" name="NONE"/>
+        <value value="7" name="A16F" brief="16-bit fp alpha format" />
+        <value value="8" name="A16L16F" brief="16-bit fp alpha luminosity format" />
+        <value value="9" name="A16B16G16R16F" brief="16-bit fp rgba format" />
+        <value value="10" name="A32F" brief="32-bit fp alpha format" />
+        <value value="11" name="A32L32F" brief="32-bit fp alpha luminosity format" />
+        <value value="12" name="A2B10G10R10"/>
+    </enum>
+    <enum name="TEXTURE_FILTER">
+        <value value="0" name="NONE"/>
+        <value value="1" name="NEAREST"/>
+        <value value="2" name="LINEAR"/>
+        <value value="3" name="ANISOTROPIC"/><!-- Only supported if HALTI0 feature bit set -->
+    </enum>
+    <enum name="TEXTURE_TYPE">
+        <!-- 0 shows up as black -->
+        <!-- 1 crashes GPU -->
+        <value value="2" name="2D"/>
+        <!-- 3 crashes GPU -->
+        <!-- 4 crashes GPU -->
+        <value value="5" name="CUBE_MAP"/>
+        <!-- 6 crashes GPU -->
+        <!-- 7 crashes GPU -->
+    </enum>
+    <enum name="TEXTURE_WRAPMODE">
+        <value value="0" name="REPEAT"/>
+        <value value="1" name="MIRRORED_REPEAT"/>
+        <value value="2" name="CLAMP_TO_EDGE"/>
+        <!-- 3 seems to be same as REPEAT -->
+    </enum>
+    <enum name="TEXTURE_FACE">
+        <doc>Offset into texture memory for cube map face</doc>
+        <value value="0" name="POS_X"/>
+        <value value="1" name="NEG_X"/>
+        <value value="2" name="POS_Y"/>
+        <value value="3" name="NEG_Y"/>
+        <value value="4" name="POS_Z"/>
+        <value value="5" name="NEG_Z"/>
+    </enum>
+    <enum name="TEXTURE_SWIZZLE">
+        <!-- Matches Gallium3D PIPE_SWIZZLE -->
+        <value value="0" name="RED"/>
+        <value value="1" name="GREEN"/>
+        <value value="2" name="BLUE"/>
+        <value value="3" name="ALPHA"/>
+        <value value="4" name="ZERO"/>
+        <value value="5" name="ONE"/>
+    </enum>
+    <enum name="LOGIC_OP" brief="LogicOp">
+        <value value="0" name="CLEAR"/>
+        <value value="1" name="NOR"/>
+        <value value="2" name="AND_INVERTED"/>
+        <value value="3" name="COPY_INVERTED"/>
+        <value value="4" name="AND_REVERSE"/>
+        <value value="5" name="INVERT"/>
+        <value value="6" name="XOR"/>
+        <value value="7" name="NAND"/>
+        <value value="8" name="AND"/>
+        <value value="9" name="EQUIV"/>
+        <value value="10" name="NOOP"/>
+        <value value="11" name="OR_INVERTED"/>
+        <value value="12" name="COPY"/> <!-- Default -->
+        <value value="13" name="OR_REVERSE"/>
+        <value value="14" name="OR"/>
+        <value value="15" name="SET"/>
+    </enum>
+
+    <stripe name="VS" brief="Vertex shader states">
+        <doc>The vertex shader to be used for 3D rendering is configured here.</doc>
+        <reg32 offset="0x00800" name="END_PC" value="0x00000000" brief="End instruction number">
+            <doc>index of last instruction + 1</doc>
+        </reg32>
+        <reg32 offset="0x00804" name="OUTPUT_COUNT" value="0x00000000" type="uint" brief="Number of VS outputs"/>
+        <reg32 offset="0x00808" name="INPUT_COUNT" value="0x00000000">
+            <bitfield high="3" low="0" name="COUNT" type="uint" brief="Number of VS inputs"/>
+            <bitfield high="12" low="8" name="UNK8" type="uint"/>
+        </reg32>
+        <reg32 offset="0x0080C" name="TEMP_REGISTER_CONTROL" brief="Temporary register control" value="0x00000000">
+            <bitfield high="5" low="0" name="NUM_TEMPS" type="uint" brief="Number of temporary registers"/>
+        </reg32>
+        <reg32 offset="0x00810" name="OUTPUT" value="0x00000000" brief="Output routing" length="4" stride="4">
+            <doc>
+                Each bitfield (up to 16 in total) contains a temporary register number that 
+                is used as output at the end of the shader for that varying.
+            </doc>
+            <bitfield high="7" low="0" name="O0" type="uint"/>
+            <bitfield high="15" low="8" name="O1" type="uint"/>
+            <bitfield high="23" low="16" name="O2" type="uint"/>
+            <bitfield high="31" low="24" name="O3" type="uint"/>
+        </reg32>
+        <reg32 offset="0x00820" name="INPUT" value="0x00000000" brief="Input routing" length="4" stride="4">
+            <doc>
+                Each bitfield (up to 16 in total) contains a temporary register number that 
+                is assigned the input for that attribute at the beginning of shader execution.
+            </doc>
+            <bitfield high="7" low="0" name="I0" type="uint"/>
+            <bitfield high="15" low="8" name="I1" type="uint"/>
+            <bitfield high="23" low="16" name="I2" type="uint"/>
+            <bitfield high="31" low="24" name="I3" type="uint"/>
+        </reg32>
+        <reg32 offset="0x00830" name="LOAD_BALANCING" value="0x00000000"/>
+        <reg32 offset="0x00834" name="PERF_COUNTER" brief="Performance counter control"/>
+        <reg32 offset="0x00838" name="START_PC" value="0x00000000"/>
+        <reg32 offset="0x00850" name="UNK00850" value="0x000003e8"/>
+        <reg32 offset="0x00854" name="UNK00854" value="0x00000100"/>
+        <reg32 offset="0x00858" name="UNK00858" value="0x00001005"/>
+        <reg32 offset="0x04000" name="INST_MEM" value="0x00000000" length="1024" stride="4"> <!-- instructionCount <= 256 -->
+            <!-- length="instructionCount * 4" -->
+        </reg32>
+        <reg32 offset="0x05000" name="UNIFORMS" value="0x00000000" length="1024" stride="4">
+            <!-- length="vertexUniforms * 4" -->
+        </reg32>
+    </stripe>
+
+    <stripe name="THREAD_WALKER" brief="Thread walker states">
+        <doc>The thread walker drives shaders in a predefined grid for GPGPU computing (OpenCL).
+        These states are not used for normal rendering.</doc>
+        <reg32 offset="0x00900" name="UNK00900" value="0x00000000"/>
+        <reg32 offset="0x00904" name="UNK00904" value="0x00000000"/>
+        <reg32 offset="0x00908" name="UNK00908" value="0x00000000"/>
+        <reg32 offset="0x0090C" name="UNK0090C" value="0x00000000"/>
+        <reg32 offset="0x00910" name="UNK00910" value="0x00000000"/>
+        <reg32 offset="0x00914" name="UNK00914" value="0x00000000"/>
+        <reg32 offset="0x00918" name="UNK00918" value="0x00000000"/>
+        <reg32 offset="0x0091C" name="UNK0091C" value="0x00000000"/>
+        <reg32 offset="0x00920" name="KICKER" brief="Start thread walker">
+            <doc>Write some value to this register to kick off thread walker</doc>
+        </reg32>
+        <reg32 offset="0x00924" name="UNK00924" value="0x00000000"/>
+    </stripe>
+    
+    <stripe name="PA" brief="Primitive assembly states">
+        <doc>Primitive assembly assembles primitives (tris, quads, lines, points etc) from vertices for 3D rendering.
+            Viewport scaling, line width and point size is configured here.</doc>
+        <reg32 offset="0x00A00" name="VIEWPORT_SCALE_X" value="0x00000000" type="fixedp"/>
+        <reg32 offset="0x00A04" name="VIEWPORT_SCALE_Y" value="0x00000000" type="fixedp"/>
+        <reg32 offset="0x00A08" name="VIEWPORT_SCALE_Z" value="0x00000000" type="float"/>
+        <reg32 offset="0x00A0C" name="VIEWPORT_OFFSET_X" value="0x00000000" type="fixedp"/>
+        <reg32 offset="0x00A10" name="VIEWPORT_OFFSET_Y" value="0x00000000" type="fixedp"/>
+        <reg32 offset="0x00A14" name="VIEWPORT_OFFSET_Z" value="0x00000000" type="float"/>
+        <reg32 offset="0x00A18" name="LINE_WIDTH" value="0x00000000"/>
+        <reg32 offset="0x00A1C" name="POINT_SIZE" value="0x00000000"/>
+        <reg32 offset="0x00A28" name="SYSTEM_MODE" value="0x00000000"> <!-- D3D/OpenGL switch -->
+            <doc>0x11 for OpenGL</doc>
+        </reg32>
+        <reg32 offset="0x00A2C" name="W_CLIP_LIMIT" value="0x00000000"/>
+        <reg32 offset="0x00A30" name="ATTRIBUTE_ELEMENT_COUNT" value="0x00000000">
+            <bitfield high="7" low="0" name="UNK0"/>
+            <bitfield high="15" low="8" name="COUNT"/>
+        </reg32>
+        <reg32 offset="0x00A34" name="CONFIG" value="0x00000000" brief="Primitive assembly state flags" masked="yes">
+            <doc>
+            These can be set either per group of bits, or all at once, by using masking flags.
+            Each group of state flags has a masking flag that prevents overwriting the flags in that group.
+            </doc>
+            <bitfield pos="2" name="POINT_SIZE_ENABLE" brief="Enable point size"/>
+            <bitfield pos="3" name="POINT_SIZE_ENABLE_MASK"/>
+            <bitfield pos="4" name="POINT_SPRITE_ENABLE" brief="Enable point sprite"/>
+            <bitfield pos="5" name="POINT_SPRITE_ENABLE_MASK"/>
+            <bitfield high="9" low="8" name="CULL_FACE_MODE">
+                <value value="0" name="OFF" brief="Disable face culling"/>
+                <value value="1" name="CW" brief="Orientation of front-facing polygons is clockwise"/>
+                <value value="2" name="CCW" brief="Orientation of front-facing polygons is counter-clockwise"/>
+            </bitfield>
+            <bitfield pos="10" name="CULL_FACE_MODE_MASK"/>
+            <bitfield high="13" low="12" name="FILL_MODE">
+                <value value="0" name="POINT"/>
+                <value value="1" name="WIREFRAME"/>
+                <value value="2" name="SOLID"/>
+            </bitfield>
+            <bitfield pos="14" name="FILL_MODE_MASK"/>
+            <bitfield high="17" low="16" name="SHADE_MODEL">
+                <value value="0" name="FLAT" brief="Flat shading"/>
+                <value value="1" name="SMOOTH" brief="Gouraud shading"/>
+            </bitfield>
+            <bitfield pos="18" name="SHADE_MODEL_MASK"/>
+            <bitfield pos="22" name="UNK22"/>
+            <bitfield pos="23" name="UNK22_MASK"/>
+        </reg32>
+        <reg32 offset="0x00A38" name="LINE_UNK00A38" value="0x00000000"/>
+        <reg32 offset="0x00A3C" name="LINE_UNK00A3C" value="0x00000000"/>
+        <reg32 offset="0x00A40" name="SHADER_ATTRIBUTES" value="0x00000000" length="10" stride="4">
+            <doc>Flags word per shader attribute</doc>
+            <bitfield high="7" low="0" name="UNK0"/>
+            <bitfield high="15" low="8" name="UNK8"/>
+        </reg32>
+        <reg32 offset="0x00A80" name="VIEWPORT_UNK00A80" value="0x00000000"/>
+        <reg32 offset="0x00A84" name="VIEWPORT_UNK00A84" value="0x00000000"/>
+    </stripe>
+   
+    <stripe name="SE" brief="Setup Engine states">
+        <doc>The setup engine takes care of scissor, clipping, and depth scale.</doc>
+        <reg32 offset="0x00C00" name="SCISSOR_LEFT" value="0x00000000" type="fixedp"/>
+        <reg32 offset="0x00C04" name="SCISSOR_TOP" value="0x00000000" type="fixedp"/>
+        <reg32 offset="0x00C08" name="SCISSOR_RIGHT" value="0x45000000" type="fixedp"/>
+        <reg32 offset="0x00C0C" name="SCISSOR_BOTTOM" value="0x45000000" type="fixedp"/>
+        <reg32 offset="0x00C10" name="DEPTH_SCALE" value="0x00000000" type="float"/>
+        <reg32 offset="0x00C14" name="DEPTH_BIAS" value="0x00000000" type="float"/>
+        <reg32 offset="0x00C18" name="CONFIG" value="0x00000000">
+            <bitfield pos="0" name="LAST_PIXEL_ENABLE" brief="Render last pixel of line">
+                <doc>Always disabled for OpenGL</doc>
+            </bitfield>
+        </reg32>
+        <reg32 offset="0x00C1C" name="UNK00C1C" value="0x42000000"/>
+        <reg32 offset="0x00C20" name="CLIP_RIGHT" value="0x00000000" type="fixedp"/>
+        <reg32 offset="0x00C24" name="CLIP_BOTTOM" value="0x00000000" type="fixedp"/>
+    </stripe>
+    
+    <stripe name="RA" brief="Raster states">
+        <doc>Configuration for the rasterizer. This mainly controls multisampling.</doc>
+        <reg32 offset="0x00E00" name="CONTROL" value="0x00000001">
+            <bitfield pos="0" name="UNK0"/>
+            <bitfield pos="1" name="UNK1"><doc>Set based on number of PS varyings</doc></bitfield>
+        </reg32>
+        <reg32 offset="0x00E04" name="MULTISAMPLE_UNK00E04" value="0x00000000"/>
+        <reg32 offset="0x00E08" name="DEPTH_UNK00E08" value="0x00000031"/>
+        <reg32 offset="0x00E10" name="MULTISAMPLE_UNK00E10" value="0x00000000" length="4" stride="4"/>
+        <reg32 offset="0x00E40" name="CENTROID_TABLE" value="0x00000000" length="16" stride="4"/>
+    </stripe>
+  
+    <stripe name="PS" brief="Pixel Shader states">
+        <doc>The Pixel (Fragment) shader to use is configured here</doc>
+        <reg32 offset="0x01000" name="END_PC" value="0x00000000"/>
+        <reg32 offset="0x01004" name="OUTPUT_REG" value="0x00000000" brief="Register that will contain output color"/>
+        <reg32 offset="0x01008" name="INPUT_COUNT" value="0x00000000">
+            <bitfield high="3" low="0" name="COUNT" type="uint" brief="Number of PS inputs"/>
+            <bitfield high="12" low="8" name="UNK8" type="uint"/>
+        </reg32>
+        <reg32 offset="0x0100C" name="TEMP_REGISTER_CONTROL" brief="Temporary register control" value="0x00000000">
+            <bitfield high="5" low="0" name="NUM_TEMPS" type="uint" brief="Number of temporary registers"/>
+        </reg32>
+        <reg32 offset="0x01010" name="CONTROL" value="0x00000000">
+            <bitfield pos="0" name="BYPASS"/>
+            <bitfield pos="1" name="UNK1"/>
+        </reg32>
+        <reg32 offset="0x01014" name="PERF_COUNTER" brief="Performance counter control"/>
+        <reg32 offset="0x01018" name="START_PC" value="0x01000000"/>
+        <reg32 offset="0x06000" name="INST_MEM" value="0x00000000" length="1024" stride="4"> <!-- instructionCount <= 256 -->
+            <!-- length="instructionCount * 4" -->
+        </reg32>
+        <reg32 offset="0x07000" name="UNIFORMS" value="0x00000000" length="1024" stride="4">
+            <!-- length="fragmentUniforms * 4" -->
+        </reg32>
+    </stripe>
+    
+    <stripe name="PE" brief="Pixel Engine states">
+        <doc>The Pixel Engine takes care of writing pixels to the framebuffer, doing 
+            blending, depth testing and alpha testing if needed.
+
+            Some flags can be set either per group of bits, or all at once, by using masking flags.
+            Each group of state flags has a masking flag that when set prevents overwriting the flags in that group.
+            These will be called FOO_MASK if the state to be masked is called FOO.
+        </doc>
+        <reg32 offset="0x01400" name="DEPTH_CONFIG" value="0x00000000" masked="yes">
+            <bitfield high="1" low="0" name="DEPTH_MODE">
+                <value value="0" name="NONE"/>
+                <value value="1" name="Z" brief="Z-buffer"/>
+                <value value="2" name="W" brief="W-buffer"/>
+            </bitfield>
+            <bitfield pos="3" name="DEPTH_MODE_MASK"/>
+            <bitfield pos="4" name="DEPTH_FORMAT">
+                <value value="0" name="D16"/>
+                <value value="1" name="D24S8"/>
+            </bitfield>
+            <bitfield pos="5" name="DEPTH_FORMAT_MASK"/>
+            <bitfield high="10" low="8" name="DEPTH_FUNC" type="COMPARE_FUNC" brief="glDepthFunc"/>
+            <bitfield pos="11" name="DEPTH_FUNC_MASK"/>
+            <bitfield pos="12" name="WRITE_ENABLE" brief="glDepthMask"/>
+            <bitfield pos="13" name="WRITE_ENABLE_MASK"/>
+            <bitfield pos="16" name="EARLY_Z"/>
+            <bitfield pos="17" name="EARLY_Z_MASK"/>
+            <bitfield pos="20" name="ONLY_DEPTH"/>
+            <bitfield pos="21" name="ONLY_DEPTH_MASK"/>
+            <bitfield pos="26" name="SUPER_TILED"/>
+            <bitfield pos="27" name="SUPER_TILED_MASK"/>
+        </reg32>
+        <reg32 offset="0x01404" name="DEPTH_NEAR" value="0x00000000" type="float"/>
+        <reg32 offset="0x01408" name="DEPTH_FAR" value="0x00000000" type="float"/>
+        <reg32 offset="0x0140C" name="DEPTH_NORMALIZE" value="0x00000000" type="float"/>
+        <reg32 offset="0x01410" name="DEPTH_ADDR" value="0x00000000" type="VIVM"/> <!-- pixelPipes == 1 -->
+        <reg32 offset="0x01414" name="DEPTH_STRIDE" value="0x00000000"/>
+        <reg32 offset="0x01418" name="STENCIL_OP" value="0x00000000" masked="yes">
+            <bitfield high="2" low="0" name="FUNC_FRONT" type="COMPARE_FUNC" brief="glStencilFunc func (GL_FRONT)"/>
+            <bitfield pos="3" name="FUNC_FRONT_MASK"/>
+            <bitfield high="6" low="4" name="PASS_FRONT" type="STENCIL_OP" brief="glStencilOp dppass (GL_FRONT)"/>
+            <bitfield pos="7" name="PASS_FRONT_MASK"/>
+            <bitfield high="10" low="8" name="FAIL_FRONT" type="STENCIL_OP" brief="glStencilOp sfail (GL_FRONT)"/>
+            <bitfield pos="11" name="FAIL_FRONT_MASK"/>
+            <bitfield high="14" low="12" name="DEPTH_FAIL_FRONT" type="STENCIL_OP" brief="glStencilOp dpfail (GL_FRONT)"/>
+            <bitfield pos="15" name="DEPTH_FAIL_FRONT_MASK"/>
+            <bitfield high="18" low="16" name="FUNC_BACK" type="COMPARE_FUNC" brief="glStencilFunc func (GL_BACK)"/>
+            <bitfield pos="19" name="FUNC_BACK_MASK"/>
+            <bitfield high="22" low="20" name="PASS_BACK" type="STENCIL_OP" brief="glStencilOp dppass (GL_BACK)"/>
+            <bitfield pos="23" name="PASS_BACK_MASK"/>
+            <bitfield high="26" low="24" name="FAIL_BACK" type="STENCIL_OP" brief="glStencilOp sfail (GL_BACK)"/>
+            <bitfield pos="27" name="FAIL_BACK_MASK"/>
+            <bitfield high="30" low="28" name="DEPTH_FAIL_BACK" type="STENCIL_OP" brief="glStencilOp dpfail (GL_BACK)"/>
+            <bitfield pos="31" name="DEPTH_FAIL_BACK_MASK"/>
+        </reg32>
+        <reg32 offset="0x0141C" name="STENCIL_CONFIG" value="0x00000000" masked="yes">
+            <doc>Warning: confusing terminology. WRITE_MASK is the stencil write mask,
+                the state bits can be masked with WRITE_MASK_MASK.</doc>
+            <bitfield high="1" low="0" name="MODE">
+                <value value="0" name="DISABLED" brief="Stencil disabled"/>
+                <value value="1" name="ONE_SIDED" brief="Stencil enabled in one-sided mode"/>
+                <value value="2" name="TWO_SIDED" brief="Stencil enabled in two-sided mode"/>
+            </bitfield>
+            <bitfield pos="4" name="MODE_MASK"/>
+            <bitfield pos="5" name="REF_FRONT_MASK"/>
+            <bitfield pos="6" name="MASK_FRONT_MASK"/>
+            <bitfield pos="7" name="WRITE_MASK_MASK"/>
+            <bitfield high="15" low="8" name="REF_FRONT" brief="glStencilFunc ref (GL_FRONT)">
+                <doc>REF_BACK is in register STENCIL_CONFIG_EXT.</doc>
+            </bitfield>
+            <bitfield high="23" low="16" name="MASK_FRONT" brief="glStencilFunc mask">
+                <doc>XXX there appears to be no specific MASK_BACK, this state is used for both front and back?</doc>
+            </bitfield>
+            <bitfield high="31" low="24" name="WRITE_MASK" brief="glStencilMask"/>
+        </reg32>
+        <reg32 offset="0x01420" name="ALPHA_OP" value="0x00000000" masked="yes">
+            <bitfield pos="0" name="ALPHA_TEST"/>
+            <bitfield pos="1" name="ALPHA_TEST_MASK"/>
+            <bitfield high="6" low="4" name="ALPHA_FUNC" type="COMPARE_FUNC"/>
+            <bitfield pos="7" name="ALPHA_FUNC_MASK"/>
+            <bitfield high="15" low="8" name="ALPHA_REF"/>
+            <bitfield pos="16" name="ALPHA_REF_MASKFUNC_MASK"/>
+        </reg32>
+        <reg32 offset="0x01424" name="ALPHA_BLEND_COLOR" value="0x00000000">
+            <bitfield high="7" low="0" name="B"/>
+            <bitfield high="15" low="8" name="G"/>
+            <bitfield high="23" low="16" name="R"/>
+            <bitfield high="31" low="24" name="A"/>
+        </reg32>
+        <reg32 offset="0x01428" name="ALPHA_CONFIG" value="0x00000000" masked="yes">
+            <bitfield pos="0" name="BLEND_ENABLE_COLOR" brief="Enable alpha blending"/>
+            <bitfield pos="1" name="BLEND_ENABLE_COLOR_MASK"/>
+            <bitfield pos="2" name="SRC_FUNC_COLOR_MASK"/>
+            <bitfield pos="3" name="DST_FUNC_COLOR_MASK"/>
+            <bitfield high="7" low="4" name="SRC_FUNC_COLOR" type="BLEND_FUNC"/>
+            <bitfield high="11" low="8" name="DST_FUNC_COLOR" type="BLEND_FUNC"/>
+            <bitfield high="14" low="12" name="EQ_COLOR" type="BLEND_EQ"/>
+            <bitfield pos="15" name="EQ_COLOR_MASK"/>
+            <bitfield pos="16" name="BLEND_SEPARATE_ALPHA" brief="Enable separate blending for alpha"/>
+            <bitfield pos="17" name="BLEND_SEPARATE_ALPHA_MASK"/>
+            <bitfield pos="18" name="SRC_FUNC_ALPHA_MASK"/>
+            <bitfield pos="19" name="DST_FUNC_ALPHA_MASK"/>
+            <bitfield high="23" low="20" name="SRC_FUNC_ALPHA" type="BLEND_FUNC"/>
+            <bitfield high="27" low="24" name="DST_FUNC_ALPHA" type="BLEND_FUNC"/>
+            <bitfield high="30" low="28" name="EQ_ALPHA" type="BLEND_EQ"/>
+            <bitfield pos="31" name="EQ_ALPHA_MASK"/>
+        </reg32>
+        <reg32 offset="0x0142C" name="COLOR_FORMAT" value="0x00000000" masked="yes">
+            <bitfield high="3" low="0" name="FORMAT" type="RS_FORMAT"/>
+            <bitfield pos="4" name="FORMAT_MASK"/>
+            <bitfield high="11" low="8" name="COMPONENTS" type="RGBA_BITS" brief="glColorMask"/>
+            <bitfield pos="12" name="COMPONENTS_MASK"/>
+            <bitfield pos="16" name="PARTIAL" brief="Set when alpha blending enabled or otherwise the destination is not fully overwritten"/>
+            <bitfield pos="17" name="PARTIAL_MASK"/>
+            <bitfield pos="20" name="SUPER_TILED" brief="64x64 alignment"/>
+            <bitfield pos="21" name="SUPER_TILED_MASK"/>
+        </reg32>
+        <reg32 offset="0x01430" name="COLOR_ADDR" value="0x00000000" type="VIVM"/> <!-- pixelPipes == 1 -->
+        <reg32 offset="0x01434" name="COLOR_STRIDE" value="0x00000000"/>
+        <reg32 offset="0x01454" name="HDEPTH_CONTROL" value="0x00000000">
+            <bitfield high="3" low="0" name="FORMAT">
+                <value value="0" name="DISABLED" brief="Hierarchical Z disabled"/>
+                <value value="5" name="D16" brief="16 bit depth"/>
+                <value value="8" name="D24S8" brief="24 bit depth (+8 bit stencil or padding)"/>
+            </bitfield>
+        </reg32>
+        <reg32 offset="0x01458" name="HDEPTH_ADDR" value="0x00000000" type="VIVM"/>
+        <reg32 offset="0x0145C" name="UNK0145C" value="0x00000010"/>
+        <stripe name="UNK01460" length="8" stride="4"> <!-- pixelPipes != 1 -->
+            <!-- length="pixelPipes" -->
+            <reg32 offset="0x1460" name="ADDR_UNK01460" value="0x00000000" type="VIVM"/>
+            <reg32 offset="0x1480" name="ADDR_UNK01480" value="0x00000000" type="VIVM"/>
+            <reg32 offset="0x1500" name="ADDR_UNK01500" value="0x00000000" type="VIVM"/>
+            <reg32 offset="0x1520" name="ADDR_UNK01520" value="0x00000000" type="VIVM"/>
+        </stripe>
+        <reg32 offset="0x014A0" name="STENCIL_CONFIG_EXT" value="0x00000000" masked="yes">
+            <bitfield high="7" low="0" name="REF_BACK" brief="glStencilFunc ref (GL_BACK)"/>
+            <bitfield pos="8" name="REF_BACK_MASK"/>
+            <bitfield pos="9" name="UNK16_MASK"/>
+            <bitfield high="31" low="16" name="UNK16"/>
+        </reg32>
+        <reg32 offset="0x014A4" name="LOGIC_OP" masked="yes" value="0x000E400C">
+            <!-- only supported if feature bit LOGIC_OP present. 
+                 Either a coincidence or due to shared roots in DirectX: same enum as Gallium3D PIPE_LOGICOP -->
+            <bitfield high="3" low="0" name="OP" type="LOGIC_OP"/>
+            <bitfield pos="4" name="OP_MASK"/>
+        </reg32>
+        <reg32 offset="0x014A8" name="DITHER" value="0xFFFFFFFF" length="2"/>
+        <reg32 offset="0x014B0" name="UNK014B0" value="0x00000000"/>
+        <reg32 offset="0x014B4" name="UNK014B4" value="0x00000000"/>
+        <reg32 offset="0x01580" name="UNK01580" value="0x00000000" length="3" stride="4"/>
+    </stripe>     
+    
+    <stripe name="CO" brief="Compose states">
+        <doc>Hardware composer. This functionality is present on some GCxxxx chips and allows
+            for blending surfaces together with Porter-Diff composition methods, to accelerate the
+            likes of Surfaceflinger (Android).</doc>
+        <reg32 offset="0x03008" name="UNK03008" value="0x00000000"/>
+        <reg32 offset="0x0300C" name="KICKER"/>
+        <reg32 offset="0x03010" name="UNK03010"/>
+        <reg32 offset="0x03014" name="UNK03014"/>
+        <reg32 offset="0x03018" name="UNK03018"/>
+        <reg32 offset="0x0301C" name="UNK0301C"/>
+        <reg32 offset="0x03020" name="UNK03020"/>
+        <reg32 offset="0x03024" name="UNK03024"/>
+        <reg32 offset="0x03040" name="UNK03040"/>
+        <reg32 offset="0x03044" name="UNK03044"/>
+        <reg32 offset="0x03048" name="UNK03048"/>
+        <stripe name="SAMPLER" length="8" stride="4">
+            <reg32 offset="0x03060" name="UNK03060"/>
+            <reg32 offset="0x03080" name="UNK03080"/>
+            <reg32 offset="0x030A0" name="UNK030A0"/>
+            <reg32 offset="0x030C0" name="UNK030C0"/>
+            <reg32 offset="0x030E0" name="UNK030E0"/>
+            <reg32 offset="0x03100" name="UNK03100"/>
+            <reg32 offset="0x03120" name="UNK03120"/>
+            <reg32 offset="0x03140" name="UNK03140"/>
+            <reg32 offset="0x03160" name="UNK03160"/>
+            <reg32 offset="0x03180" name="UNK03180"/>
+            <reg32 offset="0x031A0" name="UNK031A0"/>
+            <reg32 offset="0x031C0" name="UNK031C0"/>
+            <reg32 offset="0x031E0" name="UNK031E0"/>
+        </stripe>
+        <array offset="0x03200" name="ADDR_UNK03200" length="8" stride="0x20">
+            <reg32 offset="0" name="PPIPE" length="8"/> <!-- sampler*0x20 + pixelpipe*0x4 -->
+        </array>
+    </stripe>     
+    
+    <stripe name="RS" brief="Resolve states">
+        <doc>To my current understanding, RESOLVE is a multifunctional copy/fill engine that can copy blocks of pixels from
+            one place in memory to another, actually clearing tiles that are marked as cleared in the process. 
+            Other capabilities are:
+
+            - Conversion between pixel formats
+            - Downsampling (2x horizontal or horizontal and vertical)
+            - Fill with constant value
+            - Partial fill (only clear part of the channels)
+            - Tiling / untiling, for normal tiled and supertiled surfaces
+            - Swap blue and red channels, flip image in Y
+            - Endian swapping
+            - Fill tiles that are marked as 'cleared' in the Tile Status
+
+            The following render target tilings are possible:
+
+                A   B
+                0   0   Linear
+                1   0   Tiled (4x4, like textures)
+                0   1   (same as tiled=0, supertiled=0)
+                1   1   Supertiled (64x64)
+
+             A) tiled: SOURCE_TILED, DEST_TILED in CONFIG word
+             B) supertiled: TILING bit in SOURCE_STRIDE / DEST_STRIDE
+        </doc>
+        <reg32 offset="0x01600" name="KICKER" brief="Resolve start" value="0x00000000">
+            <doc>Write some value to this register to kick off resolver</doc>
+        </reg32>
+        <reg32 offset="0x01604" name="CONFIG" brief="Resolve configuration register" value="0x00000000">
+            <bitfield high="4" low="0" name="SOURCE_FORMAT" type="RS_FORMAT" brief="Source color format"/>
+            <bitfield pos="5" name="DOWNSAMPLE_X" brief="Downsampling horizontally"/>
+            <bitfield pos="6" name="DOWNSAMPLE_Y" brief="Downsampling vertically"/>
+            <bitfield pos="7" name="SOURCE_TILED" brief="Source is tiled"/>
+            <bitfield high="12" low="8" name="DEST_FORMAT" type="RS_FORMAT" brief="Destination color format"/>
+            <bitfield pos="14" name="DEST_TILED" brief="Destination is tiled"/>
+            <bitfield pos="29" name="SWAP_RB" brief="Swap red and blue"/>
+            <bitfield pos="30" name="FLIP" brief="Flip image in Y direction"/>
+        </reg32>
+        <reg32 offset="0x01608" name="SOURCE_ADDR" value="0x00000000" type="VIVM"/>
+        <reg32 offset="0x0160C" name="SOURCE_STRIDE" value="0x00000000">
+            <bitfield high="17" low="0" name="STRIDE" brief="Source stride"/>
+            <bitfield pos="31" name="TILING" brief="Source is tiled"/>
+        </reg32>
+        <reg32 offset="0x01610" name="DEST_ADDR" value="0x00000000" type="VIVM"/>
+        <reg32 offset="0x01614" name="DEST_STRIDE" value="0x00000000">
+            <bitfield high="17" low="0" name="STRIDE" brief="Destination stride"/>
+            <bitfield pos="31" name="TILING" brief="Destination is tiled"/>
+        </reg32>
+        <reg32 offset="0x01620" name="WINDOW_SIZE" value="0x00000000" brief="Size of area to resolve">
+            <doc>
+                When downsampling the source and destination size will be different. 
+                In this case, the WINDOW_SIZE will be the (unscaled) source size.
+            </doc>
+            <bitfield high="31" low="16" name="HEIGHT" type="uint"/>
+            <bitfield high="15" low="0" name="WIDTH" type="uint"/>
+        </reg32>
+        <reg32 offset="0x01630" name="DITHER" value="0x00000000" length="2" stride="4"/>
+        <reg32 offset="0x0163C" name="CLEAR_CONTROL" value="0x00000000">
+            <bitfield high="15" low="0" name="BITS" brief="Affects which channels of which tiles are cleared">
+                <doc>
+                    Four groups (per tile) of four bits (per channel) that affect which channels of which tiles are cleared.
+                    In mode 'enabled' only the lower four bits are used, in 'enabled2' all four groups are used.
+
+                    Components that are disabled are not written at all by the clear logic (they keep their old value)
+                    they are not copied from the source.
+                </doc>
+            </bitfield>
+            <bitfield high="17" low="16" name="MODE" brief="Enable clearing">
+                <doc>
+                    Depending on the clear mode, the RS does different things:
+                    - If disabled, it is a copy engine
+                    - If enabled, it fills the target area with FILL_VALUE(0) and disregards the source
+                    - If enabled2, it fills the target area with the four FILL_VALUEs (results in vertical stripes of width 4,
+                       at least with supertiled target) and disregards the source.
+                </doc>
+                <value value="0" name="DISABLED"/>
+                <value value="1" name="ENABLED1" brief="Clear single value"/>
+                <value value="2" name="ENABLED4" brief="Clear with four alternating tile values"/>
+                <value value="3" name="ENABLED4_2" brief="Clear with alternating tile values (2)"/>
+            </bitfield>
+        </reg32>
+        <reg32 offset="0x01640" name="FILL_VALUE" value="0x00000000" length="4" stride="4"/>
+        <reg32 offset="0x01650" name="FLUSH_CACHE" brief="Flush resolve cache" value="0x00000000">
+            <bitfield pos="0" name="FLUSH"/>
+        </reg32>
+        <reg32 offset="0x016A0" name="EXTRA_CONFIG" value="0x00000000">
+            <bitfield high="1" low="0" name="AA" brief="Anti-aliasing mode (not used for MSAA)"/>
+            <bitfield high="9" low="8" name="ENDIAN" type="ENDIAN_MODE"/>
+        </reg32>
+        <reg32 offset="0x016B4" name="UNK016B4" value="0x00000000"/>
+        <stripe name="UNK016C0" length="8" stride="4"> <!-- pixelPipes > 1 -->
+            <!-- length="pixelPipes" -->
+            <reg32 offset="0x016C0" name="UNK016C0" value="0x00000000" type="VIVM"/>
+            <reg32 offset="0x016E0" name="UNK016E0" value="0x00000000" type="VIVM"/>
+            <reg32 offset="0x01700" name="UNK01700" value="0x00000000"/>
+        </stripe>
+    </stripe>
+    
+    <stripe name="TS" brief="Tile Status">
+        <doc>
+        Tile status block contains information about the tiles to be resolved.
+        It is used by the PE (to read/update tile status) as well as the RS (to read tile status).
+        </doc>
+        <reg32 offset="0x01654" name="MEM_CONFIG" brief="Memory configuration" value="0x00200000">
+            <doc>
+                Tile status config. Setting this value to 0 disables tile status and makes the resolve
+                work like a normal copy engine.
+            </doc>
+            <bitfield pos="0" name="DEPTH_FAST_CLEAR" brief="Clear depth tiles on resolve"/>
+            <bitfield pos="1" name="COLOR_FAST_CLEAR" brief="Clear color tiles on resolve"/>
+            <bitfield pos="3" name="DEPTH_16BPP"/>
+            <bitfield pos="4" name="DEPTH_AUTO_DISABLE" brief="Auto disable fast clear for depth"/>
+            <bitfield pos="5" name="COLOR_AUTO_DISABLE" brief="Auto disable fast clear for color"/>
+            <bitfield pos="6" name="DEPTH_COMPRESSION" brief="Enable depth compression"/>
+            <bitfield pos="7" name="MSAA" brief="This bit is enabled when MSAA samples >= 2">
+                <doc>
+                    The main bits for switching MSAA in rendering are in register #0x03818, these bits
+                    in the TS memory configuration appear to affect the writing of tiles in a minor way.
+                </doc>
+            </bitfield>
+            <bitfield high="11" low="8" name="MSAA_FORMAT">
+                <value value="0" name="A4R4G4B4"/>
+                <value value="1" name="A1R5G5B5"/>
+                <value value="2" name="R5G6B5"/>
+                <value value="3" name="A8R8G8B8"/>
+                <value value="4" name="X8R8G8B8"/>
+            </bitfield>
+        </reg32>
+        <reg32 offset="0x01658" name="COLOR_STATUS_BASE" brief="Color tile status base address" value="0x00000000" type="VIVM"/>
+        <reg32 offset="0x0165C" name="COLOR_SURFACE_BASE" brief="Color surface base address" value="0x00000000" type="VIVM"/>
+        <reg32 offset="0x01660" name="COLOR_CLEAR_VALUE" brief="Color clear value" value="0x00000000"/>
+        <reg32 offset="0x01664" name="DEPTH_STATUS_BASE" brief="Depth tile status base address" value="0x00000000" type="VIVM"/>
+        <reg32 offset="0x01668" name="DEPTH_SURFACE_BASE" brief="Depth surface base address" value="0x00000000" type="VIVM"/>
+        <reg32 offset="0x0166C" name="DEPTH_CLEAR_VALUE" brief="Depth clear value" value="0x00000000"/>
+        <reg32 offset="0x01670" name="COLOR_AUTO_DISABLE_COUNT" brief="Auto disable depth counter" value="0x00000000"/>
+        <reg32 offset="0x01674" name="DEPTH_AUTO_DISABLE_COUNT" brief="Auto disable color counter" value="0x00000000"/>
+        <reg32 offset="0x016A4" name="HDEPTH_BASE" value="0x00000000" type="VIVM"/>
+        <reg32 offset="0x016A8" name="HDEPTH_CLEAR_VALUE" brief="Hierarchical depth clear value" value="0x00000000"/>
+        <stripe name="SAMPLER" length="8" stride="4"> <!-- Tile status for samplers -->
+            <reg32 offset="0x01720" name="CONFIG" value="0x00000000">
+                <bitfield high="1" low="0" name="ENABLE"/>
+                <bitfield high="7" low="4" name="FORMAT"/>
+            </reg32>
+            <reg32 offset="0x01740" name="STATUS_BASE" value="0x00000000" type="VIVM"/>
+            <reg32 offset="0x01760" name="CLEAR_VALUE" value="0x00000000"/>
+        </stripe>
+    </stripe>
+
+    <stripe name="YUV" brief="YUV tiler states">
+        <doc>The YUV tiler can combine planar YUV formats to RGB or non-planar YUV formats.</doc>
+        <reg32 offset="0x01678" name="UNK01678" value="0x00000000"/>
+        <reg32 offset="0x0167C" name="UNK0167C" value="0x00000000"/>
+        <reg32 offset="0x01680" name="UNK01680" value="0x00000000" type="VIVM"/>
+        <reg32 offset="0x01684" name="UNK01684" value="0x00000000"/>
+        <reg32 offset="0x01688" name="UNK01688" value="0x00000000" type="VIVM"/>
+        <reg32 offset="0x0168C" name="UNK0168C" value="0x00000000"/>
+        <reg32 offset="0x01690" name="UNK01690" value="0x00000000" type="VIVM"/>
+        <reg32 offset="0x01694" name="UNK01694" value="0x00000000"/>
+        <reg32 offset="0x01698" name="UNK01698" value="0x00000000" type="VIVM"/>
+        <reg32 offset="0x0169C" name="UNK0169C" value="0x00000000"/>
+    </stripe>
+
+    <!-- register descriptions shared between TE.SAMPLER and NTE.SAMPLER -->
+    <bitset name="TE_SAMPLER_CONFIG0" inline="yes">
+        <bitfield high="2" low="0" name="TYPE" type="TEXTURE_TYPE"/>
+        <bitfield high="4" low="3" name="UWRAP" type="TEXTURE_WRAPMODE"/>
+        <bitfield high="6" low="5" name="VWRAP" type="TEXTURE_WRAPMODE"/>
+        <bitfield high="8" low="7" name="MIN" type="TEXTURE_FILTER"/>
+        <bitfield high="10" low="9" name="MIP" type="TEXTURE_FILTER"/>
+        <bitfield high="12" low="11" name="MAG" type="TEXTURE_FILTER"/>
+        <bitfield high="17" low="13" name="FORMAT" type="TEXTURE_FORMAT"/>
+    </bitset>
+    <bitset name="TE_SAMPLER_SIZE" inline="yes">
+        <bitfield high="15" low="0" name="WIDTH" type="uint"/>
+        <bitfield high="31" low="16" name="HEIGHT" type="uint"/>
+    </bitset>
+    <bitset name="TE_SAMPLER_LOG_SIZE" inline="yes">
+        <bitfield high="9" low="0" name="WIDTH" type="fixedp"/>
+        <bitfield high="19" low="10" name="HEIGHT" type="fixedp"/>
+    </bitset>
+    <bitset name="TE_SAMPLER_LOD_CONFIG" inline="yes">
+        <bitfield pos="0" name="BIAS_ENABLE" brief="Enable LOD bias"/>
+        <bitfield high="10" low="1" name="MAX" type="fixedp" brief="Maximum LOD level">
+            <doc>
+            This fixed-point value is the maximum LOD level. It can be a fractional value, up to the number of defined mipmaps.
+            </doc>
+        </bitfield>
+        <bitfield high="20" low="11" name="MIN" type="fixedp" brief="Minimum LOD level">
+            <doc>
+            This fixed-point value is the minimum LOD level. It can be a fractional value.
+            </doc>
+        </bitfield>
+        <bitfield high="30" low="21" name="BIAS" type="fixedp" brief="LOD bias">
+            <doc>
+            This fixed-point value is added to the computed LOD level when BIAS_ENABLE is on.
+            It appears that it can also be negative by using two's complement arithmetic.
+            </doc>
+        </bitfield>
+    </bitset>
+    <bitset name="TE_SAMPLER_CONFIG1" inline="yes">
+        <bitfield high="4" low="0" name="FORMAT_EXT" type="TEXTURE_FORMAT_EXT"/>
+        <bitfield high="10" low="8" name="SWIZZLE_R" type="TEXTURE_SWIZZLE"/>
+        <bitfield high="14" low="12" name="SWIZZLE_G" type="TEXTURE_SWIZZLE"/>
+        <bitfield high="18" low="16" name="SWIZZLE_B" type="TEXTURE_SWIZZLE"/>
+        <bitfield high="22" low="20" name="SWIZZLE_A" type="TEXTURE_SWIZZLE"/>
+    </bitset>
+    <stripe name="TE" brief="TExture sampler states">
+        <doc>Texture sampling, filtering, LOD, etc</doc>
+        <stripe name="SAMPLER" length="12" stride="4"> 
+            <reg32 offset="0x2000" name="CONFIG0" value="0x00000000" type="TE_SAMPLER_CONFIG0"/>
+            <reg32 offset="0x2040" name="SIZE" value="0x00000000" type="TE_SAMPLER_SIZE"/>
+            <reg32 offset="0x2080" name="LOG_SIZE" value="0x00000000" type="TE_SAMPLER_LOG_SIZE"/>
+            <reg32 offset="0x20C0" name="LOD_CONFIG" value="0x00000000" type="TE_SAMPLER_LOD_CONFIG"/>
+            <reg32 offset="0x2100" name="UNK02100" value="0x00000000"/>
+            <reg32 offset="0x2140" name="UNK02140" value="0x00000000"/>
+            <reg32 offset="0x2180" name="UNK02180" value="0x00000000"/>
+            <reg32 offset="0x21C0" name="CONFIG1" value="0x00321000" type="TE_SAMPLER_CONFIG1"/>
+            <reg32 offset="0x2200" name="UNK02200" value="0x00000000"/>
+            <reg32 offset="0x2240" name="UNK02240" value="0x00000000"/>
+            <reg32 offset="0x2400" name="LOD_ADDR" length="14" stride="0x40" type="VIVM"/> <!-- Base address, per LOD level -->
+        </stripe>
+    </stripe>
+    
+    <stripe name="NTE" brief="New texture states">
+        <doc>Extra texture states for newer hardware. These exist if chipMinorFeatures2 bit 11 set.</doc>
+        <array offset="0x10000" name="SAMPLER" length="32" stride="4">
+            <reg32 offset="0x000" name="CONFIG0" value="0x00000000" type="TE_SAMPLER_CONFIG0"/>
+            <reg32 offset="0x080" name="SIZE" value="0x00000000" type="TE_SAMPLER_SIZE"/>
+            <reg32 offset="0x100" name="LOG_SIZE" value="0x00000000" type="TE_SAMPLER_LOG_SIZE"/>
+            <reg32 offset="0x180" name="LOD_CONFIG" value="0x00000000" type="TE_SAMPLER_LOD_CONFIG"/>
+            <reg32 offset="0x200" name="UNK10200" value="0x00000000"/>
+            <reg32 offset="0x280" name="UNK10280" value="0x00000000"/>
+            <reg32 offset="0x300" name="UNK10300" value="0x00000000"/>
+            <reg32 offset="0x380" name="CONFIG1" value="0x00321000" type="TE_SAMPLER_CONFIG1"/>
+            <reg32 offset="0x400" name="UNK10400" value="0x00000000"/>
+            <reg32 offset="0x480" name="UNK10480" value="0x00000000"/>
+        </array>
+        <array offset="0x10800" name="SAMPLER_ADDR" length="32" stride="64"> <!-- Per sampler -->
+            <!-- length="texBlockCount"
+                 where texBlockCount=12 if chipModel == GC2000 && chipRevision == 0x5108, otherwise 32
+             -->
+            <reg32 offset="0" name="LOD" length="14" stride="4" type="VIVM"/> <!-- Base address, per LOD level -->
+        </array>
+        <reg32 offset="0x12000" name="UNK12000" value="0x00000000" length="256" stride="4"/> <!-- chipMinorFeatures2 bit 15 set -->
+        <reg32 offset="0x12400" name="UNK12400" value="0x00000000" length="256" stride="4"/> <!-- chipMinorFeatures2 bit 15 set -->
+    </stripe>
+    
+    <stripe name="SH" brief="Unified shader instruction memory">
+        <doc>Shader instruction memory on new hardware that supports more than 256, or more than
+            1024 shader instructions (different areas are used based on these cases).</doc>
+        <reg32 offset="0x0085C" name="UNK0085C" value="0x00000000"/> <!-- instructionCount > 1024 -->
+        <reg32 offset="0x00860" name="UNK00860" value="0x00000000"/> <!-- instructionCount > 1024 -->
+        <reg32 offset="0x0101C" name="UNK0101C" value="0x00000100"/> <!-- instructionCount > 1024 -->
+        <reg32 offset="0x20000" name="UNK20000" value="0x00000000" length="8192" stride="4"> <!-- instructionCount > 1024 -->
+            <!-- length="instructionCount * 4" -->
+        </reg32>
+        <reg32 offset="0x0C000" name="UNK0C000" value="0x00000000" length="4096" stride="4"> <!-- 256 > instructionCount > 1024 -->
+            <!-- length="instructionCount * 4" -->
+        </reg32>
+        <reg32 offset="0x08000" name="UNK0C000_MIRROR" value="0x00000000" length="4096" stride="4"> <!-- 256 > instructionCount > 1024 -->
+            <!-- length="instructionCount * 4" -->
+        </reg32>
+    </stripe>
+</domain>
+</database>
+
