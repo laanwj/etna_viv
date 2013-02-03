@@ -96,13 +96,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <value value="13" name="UNSIGNED_INT_10_10_10_2"/>
             </bitfield>
             <bitfield high="5" low="4" name="ENDIAN" type="ENDIAN_MODE"/>
-            <bitfield pos="7" name="NONCONSECUTIVE" brief="Enable when this is not consecutive to previous element, or it is the last element"/>
+            <bitfield pos="7" name="NONCONSECUTIVE" brief="Enable when this is not consecutive to next element, or it is the last element"/>
             <bitfield high="10" low="8" name="STREAM" brief="Source stream number"/>
             <bitfield high="13" low="12" name="NUM" brief="Number of elements">
-                <value value="0" name="4"/>
-                <value value="1" name="1"/>
-                <value value="2" name="2"/>
-                <value value="3" name="3"/>
+                <doc>Wraps around (1=1,2=2,3=3,4=0)</doc>
             </bitfield>
             <bitfield high="15" low="14" name="NORMALIZE" brief="Normalize to 0..1">
                 <value value="0" name="OFF"/>

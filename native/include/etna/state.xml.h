@@ -8,7 +8,7 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- /home/orion/projects/etna_viv/rnndb/state.xml    (  14962 bytes, from 2013-02-02 08:24:22)
+- /home/orion/projects/etna_viv/rnndb/state.xml    (  14840 bytes, from 2013-02-03 09:57:13)
 - /home/orion/projects/etna_viv/rnndb/common.xml   (  15601 bytes, from 2013-02-01 12:03:20)
 - /home/orion/projects/etna_viv/rnndb/state_hi.xml (  11825 bytes, from 2013-02-01 10:14:08)
 - /home/orion/projects/etna_viv/rnndb/state_2d.xml (  30577 bytes, from 2013-02-01 10:02:25)
@@ -49,10 +49,7 @@ Copyright (C) 2013
 #define VIVS_FE_VERTEX_ELEMENT_CONFIG_STREAM(x)			(((x) << VIVS_FE_VERTEX_ELEMENT_CONFIG_STREAM__SHIFT) & VIVS_FE_VERTEX_ELEMENT_CONFIG_STREAM__MASK)
 #define VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM__MASK			0x00003000
 #define VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM__SHIFT		12
-#define VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM_4			0x00000000
-#define VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM_1			0x00001000
-#define VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM_2			0x00002000
-#define VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM_3			0x00003000
+#define VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM(x)			(((x) << VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM__SHIFT) & VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM__MASK)
 #define VIVS_FE_VERTEX_ELEMENT_CONFIG_NORMALIZE__MASK		0x0000c000
 #define VIVS_FE_VERTEX_ELEMENT_CONFIG_NORMALIZE__SHIFT		14
 #define VIVS_FE_VERTEX_ELEMENT_CONFIG_NORMALIZE_OFF		0x00000000

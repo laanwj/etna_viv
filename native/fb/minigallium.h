@@ -27,6 +27,7 @@
  **************************************************************************/
 #ifndef H_MINIGALLIUM
 #define H_MINIGALLIUM
+#include "etna_mem.h"
 /********************************************************************
  * State and tokens from gallium, for experimentation
  *******************************************************************/
@@ -631,6 +632,21 @@ struct pipe_sampler_state
    union pipe_color_union border_color;
 };
 
+enum etna_surface_layout
+{
+    ETNA_TILING_LINEAR = 0,
+    ETNA_TILING_TILED = 1,
+    ETNA_TILING_SUPERTILED = 3 /* 1|2, both tiling and supertiling bit enabled */
+};
+
+struct etna_resource_level
+{
+   uint32_t address; /* cached GPU pointers to LODs */
+   void *logical; /* cached CPU pointer */
+   uint32_t ts_address;
+   uint32_t stride; /* VIVS_PE_(COLOR|DEPTH)_STRIDE */
+};
+
 /**
  * A memory object/resource such as a vertex buffer or texture.
  */
@@ -652,6 +668,17 @@ struct pipe_resource
 
    unsigned bind;            /**< bitmask of PIPE_BIND_x */
    unsigned flags;           /**< bitmask of PIPE_RESOURCE_FLAG_x */
+
+   /* XXX etna specific. This must be moved to subclass on integration. */
+   /* only lod 0 used for non-texture buffers */
+   enum etna_surface_layout layout;
+   unsigned padded_width;
+   unsigned padded_height;
+   etna_vidmem *surface; /* Surface video memory */
+   etna_vidmem *ts; /* Tile status video memory */
+
+   struct etna_resource_level levels[VIVS_TE_SAMPLER_LOD_ADDR__LEN];
+
 };
 
 /**
@@ -682,6 +709,11 @@ struct pipe_surface
          unsigned last_element;
       } buf;
    } u;
+
+   /* XXX etna specific. This must be moved to subclass on integration. */
+   enum etna_surface_layout layout;
+   struct etna_resource_level surf;
+   uint32_t clear_value; // XXX remember depth/stencil clear value from ->clear
 };
 
 
@@ -711,6 +743,98 @@ struct pipe_sampler_view
    unsigned swizzle_b:3;         /**< PIPE_SWIZZLE_x for blue component */
    unsigned swizzle_a:3;         /**< PIPE_SWIZZLE_x for alpha component */
 };
+
+/**
+ * Information to describe a vertex attribute (position, color, etc)
+ */
+struct pipe_vertex_element
+{
+   /** Offset of this attribute, in bytes, from the start of the vertex */
+   unsigned src_offset;
+
+   /** Instance data rate divisor. 0 means this is per-vertex data,
+    *  n means per-instance data used for n consecutive instances (n > 0).
+    */
+   unsigned instance_divisor;
+
+   /** Which vertex_buffer (as given to pipe->set_vertex_buffer()) does
+    * this attribute live in?
+    */
+   unsigned vertex_buffer_index;
+ 
+   enum pipe_format src_format;
+};
+
+
+/**
+ * An index buffer.  When an index buffer is bound, all indices to vertices
+ * will be looked up in the buffer.
+ */
+struct pipe_index_buffer
+{
+   unsigned index_size;  /**< size of an index, in bytes 1/2/4 */
+   unsigned offset;  /**< offset to start of data in buffer, in bytes */
+   struct pipe_resource *buffer; /**< the actual buffer */
+   const void *user_buffer;  /**< pointer to a user buffer if buffer == NULL */
+};
+
+/**
+ * A vertex buffer.  Typically, all the vertex data/attributes for
+ * drawing something will be in one buffer.  But it's also possible, for
+ * example, to put colors in one buffer and texcoords in another.
+ */
+struct pipe_vertex_buffer
+{
+   unsigned stride;    /**< stride to same attrib in next vertex, in bytes */
+   unsigned buffer_offset;  /**< offset to start of data in buffer, in bytes */
+   struct pipe_resource *buffer;  /**< the actual buffer */
+   const void *user_buffer;  /**< pointer to a user buffer if buffer == NULL */
+};
+
+/**
+ * Information to describe a draw_vbo call.
+ */
+struct pipe_draw_info
+{
+   bool indexed;  /**< use index buffer */
+
+   unsigned mode;  /**< the mode of the primitive */
+   unsigned start;  /**< the index of the first vertex */
+   unsigned count;  /**< number of vertices */
+
+   unsigned start_instance; /**< first instance id */
+   unsigned instance_count; /**< number of instances */
+
+   /**
+    * For indexed drawing, these fields apply after index lookup.
+    */
+   int index_bias; /**< a bias to be added to each index */
+   unsigned min_index; /**< the min index */
+   unsigned max_index; /**< the max index */
+
+   /**
+    * Primitive restart enable/index (only applies to indexed drawing)
+    */
+   bool primitive_restart;
+   unsigned restart_index;
+
+   /**
+    * Stream output target. If not NULL, it's used to provide the 'count'
+    * parameter based on the number vertices captured by the stream output
+    * stage. (or generally, based on the number of bytes captured)
+    *
+    * Only 'mode', 'start_instance', and 'instance_count' are taken into
+    * account, all the other variables from pipe_draw_info are ignored.
+    *
+    * 'start' is implicitly 0 and 'count' is set as discussed above.
+    * The draw command is non-indexed.
+    *
+    * Note that this only provides the count. The vertex buffers must
+    * be set via set_vertex_buffers manually.
+    */
+   struct pipe_stream_output_target *count_from_stream_output;
+};
+
 
 #endif
 

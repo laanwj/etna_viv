@@ -20,8 +20,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-/* Rotating, mipmapped cube. Load mipmaps from .dds file.
- * Automatic state management.
+/* Gallium state experiments -- WIP
  */
 #include <stdio.h>
 #include <unistd.h>
@@ -194,25 +193,8 @@ uint32_t ps[] = { /* texture sampling */
 size_t vs_size = sizeof(vs);
 size_t ps_size = sizeof(ps);
 
-
-enum etna_surface_tiling
-{
-    ETNA_TILING_LINEAR = 0,
-    ETNA_TILING_TILED = 1,
-    ETNA_TILING_SUPERTILED = 3
-};
-
 #define GL_NUM_VARYINGS 8
 #define GL_NUM_VARYING_COMPONENTS 32
-struct gl_state
-{
-    uint32_t vertex_element_config;
-    uint32_t msaa_samples; /* 0, 2 or 4 */
-    uint32_t msaa_bits;
-    uint32_t varying_total_components;
-    uint32_t varying_num_components[GL_NUM_VARYINGS];
-    uint32_t varying_use[GL_NUM_VARYING_COMPONENTS];
-};
 struct rs_state
 {
     uint8_t source_format; // RS_FORMAT_XXX
@@ -238,60 +220,6 @@ struct rs_state
 };
 #define VS_NUM_INPUTS 16
 #define VS_NUM_OUTPUTS 16
-struct vs_state
-{
-    uint32_t end_pc;
-    uint32_t output_count;
-    uint32_t input_count;
-    uint32_t input_count_unk8;
-    uint32_t num_temps;
-    uint8_t outputs[VS_NUM_OUTPUTS];
-    uint8_t inputs[VS_NUM_INPUTS];
-    uint32_t load_balancing;
-    uint32_t start_pc;
-};
-struct ps_state
-{
-    uint32_t end_pc;
-    uint32_t output_reg;
-    uint32_t input_count;
-    uint32_t input_count_unk8;
-    uint32_t num_temps;
-    uint32_t start_pc;
-};
-#define PA_NUM_SHADER_ATTRIBUTES 10
-struct pa_state
-{
-    float viewport_scale_x;
-    float viewport_scale_y;
-    float viewport_scale_z;
-    float viewport_offset_x;
-    float viewport_offset_y;
-    float viewport_offset_z;
-    float line_width;
-    float point_size;
-    int attribute_element_count;
-    int attribute_element_count_unk0;
-    bool point_size_enable;
-    bool point_sprite_enable;
-    uint32_t cull_face_mode; // PA_CONFIG_CULL_FACE_MODE_*
-    uint32_t fill_mode; // PA_CONFIG_FILL_MODE_*
-    uint32_t shade_model; // PA_CONFIG_SHADE_MODEL_*
-    uint32_t shader_attributes[PA_NUM_SHADER_ATTRIBUTES];
-};
-struct se_state
-{
-    float scissor_left;
-    float scissor_top;
-    float scissor_right;
-    float scissor_bottom;
-    float depth_scale;
-    float depth_bias;
-    bool last_pixel_enable;
-    float clip_right;
-    float clip_bottom;
-};
-
 
 /* XXX autogenerate this 
  * XXX also need fixp flag somewhere 
@@ -626,23 +554,342 @@ static inline uint32_t translate_texture_target(enum pipe_texture_target tgt)
     }
 }
 
+/* IMPORTANT when adding a vertex element format be sure to add the format to
+ * all four of translate_vertex_format_type, translate_vertex_format_num,
+ *   translate_vertex_format_normalize and vertex_element_size
+ */
+/* Return type flags for vertex element format */
+static inline uint32_t translate_vertex_format_type(enum pipe_format fmt)
+{
+    switch(fmt)
+    {
+    case PIPE_FORMAT_R8_UNORM:
+    case PIPE_FORMAT_R8G8_UNORM:
+    case PIPE_FORMAT_R8G8B8_UNORM:
+    case PIPE_FORMAT_R8G8B8A8_UNORM:
+    case PIPE_FORMAT_R8_UINT:
+    case PIPE_FORMAT_R8G8_UINT:
+    case PIPE_FORMAT_R8G8B8_UINT:
+    case PIPE_FORMAT_R8G8B8A8_UINT:
+        return VIVS_FE_VERTEX_ELEMENT_CONFIG_TYPE_UNSIGNED_BYTE;
+    case PIPE_FORMAT_R8_SNORM:
+    case PIPE_FORMAT_R8G8_SNORM:
+    case PIPE_FORMAT_R8G8B8_SNORM:
+    case PIPE_FORMAT_R8G8B8A8_SNORM:
+    case PIPE_FORMAT_R8_SINT:
+    case PIPE_FORMAT_R8G8_SINT:
+    case PIPE_FORMAT_R8G8B8_SINT:
+    case PIPE_FORMAT_R8G8B8A8_SINT:
+        return VIVS_FE_VERTEX_ELEMENT_CONFIG_TYPE_BYTE;
+    case PIPE_FORMAT_R16_UNORM:
+    case PIPE_FORMAT_R16G16_UNORM:
+    case PIPE_FORMAT_R16G16B16_UNORM:
+    case PIPE_FORMAT_R16G16B16A16_UNORM:
+    case PIPE_FORMAT_R16_UINT:
+    case PIPE_FORMAT_R16G16_UINT:
+    case PIPE_FORMAT_R16G16B16_UINT:
+    case PIPE_FORMAT_R16G16B16A16_UINT:
+        return VIVS_FE_VERTEX_ELEMENT_CONFIG_TYPE_UNSIGNED_SHORT;
+    case PIPE_FORMAT_R16_SNORM:
+    case PIPE_FORMAT_R16G16_SNORM:
+    case PIPE_FORMAT_R16G16B16_SNORM:
+    case PIPE_FORMAT_R16G16B16A16_SNORM:
+    case PIPE_FORMAT_R16_SINT:
+    case PIPE_FORMAT_R16G16_SINT:
+    case PIPE_FORMAT_R16G16B16_SINT:
+    case PIPE_FORMAT_R16G16B16A16_SINT:
+        return VIVS_FE_VERTEX_ELEMENT_CONFIG_TYPE_SHORT;
+    case PIPE_FORMAT_R32_UNORM:
+    case PIPE_FORMAT_R32G32_UNORM:
+    case PIPE_FORMAT_R32G32B32_UNORM:
+    case PIPE_FORMAT_R32G32B32A32_UNORM:
+    case PIPE_FORMAT_R32_UINT:
+    case PIPE_FORMAT_R32G32_UINT:
+    case PIPE_FORMAT_R32G32B32_UINT:
+    case PIPE_FORMAT_R32G32B32A32_UINT:
+        return VIVS_FE_VERTEX_ELEMENT_CONFIG_TYPE_UNSIGNED_INT;
+    case PIPE_FORMAT_R32_SNORM:
+    case PIPE_FORMAT_R32G32_SNORM:
+    case PIPE_FORMAT_R32G32B32_SNORM:
+    case PIPE_FORMAT_R32G32B32A32_SNORM:
+    case PIPE_FORMAT_R32_SINT:
+    case PIPE_FORMAT_R32G32_SINT:
+    case PIPE_FORMAT_R32G32B32_SINT:
+    case PIPE_FORMAT_R32G32B32A32_SINT:
+        return VIVS_FE_VERTEX_ELEMENT_CONFIG_TYPE_INT;
+    case PIPE_FORMAT_R16_FLOAT:
+    case PIPE_FORMAT_R16G16_FLOAT:
+    case PIPE_FORMAT_R16G16B16_FLOAT:
+    case PIPE_FORMAT_R16G16B16A16_FLOAT:
+        return VIVS_FE_VERTEX_ELEMENT_CONFIG_TYPE_HALF_FLOAT;
+    case PIPE_FORMAT_R32_FLOAT:
+    case PIPE_FORMAT_R32G32_FLOAT:
+    case PIPE_FORMAT_R32G32B32_FLOAT:
+    case PIPE_FORMAT_R32G32B32A32_FLOAT:
+        return VIVS_FE_VERTEX_ELEMENT_CONFIG_TYPE_FLOAT;
+    case PIPE_FORMAT_R32_FIXED:
+    case PIPE_FORMAT_R32G32_FIXED:
+    case PIPE_FORMAT_R32G32B32_FIXED:
+    case PIPE_FORMAT_R32G32B32A32_FIXED:
+        return VIVS_FE_VERTEX_ELEMENT_CONFIG_TYPE_FIXED;
+    case PIPE_FORMAT_R10G10B10A2_UNORM:
+    case PIPE_FORMAT_R10G10B10A2_USCALED:
+        return VIVS_FE_VERTEX_ELEMENT_CONFIG_TYPE_UNSIGNED_INT_10_10_10_2;
+    case PIPE_FORMAT_R10G10B10A2_SNORM:
+    case PIPE_FORMAT_R10G10B10A2_SSCALED:
+        return VIVS_FE_VERTEX_ELEMENT_CONFIG_TYPE_INT_10_10_10_2;
+    default: printf("Unhandled vertex format: %i", fmt); return 0;
+    }
+}
+
+/* Return normalization flag for vertex element format */
+static inline uint32_t translate_vertex_format_normalize(enum pipe_format fmt)
+{
+    switch(fmt)
+    {
+    case PIPE_FORMAT_R8_UNORM:
+    case PIPE_FORMAT_R8G8_UNORM:
+    case PIPE_FORMAT_R8G8B8_UNORM:
+    case PIPE_FORMAT_R8G8B8A8_UNORM:
+    case PIPE_FORMAT_R8_SNORM:
+    case PIPE_FORMAT_R8G8_SNORM:
+    case PIPE_FORMAT_R8G8B8_SNORM:
+    case PIPE_FORMAT_R8G8B8A8_SNORM:
+    case PIPE_FORMAT_R16_UNORM:
+    case PIPE_FORMAT_R16G16_UNORM:
+    case PIPE_FORMAT_R16G16B16_UNORM:
+    case PIPE_FORMAT_R16G16B16A16_UNORM:
+    case PIPE_FORMAT_R16_SNORM:
+    case PIPE_FORMAT_R16G16_SNORM:
+    case PIPE_FORMAT_R16G16B16_SNORM:
+    case PIPE_FORMAT_R16G16B16A16_SNORM:
+    case PIPE_FORMAT_R32_UNORM:
+    case PIPE_FORMAT_R32G32_UNORM:
+    case PIPE_FORMAT_R32G32B32_UNORM:
+    case PIPE_FORMAT_R32G32B32A32_UNORM:
+    case PIPE_FORMAT_R32_SNORM:
+    case PIPE_FORMAT_R32G32_SNORM:
+    case PIPE_FORMAT_R32G32B32_SNORM:
+    case PIPE_FORMAT_R32G32B32A32_SNORM:
+    case PIPE_FORMAT_R10G10B10A2_UNORM:
+    case PIPE_FORMAT_R10G10B10A2_SNORM:
+        return VIVS_FE_VERTEX_ELEMENT_CONFIG_NORMALIZE_ON;
+    case PIPE_FORMAT_R8_UINT:
+    case PIPE_FORMAT_R8G8_UINT:
+    case PIPE_FORMAT_R8G8B8_UINT:
+    case PIPE_FORMAT_R8G8B8A8_UINT:
+    case PIPE_FORMAT_R8_SINT:
+    case PIPE_FORMAT_R8G8_SINT:
+    case PIPE_FORMAT_R8G8B8_SINT:
+    case PIPE_FORMAT_R8G8B8A8_SINT:
+    case PIPE_FORMAT_R16_UINT:
+    case PIPE_FORMAT_R16G16_UINT:
+    case PIPE_FORMAT_R16G16B16_UINT:
+    case PIPE_FORMAT_R16G16B16A16_UINT:
+    case PIPE_FORMAT_R16_SINT:
+    case PIPE_FORMAT_R16G16_SINT:
+    case PIPE_FORMAT_R16G16B16_SINT:
+    case PIPE_FORMAT_R16G16B16A16_SINT:
+    case PIPE_FORMAT_R32_UINT:
+    case PIPE_FORMAT_R32G32_UINT:
+    case PIPE_FORMAT_R32G32B32_UINT:
+    case PIPE_FORMAT_R32G32B32A32_UINT:
+    case PIPE_FORMAT_R32_SINT:
+    case PIPE_FORMAT_R32G32_SINT:
+    case PIPE_FORMAT_R32G32B32_SINT:
+    case PIPE_FORMAT_R32G32B32A32_SINT:
+    case PIPE_FORMAT_R16_FLOAT:
+    case PIPE_FORMAT_R16G16_FLOAT:
+    case PIPE_FORMAT_R16G16B16_FLOAT:
+    case PIPE_FORMAT_R16G16B16A16_FLOAT:
+    case PIPE_FORMAT_R32_FLOAT:
+    case PIPE_FORMAT_R32G32_FLOAT:
+    case PIPE_FORMAT_R32G32B32_FLOAT:
+    case PIPE_FORMAT_R32G32B32A32_FLOAT:
+    case PIPE_FORMAT_R32_FIXED:
+    case PIPE_FORMAT_R32G32_FIXED:
+    case PIPE_FORMAT_R32G32B32_FIXED:
+    case PIPE_FORMAT_R32G32B32A32_FIXED:
+    case PIPE_FORMAT_R10G10B10A2_USCALED:
+    case PIPE_FORMAT_R10G10B10A2_SSCALED:
+        return VIVS_FE_VERTEX_ELEMENT_CONFIG_NORMALIZE_OFF;
+    default: printf("Unhandled vertex format: %i", fmt); return 0;
+    }
+}
+
+/* Return number of components for vertex element format */
+static inline uint32_t vertex_format_num(enum pipe_format fmt)
+{
+    switch(fmt)
+    {
+    case PIPE_FORMAT_R8_UNORM:
+    case PIPE_FORMAT_R8_UINT:
+    case PIPE_FORMAT_R8_SNORM:
+    case PIPE_FORMAT_R8_SINT:
+    case PIPE_FORMAT_R16_UNORM:
+    case PIPE_FORMAT_R16_UINT:
+    case PIPE_FORMAT_R16_SNORM:
+    case PIPE_FORMAT_R16_SINT:
+    case PIPE_FORMAT_R32_UNORM:
+    case PIPE_FORMAT_R32_UINT:
+    case PIPE_FORMAT_R32_SNORM:
+    case PIPE_FORMAT_R32_SINT:
+    case PIPE_FORMAT_R16_FLOAT:
+    case PIPE_FORMAT_R32_FLOAT:
+    case PIPE_FORMAT_R32_FIXED:
+        return 1;
+    case PIPE_FORMAT_R8G8_UNORM:
+    case PIPE_FORMAT_R8G8_UINT:
+    case PIPE_FORMAT_R8G8_SNORM:
+    case PIPE_FORMAT_R8G8_SINT:
+    case PIPE_FORMAT_R16G16_UNORM:
+    case PIPE_FORMAT_R16G16_UINT:
+    case PIPE_FORMAT_R16G16_SNORM:
+    case PIPE_FORMAT_R16G16_SINT:
+    case PIPE_FORMAT_R32G32_UNORM:
+    case PIPE_FORMAT_R32G32_UINT:
+    case PIPE_FORMAT_R32G32_SNORM:
+    case PIPE_FORMAT_R32G32_SINT:
+    case PIPE_FORMAT_R16G16_FLOAT:
+    case PIPE_FORMAT_R32G32_FLOAT:
+    case PIPE_FORMAT_R32G32_FIXED:
+        return 2;
+    case PIPE_FORMAT_R8G8B8_UNORM:
+    case PIPE_FORMAT_R8G8B8_UINT:
+    case PIPE_FORMAT_R8G8B8_SNORM:
+    case PIPE_FORMAT_R8G8B8_SINT:
+    case PIPE_FORMAT_R16G16B16_UNORM:
+    case PIPE_FORMAT_R16G16B16_UINT:
+    case PIPE_FORMAT_R16G16B16_SNORM:
+    case PIPE_FORMAT_R16G16B16_SINT:
+    case PIPE_FORMAT_R32G32B32_UNORM:
+    case PIPE_FORMAT_R32G32B32_UINT:
+    case PIPE_FORMAT_R32G32B32_SNORM:
+    case PIPE_FORMAT_R32G32B32_SINT:
+    case PIPE_FORMAT_R16G16B16_FLOAT:
+    case PIPE_FORMAT_R32G32B32_FLOAT:
+    case PIPE_FORMAT_R32G32B32_FIXED:
+        return 3;
+    case PIPE_FORMAT_R8G8B8A8_UNORM:
+    case PIPE_FORMAT_R8G8B8A8_UINT:
+    case PIPE_FORMAT_R8G8B8A8_SNORM:
+    case PIPE_FORMAT_R8G8B8A8_SINT:
+    case PIPE_FORMAT_R16G16B16A16_UNORM:
+    case PIPE_FORMAT_R16G16B16A16_UINT:
+    case PIPE_FORMAT_R16G16B16A16_SNORM:
+    case PIPE_FORMAT_R16G16B16A16_SINT:
+    case PIPE_FORMAT_R32G32B32A32_UNORM:
+    case PIPE_FORMAT_R32G32B32A32_UINT:
+    case PIPE_FORMAT_R32G32B32A32_SNORM:
+    case PIPE_FORMAT_R32G32B32A32_SINT:
+    case PIPE_FORMAT_R16G16B16A16_FLOAT:
+    case PIPE_FORMAT_R32G32B32A32_FLOAT:
+    case PIPE_FORMAT_R32G32B32A32_FIXED:
+    case PIPE_FORMAT_R10G10B10A2_UNORM:
+    case PIPE_FORMAT_R10G10B10A2_USCALED:
+    case PIPE_FORMAT_R10G10B10A2_SNORM:
+    case PIPE_FORMAT_R10G10B10A2_SSCALED:
+        return 4;
+    default: printf("Unhandled vertex format: %i", fmt); return 0;
+    }
+}
+
+/* Return size in bytes for one vertex element */
+static inline uint32_t vertex_element_size(enum pipe_format fmt)
+{
+    switch(fmt)
+    {
+    case PIPE_FORMAT_R8_UNORM:
+    case PIPE_FORMAT_R8_UINT:
+    case PIPE_FORMAT_R8_SNORM:
+    case PIPE_FORMAT_R8_SINT:
+        return 1;
+    case PIPE_FORMAT_R8G8_UNORM:
+    case PIPE_FORMAT_R8G8_UINT:
+    case PIPE_FORMAT_R8G8_SNORM:
+    case PIPE_FORMAT_R8G8_SINT:
+    case PIPE_FORMAT_R16_UNORM:
+    case PIPE_FORMAT_R16_UINT:
+    case PIPE_FORMAT_R16_SNORM:
+    case PIPE_FORMAT_R16_SINT:
+    case PIPE_FORMAT_R16_FLOAT:
+        return 2;
+    case PIPE_FORMAT_R8G8B8_UNORM:
+    case PIPE_FORMAT_R8G8B8_UINT:
+    case PIPE_FORMAT_R8G8B8_SNORM:
+    case PIPE_FORMAT_R8G8B8_SINT:
+        return 3;
+    case PIPE_FORMAT_R8G8B8A8_UNORM:
+    case PIPE_FORMAT_R8G8B8A8_UINT:
+    case PIPE_FORMAT_R8G8B8A8_SNORM:
+    case PIPE_FORMAT_R8G8B8A8_SINT:
+    case PIPE_FORMAT_R16G16_UNORM:
+    case PIPE_FORMAT_R16G16_UINT:
+    case PIPE_FORMAT_R16G16_SNORM:
+    case PIPE_FORMAT_R16G16_SINT:
+    case PIPE_FORMAT_R32_UNORM:
+    case PIPE_FORMAT_R32_UINT:
+    case PIPE_FORMAT_R32_SNORM:
+    case PIPE_FORMAT_R32_SINT:
+    case PIPE_FORMAT_R16G16_FLOAT:
+    case PIPE_FORMAT_R32_FLOAT:
+    case PIPE_FORMAT_R32_FIXED:
+    case PIPE_FORMAT_R10G10B10A2_UNORM:
+    case PIPE_FORMAT_R10G10B10A2_USCALED:
+    case PIPE_FORMAT_R10G10B10A2_SNORM:
+    case PIPE_FORMAT_R10G10B10A2_SSCALED:
+        return 4;
+    case PIPE_FORMAT_R16G16B16_UNORM:
+    case PIPE_FORMAT_R16G16B16_UINT:
+    case PIPE_FORMAT_R16G16B16_SNORM:
+    case PIPE_FORMAT_R16G16B16_SINT:
+    case PIPE_FORMAT_R16G16B16_FLOAT:
+        return 6;
+    case PIPE_FORMAT_R16G16B16A16_UNORM:
+    case PIPE_FORMAT_R16G16B16A16_UINT:
+    case PIPE_FORMAT_R16G16B16A16_SNORM:
+    case PIPE_FORMAT_R16G16B16A16_SINT:
+    case PIPE_FORMAT_R32G32_UNORM:
+    case PIPE_FORMAT_R32G32_UINT:
+    case PIPE_FORMAT_R32G32_SNORM:
+    case PIPE_FORMAT_R32G32_SINT:
+    case PIPE_FORMAT_R16G16B16A16_FLOAT:
+    case PIPE_FORMAT_R32G32_FLOAT:
+    case PIPE_FORMAT_R32G32_FIXED:
+        return 8;
+    case PIPE_FORMAT_R32G32B32_UNORM:
+    case PIPE_FORMAT_R32G32B32_UINT:
+    case PIPE_FORMAT_R32G32B32_SNORM:
+    case PIPE_FORMAT_R32G32B32_SINT:
+    case PIPE_FORMAT_R32G32B32_FLOAT:
+    case PIPE_FORMAT_R32G32B32_FIXED:
+        return 12;
+    case PIPE_FORMAT_R32G32B32A32_UNORM:
+    case PIPE_FORMAT_R32G32B32A32_UINT:
+    case PIPE_FORMAT_R32G32B32A32_SNORM:
+    case PIPE_FORMAT_R32G32B32A32_SINT:
+    case PIPE_FORMAT_R32G32B32A32_FLOAT:
+    case PIPE_FORMAT_R32G32B32A32_FIXED:
+        return 16;
+    default: printf("Unhandled vertex format: %i", fmt); return 0;
+    }
+}
+
+static inline uint32_t translate_index_size(unsigned index_size)
+{
+    switch(index_size)
+    {
+    case 1: return VIVS_FE_INDEX_STREAM_CONTROL_TYPE_UNSIGNED_CHAR;
+    case 2: return VIVS_FE_INDEX_STREAM_CONTROL_TYPE_UNSIGNED_SHORT;
+    case 4: return VIVS_FE_INDEX_STREAM_CONTROL_TYPE_UNSIGNED_INT;
+    default: printf("Unhandled index size %i\n", index_size); return 0;
+    }
+}
+
 /*********************************************************************/
 /** Gallium state compilation, WIP */
-
-/* extra state not represented in pipe_framebuffer_state */
-struct etna_framebuffer_state
+struct compiled_rasterizer_state
 {
-    unsigned padded_width;
-    unsigned padded_height;
-    uint32_t color_rt; 
-    uint32_t color_ts; 
-    uint32_t depth_rt; 
-    uint32_t depth_ts;
-};
-/* extra state not represented in pipe_resource */
-struct etna_resource
-{
-    uint32_t lod_addr[VIVS_TE_SAMPLER_LOD_ADDR__LEN];
 };
 
 void compile_rasterizer_state(struct state_packet *pkt, const struct pipe_rasterizer_state *rs)
@@ -659,14 +906,14 @@ void compile_rasterizer_state(struct state_packet *pkt, const struct pipe_raster
             translate_polygon_mode(rs->fill_front) |
             (rs->point_quad_rasterization ? VIVS_PA_CONFIG_POINT_SPRITE_ENABLE : 0) |
             (rs->point_size_per_vertex ? VIVS_PA_CONFIG_POINT_SIZE_ENABLE : 0));
-    SET_STATE(VIVS_SE_CONFIG, 
-            (rs->line_last_pixel ? VIVS_SE_CONFIG_LAST_PIXEL_ENABLE : 0) 
-            /* XXX anything else? */
-            );
     SET_STATE_F32(VIVS_PA_LINE_WIDTH, rs->line_width);
     SET_STATE_F32(VIVS_PA_POINT_SIZE, rs->point_size);
     SET_STATE_F32(VIVS_SE_DEPTH_SCALE, rs->offset_scale);
     SET_STATE_F32(VIVS_SE_DEPTH_BIAS, rs->offset_units);
+    SET_STATE(VIVS_SE_CONFIG, 
+            (rs->line_last_pixel ? VIVS_SE_CONFIG_LAST_PIXEL_ENABLE : 0) 
+            /* XXX anything else? */
+            );
     /* XXX rs->gl_rasterization_rules is likely one of the bits in VIVS_PA_SYSTEM_MODE */
     /* XXX rs->scissor as well as pipe_scissor_state affects VIVS_SE_SCISSOR_* */
 }
@@ -681,7 +928,7 @@ void compile_depth_stencil_alpha_state(struct state_packet *pkt, const struct pi
     SET_STATE(VIVS_PE_DEPTH_CONFIG, 
             VIVS_PE_DEPTH_CONFIG_DEPTH_FUNC(dsa->depth.enabled ? dsa->depth.func : PIPE_FUNC_ALWAYS) |
             (dsa->depth.writemask ? VIVS_PE_DEPTH_CONFIG_WRITE_ENABLE : 0)
-            /* XXX DEPTH_FORMAT, DEPTH_MODE, SUPER_TILED, EARLY_Z */
+            /* XXX EARLY_Z */
             );
     SET_STATE(VIVS_PE_ALPHA_OP, 
             (dsa->alpha.enabled ? VIVS_PE_ALPHA_OP_ALPHA_TEST : 0) |
@@ -703,7 +950,7 @@ void compile_depth_stencil_alpha_state(struct state_packet *pkt, const struct pi
             /* XXX back masks in VIVS_PE_DEPTH_CONFIG_EXT? */
             /* XXX VIVS_PE_STENCIL_CONFIG_REF_FRONT comes from pipe_stencil_ref */
             );
-    /* XXX PE_COLOR_FORMAT_PARTIAL? */
+    /* XXX does alpha/stencil test affect PE_COLOR_FORMAT_PARTIAL? */
 }
 
 
@@ -716,6 +963,7 @@ void compile_blend_state(struct state_packet *pkt, const struct pipe_blend_state
                                          rt0->alpha_src_factor == PIPE_BLENDFACTOR_ONE && rt0->alpha_dst_factor == PIPE_BLENDFACTOR_ZERO);
     bool separate_alpha = enable && !(rt0->rgb_src_factor == rt0->alpha_src_factor &&
                                       rt0->rgb_dst_factor == rt0->alpha_dst_factor);
+    bool partial = (rt0->colormask != 15) || enable;
     SET_STATE(VIVS_PE_ALPHA_CONFIG, 
             (enable ? VIVS_PE_ALPHA_CONFIG_BLEND_ENABLE_COLOR : 0) | 
             (separate_alpha ? VIVS_PE_ALPHA_CONFIG_BLEND_SEPARATE_ALPHA : 0) |
@@ -727,8 +975,8 @@ void compile_blend_state(struct state_packet *pkt, const struct pipe_blend_state
             VIVS_PE_ALPHA_CONFIG_EQ_ALPHA(translate_blend(rt0->alpha_func))
             );
     SET_STATE(VIVS_PE_COLOR_FORMAT, 
-            VIVS_PE_COLOR_FORMAT_COMPONENTS(rt0->colormask)
-            /* XXX COLOR_FORMAT, PARTIAL, SUPER_TILED */
+            VIVS_PE_COLOR_FORMAT_COMPONENTS(rt0->colormask) |
+            (partial ? VIVS_PE_COLOR_FORMAT_PARTIAL : 0)
             );
     SET_STATE(VIVS_PE_LOGIC_OP, 
             VIVS_PE_LOGIC_OP_OP(bs->logicop_enable ? bs->logicop_func : LOGIC_OP_COPY) /* 1-to-1 mapping */ |
@@ -806,7 +1054,7 @@ void compile_sample_mask(struct state_packet *pkt, unsigned sample_mask)
     uint32_t state[65536];
     int ptr = 0;
     SET_STATE(VIVS_GL_MULTI_SAMPLE_CONFIG, 
-            /* XXX to be merged with render target state */
+            /* to be merged with render target state */
             VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_ENABLES(sample_mask));
 }
 
@@ -833,13 +1081,12 @@ void compile_sampler_state(struct state_packet *pkt, const struct pipe_sampler_s
             );
 }
 
-void compile_sampler_view(struct state_packet *pkt, const struct pipe_sampler_view *sv,
-        struct etna_resource *esv)
+void compile_sampler_view(struct state_packet *pkt, const struct pipe_sampler_view *sv)
 {
     uint32_t state[65536];
     int ptr = 0;
     struct pipe_resource *res = sv->texture;
-    assert(res != NULL && esv != NULL);
+    assert(res != NULL);
 
     SET_STATE(VIVS_TE_SAMPLER_CONFIG0(0), 
                 VIVS_TE_SAMPLER_CONFIG0_TYPE(translate_texture_target(res->target)) |
@@ -856,58 +1103,118 @@ void compile_sampler_view(struct state_packet *pkt, const struct pipe_sampler_vi
     /* XXX in principle we only have to define lods sv->first_level .. sv->last_level */
     for(int lod=0; lod<=res->last_level; ++lod)
     {
-        SET_STATE(VIVS_TE_SAMPLER_LOD_ADDR(0, lod), esv->lod_addr[lod]);
+        SET_STATE(VIVS_TE_SAMPLER_LOD_ADDR(0, lod), res->levels[lod].address);
     }
 }
 
-void compile_framebuffer_state(struct state_packet *pkt, const struct pipe_framebuffer_state *sv,
-        const struct etna_framebuffer_state *esv)
+void compile_framebuffer_state(struct state_packet *pkt, const struct pipe_framebuffer_state *sv)
 {
     uint32_t state[65536];
     int ptr = 0;
-    /* XXX support Z24S8 depth format */
     struct pipe_surface *cbuf = (sv->nr_cbufs > 0) ? sv->cbufs[0] : NULL;
     struct pipe_surface *zsbuf = sv->zsbuf;
-    /* XXX rendering with only color or only depth */
-    assert(cbuf != NULL && zsbuf != NULL && esv != NULL);
-    unsigned depth_bits = 16; 
+    /* XXX rendering with only color or only depth should be possible */
+    assert(cbuf != NULL && zsbuf != NULL);
+    uint32_t depth_format = translate_depth_format(zsbuf->format);
+    unsigned depth_bits = depth_format == VIVS_PE_DEPTH_CONFIG_DEPTH_FORMAT_D16 ? 16 : 24; 
+    assert((cbuf->layout & 1) && (zsbuf->layout & 1)); /* color and depth buffer must be at least tiled */
+    bool color_supertiled = (cbuf->layout & 2)!=0;
+    bool depth_supertiled = (zsbuf->layout & 2)!=0;
 
+    /* XXX support multisample 2X/4X, take care that required width/height is doubled */
+    SET_STATE(VIVS_GL_MULTI_SAMPLE_CONFIG, 
+            VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_SAMPLES_NONE
+            /* VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_ENABLES(0xf)
+            VIVS_GL_MULTI_SAMPLE_CONFIG_UNK12 |
+            VIVS_GL_MULTI_SAMPLE_CONFIG_UNK16 */
+            );  /* merged with sample_mask */
     SET_STATE(VIVS_PE_COLOR_FORMAT, 
             VIVS_PE_COLOR_FORMAT_FORMAT(translate_rt_format(cbuf->format)) |
-            VIVS_PE_COLOR_FORMAT_SUPER_TILED /* XXX depends on layout */
+            (color_supertiled ? VIVS_PE_COLOR_FORMAT_SUPER_TILED : 0) /* XXX depends on layout */
             /* XXX VIVS_PE_COLOR_FORMAT_PARTIAL and the rest comes from depth_stencil_alpha */
             ); /* merged with depth_stencil_alpha */
     SET_STATE(VIVS_PE_DEPTH_CONFIG, 
-            translate_depth_format(zsbuf->format) |
-            VIVS_PE_DEPTH_CONFIG_SUPER_TILED | /* XXX depends on layout */
+            depth_format |
+            (depth_supertiled ? VIVS_PE_DEPTH_CONFIG_SUPER_TILED : 0) | /* XXX depends on layout */
             VIVS_PE_DEPTH_CONFIG_EARLY_Z |
-            VIVS_PE_DEPTH_CONFIG_DEPTH_MODE_Z
+            VIVS_PE_DEPTH_CONFIG_DEPTH_MODE_Z /* XXX set to NONE if no Z buffer? */
             /* VIVS_PE_DEPTH_CONFIG_ONLY_DEPTH */
             ); /* merged with depth_stencil_alpha */
-    SET_STATE(VIVS_PE_DEPTH_ADDR, esv->depth_rt);
-    SET_STATE(VIVS_PE_DEPTH_STRIDE, esv->padded_width * 2); // XXX should depend on depth format
+
+    SET_STATE(VIVS_PE_DEPTH_ADDR, zsbuf->surf.address);
+    SET_STATE(VIVS_PE_DEPTH_STRIDE, zsbuf->surf.stride);
     SET_STATE(VIVS_PE_HDEPTH_CONTROL, VIVS_PE_HDEPTH_CONTROL_FORMAT_DISABLED);
     SET_STATE_F32(VIVS_PE_DEPTH_NORMALIZE, exp2f(depth_bits) - 1.0f);
-    SET_STATE(VIVS_PE_COLOR_ADDR, esv->color_rt);
-    SET_STATE(VIVS_PE_COLOR_STRIDE, esv->padded_width * 4); // XXX should depend on color format
-       
+    SET_STATE(VIVS_PE_COLOR_ADDR, cbuf->surf.address);
+    SET_STATE(VIVS_PE_COLOR_STRIDE, cbuf->surf.stride);
+    
     SET_STATE_FIXP(VIVS_SE_SCISSOR_LEFT, 0); /* affected by rasterizer and scissor state as well */
     SET_STATE_FIXP(VIVS_SE_SCISSOR_TOP, 0);
     SET_STATE_FIXP(VIVS_SE_SCISSOR_RIGHT, (sv->width << 16)-1);
     SET_STATE_FIXP(VIVS_SE_SCISSOR_BOTTOM, (sv->height << 16)-1);
 
-    /* Set up TS as well */
+    /* Set up TS as well. Warning: this is shared with RS */
     SET_STATE(VIVS_TS_MEM_CONFIG, 
             VIVS_TS_MEM_CONFIG_DEPTH_FAST_CLEAR |
             VIVS_TS_MEM_CONFIG_COLOR_FAST_CLEAR |
             (depth_bits == 16 ? VIVS_TS_MEM_CONFIG_DEPTH_16BPP : 0) | 
             VIVS_TS_MEM_CONFIG_DEPTH_COMPRESSION);
-    SET_STATE(VIVS_TS_DEPTH_CLEAR_VALUE, 0xffffffff); // XXX remember depth/stencil clear value from ->clear
-    SET_STATE(VIVS_TS_DEPTH_STATUS_BASE, esv->depth_ts);
-    SET_STATE(VIVS_TS_DEPTH_SURFACE_BASE, esv->depth_rt);
-    SET_STATE(VIVS_TS_COLOR_CLEAR_VALUE, 0xff303030); // XXX remember clear color from ->clear
-    SET_STATE(VIVS_TS_COLOR_STATUS_BASE, esv->color_ts);
-    SET_STATE(VIVS_TS_COLOR_SURFACE_BASE, esv->color_rt);
+    SET_STATE(VIVS_TS_DEPTH_CLEAR_VALUE, zsbuf->clear_value);
+    SET_STATE(VIVS_TS_DEPTH_STATUS_BASE, zsbuf->surf.ts_address);
+    SET_STATE(VIVS_TS_DEPTH_SURFACE_BASE, zsbuf->surf.address);
+    SET_STATE(VIVS_TS_COLOR_CLEAR_VALUE, cbuf->clear_value);
+    SET_STATE(VIVS_TS_COLOR_STATUS_BASE, cbuf->surf.ts_address);
+    SET_STATE(VIVS_TS_COLOR_SURFACE_BASE, cbuf->surf.address);
+}
+
+void compile_vertex_elements_state(unsigned num_elements, const struct pipe_vertex_element * elements)
+{
+    uint32_t state[65536];
+    int ptr = 0;
+    /* VERTEX_ELEMENT_STRIDE is in pipe_vertex_buffer */
+    for(unsigned idx=0; idx<num_elements; ++idx)
+    {
+        unsigned element_size = vertex_element_size(elements[idx].src_format);
+        unsigned end_offset = elements[idx].src_offset + element_size;
+        assert(element_size != 0 && end_offset <= 256);
+        /* check whether next element is consecutive to this one */
+        bool nonconsecutive = (idx == (num_elements-1)) || 
+                    elements[idx+1].vertex_buffer_index != elements[idx].vertex_buffer_index ||
+                    end_offset != elements[idx+1].src_offset;
+        SET_STATE(VIVS_FE_VERTEX_ELEMENT_CONFIG(idx), 
+                (nonconsecutive ? VIVS_FE_VERTEX_ELEMENT_CONFIG_NONCONSECUTIVE : 0) |
+                translate_vertex_format_type(elements[idx].src_format) |
+                VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM(vertex_format_num(elements[idx].src_format)) |
+                translate_vertex_format_normalize(elements[idx].src_format) |
+                VIVS_FE_VERTEX_ELEMENT_CONFIG_ENDIAN(ENDIAN_MODE_NO_SWAP) |
+                VIVS_FE_VERTEX_ELEMENT_CONFIG_STREAM(elements[idx].vertex_buffer_index) |
+                VIVS_FE_VERTEX_ELEMENT_CONFIG_START(elements[idx].src_offset) |
+                VIVS_FE_VERTEX_ELEMENT_CONFIG_END(end_offset));
+    }
+}
+
+void compile_set_vertex_buffer(unsigned num_buffers, const struct pipe_vertex_buffer * vb)
+{
+    uint32_t state[65536];
+    int ptr = 0;
+    /* XXX figure out multi-stream VIS_FE_VERTEX_STREAMS(..) */
+    if(num_buffers > 0)
+    {
+        assert(vb[0].buffer); /* XXX user_buffer */
+        SET_STATE(VIVS_FE_VERTEX_STREAM_CONTROL, 
+                VIVS_FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE(vb[0].stride));
+        SET_STATE(VIVS_FE_VERTEX_STREAM_BASE_ADDR, vb[0].buffer->levels[0].address + vb[0].buffer_offset);
+    } 
+}
+
+void compile_set_index_buffer(const struct pipe_index_buffer * ib)
+{
+    uint32_t state[65536];
+    int ptr = 0;
+    assert(ib->buffer); /* XXX user_buffer */
+    SET_STATE(VIVS_FE_INDEX_STREAM_CONTROL, 
+            translate_index_size(ib->index_size));
+    SET_STATE(VIVS_FE_INDEX_STREAM_BASE_ADDR, ib->buffer->levels[0].address + ib->offset);
 }
 
 /*********************************************************************/
@@ -1373,7 +1680,7 @@ int main(int argc, char **argv)
                 VIVS_FE_VERTEX_ELEMENT_CONFIG_TYPE_FLOAT |
                 (ENDIAN_MODE_NO_SWAP << VIVS_FE_VERTEX_ELEMENT_CONFIG_ENDIAN__SHIFT) |
                 VIVS_FE_VERTEX_ELEMENT_CONFIG_STREAM(0) |
-                VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM_3 |
+                VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM(3) |
                 VIVS_FE_VERTEX_ELEMENT_CONFIG_NORMALIZE_OFF |
                 VIVS_FE_VERTEX_ELEMENT_CONFIG_START(0x0) |
                 VIVS_FE_VERTEX_ELEMENT_CONFIG_END(0xc));
@@ -1381,7 +1688,7 @@ int main(int argc, char **argv)
                 VIVS_FE_VERTEX_ELEMENT_CONFIG_TYPE_FLOAT |
                 (ENDIAN_MODE_NO_SWAP << VIVS_FE_VERTEX_ELEMENT_CONFIG_ENDIAN__SHIFT) |
                 VIVS_FE_VERTEX_ELEMENT_CONFIG_STREAM(0) |
-                VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM_3 |
+                VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM(3) |
                 VIVS_FE_VERTEX_ELEMENT_CONFIG_NORMALIZE_OFF |
                 VIVS_FE_VERTEX_ELEMENT_CONFIG_START(0xc) |
                 VIVS_FE_VERTEX_ELEMENT_CONFIG_END(0x18));
@@ -1390,7 +1697,7 @@ int main(int argc, char **argv)
                 (ENDIAN_MODE_NO_SWAP << VIVS_FE_VERTEX_ELEMENT_CONFIG_ENDIAN__SHIFT) |
                 VIVS_FE_VERTEX_ELEMENT_CONFIG_NONCONSECUTIVE |
                 VIVS_FE_VERTEX_ELEMENT_CONFIG_STREAM(0) |
-                VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM_2 |
+                VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM(2) |
                 VIVS_FE_VERTEX_ELEMENT_CONFIG_NORMALIZE_OFF |
                 VIVS_FE_VERTEX_ELEMENT_CONFIG_START(0x18) |
                 VIVS_FE_VERTEX_ELEMENT_CONFIG_END(0x20));
