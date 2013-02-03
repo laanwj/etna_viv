@@ -678,7 +678,7 @@ struct pipe_resource
    etna_vidmem *ts; /* Tile status video memory */
 
    struct etna_resource_level levels[VIVS_TE_SAMPLER_LOD_ADDR__LEN];
-
+   /* XXX uint32_t clear_value; */
 };
 
 /**
