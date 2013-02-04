@@ -108,9 +108,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="17" name="D24S8"/>
         <!-- 18 reads as all ones -->
         <value value="19" name="DXT1" brief="S3 Block Compression 1">
-            <doc>DXT1: Unknown tiling.</doc>
+            <doc>DXT1 compressed textures are stored untiled.</doc>
         </value>
-        <value value="20" name="DXT2_DXT3" brief="S3 Block Compression 2"/>
+        <value value="20" name="DXT2_DXT3" brief="S3 Block Compression 2">
+            <doc>DXT2/3 compressed textures are stored untiled.</doc>
+        </value>
         <value value="21" name="DXT4_DXT5" brief="S3 Block Compression 3">
             <doc>DXT4/DXT5 compressed textures are stored untiled.</doc>
         </value>
@@ -213,7 +215,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x00820" name="INPUT" value="0x00000000" brief="Input routing" length="4" stride="4">
             <doc>
-                Each bitfield (up to 16 in total) contains a temporary register number that 
+                Each bitfield (up to 16 in total) contains the number of a temporary register that 
                 is assigned the input for that attribute at the beginning of shader execution.
             </doc>
             <bitfield high="7" low="0" name="I0" type="uint"/>
@@ -255,11 +257,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <stripe name="PA" brief="Primitive assembly states">
         <doc>Primitive assembly assembles primitives (tris, quads, lines, points etc) from vertices for 3D rendering.
             Viewport scaling, line width and point size is configured here.</doc>
-        <reg32 offset="0x00A00" name="VIEWPORT_SCALE_X" value="0x00000000" type="fixedp"/>
-        <reg32 offset="0x00A04" name="VIEWPORT_SCALE_Y" value="0x00000000" type="fixedp"/>
+        <reg32 offset="0x00A00" name="VIEWPORT_SCALE_X" value="0x00000000" type="float"/>
+        <reg32 offset="0x00A04" name="VIEWPORT_SCALE_Y" value="0x00000000" type="float"/>
         <reg32 offset="0x00A08" name="VIEWPORT_SCALE_Z" value="0x00000000" type="float"/>
-        <reg32 offset="0x00A0C" name="VIEWPORT_OFFSET_X" value="0x00000000" type="fixedp"/>
-        <reg32 offset="0x00A10" name="VIEWPORT_OFFSET_Y" value="0x00000000" type="fixedp"/>
+        <reg32 offset="0x00A0C" name="VIEWPORT_OFFSET_X" value="0x00000000" type="float"/>
+        <reg32 offset="0x00A10" name="VIEWPORT_OFFSET_Y" value="0x00000000" type="float"/>
         <reg32 offset="0x00A14" name="VIEWPORT_OFFSET_Z" value="0x00000000" type="float"/>
         <reg32 offset="0x00A18" name="LINE_WIDTH" value="0x00000000"/>
         <reg32 offset="0x00A1C" name="POINT_SIZE" value="0x00000000"/>
@@ -313,10 +315,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
    
     <stripe name="SE" brief="Setup Engine states">
         <doc>The setup engine takes care of scissor, clipping, and depth scale.</doc>
-        <reg32 offset="0x00C00" name="SCISSOR_LEFT" value="0x00000000" type="fixedp"/>
-        <reg32 offset="0x00C04" name="SCISSOR_TOP" value="0x00000000" type="fixedp"/>
-        <reg32 offset="0x00C08" name="SCISSOR_RIGHT" value="0x45000000" type="fixedp"/>
-        <reg32 offset="0x00C0C" name="SCISSOR_BOTTOM" value="0x45000000" type="fixedp"/>
+        <reg32 offset="0x00C00" name="SCISSOR_LEFT" value="0x00000000" type="float"/>
+        <reg32 offset="0x00C04" name="SCISSOR_TOP" value="0x00000000" type="float"/>
+        <reg32 offset="0x00C08" name="SCISSOR_RIGHT" value="0x45000000" type="float"/>
+        <reg32 offset="0x00C0C" name="SCISSOR_BOTTOM" value="0x45000000" type="float"/>
         <reg32 offset="0x00C10" name="DEPTH_SCALE" value="0x00000000" type="float"/>
         <reg32 offset="0x00C14" name="DEPTH_BIAS" value="0x00000000" type="float"/>
         <reg32 offset="0x00C18" name="CONFIG" value="0x00000000">
@@ -325,8 +327,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             </bitfield>
         </reg32>
         <reg32 offset="0x00C1C" name="UNK00C1C" value="0x42000000"/>
-        <reg32 offset="0x00C20" name="CLIP_RIGHT" value="0x00000000" type="fixedp"/>
-        <reg32 offset="0x00C24" name="CLIP_BOTTOM" value="0x00000000" type="fixedp"/>
+        <reg32 offset="0x00C20" name="CLIP_RIGHT" value="0x00000000" type="float"/>
+        <reg32 offset="0x00C24" name="CLIP_BOTTOM" value="0x00000000" type="float"/>
     </stripe>
     
     <stripe name="RA" brief="Raster states">

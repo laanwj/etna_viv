@@ -333,7 +333,7 @@ int etna_set_pipe(etna_ctx *ctx, etna_pipe pipe)
 
     if((status = etna_reserve(ctx, 2)) != ETNA_OK)
         return status;
-    ETNA_EMIT_LOAD_STATE(ctx, VIVS_GL_FLUSH_CACHE, 1, 0);
+    ETNA_EMIT_LOAD_STATE(ctx, VIVS_GL_FLUSH_CACHE>>2, 1, 0);
     switch(pipe)
     {
     case ETNA_PIPE_2D: ETNA_EMIT(ctx, VIVS_GL_FLUSH_CACHE_PE2D); break;
@@ -345,7 +345,7 @@ int etna_set_pipe(etna_ctx *ctx, etna_pipe pipe)
 
     if((status = etna_reserve(ctx, 2)) != ETNA_OK)
         return status;
-    ETNA_EMIT_LOAD_STATE(ctx, VIVS_GL_PIPE_SELECT, 1, 0);
+    ETNA_EMIT_LOAD_STATE(ctx, VIVS_GL_PIPE_SELECT>>2, 1, 0);
     ETNA_EMIT(ctx, pipe);
 
     ctx->ctx.currentPipe = pipe;
@@ -359,7 +359,7 @@ int etna_semaphore(etna_ctx *ctx, uint32_t from, uint32_t to)
         return ETNA_INVALID_ADDR;
     if((status = etna_reserve(ctx, 2)) != ETNA_OK)
         return status;
-    ETNA_EMIT_LOAD_STATE(ctx, VIVS_GL_SEMAPHORE_TOKEN, 1, 0);
+    ETNA_EMIT_LOAD_STATE(ctx, VIVS_GL_SEMAPHORE_TOKEN>>2, 1, 0);
     ETNA_EMIT(ctx, VIVS_GL_SEMAPHORE_TOKEN_FROM(from) | VIVS_GL_SEMAPHORE_TOKEN_TO(to));
     return ETNA_OK;
 }
@@ -371,7 +371,7 @@ int etna_stall(etna_ctx *ctx, uint32_t from, uint32_t to)
         return ETNA_INVALID_ADDR;
     if((status = etna_reserve(ctx, 4)) != ETNA_OK)
         return status;
-    ETNA_EMIT_LOAD_STATE(ctx, VIVS_GL_SEMAPHORE_TOKEN, 1, 0);
+    ETNA_EMIT_LOAD_STATE(ctx, VIVS_GL_SEMAPHORE_TOKEN>>2, 1, 0);
     ETNA_EMIT(ctx, VIVS_GL_SEMAPHORE_TOKEN_FROM(from) | VIVS_GL_SEMAPHORE_TOKEN_TO(to));
     if(from == SYNC_RECIPIENT_FE)
     {
@@ -379,7 +379,7 @@ int etna_stall(etna_ctx *ctx, uint32_t from, uint32_t to)
         ETNA_EMIT_STALL(ctx, from, to);
     } else {
         /* otherwise, load the STALL token state */
-        ETNA_EMIT_LOAD_STATE(ctx, VIVS_GL_STALL_TOKEN, 1, 0);
+        ETNA_EMIT_LOAD_STATE(ctx, VIVS_GL_STALL_TOKEN>>2, 1, 0);
         ETNA_EMIT(ctx, VIVS_GL_STALL_TOKEN_FROM(from) | VIVS_GL_STALL_TOKEN_TO(to));
     }
     return ETNA_OK;

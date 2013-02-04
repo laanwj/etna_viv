@@ -268,7 +268,7 @@ int main(int argc, char **argv)
     uint32_t tex_base_height = dds->slices[0][0].height;
     uint32_t tex_base_log_width = (int)(logf(tex_base_width) * RCPLOG2 * 32.0f + 0.5f);
     uint32_t tex_base_log_height = (int)(logf(tex_base_height) * RCPLOG2 * 32.0f + 0.5f);
-    printf("Loading compressed texture (format %i, %ix%i) log_width=%i log_height=%i\n", dds->fmt, width, height, tex_base_log_width, tex_base_log_height);
+    printf("Loading compressed texture (format %i, %ix%i) log_width=%i log_height=%i\n", dds->fmt, tex_base_width, tex_base_height, tex_base_log_width, tex_base_log_height);
     if(dds->fmt == FMT_X8R8G8B8 || dds->fmt == FMT_A8R8G8B8)
     {
         for(int ix=0; ix<dds->num_mipmaps; ++ix)
@@ -280,14 +280,14 @@ int main(int argc, char **argv)
         tex_format = TEXTURE_FORMAT_X8R8G8B8;
     } else if(dds->fmt == FMT_DXT1 || dds->fmt == FMT_DXT3 || dds->fmt == FMT_DXT5 || dds->fmt == FMT_ETC1)
     {
-        printf("Loading compressed texture\n");
+        printf("Uploading compressed texture\n");
         memcpy(tex->logical, dds->data, dds->size);
         switch(dds->fmt)
         {
-        case FMT_DXT1: tex_format = TEXTURE_FORMAT_DXT1;
-        case FMT_DXT3: tex_format = TEXTURE_FORMAT_DXT2_DXT3;
-        case FMT_DXT5: tex_format = TEXTURE_FORMAT_DXT4_DXT5;
-        case FMT_ETC1: tex_format = TEXTURE_FORMAT_ETC1;
+        case FMT_DXT1: tex_format = TEXTURE_FORMAT_DXT1; break;
+        case FMT_DXT3: tex_format = TEXTURE_FORMAT_DXT2_DXT3; break;
+        case FMT_DXT5: tex_format = TEXTURE_FORMAT_DXT4_DXT5; break;
+        case FMT_ETC1: tex_format = TEXTURE_FORMAT_ETC1; break;
         }
     } else
     {
@@ -507,9 +507,10 @@ int main(int argc, char **argv)
                 VIVS_TE_SAMPLER_CONFIG0_FORMAT(tex_format));
         etna_set_state(ctx, VIVS_TE_SAMPLER_LOD_CONFIG(0), 
                 VIVS_TE_SAMPLER_LOD_CONFIG_MAX((dds->num_mipmaps - 1)<<5) | VIVS_TE_SAMPLER_LOD_CONFIG_MIN(0));
+        //etna_set_state(ctx, VIVS_TE_SAMPLER_UNK2100(0), 0);
+        //etna_set_state(ctx, VIVS_TE_SAMPLER_UNK2140(0), 0);
 
         /* shader setup */
-
         etna_set_state(ctx, VIVS_VS_START_PC, 0x0);
         etna_set_state(ctx, VIVS_VS_END_PC, vs_size/16);
         etna_set_state_multi(ctx, VIVS_VS_INPUT_COUNT, 3, (uint32_t[]){

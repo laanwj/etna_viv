@@ -57,14 +57,14 @@ Functional blocks, indicated by two-letter abbreviations:
 
 - FE Graphics Pipeline Front End (also: DMA engine, Fetch Engine)
 - PE Pixel Engine (can be version 1.0 / 2.0)
-- SH SHader (up to 256 threads per shader)
+- SH SHader (vertex + pixel)
 - PA Primitive Assembly (clipping, perspective division, viewport transformation)
 - SE Setup Engine (depth offset, scissor, clipping)
 - RA RAsterizer (multisampling, clipping, culling, varying interpolation, generate fragments)
 - TX Texture
 - VG Vector Graphics
 - IM ? (unknown bit in idle state, may group a few other modules, or maybe the 2D DE)
-- FP Fragment Processor (not available, probably was present in older GLES1 HW)
+- FP Fragment Processor?
 - MC Memory Controller
 - HI Host Interface
 - DE 2D drawing and scaling engine

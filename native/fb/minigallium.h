@@ -59,6 +59,16 @@ union pipe_color_union
 #define PIPE_BLENDFACTOR_INV_SRC1_COLOR      0x19
 #define PIPE_BLENDFACTOR_INV_SRC1_ALPHA      0x1A
 
+/**
+ * Texture swizzles
+ */
+#define PIPE_SWIZZLE_RED   0
+#define PIPE_SWIZZLE_GREEN 1
+#define PIPE_SWIZZLE_BLUE  2
+#define PIPE_SWIZZLE_ALPHA 3
+#define PIPE_SWIZZLE_ZERO  4
+#define PIPE_SWIZZLE_ONE   5
+
 #define PIPE_BLEND_ADD               0
 #define PIPE_BLEND_SUBTRACT          1
 #define PIPE_BLEND_REVERSE_SUBTRACT  2
@@ -634,9 +644,9 @@ struct pipe_sampler_state
 
 enum etna_surface_layout
 {
-    ETNA_TILING_LINEAR = 0,
-    ETNA_TILING_TILED = 1,
-    ETNA_TILING_SUPERTILED = 3 /* 1|2, both tiling and supertiling bit enabled */
+    ETNA_LAYOUT_LINEAR = 0,
+    ETNA_LAYOUT_TILED = 1,
+    ETNA_LAYOUT_SUPERTILED = 3 /* 1|2, both tiling and supertiling bit enabled */
 };
 
 struct etna_resource_level

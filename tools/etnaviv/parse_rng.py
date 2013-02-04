@@ -118,6 +118,7 @@ class Range(object):
     contents = None # arrays, stripes and registers
     def __init__(self, **attr):
         self.contents = []
+        self.contents_by_name = {}
 
     def lookup_address(self, addr, variants=None):
         '''Look up the specified address in this range. Return None if not found.'''
@@ -126,6 +127,7 @@ class Range(object):
     def add_child(self, child):
         if isinstance(child, (Array, Stripe, Register)):
             self.contents.append(child)
+            self.contents_by_name[child.name] = child
             return True
         return False
 
@@ -472,7 +474,6 @@ class Register(RNNObject, Range, TypedValue):
 
 class Domain(RNNObject, Range, Type):
     '''Rules-ng domain description'''
-    contents = None # arrays, stripes and registers
     def __init__(self, parent, **attr):
         RNNObject.__init__(self, parent, **attr)
         Range.__init__(self, **attr)

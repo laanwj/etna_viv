@@ -12,6 +12,7 @@ if [[ "$DEMO" == "ps_sandbox_etna" || "$DEMO" == "etna_test" ]]; then
     adb push shader.bin ${ARG}
 fi
 if [[ "$DEMO" == "mip_cube" || "$DEMO" == "mip_cube_state" ]]; then
+    #TEX="miprgba"
     #TEX="mipdxt1"
     #TEX="test_image-dxt3"
     #TEX="mipdxt5"

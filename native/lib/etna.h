@@ -210,9 +210,14 @@ int etna_semaphore(etna_ctx *ctx, uint32_t from, uint32_t to);
  */
 int etna_stall(etna_ctx *ctx, uint32_t from, uint32_t to);
 
+/* misc util */
 static inline uint32_t etna_align_up(uint32_t value, uint32_t granularity)
 {
     return (value + (granularity-1)) & (~(granularity-1));
 }
+static inline uint32_t etna_umin(uint32_t a, uint32_t b) { return (a<b)?a:b; }
+static inline uint32_t etna_umax(uint32_t a, uint32_t b) { return (a>b)?a:b; }
+static inline uint32_t etna_smin(int32_t a, int32_t b) { return (a<b)?a:b; }
+static inline uint32_t etna_smax(int32_t a, int32_t b) { return (a>b)?a:b; }
 
 #endif

@@ -6,7 +6,7 @@ Module parameters
 
 The exact module parameters available depend on the kernel driver version
 (see respective `gc_hal_kernel_driver.c`). Important initialisation parameters are,
-along with the values on my device:
+along with the values on a RK2918 device:
 
     baseAddress     0           Physical memory base address
     signal          48          Realtime signal to use for kernel-user communication (only used if USE_NEW_LINUX_SIGNAL)
@@ -27,6 +27,7 @@ communicate with the GPU hardware. They depend on the board, not on the GPU. For
 
 The `dove` (cubox) driver also has a `gpu_frequency` parameter that sets the AXICLK/GCCLK clock at startup,
 if compiled with `ENABLE_GPU_CLOCK_BY_DRIVER`. Some devices may need this, although not the CuBox itself (it is disabled in the makefile).
+In that case your GPU will have an entry `GC` in `/proc/clocks`. 
 
 User to kernel interface
 ========================
@@ -35,6 +36,8 @@ At startup, the application connects to galcore device using `open` with the dev
 
 - `/dev/galcore`, or
 - `/dev/graphics/galcore`
+
+Immediately after connecting the entire chunk of contiguous memory, after requesting its address and size, is mapped into user space using `mmap`.
 
 Ioctl
 -------
@@ -183,7 +186,8 @@ Signals can be scheduled to be signalled/unsignalled when the GPU finished a cer
 They are also used for inter-thread synchronization by the EGL driver.
 
 The event queue effectively schedules kernel operations to happen in the future, when the GPU has finished processing the currently
-committed command buffers.
+committed command buffers. This can be used to implement, for example, a fenced free that will release a buffer as soon as the GPU
+is finished with it.
 
 Events queues are sent to the kernel using the command `HAL_EVENT_COMMIT`. Types of interfaces that can be sent using an event are:
 
@@ -240,7 +244,7 @@ See `native/replay` tests for details.
 
 Context switching
 ==================
-Clients manage their own context, which is passed to COMMIT in case a context switch is needed.
+Clients manage their own context, which is passed to COMMIT preemptively in case a context switch is needed.
 
 It appears that context switching is manual. Every process has to keep its own context structure for 
 context switching, and pass this to COMMIT. In case this is needed the kernel will then load the state
