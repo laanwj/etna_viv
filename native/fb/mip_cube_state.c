@@ -1268,11 +1268,20 @@ struct etna_3d_state
     uint32_t /*03818*/ GL_MULTI_SAMPLE_CONFIG;
 };
 
+/* GPU chip specs */
+struct etna_pipe_specs
+{
+    bool can_supertile;
+    unsigned bits_per_tile;
+    uint32_t ts_clear_value;
+};
+
 struct etna_pipe_context_priv
 {
     etna_ctx *ctx;
     unsigned dirty_bits;
     struct pipe_framebuffer_state framebuffer_s;
+    struct etna_pipe_specs specs;
 
     /* bindable state */
     struct compiled_blend_state *blend;
@@ -1847,7 +1856,7 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
                                       struct pipe_resource *resource,
                                       const struct pipe_surface *templat)
 {
-    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
     struct pipe_surface *surf = ETNA_NEW(struct pipe_surface);
    
     surf->context = pipe;
@@ -1872,7 +1881,7 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
                 .dither = {0xffffffff, 0xffffffff},
                 .width = 16,
                 .height = surf->surf.ts_size/0x40,
-                .clear_value = {0x55555555},  /* XXX should be 0x11111111 for non-2BITPERTILE GPUs */
+                .clear_value = {priv->specs.ts_clear_value},  /* XXX should be 0x11111111 for non-2BITPERTILE GPUs */
                 .clear_mode = VIVS_RS_CLEAR_CONTROL_MODE_ENABLED1,
                 .clear_bits = 0xffff
             });
@@ -1908,6 +1917,11 @@ struct pipe_context *etna_new_pipe_context(etna_ctx *ctx)
 
     priv->ctx = ctx;
     priv->dirty_bits = 0xffffffff;
+
+    priv->specs.can_supertile = VIV_FEATURE(chipMinorFeatures0,SUPER_TILED);
+    priv->specs.bits_per_tile = VIV_FEATURE(chipMinorFeatures0,2BITPERTILE)?2:4;
+    priv->specs.ts_clear_value = VIV_FEATURE(chipMinorFeatures0,2BITPERTILE)?0x55555555:0x11111111;
+
     /* fill in vtable entries one by one */
     pc->destroy = etna_pipe_destroy;
     pc->draw_vbo = etna_pipe_draw_vbo;
@@ -2121,7 +2135,18 @@ int main(int argc, char **argv)
         exit(1);
     }
 
+    etna_ctx *ctx = 0;
+    struct pipe_context *pipe = 0;
+    if(etna_create(&ctx) != ETNA_OK ||
+        (pipe = etna_new_pipe_context(ctx)) == NULL)
+    {
+        printf("Unable to create etna context\n");
+        exit(1);
+    }
+
     /* Allocate video memory */
+    bool can_supertile = ETNA_PIPE(pipe)->specs.can_supertile;
+    unsigned bits_per_tile = ETNA_PIPE(pipe)->specs.bits_per_tile;
     etna_vidmem *rt = 0; /* main render target */
     etna_vidmem *rt_ts = 0; /* tile status for main render target */
     etna_vidmem *z = 0; /* depth for main render target */
@@ -2132,9 +2157,9 @@ int main(int argc, char **argv)
     etna_vidmem *tex = 0; /* texture */
 
     size_t rt_size = padded_width * padded_height * 4;
-    size_t rt_ts_size = etna_align_up((padded_width * padded_height * 4)/0x100, 0x100);
+    size_t rt_ts_size = etna_align_up((padded_width * padded_height * 4)*bits_per_tile/0x80, 0x100);
     size_t z_size = padded_width * padded_height * 2;
-    size_t z_ts_size = etna_align_up((padded_width * padded_height * 2)/0x100, 0x100);
+    size_t z_ts_size = etna_align_up((padded_width * padded_height * 2)*bits_per_tile/0x80, 0x100);
 
     dds_texture *dds = 0;
     if(argc<2 || !dds_load(argv[1], &dds))
@@ -2205,13 +2230,6 @@ int main(int argc, char **argv)
             ((float*)vtx->logical)[dest_idx+comp+6] = vTexCoords[vert*2 + comp]; /* 2 */
     }
 
-    etna_ctx *ctx = 0;
-    if(etna_create(&ctx) != ETNA_OK)
-    {
-        printf("Unable to create context\n");
-        exit(1);
-    }
-
     /* resources */
     struct pipe_resource *rt_resource = ETNA_NEW(struct pipe_resource);
     rt_resource->target = PIPE_TEXTURE_2D;
@@ -2221,7 +2239,7 @@ int main(int argc, char **argv)
     rt_resource->depth0 = 1;
     rt_resource->array_size = 1;
     rt_resource->last_level = 0;
-    rt_resource->layout = ETNA_LAYOUT_SUPERTILED;
+    rt_resource->layout = can_supertile ? ETNA_LAYOUT_SUPERTILED : ETNA_LAYOUT_TILED;
     rt_resource->padded_width = padded_width;
     rt_resource->padded_height = padded_height;
     rt_resource->surface = rt;
@@ -2240,7 +2258,7 @@ int main(int argc, char **argv)
     z_resource->depth0 = 1;
     z_resource->array_size = 1;
     z_resource->last_level = 0;
-    z_resource->layout = ETNA_LAYOUT_SUPERTILED;
+    z_resource->layout = can_supertile ? ETNA_LAYOUT_SUPERTILED : ETNA_LAYOUT_TILED;
     z_resource->padded_width = padded_width;
     z_resource->padded_height = padded_height;
     z_resource->surface = z;
@@ -2297,7 +2315,7 @@ int main(int argc, char **argv)
     {
         compile_rs_state(&copy_to_screen[bi], &(struct rs_state){
                     .source_format = RS_FORMAT_X8R8G8B8,
-                    .source_tiling = ETNA_LAYOUT_SUPERTILED,
+                    .source_tiling = rt_resource->layout,
                     .source_addr = rt->address,
                     .source_stride = padded_width * 4 * 4,
                     .dest_format = RS_FORMAT_X8R8G8B8,
@@ -2313,8 +2331,6 @@ int main(int argc, char **argv)
     }
 
     /* compile gallium3d states */
-    struct pipe_context *pipe = etna_new_pipe_context(ctx);
-
     void *blend = pipe->create_blend_state(pipe, &(struct pipe_blend_state) {
                 .rt[0] = {
                     .blend_enable = 0,
