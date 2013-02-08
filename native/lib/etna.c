@@ -97,7 +97,7 @@ static int initialize_gpu_context(gcoCONTEXT vctx)
     printf("Allocated buffer (size 0x%x) for context: phys=%08x log=%08x\n", (int)cbuf0_bytes, (int)cbuf0_physical, (int)cbuf0_logical);
 #endif
 
-#ifndef GCABI_HAS_PHYSICAL
+#ifdef GCABI_HAS_PHYSICAL
     vctx->bytes = cbuf0_bytes; /* actual size of buffer */
     vctx->physical = (void*)cbuf0_physical;
 #endif

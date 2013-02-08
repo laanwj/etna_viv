@@ -103,6 +103,17 @@ int fb_open(int num, fb_info *out)
         out->logical[idx] = (void*)((size_t)out->map + idx * out->buffer_stride);
     }
     printf("number of fb buffers: %i\n", out->num_buffers);
+    int req_virth = (out->num_buffers * out->fb_var.yres);
+    if(out->fb_var.yres_virtual < req_virth)
+    {
+        printf("required virtual h is %i, current virtual h is %i: requesting change",
+                req_virth, out->fb_var.yres_virtual);
+        out->fb_var.yres_virtual = req_virth;
+        if (ioctl(out->fd, FBIOPUT_VSCREENINFO, &out->fb_var))
+        {
+            printf("Warning: failed to run ioctl to change virtual height: %s\n", strerror(errno));
+        }
+    }
     return 0;
 }
 

@@ -28,7 +28,7 @@
 #include <linux/fb.h>
 #include <unistd.h>
 
-#define ETNA_FB_MAX_BUFFERS (4)
+#define ETNA_FB_MAX_BUFFERS (2) /* double buffering is enough */
 typedef struct
 {
     int fd;
