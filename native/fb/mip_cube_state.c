@@ -21,6 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 /* Gallium state experiments -- WIP
+ * XXX butcher this file into a set of usable library units
  */
 #include <stdio.h>
 #include <unistd.h>
@@ -101,23 +102,10 @@ struct rs_state
 #define SET_STATE_FIXP(addr, value) cs->addr = (value)
 #define SET_STATE_F32(addr, value) cs->addr = f32_to_u32(value)
 
-struct compiled_rs_state
+/* compile RS state struct */
+static void compile_rs_state(struct compiled_rs_state *cs, const struct rs_state *rs)
 {
-    uint32_t RS_CONFIG;
-    uint32_t RS_SOURCE_ADDR;
-    uint32_t RS_SOURCE_STRIDE;
-    uint32_t RS_DEST_ADDR;
-    uint32_t RS_DEST_STRIDE;
-    uint32_t RS_WINDOW_SIZE;
-    uint32_t RS_DITHER[2];
-    uint32_t RS_CLEAR_CONTROL;
-    uint32_t RS_FILL_VALUE[4];
-    uint32_t RS_EXTRA_CONFIG;
-};
-
-/* compile RS state struct to state packet - will always write 14 words */
-void compile_rs_state(struct compiled_rs_state *cs, const struct rs_state *rs)
-{
+    /* TODO could just pre-generate command buffer, would simply submit to one memcpy */
     SET_STATE(RS_CONFIG, VIVS_RS_CONFIG_SOURCE_FORMAT(rs->source_format) |
                             (rs->downsample_x?VIVS_RS_CONFIG_DOWNSAMPLE_X:0) |
                             (rs->downsample_y?VIVS_RS_CONFIG_DOWNSAMPLE_Y:0) |
@@ -722,6 +710,40 @@ static inline uint32_t translate_index_size(unsigned index_size)
     }
 }
 
+static inline uint32_t translate_draw_mode(unsigned mode)
+{
+    switch(mode)
+    {
+    case PIPE_PRIM_POINTS: return PRIMITIVE_TYPE_POINTS;
+    case PIPE_PRIM_LINES: return PRIMITIVE_TYPE_LINES;
+    case PIPE_PRIM_LINE_LOOP: return PRIMITIVE_TYPE_LINE_LOOP;
+    case PIPE_PRIM_LINE_STRIP: return PRIMITIVE_TYPE_LINE_STRIP;
+    case PIPE_PRIM_TRIANGLES: return PRIMITIVE_TYPE_TRIANGLES;
+    case PIPE_PRIM_TRIANGLE_STRIP: return PRIMITIVE_TYPE_TRIANGLE_STRIP;
+    case PIPE_PRIM_TRIANGLE_FAN: return PRIMITIVE_TYPE_TRIANGLE_FAN;
+    case PIPE_PRIM_QUADS: return PRIMITIVE_TYPE_QUADS;
+    default: printf("Unhandled draw mode primitive %i\n", mode); return 0;
+    }
+}
+
+/* translate vertex count to primitive count */
+static inline int translate_vertex_count(unsigned mode, int vertex_count)
+{
+    switch(mode)
+    {
+    case PIPE_PRIM_POINTS: return vertex_count;
+    case PIPE_PRIM_LINES: return vertex_count / 2;
+    case PIPE_PRIM_LINE_LOOP: return vertex_count;
+    case PIPE_PRIM_LINE_STRIP: return vertex_count - 1;
+    case PIPE_PRIM_TRIANGLES: return vertex_count / 3;
+    case PIPE_PRIM_TRIANGLE_STRIP: return vertex_count - 2; 
+    case PIPE_PRIM_TRIANGLE_FAN: return vertex_count - 2;
+    case PIPE_PRIM_QUADS: return vertex_count / 4;
+    default: printf("Unhandled draw mode primitive %i\n", mode); return 0;
+    }
+}
+
+
 /*********************************************************************/
 /** Gallium state compilation, WIP */
 
@@ -736,7 +758,119 @@ struct compiled_rasterizer_state
     bool scissor;
 };
 
-void compile_rasterizer_state(struct compiled_rasterizer_state *cs, const struct pipe_rasterizer_state *rs)
+struct compiled_depth_stencil_alpha_state
+{
+    uint32_t PE_DEPTH_CONFIG;
+    uint32_t PE_ALPHA_OP;
+    uint32_t PE_STENCIL_OP;
+    uint32_t PE_STENCIL_CONFIG;
+};
+
+struct compiled_blend_state
+{
+    uint32_t PE_ALPHA_CONFIG;
+    uint32_t PE_COLOR_FORMAT;
+    uint32_t PE_LOGIC_OP;
+    uint32_t PE_DITHER[2];
+};
+
+struct compiled_blend_color
+{
+    uint32_t PE_ALPHA_BLEND_COLOR;
+};
+
+struct compiled_stencil_ref
+{
+    uint32_t PE_STENCIL_CONFIG;
+    uint32_t PE_STENCIL_CONFIG_EXT;
+};
+
+struct compiled_scissor_state
+{
+    uint32_t SE_SCISSOR_LEFT; // fixp
+    uint32_t SE_SCISSOR_TOP; // fixp
+    uint32_t SE_SCISSOR_RIGHT; // fixp
+    uint32_t SE_SCISSOR_BOTTOM; // fixp
+};
+
+struct compiled_viewport_state
+{
+    uint32_t PA_VIEWPORT_SCALE_X;
+    uint32_t PA_VIEWPORT_SCALE_Y;
+    uint32_t PA_VIEWPORT_SCALE_Z;
+    uint32_t PA_VIEWPORT_OFFSET_X;
+    uint32_t PA_VIEWPORT_OFFSET_Y;
+    uint32_t PA_VIEWPORT_OFFSET_Z;
+    uint32_t PE_DEPTH_NEAR;
+    uint32_t PE_DEPTH_FAR;
+};
+
+struct compiled_sample_mask
+{
+    uint32_t GL_MULTI_SAMPLE_CONFIG;
+};
+
+struct compiled_sampler_state
+{
+    /* sampler offset +4*sampler, interleave when committing state */
+    uint32_t TE_SAMPLER_CONFIG0;
+    uint32_t TE_SAMPLER_LOD_CONFIG;
+    unsigned min_lod, max_lod;
+};
+
+struct compiled_sampler_view
+{
+    /* sampler offset +4*sampler, interleave when committing state */
+    uint32_t TE_SAMPLER_CONFIG0;
+    uint32_t TE_SAMPLER_SIZE;
+    uint32_t TE_SAMPLER_LOG_SIZE;
+    uint32_t TE_SAMPLER_LOD_ADDR[VIVS_TE_SAMPLER_LOD_ADDR__LEN];
+    unsigned min_lod, max_lod; /* 5.5 fixp */
+};
+
+struct compiled_framebuffer_state
+{
+    uint32_t GL_MULTI_SAMPLE_CONFIG;
+    uint32_t PE_COLOR_FORMAT;
+    uint32_t PE_DEPTH_CONFIG;
+    uint32_t PE_DEPTH_ADDR;
+    uint32_t PE_DEPTH_STRIDE;
+    uint32_t PE_HDEPTH_CONTROL;
+    uint32_t PE_DEPTH_NORMALIZE;
+    uint32_t PE_COLOR_ADDR;
+    uint32_t PE_COLOR_STRIDE;
+    uint32_t SE_SCISSOR_LEFT; // fixp, restricted by scissor state *if* enabled in rasterizer state
+    uint32_t SE_SCISSOR_TOP; // fixp
+    uint32_t SE_SCISSOR_RIGHT; // fixp
+    uint32_t SE_SCISSOR_BOTTOM; // fixp
+    uint32_t TS_MEM_CONFIG; 
+    uint32_t TS_DEPTH_CLEAR_VALUE;
+    uint32_t TS_DEPTH_STATUS_BASE;
+    uint32_t TS_DEPTH_SURFACE_BASE;
+    uint32_t TS_COLOR_CLEAR_VALUE;
+    uint32_t TS_COLOR_STATUS_BASE;
+    uint32_t TS_COLOR_SURFACE_BASE;
+};
+
+struct compiled_vertex_elements_state
+{
+    unsigned num_elements;
+    uint32_t FE_VERTEX_ELEMENT_CONFIG[VIVS_FE_VERTEX_ELEMENT_CONFIG__LEN];
+};
+
+struct compiled_set_vertex_buffer
+{
+    uint32_t FE_VERTEX_STREAM_CONTROL;
+    uint32_t FE_VERTEX_STREAM_BASE_ADDR;
+};
+
+struct compiled_set_index_buffer
+{
+    uint32_t FE_INDEX_STREAM_CONTROL;
+    uint32_t FE_INDEX_STREAM_BASE_ADDR;
+};
+
+static void compile_rasterizer_state(struct compiled_rasterizer_state *cs, const struct pipe_rasterizer_state *rs)
 {
     if(rs->fill_front != rs->fill_back)
     {
@@ -761,15 +895,7 @@ void compile_rasterizer_state(struct compiled_rasterizer_state *cs, const struct
     cs->scissor = rs->scissor;
 }
 
-struct compiled_depth_stencil_alpha_state
-{
-    uint32_t PE_DEPTH_CONFIG;
-    uint32_t PE_ALPHA_OP;
-    uint32_t PE_STENCIL_OP;
-    uint32_t PE_STENCIL_CONFIG;
-};
-
-void compile_depth_stencil_alpha_state(struct compiled_depth_stencil_alpha_state *cs, const struct pipe_depth_stencil_alpha_state *dsa)
+static void compile_depth_stencil_alpha_state(struct compiled_depth_stencil_alpha_state *cs, const struct pipe_depth_stencil_alpha_state *dsa)
 {
     /* XXX does stencil[0] / stencil[1] order depend on rs->front_ccw? */
     /* compare funcs have 1 to 1 mapping */
@@ -801,15 +927,7 @@ void compile_depth_stencil_alpha_state(struct compiled_depth_stencil_alpha_state
     /* XXX does alpha/stencil test affect PE_COLOR_FORMAT_PARTIAL? */
 }
 
-struct compiled_blend_state
-{
-    uint32_t PE_ALPHA_CONFIG;
-    uint32_t PE_COLOR_FORMAT;
-    uint32_t PE_LOGIC_OP;
-    uint32_t PE_DITHER[2];
-};
-
-void compile_blend_state(struct compiled_blend_state *cs, const struct pipe_blend_state *bs)
+static void compile_blend_state(struct compiled_blend_state *cs, const struct pipe_blend_state *bs)
 {
     const struct pipe_rt_blend_state *rt0 = &bs->rt[0];
     bool enable = rt0->blend_enable && !(rt0->rgb_src_factor == PIPE_BLENDFACTOR_ONE && rt0->rgb_dst_factor == PIPE_BLENDFACTOR_ZERO &&
@@ -840,12 +958,7 @@ void compile_blend_state(struct compiled_blend_state *cs, const struct pipe_blen
     /* XXX dither? VIVS_PE_DITHER(...) and/or VIVS_RS_DITHER(...) on resolve */
 }
 
-struct compiled_blend_color
-{
-    uint32_t PE_ALPHA_BLEND_COLOR;
-};
-
-void compile_blend_color(struct compiled_blend_color *cs, const struct pipe_blend_color *bc)
+static void compile_blend_color(struct compiled_blend_color *cs, const struct pipe_blend_color *bc)
 {
     SET_STATE(PE_ALPHA_BLEND_COLOR, 
             VIVS_PE_ALPHA_BLEND_COLOR_R(cfloat_to_uint8(bc->color[0])) |
@@ -855,13 +968,7 @@ void compile_blend_color(struct compiled_blend_color *cs, const struct pipe_blen
             );
 }
 
-struct compiled_stencil_ref
-{
-    uint32_t PE_STENCIL_CONFIG;
-    uint32_t PE_STENCIL_CONFIG_EXT;
-};
-
-void compile_stencil_ref(struct compiled_stencil_ref *cs, const struct pipe_stencil_ref *sr)
+static void compile_stencil_ref(struct compiled_stencil_ref *cs, const struct pipe_stencil_ref *sr)
 {
     SET_STATE(PE_STENCIL_CONFIG, 
             VIVS_PE_STENCIL_CONFIG_REF_FRONT(sr->ref_value[0]) 
@@ -872,15 +979,7 @@ void compile_stencil_ref(struct compiled_stencil_ref *cs, const struct pipe_sten
             );
 }
 
-struct compiled_scissor_state
-{
-    uint32_t SE_SCISSOR_LEFT; // fixp
-    uint32_t SE_SCISSOR_TOP; // fixp
-    uint32_t SE_SCISSOR_RIGHT; // fixp
-    uint32_t SE_SCISSOR_BOTTOM; // fixp
-};
-
-void compile_scissor_state(struct compiled_scissor_state *cs, const struct pipe_scissor_state *ss)
+static void compile_scissor_state(struct compiled_scissor_state *cs, const struct pipe_scissor_state *ss)
 {
     SET_STATE_FIXP(SE_SCISSOR_LEFT, (ss->minx << 16));
     SET_STATE_FIXP(SE_SCISSOR_TOP, (ss->miny << 16));
@@ -889,19 +988,7 @@ void compile_scissor_state(struct compiled_scissor_state *cs, const struct pipe_
     /* XXX note that this state is only used when rasterizer_state->scissor is on */
 }
 
-struct compiled_viewport_state
-{
-    uint32_t PA_VIEWPORT_SCALE_X;
-    uint32_t PA_VIEWPORT_SCALE_Y;
-    uint32_t PA_VIEWPORT_SCALE_Z;
-    uint32_t PA_VIEWPORT_OFFSET_X;
-    uint32_t PA_VIEWPORT_OFFSET_Y;
-    uint32_t PA_VIEWPORT_OFFSET_Z;
-    uint32_t PE_DEPTH_NEAR;
-    uint32_t PE_DEPTH_FAR;
-};
-
-void compile_viewport_state(struct compiled_viewport_state *cs, const struct pipe_viewport_state *vs)
+static void compile_viewport_state(struct compiled_viewport_state *cs, const struct pipe_viewport_state *vs)
 {
     /**
      * For Vivante GPU, viewport z transformation is 0..1 to 0..1 instead of -1..1 to 0..1.
@@ -924,27 +1011,14 @@ void compile_viewport_state(struct compiled_viewport_state *cs, const struct pip
     SET_STATE_F32(PE_DEPTH_FAR, 1.0);
 }
 
-struct compiled_sample_mask
-{
-    uint32_t GL_MULTI_SAMPLE_CONFIG;
-};
-
-void compile_sample_mask(struct compiled_sample_mask *cs, unsigned sample_mask)
+static void compile_sample_mask(struct compiled_sample_mask *cs, unsigned sample_mask)
 {
     SET_STATE(GL_MULTI_SAMPLE_CONFIG, 
             /* to be merged with render target state */
             VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_ENABLES(sample_mask));
 }
 
-struct compiled_sampler_state
-{
-    /* sampler offset +4*sampler, interleave when committing state */
-    uint32_t TE_SAMPLER_CONFIG0;
-    uint32_t TE_SAMPLER_LOD_CONFIG;
-    unsigned min_lod, max_lod;
-};
-
-void compile_sampler_state(struct compiled_sampler_state *cs, const struct pipe_sampler_state *ss)
+static void compile_sampler_state(struct compiled_sampler_state *cs, const struct pipe_sampler_state *ss)
 {
     SET_STATE(TE_SAMPLER_CONFIG0, 
                 /* XXX get from sampler view: VIVS_TE_SAMPLER_CONFIG0_TYPE(TEXTURE_TYPE_2D)| */
@@ -964,17 +1038,7 @@ void compile_sampler_state(struct compiled_sampler_state *cs, const struct pipe_
     cs->max_lod = float_to_fixp55(ss->max_lod);
 }
 
-struct compiled_sampler_view
-{
-    /* sampler offset +4*sampler, interleave when committing state */
-    uint32_t TE_SAMPLER_CONFIG0;
-    uint32_t TE_SAMPLER_SIZE;
-    uint32_t TE_SAMPLER_LOG_SIZE;
-    uint32_t TE_SAMPLER_LOD_ADDR[VIVS_TE_SAMPLER_LOD_ADDR__LEN];
-    unsigned min_lod, max_lod; /* 5.5 fixp */
-};
-
-void compile_sampler_view(struct compiled_sampler_view *cs, const struct pipe_sampler_view *sv)
+static void compile_sampler_view(struct compiled_sampler_view *cs, const struct pipe_sampler_view *sv)
 {
     assert(sv->texture);
     struct pipe_resource *res = sv->texture;
@@ -1001,31 +1065,7 @@ void compile_sampler_view(struct compiled_sampler_view *cs, const struct pipe_sa
     cs->max_lod = etna_umin(sv->u.tex.last_level, res->last_level) << 5;
 }
 
-struct compiled_framebuffer_state
-{
-    uint32_t GL_MULTI_SAMPLE_CONFIG;
-    uint32_t PE_COLOR_FORMAT;
-    uint32_t PE_DEPTH_CONFIG;
-    uint32_t PE_DEPTH_ADDR;
-    uint32_t PE_DEPTH_STRIDE;
-    uint32_t PE_HDEPTH_CONTROL;
-    uint32_t PE_DEPTH_NORMALIZE;
-    uint32_t PE_COLOR_ADDR;
-    uint32_t PE_COLOR_STRIDE;
-    uint32_t SE_SCISSOR_LEFT; // fixp, restricted by scissor state *if* enabled in rasterizer state
-    uint32_t SE_SCISSOR_TOP; // fixp
-    uint32_t SE_SCISSOR_RIGHT; // fixp
-    uint32_t SE_SCISSOR_BOTTOM; // fixp
-    uint32_t TS_MEM_CONFIG; 
-    uint32_t TS_DEPTH_CLEAR_VALUE;
-    uint32_t TS_DEPTH_STATUS_BASE;
-    uint32_t TS_DEPTH_SURFACE_BASE;
-    uint32_t TS_COLOR_CLEAR_VALUE;
-    uint32_t TS_COLOR_STATUS_BASE;
-    uint32_t TS_COLOR_SURFACE_BASE;
-};
-
-void compile_framebuffer_state(struct compiled_framebuffer_state *cs, const struct pipe_framebuffer_state *sv)
+static void compile_framebuffer_state(struct compiled_framebuffer_state *cs, const struct pipe_framebuffer_state *sv)
 {
     struct pipe_surface *cbuf = (sv->nr_cbufs > 0) ? sv->cbufs[0] : NULL;
     struct pipe_surface *zsbuf = sv->zsbuf;
@@ -1085,13 +1125,7 @@ void compile_framebuffer_state(struct compiled_framebuffer_state *cs, const stru
     SET_STATE(TS_COLOR_SURFACE_BASE, cbuf->surf.address);
 }
 
-struct compiled_vertex_elements_state
-{
-    unsigned num_elements;
-    uint32_t FE_VERTEX_ELEMENT_CONFIG[VIVS_FE_VERTEX_ELEMENT_CONFIG__LEN];
-};
-
-void compile_vertex_elements_state(struct compiled_vertex_elements_state *cs, unsigned num_elements, const struct pipe_vertex_element * elements)
+static void compile_vertex_elements_state(struct compiled_vertex_elements_state *cs, unsigned num_elements, const struct pipe_vertex_element * elements)
 {
     /* VERTEX_ELEMENT_STRIDE is in pipe_vertex_buffer */
     cs->num_elements = num_elements;
@@ -1116,33 +1150,15 @@ void compile_vertex_elements_state(struct compiled_vertex_elements_state *cs, un
     }
 }
 
-struct compiled_set_vertex_buffer
+static void compile_set_vertex_buffer(struct compiled_set_vertex_buffer *cs, const struct pipe_vertex_buffer * vb)
 {
-    unsigned num_buffers;
-    uint32_t FE_VERTEX_STREAM_CONTROL;
-    uint32_t FE_VERTEX_STREAM_BASE_ADDR;
-};
-
-void compile_set_vertex_buffer(struct compiled_set_vertex_buffer *cs, unsigned num_buffers, const struct pipe_vertex_buffer * vb)
-{
-    /* XXX figure out multi-stream VIS_FE_VERTEX_STREAMS(..) */
-    cs->num_buffers = num_buffers;
-    if(num_buffers > 0)
-    {
-        assert(vb[0].buffer); /* XXX user_buffer */
-        SET_STATE(FE_VERTEX_STREAM_CONTROL, 
-                VIVS_FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE(vb[0].stride));
-        SET_STATE(FE_VERTEX_STREAM_BASE_ADDR, vb[0].buffer->levels[0].address + vb[0].buffer_offset);
-    } 
+    assert(vb[0].buffer); /* XXX user_buffer */
+    SET_STATE(FE_VERTEX_STREAM_CONTROL, 
+            VIVS_FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE(vb[0].stride));
+    SET_STATE(FE_VERTEX_STREAM_BASE_ADDR, vb[0].buffer->levels[0].address + vb[0].buffer_offset);
 }
 
-struct compiled_set_index_buffer
-{
-    uint32_t FE_INDEX_STREAM_CONTROL;
-    uint32_t FE_INDEX_STREAM_BASE_ADDR;
-};
-
-void compile_set_index_buffer(struct compiled_set_index_buffer *cs, const struct pipe_index_buffer * ib)
+static void compile_set_index_buffer(struct compiled_set_index_buffer *cs, const struct pipe_index_buffer * ib)
 {
     if(ib == NULL)
     {
@@ -1174,7 +1190,7 @@ enum
     ETNA_STATE_SAMPLER_VIEWS = 0x800,
     ETNA_STATE_VERTEX_BUFFERS = 0x1000,
     ETNA_STATE_INDEX_BUFFER = 0x2000,
-    ETNA_STATE_TS = 0x4000 /* RS blit operations affect TS */
+    ETNA_STATE_TS = 0x4000 /* set after clear and when RS blit operations from other surface affect TS */
 };
 struct etna_3d_state
 {
@@ -1252,10 +1268,12 @@ struct etna_3d_state
     uint32_t /*03818*/ GL_MULTI_SAMPLE_CONFIG;
 };
 
-struct etna_pipe_context
+struct etna_pipe_context_priv
 {
+    etna_ctx *ctx;
     unsigned dirty_bits;
-    
+    struct pipe_framebuffer_state framebuffer_s;
+
     /* bindable state */
     struct compiled_blend_state *blend;
     unsigned num_samplers;/*   XXX separate fragment/vertex sampler states */
@@ -1281,10 +1299,11 @@ struct etna_pipe_context
 };
 
 /*********************************************************************/
-/* submit RS state, without any processing */
+/* submit RS state, without any processing and no dependence on context 
+ * except TS if this is a source-do-destination blit. */
 void submit_rs_state(etna_ctx *restrict ctx, const struct compiled_rs_state *cs)
 {
-    etna_reserve(ctx, 20);
+    etna_reserve(ctx, 22);
     /*0 */ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_CONFIG>>2, 5, 0);
     /*1 */ ETNA_EMIT(ctx, cs->RS_CONFIG);
     /*2 */ ETNA_EMIT(ctx, cs->RS_SOURCE_ADDR);
@@ -1305,10 +1324,15 @@ void submit_rs_state(etna_ctx *restrict ctx, const struct compiled_rs_state *cs)
     /*17*/ ETNA_EMIT(ctx, cs->RS_FILL_VALUE[3]);
     /*18*/ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_EXTRA_CONFIG>>2, 1, 0);
     /*19*/ ETNA_EMIT(ctx, cs->RS_EXTRA_CONFIG);
+    /*20*/ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_KICKER>>2, 1, 0);
+    /*21*/ ETNA_EMIT(ctx, 0xbeebbeeb);
 }
+#define ETNA_PIPE(pipe) ((struct etna_pipe_context_priv*)(pipe)->priv)
 
-void sync_context(etna_ctx *restrict ctx, struct etna_pipe_context *restrict e)
+void sync_context(struct pipe_context *pipe)
 {
+    struct etna_pipe_context_priv *restrict e = ETNA_PIPE(pipe);
+    etna_ctx *restrict ctx = e->ctx;
     /* weave state */
     /* Number of samplers to program */
     unsigned num_samplers = etna_umin(e->num_samplers, e->num_sampler_views);
@@ -1317,7 +1341,7 @@ void sync_context(etna_ctx *restrict ctx, struct etna_pipe_context *restrict e)
 
     /* XXX todo: 
      * - caching, don't re-emit cached state ?
-     * - group consecutive states
+     * - group consecutive states into one LOAD_STATE command stream
      * - update context
      * - flush texture? etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_TEXTURE);
      * - flush depth/color on depth/color framebuffer change
@@ -1331,6 +1355,7 @@ void sync_context(etna_ctx *restrict ctx, struct etna_pipe_context *restrict e)
      * - scissor handling
      * - num samplers
      * - texture lod 
+     * - ETNA_STATE_TS
      */
     if(dirty & (ETNA_STATE_VERTEX_ELEMENTS))
     {
@@ -1507,6 +1532,420 @@ void sync_context(etna_ctx *restrict ctx, struct etna_pipe_context *restrict e)
     }
 #undef EMIT_STATE
     e->dirty_bits = 0;
+}
+/*********************************************************************/
+static void etna_pipe_destroy(struct pipe_context *pipe)
+{
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    free(priv);
+    free(pipe);
+}
+
+static void etna_pipe_draw_vbo(struct pipe_context *pipe,
+                 const struct pipe_draw_info *info)
+{
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    /* First, sync state, then emit DRAW_PRIMITIVES or DRAW_INDEXED_PRIMITIVES */
+    sync_context(pipe);
+    int prims = translate_vertex_count(info->mode, info->count);
+    if(prims <= 0)
+    {
+        printf("Invalid draw primitive\n");
+        return;
+    }
+    if(info->indexed)
+    {
+        etna_draw_indexed_primitives(priv->ctx, translate_draw_mode(info->mode), 
+                info->start, prims, info->index_bias);
+    } else
+    {
+        etna_draw_primitives(priv->ctx, translate_draw_mode(info->mode), 
+                info->start, prims);
+    }
+}
+
+static void * etna_pipe_create_blend_state(struct pipe_context *pipe,
+                            const struct pipe_blend_state *info)
+{
+    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct compiled_blend_state *blend = ETNA_NEW(struct compiled_blend_state);
+    compile_blend_state(blend, info);
+    return blend;
+}
+
+static void etna_pipe_bind_blend_state(struct pipe_context *pipe, void *bs)
+{
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    priv->dirty_bits |= ETNA_STATE_BLEND;
+    priv->blend = bs;
+}
+
+static void etna_pipe_delete_blend_state(struct pipe_context *pipe, void *bs)
+{
+    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    free(bs);
+}
+
+static void * etna_pipe_create_sampler_state(struct pipe_context *pipe,
+                              const struct pipe_sampler_state *info)
+{
+    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct compiled_sampler_state *sampler = ETNA_NEW(struct compiled_sampler_state);
+    compile_sampler_state(sampler, info);
+    return sampler;
+}
+
+static void etna_pipe_bind_fragment_sampler_states(struct pipe_context *pipe,
+                                      unsigned num_samplers,
+                                      void **samplers)
+{
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    priv->dirty_bits |= ETNA_STATE_SAMPLERS;
+    priv->num_samplers = num_samplers;
+    for(int idx=0; idx<num_samplers; ++idx)
+        priv->sampler[idx] = samplers[idx];
+}
+
+static void etna_pipe_delete_sampler_state(struct pipe_context *pipe, void *ss)
+{
+    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    free(ss);
+}
+
+static void * etna_pipe_create_rasterizer_state(struct pipe_context *pipe,
+                                 const struct pipe_rasterizer_state *info)
+{
+    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct compiled_rasterizer_state *rasterizer = ETNA_NEW(struct compiled_rasterizer_state);
+    compile_rasterizer_state(rasterizer, info);
+    return rasterizer;
+}
+
+static void etna_pipe_bind_rasterizer_state(struct pipe_context *pipe, void *rs)
+{
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    priv->dirty_bits |= ETNA_STATE_RASTERIZER;
+    priv->rasterizer = rs;
+}
+
+static void etna_pipe_delete_rasterizer_state(struct pipe_context *pipe, void *rs)
+{
+    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    free(rs);
+}
+
+static void * etna_pipe_create_depth_stencil_alpha_state(struct pipe_context *pipe,
+                                    const struct pipe_depth_stencil_alpha_state *info)
+{
+    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct compiled_depth_stencil_alpha_state *dsa = ETNA_NEW(struct compiled_depth_stencil_alpha_state);
+    compile_depth_stencil_alpha_state(dsa, info);
+    return dsa;
+}
+
+static void etna_pipe_bind_depth_stencil_alpha_state(struct pipe_context *pipe, void *dsa)
+{
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    priv->dirty_bits |= ETNA_STATE_DSA;
+    priv->depth_stencil_alpha = dsa;
+}
+
+static void etna_pipe_delete_depth_stencil_alpha_state(struct pipe_context *pipe, void *dsa)
+{
+    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    free(dsa);
+}
+
+static void * etna_pipe_create_vertex_elements_state(struct pipe_context *pipe,
+                                      unsigned num_elements,
+                                      const struct pipe_vertex_element *info)
+{
+    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct compiled_vertex_elements_state  *vertex_elements = ETNA_NEW(struct compiled_vertex_elements_state);
+    compile_vertex_elements_state(vertex_elements, num_elements, info);
+    return vertex_elements;
+}
+
+static void etna_pipe_bind_vertex_elements_state(struct pipe_context *pipe, void *ve)
+{
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    priv->dirty_bits |= ETNA_STATE_VERTEX_ELEMENTS;
+    priv->vertex_elements = ve;
+}
+
+static void etna_pipe_delete_vertex_elements_state(struct pipe_context *pipe, void *ve)
+{
+    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    free(ve);
+}
+
+static void etna_pipe_set_blend_color(struct pipe_context *pipe,
+                        const struct pipe_blend_color *info)
+{
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    priv->dirty_bits |= ETNA_STATE_BLEND_COLOR;
+    compile_blend_color(&priv->blend_color, info);
+}
+
+static void etna_pipe_set_stencil_ref(struct pipe_context *pipe,
+                        const struct pipe_stencil_ref *info)
+{
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    priv->dirty_bits |= ETNA_STATE_STENCIL_REF;
+    compile_stencil_ref(&priv->stencil_ref, info);
+}
+
+static void etna_pipe_set_sample_mask(struct pipe_context *pipe,
+                        unsigned sample_mask)
+{
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    priv->dirty_bits |= ETNA_STATE_SAMPLE_MASK;
+    compile_sample_mask(&priv->sample_mask, sample_mask);
+}
+
+static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
+                              const struct pipe_framebuffer_state *info)
+{
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    priv->dirty_bits |= ETNA_STATE_VIEWPORT;
+    priv->framebuffer_s = *info;
+    compile_framebuffer_state(&priv->framebuffer, info);
+
+}
+
+static void etna_pipe_set_scissor_state( struct pipe_context *pipe,
+                          const struct pipe_scissor_state *info)
+{
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    priv->dirty_bits |= ETNA_STATE_FRAMEBUFFER;
+    compile_scissor_state(&priv->scissor, info);
+}
+
+static void etna_pipe_set_viewport_state( struct pipe_context *pipe,
+                           const struct pipe_viewport_state *info)
+{
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    priv->dirty_bits |= ETNA_STATE_SCISSOR;
+    compile_viewport_state(&priv->viewport, info);
+}
+
+static void etna_pipe_set_fragment_sampler_views(struct pipe_context *pipe,
+                                  unsigned num_views,
+                                  struct pipe_sampler_view **info)
+{
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    priv->dirty_bits |= ETNA_STATE_SAMPLER_VIEWS;
+    priv->num_sampler_views = num_views;
+    for(int idx=0; idx<num_views; ++idx)
+        compile_sampler_view(&priv->sampler_view[idx], info[idx]); 
+}
+
+static void etna_pipe_set_vertex_buffers( struct pipe_context *pipe,
+                           unsigned start_slot,
+                           unsigned num_buffers,
+                           const struct pipe_vertex_buffer *info)
+{
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    priv->dirty_bits |= ETNA_STATE_VERTEX_BUFFERS;
+    assert(start_slot == 0 && num_buffers == 1); /* XXX TODO */
+    compile_set_vertex_buffer(&priv->vertex_buffer, info);
+}
+
+static void etna_pipe_set_index_buffer( struct pipe_context *pipe,
+                         const struct pipe_index_buffer *info)
+{
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    priv->dirty_bits |= ETNA_STATE_INDEX_BUFFER;
+    compile_set_index_buffer(&priv->index_buffer, info);
+}
+
+static void etna_pipe_clear(struct pipe_context *pipe,
+             unsigned buffers,
+             const union pipe_color_union *color,
+             double depth,
+             unsigned stencil)
+{
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    /* XXX need to update clear command in non-TS (fast clear) case *if*
+     * clear value is different from previous time. 
+     */
+    if(buffers & PIPE_CLEAR_COLOR)
+    {
+        for(int idx=0; idx<priv->framebuffer_s.nr_cbufs; ++idx)
+        {
+            struct pipe_surface *surf = priv->framebuffer_s.cbufs[idx];
+
+            surf->clear_value = 0xff303030; /* XXX actually use color[idx] */
+            priv->framebuffer.TS_COLOR_CLEAR_VALUE = surf->clear_value;
+            priv->dirty_bits |= ETNA_STATE_TS;
+            submit_rs_state(priv->ctx, &surf->clear_command);
+        }
+    }
+    if((buffers & PIPE_CLEAR_DEPTHSTENCIL) && priv->framebuffer_s.zsbuf != NULL)
+    {
+        struct pipe_surface *surf = priv->framebuffer_s.zsbuf;
+
+        surf->clear_value = 0xffffffff; /* XXX actually use depth/stencil */
+        priv->framebuffer.TS_DEPTH_CLEAR_VALUE = surf->clear_value;
+        priv->dirty_bits |= ETNA_STATE_TS;
+        submit_rs_state(priv->ctx, &surf->clear_command);
+    }
+}
+
+static void etna_pipe_clear_render_target(struct pipe_context *pipe,
+                           struct pipe_surface *dst,
+                           const union pipe_color_union *color,
+                           unsigned dstx, unsigned dsty,
+                           unsigned width, unsigned height)
+{
+    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    /* TODO fill me in */
+}
+
+static void etna_pipe_clear_depth_stencil(struct pipe_context *pipe,
+                           struct pipe_surface *dst,
+                           unsigned clear_flags,
+                           double depth,
+                           unsigned stencil,
+                           unsigned dstx, unsigned dsty,
+                           unsigned width, unsigned height)
+{
+    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    /* TODO fill me in */
+}
+
+static void etna_pipe_flush(struct pipe_context *pipe,
+             struct pipe_fence_handle **fence,
+             enum pipe_flush_flags flags)
+{
+    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    /* TODO fill me in */
+}
+
+static struct pipe_sampler_view * etna_pipe_create_sampler_view(struct pipe_context *pipe,
+                                                 struct pipe_resource *texture,
+                                                 const struct pipe_sampler_view *templat)
+{
+    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct pipe_sampler_view *sv = ETNA_NEW(struct pipe_sampler_view);
+    *sv = *templat;
+    sv->context = pipe;
+    sv->texture = texture;
+
+    /* TODO: something to precompile? */
+    return sv;
+}
+
+static void etna_pipe_sampler_view_destroy(struct pipe_context *pipe,
+                            struct pipe_sampler_view *view)
+{
+    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    free(view);
+}
+
+static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
+                                      struct pipe_resource *resource,
+                                      const struct pipe_surface *templat)
+{
+    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct pipe_surface *surf = ETNA_NEW(struct pipe_surface);
+   
+    surf->context = pipe;
+    surf->texture = resource;
+    surf->format = resource->format;
+    surf->width = resource->width0; // XXX u_minify with mipmaps
+    surf->height = resource->height0;
+    surf->writable = templat->writable; // what is this for anyway
+    surf->u = templat->u;
+
+    surf->layout = resource->layout;
+    surf->surf = resource->levels[0]; // XXX use u.tex.level
+    surf->clear_value = 0; /* last clear value */
+
+    if(surf->surf.ts_address) /* XXX handle non-fast-clear case */
+    {
+        compile_rs_state(&surf->clear_command, &(struct rs_state){
+                .source_format = RS_FORMAT_X8R8G8B8,
+                .dest_format = RS_FORMAT_X8R8G8B8,
+                .dest_addr = surf->surf.ts_address,
+                .dest_stride = 0x40,
+                .dither = {0xffffffff, 0xffffffff},
+                .width = 16,
+                .height = surf->surf.ts_size/0x40,
+                .clear_value = {0x55555555},  /* XXX should be 0x11111111 for non-2BITPERTILE GPUs */
+                .clear_mode = VIVS_RS_CLEAR_CONTROL_MODE_ENABLED1,
+                .clear_bits = 0xffff
+            });
+    }
+    return surf;
+}
+
+static void etna_pipe_surface_destroy(struct pipe_context *pipe, struct pipe_surface *surf)
+{
+    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    free(surf);
+}
+
+static void etna_pipe_texture_barrier(struct pipe_context *pipe)
+{
+    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    /* TODO fill me in */
+}
+
+struct pipe_context *etna_new_pipe_context(etna_ctx *ctx)
+{
+    struct pipe_context *pc = ETNA_NEW(struct pipe_context);
+    if(pc == NULL)
+        return NULL;
+
+    pc->priv = ETNA_NEW(struct etna_pipe_context_priv);
+    if(pc->priv == NULL)
+    {
+        free(pc->priv);
+        return NULL;
+    }
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pc);
+
+    priv->ctx = ctx;
+    priv->dirty_bits = 0xffffffff;
+    /* fill in vtable entries one by one */
+    pc->destroy = etna_pipe_destroy;
+    pc->draw_vbo = etna_pipe_draw_vbo;
+    pc->create_blend_state = etna_pipe_create_blend_state;
+    pc->bind_blend_state = etna_pipe_bind_blend_state;
+    pc->delete_blend_state = etna_pipe_delete_blend_state;
+    pc->create_sampler_state = etna_pipe_create_sampler_state;
+    pc->bind_fragment_sampler_states = etna_pipe_bind_fragment_sampler_states;
+    pc->delete_sampler_state = etna_pipe_delete_sampler_state;
+    pc->create_rasterizer_state = etna_pipe_create_rasterizer_state;
+    pc->bind_rasterizer_state = etna_pipe_bind_rasterizer_state;
+    pc->delete_rasterizer_state = etna_pipe_delete_rasterizer_state;
+    pc->create_depth_stencil_alpha_state = etna_pipe_create_depth_stencil_alpha_state;
+    pc->bind_depth_stencil_alpha_state = etna_pipe_bind_depth_stencil_alpha_state;
+    pc->delete_depth_stencil_alpha_state = etna_pipe_delete_depth_stencil_alpha_state;
+    pc->create_vertex_elements_state = etna_pipe_create_vertex_elements_state;
+    pc->bind_vertex_elements_state = etna_pipe_bind_vertex_elements_state;
+    pc->delete_vertex_elements_state = etna_pipe_delete_vertex_elements_state;
+    pc->set_blend_color = etna_pipe_set_blend_color;
+    pc->set_stencil_ref = etna_pipe_set_stencil_ref;
+    pc->set_sample_mask = etna_pipe_set_sample_mask;
+    pc->set_framebuffer_state = etna_pipe_set_framebuffer_state;
+    pc->set_scissor_state = etna_pipe_set_scissor_state;
+    pc->set_viewport_state = etna_pipe_set_viewport_state;
+    pc->set_fragment_sampler_views = etna_pipe_set_fragment_sampler_views;
+    pc->set_vertex_buffers = etna_pipe_set_vertex_buffers;
+    pc->set_index_buffer = etna_pipe_set_index_buffer;
+    pc->clear = etna_pipe_clear;
+    pc->clear_render_target = etna_pipe_clear_render_target;
+    pc->clear_depth_stencil = etna_pipe_clear_depth_stencil;
+    pc->flush = etna_pipe_flush;
+    pc->create_sampler_view = etna_pipe_create_sampler_view;
+    pc->sampler_view_destroy = etna_pipe_sampler_view_destroy;
+    pc->create_surface = etna_pipe_create_surface;
+    pc->surface_destroy = etna_pipe_surface_destroy;
+    pc->texture_barrier = etna_pipe_texture_barrier;
+
+    return pc;
 }
 
 /*********************************************************************/
@@ -1790,6 +2229,7 @@ int main(int argc, char **argv)
     rt_resource->levels[0].address = rt_resource->surface->address;
     rt_resource->levels[0].logical = rt_resource->surface->logical;
     rt_resource->levels[0].ts_address = rt_resource->ts->address;
+    rt_resource->levels[0].ts_size = rt_resource->ts->size;
     rt_resource->levels[0].stride = 4 * padded_width;
     
     struct pipe_resource *z_resource = ETNA_NEW(struct pipe_resource);
@@ -1808,6 +2248,7 @@ int main(int argc, char **argv)
     z_resource->levels[0].address = z_resource->surface->address;
     z_resource->levels[0].logical = z_resource->surface->logical;
     z_resource->levels[0].ts_address = z_resource->ts->address;
+    z_resource->levels[0].ts_size = z_resource->ts->size;
     z_resource->levels[0].stride = 2 * padded_width;
 
     struct pipe_resource *tex_resource = ETNA_NEW(struct pipe_resource);
@@ -1850,20 +2291,7 @@ int main(int argc, char **argv)
     vtx_resource->levels[0].stride = 0;
 
     /* pre-compile RS states, one to clear buffer, and one for each back/front buffer */
-    struct compiled_rs_state clear_rt = {};
     struct compiled_rs_state copy_to_screen[ETNA_BSWAP_NUM_BUFFERS] = {};
-    compile_rs_state(&clear_rt, &(struct rs_state){
-                .source_format = RS_FORMAT_X8R8G8B8,
-                .dest_format = RS_FORMAT_X8R8G8B8,
-                .dest_addr = rt_ts->address,
-                .dest_stride = 0x40,
-                .dither = {0xffffffff, 0xffffffff},
-                .width = 16,
-                .height = rt_ts_size/0x40,
-                .clear_value = {0x55555555},
-                .clear_mode = VIVS_RS_CLEAR_CONTROL_MODE_ENABLED1,
-                .clear_bits = 0xffff
-            });
 
     for(int bi=0; bi<ETNA_BSWAP_NUM_BUFFERS; ++bi)
     {
@@ -1885,10 +2313,9 @@ int main(int argc, char **argv)
     }
 
     /* compile gallium3d states */
-    struct etna_pipe_context *pipe = ETNA_NEW(struct etna_pipe_context);
+    struct pipe_context *pipe = etna_new_pipe_context(ctx);
 
-    struct compiled_blend_state *blend = ETNA_NEW(struct compiled_blend_state);
-    compile_blend_state(blend, &(struct pipe_blend_state) {
+    void *blend = pipe->create_blend_state(pipe, &(struct pipe_blend_state) {
                 .rt[0] = {
                     .blend_enable = 0,
                     .rgb_func = PIPE_BLEND_ADD,
@@ -1901,8 +2328,7 @@ int main(int argc, char **argv)
                 }
             });
 
-    struct compiled_sampler_state *sampler = ETNA_NEW(struct compiled_sampler_state);
-    compile_sampler_state(sampler, &(struct pipe_sampler_state) {
+    void *sampler = pipe->create_sampler_state(pipe, &(struct pipe_sampler_state) {
                 .wrap_s = PIPE_TEX_WRAP_CLAMP_TO_EDGE,
                 .wrap_t = PIPE_TEX_WRAP_CLAMP_TO_EDGE,
                 .wrap_r = PIPE_TEX_WRAP_CLAMP_TO_EDGE,
@@ -1914,8 +2340,7 @@ int main(int argc, char **argv)
                 .min_lod = 0.0f, .max_lod=1000.0f
             });
 
-    struct compiled_rasterizer_state *rasterizer = ETNA_NEW(struct compiled_rasterizer_state);
-    compile_rasterizer_state(rasterizer, &(struct pipe_rasterizer_state){
+    void *rasterizer = pipe->create_rasterizer_state(pipe, &(struct pipe_rasterizer_state){
                 .flatshade = 0,
                 .light_twoside = 1,
                 .clamp_vertex_color = 1,
@@ -1953,8 +2378,7 @@ int main(int argc, char **argv)
                 .offset_clamp = 0.0f
             });
 
-    struct compiled_depth_stencil_alpha_state *dsa = ETNA_NEW(struct compiled_depth_stencil_alpha_state);
-    compile_depth_stencil_alpha_state(dsa, &(struct pipe_depth_stencil_alpha_state){
+    void *dsa = pipe->create_depth_stencil_alpha_state(pipe, &(struct pipe_depth_stencil_alpha_state){
             .depth = {
                 .enabled = 0,
                 .writemask = 0,
@@ -1971,7 +2395,6 @@ int main(int argc, char **argv)
             }
             });
 
-    struct compiled_vertex_elements_state  *vertex_elements = ETNA_NEW(struct compiled_vertex_elements_state);
     struct pipe_vertex_element pipe_vertex_elements[] = {
         { /* positions */
             .src_offset = 0,
@@ -1992,66 +2415,10 @@ int main(int argc, char **argv)
             .src_format = PIPE_FORMAT_R32G32_FLOAT
         }
     };
-    compile_vertex_elements_state(vertex_elements, sizeof(pipe_vertex_elements)/sizeof(pipe_vertex_elements[0]), pipe_vertex_elements);
-    
-    /* bind */
-    pipe->num_samplers = 1;
-    pipe->sampler[0] = sampler;
-    pipe->blend = blend;
-    pipe->rasterizer = rasterizer;
-    pipe->depth_stencil_alpha = dsa;
-    pipe->vertex_elements = vertex_elements;
-
-    /* parameter-like state */
-    compile_blend_color(&pipe->blend_color, &(struct pipe_blend_color){
-            .color = {0.0f,0.0f,0.0f,1.0f}
-            });
-    compile_stencil_ref(&pipe->stencil_ref, &(struct pipe_stencil_ref){
-            .ref_value[0] = 0xff,
-            .ref_value[1] = 0xff
-            });
-    compile_sample_mask(&pipe->sample_mask, 0xf);
-    compile_framebuffer_state(&pipe->framebuffer, &(struct pipe_framebuffer_state){
-            .width = width,
-            .height = height,
-            .nr_cbufs = 1,
-            .cbufs[0] = &(struct pipe_surface){
-                .texture = rt_resource,
-                .format = rt_resource->format,
-                .width = rt_resource->width0,
-                .height = rt_resource->height0,
-                .writable = 1,
-                .u.tex.level = 0,
-                .layout = rt_resource->layout,
-                .surf = rt_resource->levels[0],
-                .clear_value = 0xff303030
-                },
-            .zsbuf = &(struct pipe_surface){
-                .texture = z_resource,
-                .format = z_resource->format,
-                .width = z_resource->width0,
-                .height = z_resource->height0,
-                .writable = 1,
-                .u.tex.level = 0,
-                .layout = z_resource->layout,
-                .surf = z_resource->levels[0],
-                .clear_value = 0xffffffff
-                }
-            });
-    compile_scissor_state(&pipe->scissor, &(struct pipe_scissor_state){
-            .minx = 0,
-            .miny = 0,
-            .maxx = 65535,
-            .maxy = 65535
-            });
-    compile_viewport_state(&pipe->viewport, &(struct pipe_viewport_state){
-            .scale = {width/2.0f, height/2.0f, 0.5f, 1.0f},
-            .translate = {width/2.0f, height/2.0f, 0.5f, 1.0f}
-            });
-    pipe->num_sampler_views = 1;
-    compile_sampler_view(&pipe->sampler_view[0], &(struct pipe_sampler_view){
+    void *vertex_elements = pipe->create_vertex_elements_state(pipe, 
+            sizeof(pipe_vertex_elements)/sizeof(pipe_vertex_elements[0]), pipe_vertex_elements);
+    struct pipe_sampler_view *sampler_view = pipe->create_sampler_view(pipe, tex_resource, &(struct pipe_sampler_view){
             .format = tex_format,
-            .texture = tex_resource,
             .u.tex.first_level = 0,
             .u.tex.last_level = dds->num_mipmaps - 1,
             .swizzle_r = PIPE_SWIZZLE_RED,
@@ -2059,27 +2426,69 @@ int main(int argc, char **argv)
             .swizzle_b = PIPE_SWIZZLE_BLUE,
             .swizzle_a = PIPE_SWIZZLE_ALPHA,
             });
-    compile_set_vertex_buffer(&pipe->vertex_buffer, 1, &(struct pipe_vertex_buffer){
+    struct pipe_surface *cbuf = pipe->create_surface(pipe, rt_resource, &(struct pipe_surface){
+        .texture = rt_resource,
+        .format = rt_resource->format,
+        .u.tex.level = 0
+        });
+    struct pipe_surface *zsbuf = pipe->create_surface(pipe, z_resource, &(struct pipe_surface){
+        .texture = z_resource,
+        .format = z_resource->format,
+        .u.tex.level = 0
+        });
+    
+    /* bind */
+    pipe->bind_blend_state(pipe, blend);
+    pipe->bind_fragment_sampler_states(pipe, 1, &sampler);
+    pipe->bind_rasterizer_state(pipe, rasterizer);
+    pipe->bind_depth_stencil_alpha_state(pipe, dsa);
+    pipe->bind_vertex_elements_state(pipe, vertex_elements);
+
+    pipe->set_blend_color(pipe, &(struct pipe_blend_color){
+            .color = {0.0f,0.0f,0.0f,1.0f}
+            });
+    pipe->set_stencil_ref(pipe, &(struct pipe_stencil_ref){
+            .ref_value[0] = 0xff,
+            .ref_value[1] = 0xff
+            });
+    pipe->set_sample_mask(pipe, 0xf);
+    pipe->set_framebuffer_state(pipe, &(struct pipe_framebuffer_state){
+            .width = width,
+            .height = height,
+            .nr_cbufs = 1,
+            .cbufs[0] = cbuf,
+            .zsbuf = zsbuf
+            });
+    pipe->set_scissor_state(pipe, &(struct pipe_scissor_state){
+            .minx = 0,
+            .miny = 0,
+            .maxx = 65535,
+            .maxy = 65535
+            });
+    pipe->set_viewport_state(pipe, &(struct pipe_viewport_state){
+            .scale = {width/2.0f, height/2.0f, 0.5f, 1.0f},
+            .translate = {width/2.0f, height/2.0f, 0.5f, 1.0f}
+            });
+    pipe->set_fragment_sampler_views(pipe, 1, &sampler_view);
+    pipe->set_vertex_buffers(pipe, 0, 1, &(struct pipe_vertex_buffer){
             .stride = (3 + 3 + 2)*4,
             .buffer_offset = 0,
             .buffer = vtx_resource,
             .user_buffer = 0
             });
-    compile_set_index_buffer(&pipe->index_buffer, NULL);/*&(struct pipe_index_buffer){
+    pipe->set_index_buffer(pipe, NULL);/*&(struct pipe_index_buffer){
             .index_size = 0,
             .offset = 0,
             .buffer = 0,
             .user_buffer = 0
             });*/ /* non-indexed rendering */
-    /* everything is dirty */ 
-    pipe->dirty_bits = 0xffffffff;
 
     for(int frame=0; frame<1000; ++frame)
     {
         if(frame%50 == 0)
             printf("*** FRAME %i ****\n", frame);
-        /* everything is dirty */ 
-        pipe->dirty_bits = 0xffffffff;
+        /* everything is dirty */
+        // ETNA_PIPE(pipe)->dirty_bits = 0xffffffff;
         /*   Compute transform matrices in the same way as cube egl demo */ 
         ESMatrix modelview, projection, modelviewprojection;
         ESMatrix inverse, normal; 
@@ -2100,15 +2509,17 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_PA_SYSTEM_MODE, 0x11);
         
         /* Clear render target */
-        etna_set_state(ctx, VIVS_TS_MEM_CONFIG, 0);
-        submit_rs_state(ctx, &clear_rt);
-        etna_set_state(ctx, VIVS_RS_KICKER, 0xbeebbeeb);
+        //etna_set_state(ctx, VIVS_TS_MEM_CONFIG, 0);
+        //submit_rs_state(ctx, &clear_rt);
+        pipe->clear(pipe, PIPE_CLEAR_COLOR | PIPE_CLEAR_DEPTHSTENCIL, &(const union pipe_color_union) {
+                .f = {0.2, 0.2, 0.2, 1.0}
+                }, 1.0, 0xff);
         
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH | VIVS_GL_FLUSH_CACHE_TEXTURE);
         etna_set_state(ctx, VIVS_RS_FLUSH_CACHE, VIVS_RS_FLUSH_CACHE_FLUSH);
         
         /* send gallium state */
-        sync_context(ctx, pipe);
+        sync_context(pipe);
 
         /* shaders etc, not yet molded into gallium state */
         etna_set_state(ctx, VIVS_RA_CONTROL, 0x3);
@@ -2172,15 +2583,20 @@ int main(int argc, char **argv)
         etna_stall(ctx, SYNC_RECIPIENT_RA, SYNC_RECIPIENT_PE);
         for(int prim=0; prim<6; ++prim)
         {
-            etna_draw_primitives(ctx, PRIMITIVE_TYPE_TRIANGLE_STRIP, prim*4, 2);
+            pipe->draw_vbo(pipe, &(struct pipe_draw_info){
+                    .indexed = 0,
+                    .mode = PIPE_PRIM_TRIANGLE_STRIP,
+                    .start = prim*4,
+                    .count = 4
+                    });
         }
         etna_stall(ctx, SYNC_RECIPIENT_FE, SYNC_RECIPIENT_PE);
         
         /* copy to screen */
         etna_bswap_wait_available(buffers);
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
+        /*  assumes TS is still set up correctly */
         submit_rs_state(ctx, &copy_to_screen[buffers->backbuffer]);
-        etna_set_state(ctx, VIVS_RS_KICKER, 0xbeebbeeb);
 
         etna_bswap_queue_swap(buffers);
         

@@ -339,7 +339,7 @@ Miscellaneous
 There is currently no mailing list for this project, and looking at other GPU reverse engineering projects the mailing lists
 usually see very little traffic, so I won't bother.
 
-We usually hang out in `#lima` on `irc.freenode.net`.
+We usually hang out in `#etnaviv` and `#lima` on `irc.freenode.net`.
 
 Authors
 ========
