@@ -698,6 +698,9 @@ static inline uint32_t pipe_element_size(enum pipe_format fmt)
     case PIPE_FORMAT_R16G16B16A16_FLOAT:
     case PIPE_FORMAT_R32G32_FLOAT:
     case PIPE_FORMAT_R32G32_FIXED:
+    case PIPE_FORMAT_DXT1_RGB:
+    case PIPE_FORMAT_DXT1_RGBA:
+    case PIPE_FORMAT_ETC1_RGB8:
         return 8;
     case PIPE_FORMAT_R32G32B32_UNORM:
     case PIPE_FORMAT_R32G32B32_UINT:
@@ -712,10 +715,111 @@ static inline uint32_t pipe_element_size(enum pipe_format fmt)
     case PIPE_FORMAT_R32G32B32A32_SINT:
     case PIPE_FORMAT_R32G32B32A32_FLOAT:
     case PIPE_FORMAT_R32G32B32A32_FIXED:
+    case PIPE_FORMAT_DXT3_RGBA:
+    case PIPE_FORMAT_DXT5_RGBA:
         return 16;
-    default: printf("Unhandled vertex format: %i", fmt); return 0;
+    default: printf("Unhandled pipe format: %i\n", fmt); return 0;
     }
-    /// XXX YUYV, UYVY, DXTx elements that are not 1x1 pixel
+    /// XXX YUYV, UYVY elements
+}
+
+/* return pixel size of one block */
+static inline void pipe_element_divsize(enum pipe_format fmt, unsigned *divSizeX, unsigned *divSizeY)
+{
+    switch(fmt)
+    {
+    case PIPE_FORMAT_A8_UNORM:
+    case PIPE_FORMAT_L8_UNORM:
+    case PIPE_FORMAT_I8_UNORM:
+    case PIPE_FORMAT_R8_UNORM:
+    case PIPE_FORMAT_R8_UINT:
+    case PIPE_FORMAT_R8_SNORM:
+    case PIPE_FORMAT_R8_SINT:
+    case PIPE_FORMAT_R8G8_UNORM:
+    case PIPE_FORMAT_R8G8_UINT:
+    case PIPE_FORMAT_R8G8_SNORM:
+    case PIPE_FORMAT_R8G8_SINT:
+    case PIPE_FORMAT_R16_UNORM:
+    case PIPE_FORMAT_R16_UINT:
+    case PIPE_FORMAT_R16_SNORM:
+    case PIPE_FORMAT_R16_SINT:
+    case PIPE_FORMAT_R16_FLOAT:
+    case PIPE_FORMAT_L8A8_UNORM:
+    case PIPE_FORMAT_B4G4R4A4_UNORM:
+    case PIPE_FORMAT_B4G4R4X4_UNORM:
+    case PIPE_FORMAT_B5G6R5_UNORM:
+    case PIPE_FORMAT_B5G5R5A1_UNORM:
+    case PIPE_FORMAT_B5G5R5X1_UNORM:
+    case PIPE_FORMAT_Z16_UNORM:
+    case PIPE_FORMAT_R8G8B8_UNORM:
+    case PIPE_FORMAT_R8G8B8_UINT:
+    case PIPE_FORMAT_R8G8B8_SNORM:
+    case PIPE_FORMAT_R8G8B8_SINT:
+    case PIPE_FORMAT_R8G8B8A8_UNORM:
+    case PIPE_FORMAT_R8G8B8A8_UINT:
+    case PIPE_FORMAT_R8G8B8A8_SNORM:
+    case PIPE_FORMAT_R8G8B8A8_SINT:
+    case PIPE_FORMAT_R16G16_UNORM:
+    case PIPE_FORMAT_R16G16_UINT:
+    case PIPE_FORMAT_R16G16_SNORM:
+    case PIPE_FORMAT_R16G16_SINT:
+    case PIPE_FORMAT_R32_UNORM:
+    case PIPE_FORMAT_R32_UINT:
+    case PIPE_FORMAT_R32_SNORM:
+    case PIPE_FORMAT_R32_SINT:
+    case PIPE_FORMAT_R16G16_FLOAT:
+    case PIPE_FORMAT_R32_FLOAT:
+    case PIPE_FORMAT_R32_FIXED:
+    case PIPE_FORMAT_R10G10B10A2_UNORM:
+    case PIPE_FORMAT_R10G10B10A2_USCALED:
+    case PIPE_FORMAT_R10G10B10A2_SNORM:
+    case PIPE_FORMAT_R10G10B10A2_SSCALED:
+    case PIPE_FORMAT_B8G8R8A8_UNORM:
+    case PIPE_FORMAT_B8G8R8X8_UNORM:
+    case PIPE_FORMAT_R8G8B8X8_UNORM:
+    case PIPE_FORMAT_Z24X8_UNORM:
+    case PIPE_FORMAT_Z24_UNORM_S8_UINT:
+    case PIPE_FORMAT_R16G16B16_UNORM:
+    case PIPE_FORMAT_R16G16B16_UINT:
+    case PIPE_FORMAT_R16G16B16_SNORM:
+    case PIPE_FORMAT_R16G16B16_SINT:
+    case PIPE_FORMAT_R16G16B16_FLOAT:
+    case PIPE_FORMAT_R16G16B16A16_UNORM:
+    case PIPE_FORMAT_R16G16B16A16_UINT:
+    case PIPE_FORMAT_R16G16B16A16_SNORM:
+    case PIPE_FORMAT_R16G16B16A16_SINT:
+    case PIPE_FORMAT_R32G32_UNORM:
+    case PIPE_FORMAT_R32G32_UINT:
+    case PIPE_FORMAT_R32G32_SNORM:
+    case PIPE_FORMAT_R32G32_SINT:
+    case PIPE_FORMAT_R16G16B16A16_FLOAT:
+    case PIPE_FORMAT_R32G32_FLOAT:
+    case PIPE_FORMAT_R32G32_FIXED:
+    case PIPE_FORMAT_R32G32B32_UNORM:
+    case PIPE_FORMAT_R32G32B32_UINT:
+    case PIPE_FORMAT_R32G32B32_SNORM:
+    case PIPE_FORMAT_R32G32B32_SINT:
+    case PIPE_FORMAT_R32G32B32_FLOAT:
+    case PIPE_FORMAT_R32G32B32_FIXED:
+    case PIPE_FORMAT_R32G32B32A32_UNORM:
+    case PIPE_FORMAT_R32G32B32A32_UINT:
+    case PIPE_FORMAT_R32G32B32A32_SNORM:
+    case PIPE_FORMAT_R32G32B32A32_SINT:
+    case PIPE_FORMAT_R32G32B32A32_FLOAT:
+    case PIPE_FORMAT_R32G32B32A32_FIXED:
+        *divSizeX = 1; *divSizeY = 1;
+        return;
+    case PIPE_FORMAT_DXT1_RGB:
+    case PIPE_FORMAT_DXT1_RGBA:
+    case PIPE_FORMAT_DXT3_RGBA:
+    case PIPE_FORMAT_DXT5_RGBA:
+    case PIPE_FORMAT_ETC1_RGB8:
+        *divSizeX = 4; *divSizeY = 4;
+        return;
+    default: printf("Unhandled pipe format: %i", fmt);
+        *divSizeX = 0; *divSizeY = 0;
+    }
+    /// XXX YUYV, UYVY elements
 }
 
 static inline uint32_t translate_index_size(unsigned index_size)
@@ -1997,6 +2101,174 @@ struct pipe_context *etna_new_pipe_context(etna_ctx *ctx)
     return pc;
 }
 
+/* etna gallium pipe resource creation flags */
+enum etna_resource_flags 
+{
+    ETNA_IS_TEXTURE = 0x1, /* is to be used as texture */
+    ETNA_HAS_TS = 0x2,     /* has tile status (fast clear), use if rendertarget */
+    ETNA_IS_VERTEX = 0x4,  /* vertex buffer */
+    ETNA_IS_INDEX = 0x8    /* index buffer */
+};
+
+/* Allocate 2D texture or render target resource 
+ * XXX cubemaps are 6x 2D 
+ */
+struct pipe_resource *etna_pipe_create_2d(struct pipe_context *pipe, unsigned flags, unsigned format, unsigned width, unsigned height, unsigned max_mip_level)
+{
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    unsigned element_size = pipe_element_size(format);
+    if(!element_size)
+        return NULL;
+    
+    /* Figure out what tiling to use -- for now, assume that textures cannot be supertiled, and cannot be linear.
+     * There is a feature flag SUPERTILED_TEXTURE that may allow this, as well as TEXTURE_LINEAR, but not sure how it works. */
+    unsigned layout = (!(flags & ETNA_IS_TEXTURE) && priv->specs.can_supertile) ? ETNA_LAYOUT_SUPERTILED : ETNA_LAYOUT_TILED;
+    unsigned padding = etna_layout_multiple(layout);
+    
+    /* determine mipmap levels */
+    struct pipe_resource *resource = ETNA_NEW(struct pipe_resource);
+    if(flags & ETNA_IS_TEXTURE)
+    {
+        if(max_mip_level >= VIVS_TE_SAMPLER_LOD_ADDR__LEN) /* max LOD supported by hw */
+            max_mip_level = VIVS_TE_SAMPLER_LOD_ADDR__LEN - 1;
+    } else
+    {
+        max_mip_level = 0;
+    }
+
+    /* take care about DXTx formats, which have a divSize of non-1x1
+     * also: lower mipmaps are still 4x4 due to tiling. In as sense, compressed formats are already tiled.
+     * XXX UYVY formats?
+     */
+    unsigned divSizeX = 0, divSizeY = 0;
+    unsigned ix = 0;
+    unsigned x = width, y = height;
+    unsigned offset = 0;
+    pipe_element_divsize(format, &divSizeX, &divSizeY);
+    assert(divSizeX && divSizeY);
+    while(true)
+    {
+        struct etna_resource_level *mip = &resource->levels[ix];
+        mip->width = x;
+        mip->height = y;
+        mip->padded_width = etna_align_up(x, padding);
+        mip->padded_height = etna_align_up(y, padding);
+        mip->stride = etna_align_up(resource->levels[ix].padded_width, divSizeX)/divSizeX * element_size;
+        mip->offset = offset;
+        mip->size = etna_align_up(mip->padded_width, divSizeX)/divSizeX * 
+                      etna_align_up(mip->padded_height, divSizeY)/divSizeY * element_size;
+        offset += mip->size;
+        if(ix == max_mip_level || (x == 1 && y == 1))
+            break; // stop at last level
+        x = (x+1)>>1;
+        y = (y+1)>>1;
+        ix += 1;
+    }
+    resource->last_level = ix; /* real last mipmap level */
+
+    /* Determine memory size */
+    size_t rt_size = offset;
+    size_t rt_ts_size = 0;
+    if(flags & ETNA_HAS_TS) /* TS only for level 0 -- XXX is this formula correct? */
+        rt_ts_size = etna_align_up(resource->levels[0].size*priv->specs.bits_per_tile/0x80, 0x100);
+    
+    /* determine memory type */
+    gceSURF_TYPE memtype = gcvSURF_RENDER_TARGET;
+    if(flags & ETNA_IS_TEXTURE)
+        memtype = gcvSURF_TEXTURE;
+    else if(pipe_format_is_depth(format)) /* if not a texture, and has a depth format */
+        memtype = gcvSURF_DEPTH;
+
+    printf("Allocate 2D surface of %ix%i (padded to %ix%i) of format %i (%i bpe), size %08x ts_size %08x, flags %08x\n",
+            width, height, resource->levels[0].padded_width, resource->levels[0].padded_height, format, element_size, rt_size, rt_ts_size, flags);
+
+    etna_vidmem *rt = 0;
+    if(etna_vidmem_alloc_linear(&rt, rt_size, memtype, gcvPOOL_DEFAULT, true) != ETNA_OK)
+    {
+        printf("Problem allocating video memory for 2d resource\n");
+        return NULL;
+    }
+   
+    /* XXX allocate TS for rendertextures? if so, for each level or only the top? */
+    etna_vidmem *rt_ts = 0;
+    if((flags & ETNA_HAS_TS) && 
+        etna_vidmem_alloc_linear(&rt_ts, rt_ts_size, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, true)!=ETNA_OK)
+    {
+        printf("Problem allocating tile status for 2d resource\n");
+        return NULL;
+    }
+
+    resource->target = PIPE_TEXTURE_2D;
+    resource->format = format;
+    resource->width0 = width;
+    resource->height0 = height;
+    resource->depth0 = 1;
+    resource->array_size = 1;
+    resource->layout = layout;
+    resource->surface = rt;
+    resource->ts = rt_ts;
+    for(unsigned ix=0; ix<=resource->last_level; ++ix)
+    {
+        struct etna_resource_level *mip = &resource->levels[ix];
+        mip->address = resource->surface->address + mip->offset;
+        mip->logical = resource->surface->logical + mip->offset;
+        printf("  %08x level %i: %ix%i (%i) stride=%i\n", 
+                (int)mip->address, ix, (int)mip->width, (int)mip->height, (int)mip->size,
+                (int)mip->stride);
+    }
+    if(resource->ts) /* TS, if requested, only for level 0 */
+    {
+        resource->levels[0].ts_address = resource->ts->address;
+        resource->levels[0].ts_size = resource->ts->size;
+    }
+
+    return resource;
+}
+
+/* Allocate buffer resource */
+struct pipe_resource *etna_pipe_create_buffer(struct pipe_context *pipe, unsigned flags, unsigned size)
+{
+    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    etna_vidmem *vtx = 0;
+
+    if(etna_vidmem_alloc_linear(&vtx, size, 
+           (flags & ETNA_IS_INDEX) ? gcvSURF_INDEX : gcvSURF_VERTEX, gcvPOOL_DEFAULT, true)!=ETNA_OK)
+    {
+        printf("Problem allocating video memory for buffer resource\n");
+        return NULL;
+    }
+    printf("Allocate buffer surface of %i bytes (padded to %i), flags %08x\n",
+            size, vtx->size, flags);
+
+    struct pipe_resource *resource = ETNA_NEW(struct pipe_resource);
+    resource->target = PIPE_BUFFER;
+    resource->format = PIPE_FORMAT_NONE;
+    resource->width0 = 0;
+    resource->height0 = 0;
+    resource->depth0 = 0;
+    resource->array_size = vtx->size; //?
+    resource->last_level = 0;
+    resource->layout = ETNA_LAYOUT_LINEAR;
+    resource->surface = vtx;
+    resource->ts = 0;
+    resource->levels[0].address = resource->surface->address;
+    resource->levels[0].logical = resource->surface->logical;
+    resource->levels[0].ts_address = 0;
+    resource->levels[0].stride = 0;
+
+    return resource;
+}
+
+void etna_pipe_destroy_resource(struct pipe_context *pipe, struct pipe_resource *resource)
+{
+    if(resource == NULL)
+        return;
+    etna_vidmem_free(resource->surface);
+    etna_vidmem_free(resource->ts);
+    free(resource);
+}
+
+
 /*********************************************************************/
 #define VERTEX_BUFFER_SIZE 0x60000
 
@@ -2135,118 +2407,6 @@ uint32_t ps[] = { /* texture sampling */
 size_t vs_size = sizeof(vs);
 size_t ps_size = sizeof(ps);
 
-/* etna gallium pipe resource creation flags */
-enum etna_resource_flags 
-{
-    ETNA_IS_TEXTURE = 0x1, /* is to be used as texture */
-    ETNA_HAS_TS = 0x2,     /* has tile status (fast clear), use if rendertarget */
-    ETNA_IS_VERTEX = 0x4,  /* vertex buffer */
-    ETNA_IS_INDEX = 0x8    /* index buffer */
-};
-
-/* Allocate 2D texture or render target resource */
-struct pipe_resource *etna_pipe_create_2d(struct pipe_context *pipe, unsigned flags, unsigned format, unsigned width, unsigned height, unsigned max_level)
-{
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
-    unsigned element_size = pipe_element_size(format);
-    if(!element_size)
-        return NULL;
-    
-    /* For now, assume that textures cannot be supertiled.
-     * There is a feature flag SUPERTILED_TEXTURE that may allow this, but not sure how it works. */
-    unsigned layout = (!(flags & ETNA_IS_TEXTURE) && priv->specs.can_supertile) ? ETNA_LAYOUT_SUPERTILED : ETNA_LAYOUT_TILED;
-    unsigned padding = etna_layout_multiple(layout);
-    unsigned padded_width = etna_align_up(width, padding);
-    unsigned padded_height = etna_align_up(height, padding);
-    
-    size_t rt_size = padded_width * padded_height * element_size;
-    size_t rt_ts_size = 0;
-    if(flags & ETNA_HAS_TS)
-        rt_ts_size = etna_align_up((padded_width * padded_height * element_size)*priv->specs.bits_per_tile/0x80, 0x100);
-    etna_vidmem *rt = 0;
-    etna_vidmem *rt_ts = 0;
-
-    printf("Allocate 2D surface of %ix%i (padded to %ix%i) of format %i (%i bpe), size %08x ts_size %08x, flags %08x\n",
-            width, height, padded_width, padded_height, format, element_size, rt_size, rt_ts_size, flags);
-
-    if(etna_vidmem_alloc_linear(&rt, rt_size, 
-           pipe_format_is_depth(format) ? gcvSURF_DEPTH : gcvSURF_RENDER_TARGET, 
-           gcvPOOL_DEFAULT, true) != ETNA_OK)
-    {
-        printf("Problem allocating video memory for 2d resource\n");
-        return NULL;
-    }
-   
-    /* XXX allocate TS for rendertextures? if so, for each level or only the top? */
-    if((flags & ETNA_HAS_TS) && 
-        etna_vidmem_alloc_linear(&rt_ts, rt_ts_size, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, true)!=ETNA_OK)
-    {
-        printf("Problem allocating tile status for 2d resource\n");
-        return NULL;
-    }
-
-    struct pipe_resource *resource = ETNA_NEW(struct pipe_resource);
-    resource->target = PIPE_TEXTURE_2D;
-    resource->format = format;
-    resource->width0 = width;
-    resource->height0 = height;
-    resource->depth0 = 1;
-    resource->array_size = 1;
-    resource->last_level = 0;
-    resource->layout = layout;
-    resource->padded_width = padded_width;
-    resource->padded_height = padded_height;
-    resource->surface = rt;
-    resource->ts = rt_ts;
-    resource->levels[0].address = resource->surface->address;
-    resource->levels[0].logical = resource->surface->logical;
-    if(resource->ts)
-    {
-        resource->levels[0].ts_address = resource->ts->address;
-        resource->levels[0].ts_size = resource->ts->size;
-    }
-    resource->levels[0].stride = element_size * padded_width;
-    /* XXX mipmap levels */
-
-    return resource;
-}
-
-/* Allocate buffer resource */
-struct pipe_resource *etna_pipe_create_buffer(struct pipe_context *pipe, unsigned flags, unsigned size)
-{
-    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
-    etna_vidmem *vtx = 0;
-
-    if(etna_vidmem_alloc_linear(&vtx, size, 
-           (flags & ETNA_IS_INDEX) ? gcvSURF_INDEX : gcvSURF_VERTEX, gcvPOOL_DEFAULT, true)!=ETNA_OK)
-    {
-        printf("Problem allocating video memory for buffer resource\n");
-        return NULL;
-    }
-    printf("Allocate buffer surface of %i bytes (padded to %i), flags %08x\n",
-            size, vtx->size, flags);
-
-    struct pipe_resource *resource = ETNA_NEW(struct pipe_resource);
-    resource->target = PIPE_BUFFER;
-    resource->format = PIPE_FORMAT_NONE;
-    resource->width0 = 0;
-    resource->height0 = 0;
-    resource->depth0 = 0;
-    resource->array_size = vtx->size; //?
-    resource->last_level = 0;
-    resource->layout = ETNA_LAYOUT_LINEAR;
-    resource->padded_width = 0;
-    resource->padded_height = 0;
-    resource->surface = vtx;
-    resource->ts = 0;
-    resource->levels[0].address = resource->surface->address;
-    resource->levels[0].logical = resource->surface->logical;
-    resource->levels[0].ts_address = 0;
-    resource->levels[0].stride = 0;
-
-    return resource;
-}
-
 int main(int argc, char **argv)
 {
     int rv;
@@ -2287,9 +2447,6 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    /* Allocate video memory */
-    etna_vidmem *tex = 0; /* texture */
-
     dds_texture *dds = 0;
     if(argc<2 || !dds_load(argv[1], &dds))
     {
@@ -2297,42 +2454,45 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    if(etna_vidmem_alloc_linear(&tex, dds->size, gcvSURF_TEXTURE, gcvPOOL_DEFAULT, true)!=ETNA_OK)
-    {
-        fprintf(stderr, "Error allocating video memory for texture\n");
-        exit(1);
-    }
-
     uint32_t tex_format = 0;
     uint32_t tex_base_width = dds->slices[0][0].width;
     uint32_t tex_base_height = dds->slices[0][0].height;
-    printf("Loading compressed texture (format %i, %ix%i)\n", dds->fmt, tex_base_width, tex_base_height);
-    if(dds->fmt == FMT_X8R8G8B8 || dds->fmt == FMT_A8R8G8B8)
+    switch(dds->fmt)
     {
-        for(int ix=0; ix<dds->num_mipmaps; ++ix)
-        {
-            printf("%08x: Tiling mipmap %i (%ix%i)\n", dds->slices[0][ix].offset, ix, dds->slices[0][ix].width, dds->slices[0][ix].height);
-            etna_texture_tile((void*)((size_t)tex->logical + dds->slices[0][ix].offset), 
-                    dds->slices[0][ix].data, dds->slices[0][ix].width, dds->slices[0][ix].height, dds->slices[0][ix].stride, 4);
-        }
-        tex_format = PIPE_FORMAT_B8G8R8X8_UNORM;
-    } else if(dds->fmt == FMT_DXT1 || dds->fmt == FMT_DXT3 || dds->fmt == FMT_DXT5 || dds->fmt == FMT_ETC1)
-    {
-        printf("Uploading compressed texture\n");
-        memcpy(tex->logical, dds->data, dds->size);
-        switch(dds->fmt)
-        {
-        case FMT_DXT1: tex_format = PIPE_FORMAT_DXT1_RGB; break;
-        case FMT_DXT3: tex_format = PIPE_FORMAT_DXT3_RGBA; break;
-        case FMT_DXT5: tex_format = PIPE_FORMAT_DXT5_RGBA; break;
-        case FMT_ETC1: tex_format = PIPE_FORMAT_ETC1_RGB8; break;
-        }
-    } else
-    {
+    case FMT_A8R8G8B8: tex_format = PIPE_FORMAT_B8G8R8A8_UNORM; break;
+    case FMT_X8R8G8B8: tex_format = PIPE_FORMAT_B8G8R8X8_UNORM; break;
+    case FMT_DXT1: tex_format = PIPE_FORMAT_DXT1_RGB; break;
+    case FMT_DXT3: tex_format = PIPE_FORMAT_DXT3_RGBA; break;
+    case FMT_DXT5: tex_format = PIPE_FORMAT_DXT5_RGBA; break;
+    case FMT_ETC1: tex_format = PIPE_FORMAT_ETC1_RGB8; break;
+    default:
         printf("Unknown texture format\n");
         exit(1);
     }
     
+    struct pipe_resource *tex_resource = etna_pipe_create_2d(pipe, ETNA_IS_TEXTURE, tex_format, tex_base_width, tex_base_height, 
+            dds->num_mipmaps - 1);
+    
+    printf("Loading compressed texture (format %i, %ix%i)\n", dds->fmt, tex_base_width, tex_base_height);
+    
+    if(dds->fmt == FMT_X8R8G8B8 || dds->fmt == FMT_A8R8G8B8)
+    {
+        for(int ix=0; ix<dds->num_mipmaps; ++ix)
+        {
+            assert(tex_resource->levels[ix].size >= dds->slices[0][ix].size);
+            printf("%08x: Tiling mipmap %i (%ix%i)\n", dds->slices[0][ix].offset, ix, dds->slices[0][ix].width, dds->slices[0][ix].height);
+            etna_texture_tile(tex_resource->levels[ix].logical, 
+                    dds->slices[0][ix].data, dds->slices[0][ix].width, dds->slices[0][ix].height, dds->slices[0][ix].stride, 4);
+        }
+    } else if(dds->fmt == FMT_DXT1 || dds->fmt == FMT_DXT3 || dds->fmt == FMT_DXT5 || dds->fmt == FMT_ETC1)
+    {
+        printf("Uploading compressed texture\n");
+        for(int ix=0; ix<dds->num_mipmaps; ++ix)
+        {
+            assert(tex_resource->levels[ix].size == dds->slices[0][ix].size);
+            memcpy(tex_resource->levels[ix].logical, dds->slices[0][ix].data, dds->slices[0][ix].size);
+        }
+    }     
     /* resources */
     struct pipe_resource *rt_resource = etna_pipe_create_2d(pipe, ETNA_HAS_TS, PIPE_FORMAT_B8G8R8X8_UNORM, width, height, 0);
     struct pipe_resource *z_resource = etna_pipe_create_2d(pipe, ETNA_HAS_TS, PIPE_FORMAT_Z16_UNORM, width, height, 0);
@@ -2354,29 +2514,6 @@ int main(int argc, char **argv)
         for(int comp=0; comp<2; ++comp)
             vtx_logical[dest_idx+comp+6] = vTexCoords[vert*2 + comp]; /* 2 */
     }
-   
-    /* XXX this is still done manually */
-    struct pipe_resource *tex_resource = ETNA_NEW(struct pipe_resource);
-    tex_resource->target = PIPE_TEXTURE_2D;
-    tex_resource->format = tex_format;
-    tex_resource->width0 = tex_base_width;
-    tex_resource->height0 = tex_base_height;
-    tex_resource->depth0 = 1;
-    tex_resource->array_size = 1;
-    tex_resource->last_level = dds->num_mipmaps - 1;
-    tex_resource->layout = ETNA_LAYOUT_TILED;
-    tex_resource->padded_width = tex_resource->width0;
-    tex_resource->padded_height = tex_resource->height0;
-    tex_resource->surface = tex;
-    tex_resource->ts = 0;
-    for(int ix=0; ix<dds->num_mipmaps; ++ix)
-    {
-        tex_resource->levels[ix].address = tex_resource->surface->address + dds->slices[0][ix].offset;
-        tex_resource->levels[ix].logical = tex_resource->surface->logical + dds->slices[0][ix].offset;
-        tex_resource->levels[ix].ts_address = 0;
-        tex_resource->levels[ix].stride = dds->slices[0][ix].stride;
-    }
-
 
     /* pre-compile RS states, one to clear buffer, and one for each back/front buffer */
     struct compiled_rs_state copy_to_screen[ETNA_BSWAP_NUM_BUFFERS] = {};
@@ -2676,10 +2813,11 @@ int main(int argc, char **argv)
                     .count = 4
                     });
         }
-        etna_stall(ctx, SYNC_RECIPIENT_FE, SYNC_RECIPIENT_PE);
+        //etna_stall(ctx, SYNC_RECIPIENT_FE, SYNC_RECIPIENT_PE);
         
         /* copy to screen */
         etna_bswap_wait_available(buffers);
+        /*  this flush is really needed, otherwise some quads will have pieces undrawn */
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
         /*  assumes TS is still set up correctly */
         submit_rs_state(ctx, &copy_to_screen[buffers->backbuffer]);

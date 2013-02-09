@@ -696,6 +696,11 @@ enum etna_surface_layout
 
 struct etna_resource_level
 {
+   unsigned width, padded_width;
+   unsigned height, padded_height;
+   unsigned offset; /* offset into memory area */
+   unsigned size; /* size of memory area */
+
    uint32_t address; /* cached GPU pointers to LODs */
    void *logical; /* cached CPU pointer */
    uint32_t ts_address;
@@ -728,8 +733,6 @@ struct pipe_resource
    /* XXX etna specific. This must be moved to subclass on integration. */
    /* only lod 0 used for non-texture buffers */
    enum etna_surface_layout layout;
-   unsigned padded_width;
-   unsigned padded_height;
    etna_vidmem *surface; /* Surface video memory */
    etna_vidmem *ts; /* Tile status video memory */
 
