@@ -2684,6 +2684,7 @@ int main(int argc, char **argv)
         /*  assumes TS is still set up correctly */
         submit_rs_state(ctx, &copy_to_screen[buffers->backbuffer]);
 
+        etna_flush(ctx); /* must flush before swap */
         etna_bswap_queue_swap(buffers);
         
         //dump_cmd_buffer(ctx);

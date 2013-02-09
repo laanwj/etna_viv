@@ -118,6 +118,7 @@ int etna_bswap_wait_available(etna_bswap_buffers *bufs)
     {
         pthread_cond_wait(&buf->available_cond, &buf->available_mutex);
     }
+    buf->is_available = 0;
     pthread_mutex_unlock(&buf->available_mutex);
     return ETNA_OK;
 }
