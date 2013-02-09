@@ -210,6 +210,9 @@ int etna_semaphore(etna_ctx *ctx, uint32_t from, uint32_t to);
  */
 int etna_stall(etna_ctx *ctx, uint32_t from, uint32_t to);
 
+/* print command buffer for debugging */
+void etna_dump_cmd_buffer(etna_ctx *ctx);
+
 /* misc util */
 static inline uint32_t etna_align_up(uint32_t value, uint32_t granularity)
 {

@@ -24,8 +24,54 @@
 #define H_ETNA_RS
 #include "viv.h"
 
+struct rs_state
+{
+    uint8_t source_format; // RS_FORMAT_XXX
+    uint8_t downsample_x; // Downsample in x direction
+    uint8_t downsample_y; // Downsample in y direction
+    uint8_t source_tiling; // ETNA_LAYOUT_XXX
+    uint8_t dest_tiling;   // ETNA_LAYOUT_XXX
+    uint8_t dest_format;  // RS_FORMAT_XXX
+    uint8_t swap_rb;
+    uint8_t flip;
+    uint32_t source_addr;
+    uint32_t source_stride;
+    uint32_t dest_addr;
+    uint32_t dest_stride;
+    uint16_t width;
+    uint16_t height;
+    uint32_t dither[2];
+    uint32_t clear_bits;
+    uint32_t clear_mode; // VIVS_RS_CLEAR_CONTROL_MODE_XXX
+    uint32_t clear_value[4];
+    uint8_t aa;
+    uint8_t endian_mode; // ENDIAN_MODE_XXX
+};
+
+/* treat this as opaque structure */
+struct compiled_rs_state
+{
+    uint32_t RS_CONFIG;
+    uint32_t RS_SOURCE_ADDR;
+    uint32_t RS_SOURCE_STRIDE;
+    uint32_t RS_DEST_ADDR;
+    uint32_t RS_DEST_STRIDE;
+    uint32_t RS_WINDOW_SIZE;
+    uint32_t RS_DITHER[2];
+    uint32_t RS_CLEAR_CONTROL;
+    uint32_t RS_FILL_VALUE[4];
+    uint32_t RS_EXTRA_CONFIG;
+};
+
 /* Flush RS? warm up RS on aux render target */
 void etna_warm_up_rs(etna_ctx *cmdbuf, viv_addr_t aux_rt_physical, viv_addr_t aux_rt_ts_physical);
+
+/* compile RS state struct */
+void etna_compile_rs_state(struct compiled_rs_state *cs, const struct rs_state *rs);
+
+/* submit compiled RS state */
+void etna_submit_rs_state(etna_ctx *restrict ctx, const struct compiled_rs_state *cs);
+
 
 #endif
 

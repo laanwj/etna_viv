@@ -27,21 +27,13 @@
  **************************************************************************/
 #ifndef H_MINIGALLIUM
 #define H_MINIGALLIUM
+
+/* XXX the following three includes are implementation details that shouldn't
+ * leak outside the driver 
+ */
 #include "etna_mem.h"
-/* this soo shouldn't be here */
-struct compiled_rs_state
-{
-    uint32_t RS_CONFIG;
-    uint32_t RS_SOURCE_ADDR;
-    uint32_t RS_SOURCE_STRIDE;
-    uint32_t RS_DEST_ADDR;
-    uint32_t RS_DEST_STRIDE;
-    uint32_t RS_WINDOW_SIZE;
-    uint32_t RS_DITHER[2];
-    uint32_t RS_CLEAR_CONTROL;
-    uint32_t RS_FILL_VALUE[4];
-    uint32_t RS_EXTRA_CONFIG;
-};
+#include "etna_rs.h"
+#include "etna/state_3d.xml.h"
 
 /********************************************************************
  * State and tokens from gallium, for experimentation

@@ -9,7 +9,7 @@ LDFLAGS += -lm
 
 TARGETS = fbtest etna_test rotate_cube cube_companion mip_cube rstests mip_cube_state
 COMPANION_OBJS = ../resources/companion_array.o ../resources/companion_mesh.o ../resources/companion_texture.o
-ETNA_OBJS = ../lib/viv.o ../lib/etna.o ../lib/etna_rs.o ../lib/etna_fb.o ../lib/etna_mem.o ../lib/etna_bswap.o ../lib/etna_tex.o 
+ETNA_OBJS = ../lib/viv.o ../lib/etna.o ../lib/etna_rs.o ../lib/etna_fb.o ../lib/etna_mem.o ../lib/etna_bswap.o ../lib/etna_tex.o  ../lib/etna_pipe.o
 
 all: $(TARGETS)
 

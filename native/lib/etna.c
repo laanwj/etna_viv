@@ -384,3 +384,17 @@ int etna_stall(etna_ctx *ctx, uint32_t from, uint32_t to)
     }
     return ETNA_OK;
 }
+
+void etna_dump_cmd_buffer(etna_ctx *ctx)
+{
+    uint32_t start_offset = ctx->cmdbuf[ctx->cur_buf].startOffset/4 + 8;
+    uint32_t *buf = &ctx->buf[start_offset]; 
+    size_t size = ctx->offset - start_offset;
+    printf("cmdbuf:\n");
+    for(unsigned idx=0; idx<size; ++idx)
+    {
+        printf(":%08x ", buf[idx]);
+        printf("\n");
+    }
+}
+
