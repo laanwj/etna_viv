@@ -33,7 +33,9 @@
  */
 #include "etna_mem.h"
 #include "etna_rs.h"
-#include "etna/state_3d.xml.h"
+
+#define ETNA_NUM_LOD (14)
+#define ETNA_NUM_LAYERS (6)
 
 /********************************************************************
  * State and tokens from gallium, for experimentation
@@ -698,6 +700,7 @@ struct etna_resource_level
    uint32_t ts_address;
    uint32_t ts_size;
    uint32_t stride; /* VIVS_PE_(COLOR|DEPTH)_STRIDE */
+   uint32_t layer_stride;
 };
 
 /**
@@ -724,11 +727,12 @@ struct pipe_resource
 
    /* XXX etna specific. This must be moved to subclass on integration. */
    /* only lod 0 used for non-texture buffers */
+   unsigned num_layers;
    enum etna_surface_layout layout;
    etna_vidmem *surface; /* Surface video memory */
    etna_vidmem *ts; /* Tile status video memory */
 
-   struct etna_resource_level levels[VIVS_TE_SAMPLER_LOD_ADDR__LEN];
+   struct etna_resource_level levels[ETNA_NUM_LOD];
    /* XXX uint32_t clear_value; */
 };
 

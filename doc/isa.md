@@ -186,4 +186,6 @@ Misc notes
 
 - i1..i127 are simply aliases of i0, at least on my GC600.
 
+- The exact same texture sampling instruction, TEXLD, is used to sample 2D as well as Cubemap textures
+  (and, likely, other types of textures as well on hardware that supports these)
 

@@ -9,7 +9,7 @@ LDFLAGS += -lm
 
 GL_LIBS = $(PLATFORM_GL_LIBS)
 TARGETS = cube cube_companion ps_sandbox eglinfo cube_companion_idx
-LIB_OBJS = ../lib/esTransform.o ../lib/elf_hook.o ../lib/flightrecorder.o ../lib/viv_hook.o ../lib/write_bmp.o ../lib/dump_gl_screen.o ../lib/eglutil.o
+LIB_OBJS = ../lib/esTransform.o ../lib/esShapes.o ../lib/elf_hook.o ../lib/flightrecorder.o ../lib/viv_hook.o ../lib/write_bmp.o ../lib/dump_gl_screen.o ../lib/eglutil.o
 COMPANION_OBJS = ../resources/companion_array.o ../resources/companion_mesh.o ../resources/companion_texture.o
 
 all: $(TARGETS)
@@ -31,6 +31,9 @@ cube_companion_idx: cube_companion_idx.o $(LIB_OBJS) $(COMPANION_OBJS)
 	$(CXX) $(CFLAGS) -o $@ $^  $(GL_LIBS) $(LDFLAGS)
 
 ps_sandbox: ps_sandbox.o $(LIB_OBJS)
+	$(CXX) $(CFLAGS) -o $@ $^  $(GL_LIBS) $(LDFLAGS)
+
+simple_texture_cubemap: simple_texture_cubemap.o $(LIB_OBJS)
 	$(CXX) $(CFLAGS) -o $@ $^  $(GL_LIBS) $(LDFLAGS)
 
 eglinfo: eglinfo.o $(LIB_OBJS)

@@ -35,7 +35,8 @@ enum etna_resource_flags
     ETNA_IS_TEXTURE = 0x1, /* is to be used as texture */
     ETNA_IS_RENDER_TARGET = 0x2,     /* has tile status (fast clear), use if rendertarget */
     ETNA_IS_VERTEX = 0x4,  /* vertex buffer */
-    ETNA_IS_INDEX = 0x8    /* index buffer */
+    ETNA_IS_INDEX = 0x8,   /* index buffer */
+    ETNA_IS_CUBEMAP = 0x10 /* cubemap texture */
 };
 
 struct pipe_context *etna_new_pipe_context(etna_ctx *ctx);

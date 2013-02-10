@@ -1178,17 +1178,23 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
     struct pipe_surface *surf = ETNA_NEW(struct pipe_surface);
+    assert(templat->u.tex.first_layer == templat->u.tex.last_layer);
+    unsigned layer = templat->u.tex.first_layer;
+    unsigned level = templat->u.tex.level;
+    assert(layer < resource->num_layers);
    
     surf->context = pipe;
     surf->texture = resource;
     surf->format = resource->format;
-    surf->width = resource->width0; // XXX u_minify with mipmaps
-    surf->height = resource->height0;
+    surf->width = resource->levels[level].width;
+    surf->height = resource->levels[level].height;
     surf->writable = templat->writable; // what is this for anyway
     surf->u = templat->u;
 
     surf->layout = resource->layout;
-    surf->surf = resource->levels[0]; // XXX use u.tex.level
+    surf->surf = resource->levels[level];
+    surf->surf.address += layer * surf->surf.layer_stride; 
+    surf->surf.logical += layer * surf->surf.layer_stride; 
     surf->clear_value = 0; /* last clear value */
 
     if(surf->surf.ts_address) /* XXX handle non-fast-clear case */
@@ -1288,7 +1294,6 @@ struct pipe_context *etna_new_pipe_context(etna_ctx *ctx)
 }
 
 /* Allocate 2D texture or render target resource 
- * XXX cubemaps (are 6x 2D)
  */
 struct pipe_resource *etna_pipe_create_2d(struct pipe_context *pipe, unsigned flags, unsigned format, unsigned width, unsigned height, unsigned max_mip_level)
 {
@@ -1301,13 +1306,16 @@ struct pipe_resource *etna_pipe_create_2d(struct pipe_context *pipe, unsigned fl
      * There is a feature flag SUPERTILED_TEXTURE that may allow this, as well as TEXTURE_LINEAR, but not sure how it works. */
     unsigned layout = (!(flags & ETNA_IS_TEXTURE) && priv->specs.can_supertile) ? ETNA_LAYOUT_SUPERTILED : ETNA_LAYOUT_TILED;
     unsigned padding = etna_layout_multiple(layout);
+    unsigned num_layers = 1;
     
     /* determine mipmap levels */
     struct pipe_resource *resource = ETNA_NEW(struct pipe_resource);
     if(flags & ETNA_IS_TEXTURE)
     {
-        if(max_mip_level >= VIVS_TE_SAMPLER_LOD_ADDR__LEN) /* max LOD supported by hw */
-            max_mip_level = VIVS_TE_SAMPLER_LOD_ADDR__LEN - 1;
+        if(max_mip_level >= ETNA_NUM_LOD) /* max LOD supported by hw */
+            max_mip_level = ETNA_NUM_LOD - 1;
+        if(flags & ETNA_IS_CUBEMAP)
+            num_layers = 6;
     } else
     {
         max_mip_level = 0;
@@ -1332,8 +1340,9 @@ struct pipe_resource *etna_pipe_create_2d(struct pipe_context *pipe, unsigned fl
         mip->padded_height = etna_align_up(y, padding);
         mip->stride = etna_align_up(resource->levels[ix].padded_width, divSizeX)/divSizeX * element_size;
         mip->offset = offset;
-        mip->size = etna_align_up(mip->padded_width, divSizeX)/divSizeX * 
+        mip->layer_stride = etna_align_up(mip->padded_width, divSizeX)/divSizeX * 
                       etna_align_up(mip->padded_height, divSizeY)/divSizeY * element_size;
+        mip->size = num_layers * mip->layer_stride;
         offset += mip->size;
         if(ix == max_mip_level || (x == 1 && y == 1))
             break; // stop at last level
@@ -1383,6 +1392,7 @@ struct pipe_resource *etna_pipe_create_2d(struct pipe_context *pipe, unsigned fl
     resource->layout = layout;
     resource->surface = rt;
     resource->ts = rt_ts;
+    resource->num_layers = num_layers;
     for(unsigned ix=0; ix<=resource->last_level; ++ix)
     {
         struct etna_resource_level *mip = &resource->levels[ix];
