@@ -163,6 +163,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="4" low="0" name="EVENT_ID"/>
             <bitfield pos="5" name="FROM_FE"/>
             <bitfield pos="6" name="FROM_PE"/>
+            <bitfield high="12" low="8" name="SOURCE" brief="Event source (GC320)"/>
         </reg32>
         <reg32 offset="0x03808" name="SEMAPHORE_TOKEN" brief="A sempahore state arms the semaphore in the destination">
             <bitfield high="4" low="0" name="FROM" type="SYNC_RECIPIENT"/>
