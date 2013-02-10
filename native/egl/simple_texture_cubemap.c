@@ -284,8 +284,8 @@ int main(int argc, char *argv[])
         GLfloat *vVertices;
         GLfloat *vNormals;
         GLushort *vIndices;
-        int numIndices = esGenSphere (20, 0.75f, &vVertices, &vNormals,
-                                            NULL, &vIndices );
+        int numIndices = esGenSphere(20, 0.75f, &vVertices, &vNormals,
+                                            NULL, &vIndices, NULL);
 
 	glUseProgram(program);
 

@@ -8,7 +8,7 @@ CXXFLAGS += $(COMMON_FLAGS)
 LDFLAGS += -lm
 
 GL_LIBS = $(PLATFORM_GL_LIBS)
-TARGETS = cube cube_companion ps_sandbox eglinfo cube_companion_idx
+TARGETS = cube cube_companion ps_sandbox eglinfo cube_companion_idx simple_texture_cubemap
 LIB_OBJS = ../lib/esTransform.o ../lib/esShapes.o ../lib/elf_hook.o ../lib/flightrecorder.o ../lib/viv_hook.o ../lib/write_bmp.o ../lib/dump_gl_screen.o ../lib/eglutil.o
 COMPANION_OBJS = ../resources/companion_array.o ../resources/companion_mesh.o ../resources/companion_texture.o
 

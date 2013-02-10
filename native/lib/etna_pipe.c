@@ -1383,7 +1383,7 @@ struct pipe_resource *etna_pipe_create_2d(struct pipe_context *pipe, unsigned fl
         return NULL;
     }
 
-    resource->target = PIPE_TEXTURE_2D;
+    resource->target = (flags & ETNA_IS_CUBEMAP)?PIPE_TEXTURE_CUBE:PIPE_TEXTURE_2D;
     resource->format = format;
     resource->width0 = width;
     resource->height0 = height;

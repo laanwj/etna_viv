@@ -46,9 +46,9 @@ extern "C" {
 #define ESUTIL_API
 
 int ESUTIL_API esGenSphere ( int numSlices, float radius, GLfloat **vertices, GLfloat **normals, 
-                             GLfloat **texCoords, GLushort **indices );
+                             GLfloat **texCoords, GLushort **indices, int *numVertices_out );
 int ESUTIL_API esGenCube ( float scale, GLfloat **vertices, GLfloat **normals,
-                           GLfloat **texCoords, GLushort **indices );
+                           GLfloat **texCoords, GLushort **indices, int *numVertices_out );
 
 
 #ifdef __cplusplus

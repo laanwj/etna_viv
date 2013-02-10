@@ -52,7 +52,7 @@
 ///         if it is not NULL ) as a GL_TRIANGLE_STRIP
 //
 int ESUTIL_API esGenSphere ( int numSlices, float radius, GLfloat **vertices, GLfloat **normals, 
-                             GLfloat **texCoords, GLushort **indices )
+                             GLfloat **texCoords, GLushort **indices, int *numVertices_out)
 {
    int i;
    int j;
@@ -124,6 +124,11 @@ int ESUTIL_API esGenSphere ( int numSlices, float radius, GLfloat **vertices, GL
       }
    }
 
+   if(numVertices_out)
+   {
+       *numVertices_out = numVertices;
+   }
+
    return numIndices;
 }
 
@@ -139,7 +144,7 @@ int ESUTIL_API esGenSphere ( int numSlices, float radius, GLfloat **vertices, GL
 ///         if it is not NULL ) as a GL_TRIANGLE_STRIP
 //
 int ESUTIL_API esGenCube ( float scale, GLfloat **vertices, GLfloat **normals,
-                           GLfloat **texCoords, GLushort **indices )
+                           GLfloat **texCoords, GLushort **indices, int *numVertices_out )
 {
    int i;
    int numVertices = 24;
@@ -274,6 +279,11 @@ int ESUTIL_API esGenCube ( float scale, GLfloat **vertices, GLfloat **normals,
 
       *indices = malloc ( sizeof(GLushort) * numIndices );
       memcpy( *indices, cubeIndices, sizeof( cubeIndices ) );
+   }
+   
+   if(numVertices_out)
+   {
+       *numVertices_out = numVertices;
    }
 
    return numIndices;
