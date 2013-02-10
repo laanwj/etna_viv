@@ -76,13 +76,14 @@ static void etna_bswap_thread(etna_bswap_buffers *bufs)
     }
 }
 
-int etna_bswap_create(etna_bswap_buffers **bufs_out, int (*set_buffer)(void *, int), void *userptr)
+int etna_bswap_create(etna_ctx *ctx, etna_bswap_buffers **bufs_out, int (*set_buffer)(void *, int), void *userptr)
 {
-    if(bufs_out == NULL)
+    if(ctx == NULL || bufs_out == NULL)
         return ETNA_INVALID_ADDR;
     etna_bswap_buffers *bufs = ETNA_NEW(etna_bswap_buffers);
     if(bufs == NULL)
         return ETNA_INTERNAL_ERROR;
+    bufs->ctx = ctx;
     bufs->set_buffer = set_buffer;
     bufs->userptr = userptr;
     bufs->backbuffer = bufs->frontbuffer = 0;
@@ -114,6 +115,10 @@ int etna_bswap_wait_available(etna_bswap_buffers *bufs)
     etna_bswap_buffer *buf = &bufs->buf[bufs->backbuffer];
     /* Wait until buffer buf is available */
     pthread_mutex_lock(&buf->available_mutex);
+    if(!buf->is_available) /* if we're going to wait anyway, flush so that GPU is not idle */
+    {
+        etna_flush(bufs->ctx);
+    }
     while(!buf->is_available)
     {
         pthread_cond_wait(&buf->available_cond, &buf->available_mutex);
@@ -126,6 +131,7 @@ int etna_bswap_wait_available(etna_bswap_buffers *bufs)
 /* queue buffer swap when GPU ready with rendering to buf */
 int etna_bswap_queue_swap(etna_bswap_buffers *bufs)
 {
+    etna_flush(bufs->ctx); /* must flush before swap to make sure signal happens after all current commands processed */
     if(viv_event_queue_signal(bufs->buf[bufs->backbuffer].sig_id_ready, gcvKERNEL_PIXEL) != 0)
     {
 #ifdef DEBUG
@@ -136,5 +142,4 @@ int etna_bswap_queue_swap(etna_bswap_buffers *bufs)
     bufs->backbuffer = (bufs->backbuffer + 1) % ETNA_BSWAP_NUM_BUFFERS;
     return ETNA_OK;
 }
-
 

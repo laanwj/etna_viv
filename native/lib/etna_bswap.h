@@ -24,6 +24,8 @@
 #ifndef H_ETNA_BUFSWAP
 #define H_ETNA_BUFSWAP
 
+#include "etna.h"
+
 #include <pthread.h>
 #include <stdbool.h>
 
@@ -37,6 +39,7 @@ typedef struct _etna_bswap_buffer {
 } etna_bswap_buffer;
 
 typedef struct _etna_bswap_buffers {
+    etna_ctx *ctx;
     pthread_t thread;
     int backbuffer, frontbuffer;
     bool terminate;
@@ -46,7 +49,7 @@ typedef struct _etna_bswap_buffers {
     etna_bswap_buffer buf[ETNA_BSWAP_NUM_BUFFERS];
 } etna_bswap_buffers;
 
-int etna_bswap_create(etna_bswap_buffers **bufs_out, int (*set_buffer)(void *, int), void *userptr);
+int etna_bswap_create(etna_ctx *ctx, etna_bswap_buffers **bufs_out, int (*set_buffer)(void *, int), void *userptr);
 
 int etna_bswap_free(etna_bswap_buffers *bufs);
 

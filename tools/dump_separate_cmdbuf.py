@@ -156,8 +156,9 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description='Parse execution data log stream.')
     parser.add_argument('input_file', metavar='INFILE', type=str, 
             help='FDR file')
-    parser.add_argument('rules_file', metavar='RULESFILE', type=str, 
-            help='State map definition file (rules-ng-ng)')
+    parser.add_argument('--rules-file', metavar='RULESFILE', type=str, 
+            help='State map definition file (rules-ng-ng)',
+            default='../rnndb/state.xml')
     parser.add_argument('-l', '--hide-load-state', dest='hide_load_state',
             default=False, action='store_const', const=True,
             help='Hide "LOAD_STATE" entries, this can make command stream a bit easier to read')

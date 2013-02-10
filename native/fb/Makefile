@@ -38,3 +38,7 @@ cube_companion: cube_companion.o ../lib/write_bmp.o ../lib/esTransform.o $(COMPA
 rstests: rstests.o ../lib/write_bmp.o ../lib/esTransform.o $(COMPANION_OBJS) $(ETNA_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 
+alpha_blend: alpha_blend.o ../lib/write_bmp.o ../lib/esTransform.o $(ETNA_OBJS)
+	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
+
+

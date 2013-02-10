@@ -64,7 +64,13 @@
 #define SET_STATE_F32(addr, value) cs->addr = f32_to_u32(value)
 
 /*********************************************************************/
-/** Gallium state compilation, WIP */
+/** Gallium state compilation */
+struct compiled_base_setup_state
+{
+    uint32_t PA_W_CLIP_LIMIT;
+    uint32_t PA_SYSTEM_MODE;
+    uint32_t GL_VERTEX_ELEMENT_CONFIG;
+};
 
 struct compiled_rasterizer_state
 {
@@ -192,21 +198,22 @@ struct compiled_set_index_buffer
 /* group all current CSOs, for dirty bits */
 enum
 {
-    ETNA_STATE_BLEND = 0x1,
-    ETNA_STATE_SAMPLERS = 0x2,
-    ETNA_STATE_RASTERIZER = 0x4,
-    ETNA_STATE_DSA = 0x8,
-    ETNA_STATE_VERTEX_ELEMENTS = 0x10,
-    ETNA_STATE_BLEND_COLOR = 0x20,
-    ETNA_STATE_STENCIL_REF = 0x40,
-    ETNA_STATE_SAMPLE_MASK = 0x80,
-    ETNA_STATE_VIEWPORT = 0x100,
-    ETNA_STATE_FRAMEBUFFER = 0x200,
-    ETNA_STATE_SCISSOR = 0x400,
-    ETNA_STATE_SAMPLER_VIEWS = 0x800,
-    ETNA_STATE_VERTEX_BUFFERS = 0x1000,
-    ETNA_STATE_INDEX_BUFFER = 0x2000,
-    ETNA_STATE_TS = 0x4000 /* set after clear and when RS blit operations from other surface affect TS */
+    ETNA_STATE_BASE_SETUP = (1<<0), /* basic openGL setup */
+    ETNA_STATE_BLEND = (1<<1),
+    ETNA_STATE_SAMPLERS = (1<<2),
+    ETNA_STATE_RASTERIZER = (1<<3),
+    ETNA_STATE_DSA = (1<<4),
+    ETNA_STATE_VERTEX_ELEMENTS = (1<<5),
+    ETNA_STATE_BLEND_COLOR = (1<<6),
+    ETNA_STATE_STENCIL_REF = (1<<7),
+    ETNA_STATE_SAMPLE_MASK = (1<<8),
+    ETNA_STATE_VIEWPORT = (1<<9),
+    ETNA_STATE_FRAMEBUFFER = (1<<10),
+    ETNA_STATE_SCISSOR = (1<<11),
+    ETNA_STATE_SAMPLER_VIEWS = (1<<12),
+    ETNA_STATE_VERTEX_BUFFERS = (1<<13),
+    ETNA_STATE_INDEX_BUFFER = (1<<14),
+    ETNA_STATE_TS = (1<<15) /* set after clear and when RS blit operations from other surface affect TS */
 };
 
 /* state of all 3d and common registers relevant to etna driver */
@@ -302,6 +309,9 @@ struct etna_pipe_context_priv
     struct pipe_framebuffer_state framebuffer_s;
     struct etna_pipe_specs specs;
 
+    /* constant */
+    struct compiled_base_setup_state base_setup;
+
     /* bindable state */
     struct compiled_blend_state *blend;
     unsigned num_samplers;/*   XXX separate fragment/vertex sampler states */
@@ -380,7 +390,7 @@ static void compile_depth_stencil_alpha_state(struct compiled_depth_stencil_alph
             /* XXX back masks in VIVS_PE_DEPTH_CONFIG_EXT? */
             /* XXX VIVS_PE_STENCIL_CONFIG_REF_FRONT comes from pipe_stencil_ref */
             );
-    /* XXX does alpha/stencil test affect PE_COLOR_FORMAT_PARTIAL? */
+    /* XXX does alpha/stencil test affect PE_COLOR_FORMAT_OVERWRITE? */
 }
 
 static void compile_blend_state(struct compiled_blend_state *cs, const struct pipe_blend_state *bs)
@@ -390,7 +400,7 @@ static void compile_blend_state(struct compiled_blend_state *cs, const struct pi
                                          rt0->alpha_src_factor == PIPE_BLENDFACTOR_ONE && rt0->alpha_dst_factor == PIPE_BLENDFACTOR_ZERO);
     bool separate_alpha = enable && !(rt0->rgb_src_factor == rt0->alpha_src_factor &&
                                       rt0->rgb_dst_factor == rt0->alpha_dst_factor);
-    bool partial = (rt0->colormask != 15) || enable;
+    bool full_overwrite = (rt0->colormask == 15) && !enable;
     SET_STATE(PE_ALPHA_CONFIG, 
             (enable ? VIVS_PE_ALPHA_CONFIG_BLEND_ENABLE_COLOR : 0) | 
             (separate_alpha ? VIVS_PE_ALPHA_CONFIG_BLEND_SEPARATE_ALPHA : 0) |
@@ -403,7 +413,7 @@ static void compile_blend_state(struct compiled_blend_state *cs, const struct pi
             );
     SET_STATE(PE_COLOR_FORMAT, 
             VIVS_PE_COLOR_FORMAT_COMPONENTS(rt0->colormask) |
-            (partial ? VIVS_PE_COLOR_FORMAT_PARTIAL : 0)
+            (full_overwrite ? VIVS_PE_COLOR_FORMAT_OVERWRITE : 0)
             );
     SET_STATE(PE_LOGIC_OP, 
             VIVS_PE_LOGIC_OP_OP(bs->logicop_enable ? bs->logicop_func : LOGIC_OP_COPY) /* 1-to-1 mapping */ |
@@ -543,7 +553,7 @@ static void compile_framebuffer_state(struct compiled_framebuffer_state *cs, con
     SET_STATE(PE_COLOR_FORMAT, 
             VIVS_PE_COLOR_FORMAT_FORMAT(translate_rt_format(cbuf->format)) |
             (color_supertiled ? VIVS_PE_COLOR_FORMAT_SUPER_TILED : 0) /* XXX depends on layout */
-            /* XXX VIVS_PE_COLOR_FORMAT_PARTIAL and the rest comes from depth_stencil_alpha */
+            /* XXX VIVS_PE_COLOR_FORMAT_OVERWRITE and the rest comes from blend_state / depth_stencil_alpha */
             ); /* merged with depth_stencil_alpha */
     SET_STATE(PE_DEPTH_CONFIG, 
             depth_format |
@@ -691,6 +701,11 @@ static void sync_context(struct pipe_context *pipe)
         /*00A1C*/ EMIT_STATE(PA_POINT_SIZE, PA_POINT_SIZE, e->rasterizer->PA_POINT_SIZE);
         /*00A34*/ EMIT_STATE(PA_CONFIG, PA_CONFIG, e->rasterizer->PA_CONFIG);
     }
+    if(dirty & (ETNA_STATE_BASE_SETUP))
+    {
+        /*00A28*/ EMIT_STATE(PA_SYSTEM_MODE, PA_SYSTEM_MODE, e->base_setup.PA_SYSTEM_MODE);
+        /*00A2C*/ EMIT_STATE(PA_W_CLIP_LIMIT, PA_W_CLIP_LIMIT, e->base_setup.PA_W_CLIP_LIMIT);
+    }
     if(dirty & (ETNA_STATE_SCISSOR | ETNA_STATE_FRAMEBUFFER | ETNA_STATE_RASTERIZER))
     {
         /* this is a bit of a mess: rasterizer->scissor determines whether to use only the
@@ -828,11 +843,21 @@ static void sync_context(struct pipe_context *pipe)
             }
         }
     }
+    if(dirty & (ETNA_STATE_BASE_SETUP))
+    {
+        /*03814*/ EMIT_STATE(GL_VERTEX_ELEMENT_CONFIG, GL_VERTEX_ELEMENT_CONFIG, e->base_setup.GL_VERTEX_ELEMENT_CONFIG);
+    }
     if(dirty & (ETNA_STATE_FRAMEBUFFER | ETNA_STATE_SAMPLE_MASK))
     {
         /*03818*/ EMIT_STATE(GL_MULTI_SAMPLE_CONFIG, GL_MULTI_SAMPLE_CONFIG, e->sample_mask.GL_MULTI_SAMPLE_CONFIG | e->framebuffer.GL_MULTI_SAMPLE_CONFIG);
     }
 #undef EMIT_STATE
+    if(dirty)
+    {
+        /* wait rasterizer until PE finished configuration */
+        etna_stall(ctx, SYNC_RECIPIENT_RA, SYNC_RECIPIENT_PE);
+    }
+
     e->dirty_bits = 0;
 }
 /*********************************************************************/
@@ -1210,12 +1235,17 @@ struct pipe_context *etna_new_pipe_context(etna_ctx *ctx)
     }
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pc);
 
+    /* context private setup */
     priv->ctx = ctx;
     priv->dirty_bits = 0xffffffff;
 
     priv->specs.can_supertile = VIV_FEATURE(chipMinorFeatures0,SUPER_TILED);
     priv->specs.bits_per_tile = VIV_FEATURE(chipMinorFeatures0,2BITPERTILE)?2:4;
     priv->specs.ts_clear_value = VIV_FEATURE(chipMinorFeatures0,2BITPERTILE)?0x55555555:0x11111111;
+
+    priv->base_setup.PA_W_CLIP_LIMIT = 0x34000001;
+    priv->base_setup.PA_SYSTEM_MODE = 0x11;
+    priv->base_setup.GL_VERTEX_ELEMENT_CONFIG = 0x1;
 
     /* fill in vtable entries one by one */
     pc->destroy = etna_pipe_destroy;

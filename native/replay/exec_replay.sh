@@ -8,7 +8,7 @@ fi
 IMAGE_OUT="/mnt/sdcard/replay.bmp"
 if [[ "$DEMO" == "ps_sandbox_etna" || "$DEMO" == "etna_test" ]]; then
     ARG="/data/mine/shader.bin"
-    ../../tools/asm.py ../../rnndb/isa.xml sandbox.asm -o shader.bin
+    ../../tools/asm.py --isa-file ../../rnndb/isa.xml sandbox.asm -o shader.bin
     [ $? -ne 0 ] && exit
     adb push shader.bin ${ARG}
 fi

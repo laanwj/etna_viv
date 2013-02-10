@@ -219,9 +219,16 @@ int main(int argc, char **argv)
     }
     printf("Succesfully opened device\n");
 
+    etna_ctx *ctx = 0;
+    if(etna_create(&ctx) != ETNA_OK)
+    {
+        printf("Unable to create context\n");
+        exit(1);
+    }
+
     /* Initialize buffers synchronization structure */
     etna_bswap_buffers *buffers = 0;
-    if(etna_bswap_create(&buffers, (int (*)(void *, int))&fb_set_buffer, &fb) < 0)
+    if(etna_bswap_create(ctx, &buffers, (int (*)(void *, int))&fb_set_buffer, &fb) < 0)
     {
         fprintf(stderr, "Error creating buffer swapper\n");
         exit(1);
@@ -309,13 +316,6 @@ int main(int argc, char **argv)
             ((float*)vtx->logical)[dest_idx+comp+3] = vNormals[vert*3 + comp]; /* 1 */
         for(int comp=0; comp<2; ++comp)
             ((float*)vtx->logical)[dest_idx+comp+6] = vTexCoords[vert*2 + comp]; /* 2 */
-    }
-
-    etna_ctx *ctx = 0;
-    if(etna_create(&ctx) != ETNA_OK)
-    {
-        printf("Unable to create context\n");
-        exit(1);
     }
 
     for(int frame=0; frame<1000; ++frame)
@@ -423,8 +423,8 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_PE_COLOR_FORMAT, 
                 VIVS_PE_COLOR_FORMAT_COMPONENTS(0xf) |
                 VIVS_PE_COLOR_FORMAT_FORMAT(RS_FORMAT_X8R8G8B8) |
-                VIVS_PE_COLOR_FORMAT_SUPER_TILED /* |
-                VIVS_PE_COLOR_FORMAT_PARTIAL*/);
+                VIVS_PE_COLOR_FORMAT_SUPER_TILED |
+                VIVS_PE_COLOR_FORMAT_OVERWRITE);
         etna_set_state(ctx, VIVS_PE_DEPTH_CONFIG, 
                 VIVS_PE_DEPTH_CONFIG_DEPTH_FORMAT_D16 |
                 VIVS_PE_DEPTH_CONFIG_SUPER_TILED |

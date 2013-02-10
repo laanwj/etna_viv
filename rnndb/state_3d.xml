@@ -479,8 +479,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="4" name="FORMAT_MASK"/>
             <bitfield high="11" low="8" name="COMPONENTS" type="RGBA_BITS" brief="glColorMask"/>
             <bitfield pos="12" name="COMPONENTS_MASK"/>
-            <bitfield pos="16" name="PARTIAL" brief="Set when alpha blending enabled or otherwise the destination is not fully overwritten"/>
-            <bitfield pos="17" name="PARTIAL_MASK"/>
+            <bitfield pos="16" name="OVERWRITE" brief="Set to 1 when destination fully overwritten, so no alpha blending and masked components"/>
+            <bitfield pos="17" name="OVERWRITE_MASK"/>
             <bitfield pos="20" name="SUPER_TILED" brief="64x64 alignment"/>
             <bitfield pos="21" name="SUPER_TILED_MASK"/>
         </reg32>

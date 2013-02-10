@@ -12,7 +12,7 @@ The rules-ng-ng source files this header was generated from are:
 - /home/orion/projects/etna_viv/rnndb/common.xml   (  15601 bytes, from 2013-02-01 12:03:20)
 - /home/orion/projects/etna_viv/rnndb/state_hi.xml (  11825 bytes, from 2013-02-01 10:14:08)
 - /home/orion/projects/etna_viv/rnndb/state_2d.xml (  30577 bytes, from 2013-02-01 10:02:25)
-- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  48960 bytes, from 2013-02-02 16:37:28)
+- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  49072 bytes, from 2013-02-10 11:27:07)
 
 Copyright (C) 2013
 */
@@ -525,8 +525,8 @@ Copyright (C) 2013
 #define VIVS_PE_COLOR_FORMAT_COMPONENTS__SHIFT			8
 #define VIVS_PE_COLOR_FORMAT_COMPONENTS(x)			(((x) << VIVS_PE_COLOR_FORMAT_COMPONENTS__SHIFT) & VIVS_PE_COLOR_FORMAT_COMPONENTS__MASK)
 #define VIVS_PE_COLOR_FORMAT_COMPONENTS_MASK			0x00001000
-#define VIVS_PE_COLOR_FORMAT_PARTIAL				0x00010000
-#define VIVS_PE_COLOR_FORMAT_PARTIAL_MASK			0x00020000
+#define VIVS_PE_COLOR_FORMAT_OVERWRITE				0x00010000
+#define VIVS_PE_COLOR_FORMAT_OVERWRITE_MASK			0x00020000
 #define VIVS_PE_COLOR_FORMAT_SUPER_TILED			0x00100000
 #define VIVS_PE_COLOR_FORMAT_SUPER_TILED_MASK			0x00200000
 

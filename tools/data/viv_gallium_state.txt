@@ -1,5 +1,11 @@
 # group and sort these by address
 # <struct_name> <source_spec> <dirtybit>
+
+base_setup_state base_setup. ETNA_STATE_BASE
+    PA.W_CLIP_LIMIT
+    PA.SYSTEM_MODE
+    GL.VERTEX_ELEMENT_CONFIG
+
 rasterizer_state rasterizer-> ETNA_STATE_RASTERIZER
     PA.CONFIG
     PA.LINE_WIDTH

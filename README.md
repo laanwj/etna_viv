@@ -65,13 +65,15 @@ to the Vivante hardware while abstracting away kernel interface details.
 
 - `rotate_cube`: Rotating smoothed color cube
 
-- `mip_cube`: Rotating cube with a mipmapped texture loaded from a `dds` file provided on the command line. One 
+- `mip_cube_state`: Rotating cube with a mipmapped texture loaded from a `dds` file provided on the command line. One 
   of the example textures have a different color and number on each mipmap level, to explicitly show interpolation 
   between mipmap levels as the surface 
   goes nearer or farther from the camera.
 
   - Mipmapping
   - DXT1 / DXT3 / DXT5 / ETC1 compressed textures
+
+- `alpha_blend`: Alpha blending quads
 
 If you are executing these demos on an Android device, make sure that you are root, otherwise the framebuffer
 is not accessible.

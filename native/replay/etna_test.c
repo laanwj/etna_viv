@@ -151,7 +151,7 @@ int main(int argc, char **argv)
 
     /* Set up pixel engine */
     etna_set_state(ctx, VIVS_PE_COLOR_FORMAT, 
-            ETNA_MASKED_BIT(VIVS_PE_COLOR_FORMAT_PARTIAL, 0));
+            ETNA_MASKED_BIT(VIVS_PE_COLOR_FORMAT_OVERWRITE, 0));
     etna_set_state(ctx, VIVS_PE_ALPHA_CONFIG,
             ETNA_MASKED_BIT(VIVS_PE_ALPHA_CONFIG_BLEND_ENABLE_COLOR, 0) &
             ETNA_MASKED_BIT(VIVS_PE_ALPHA_CONFIG_BLEND_SEPARATE_ALPHA, 0) &
@@ -208,7 +208,7 @@ int main(int argc, char **argv)
                 ETNA_MASKED(VIVS_GL_MULTI_SAMPLE_CONFIG_UNK16, 0x0)
                 ); 
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR);
-        etna_set_state(ctx, VIVS_PE_COLOR_FORMAT, ETNA_MASKED_BIT(VIVS_PE_COLOR_FORMAT_PARTIAL, 1));
+        etna_set_state(ctx, VIVS_PE_COLOR_FORMAT, ETNA_MASKED_BIT(VIVS_PE_COLOR_FORMAT_OVERWRITE, 1));
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR);
         etna_set_state(ctx, VIVS_TS_COLOR_CLEAR_VALUE, 0);
         etna_set_state(ctx, VIVS_TS_COLOR_STATUS_BASE, rt_ts->address); /* ADDR_B */
@@ -436,7 +436,7 @@ int main(int argc, char **argv)
                 VIVS_TS_MEM_CONFIG_DEPTH_COMPRESSION);
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR);
         etna_set_state(ctx, VIVS_PE_COLOR_FORMAT, 
-                ETNA_MASKED_BIT(VIVS_PE_COLOR_FORMAT_PARTIAL, 0));
+                ETNA_MASKED_BIT(VIVS_PE_COLOR_FORMAT_OVERWRITE, 0));
 
         /* Submit third command buffer, wait for pixel engine to finish */
         etna_finish(ctx);

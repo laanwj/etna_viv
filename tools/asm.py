@@ -283,8 +283,9 @@ def compare_inst(a,b,warnings):
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Disassemble shader')
-    parser.add_argument('isa_file', metavar='ISAFILE', type=str, 
-            help='Shader ISA definition file (rules-ng-ng)')
+    parser.add_argument('--isa-file', metavar='ISAFILE', type=str, 
+            help='Shader ISA definition file (rules-ng-ng)',
+            default='../rnndb/isa.xml')
     parser.add_argument('input', metavar='INFILE', type=str, 
             help='Shader assembly file')
     #parser.add_argument('output', metavar='OUTFILE', type=str, 

@@ -313,7 +313,7 @@ int main(int argc, char **argv)
                                             ETNA_MASKED_INL(VIVS_PA_CONFIG_SHADE_MODEL, SMOOTH));
         
         etna_set_state(ctx, VIVS_PE_COLOR_FORMAT, 
-                ETNA_MASKED_BIT(VIVS_PE_COLOR_FORMAT_PARTIAL, 0) & 
+                ETNA_MASKED_BIT(VIVS_PE_COLOR_FORMAT_OVERWRITE, 0) & 
                 ETNA_MASKED(VIVS_PE_COLOR_FORMAT_COMPONENTS, 0xf) &
                 ETNA_MASKED(VIVS_PE_COLOR_FORMAT_FORMAT, RS_FORMAT_X8R8G8B8) &
                 ETNA_MASKED_BIT(VIVS_PE_COLOR_FORMAT_SUPER_TILED, 1));
