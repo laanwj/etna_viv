@@ -56,10 +56,217 @@
 #include "esShapes.h"
 #include "dds.h"
 
+#define ETNA_NUM_INPUTS 16
+#define ETNA_NUM_VARYINGS 16
+
+struct etna_shader_input
+{
+    int vs_reg; /* VS input register */
+};
+
+enum etna_varying_special {
+    ETNA_VARYING_VSOUT = 0, /* from VS */
+    ETNA_VARYING_POINTCOORD, /* point texture coord */
+};
+
+struct etna_shader_varying
+{
+    int num_components;
+    enum etna_varying_special special; 
+    int pa_attributes;
+    int vs_reg; /* VS output register */
+};
+
+struct etna_shader_program 
+{
+    unsigned ra_control; // unknown 1 or 3
+    unsigned num_inputs;
+    struct etna_shader_input inputs[ETNA_NUM_INPUTS];
+    unsigned num_varyings;
+    struct etna_shader_varying varyings[ETNA_NUM_VARYINGS]; 
+    
+    unsigned vs_code_size; /* Vertex shader code size in words */ 
+    uint32_t *vs_code;
+    unsigned vs_pos_out_reg; /* VS position output */
+    unsigned vs_load_balancing;
+    unsigned vs_num_temps; /* number of temporaries, can never be less than num_varyings+1 */
+    unsigned vs_uniforms_size; /* Size of uniforms (in words) */
+    uint32_t *vs_uniforms; /* Initial values for VS uniforms */
+
+    unsigned ps_code_size; /* Pixel shader code size in words */
+    uint32_t *ps_code;
+    unsigned ps_color_out_reg; /* color output register */
+    unsigned ps_num_temps; /* number of temporaries, can never be less than num_varyings+1 */;
+    unsigned ps_uniforms_size; /* Size of uniforms (in words) */
+    uint32_t *ps_uniforms; /* Initial values for VS uniforms */
+};
+
+struct compiled_shader_state 
+{
+    uint32_t RA_CONTROL;
+
+    uint32_t PA_ATTRIBUTE_ELEMENT_COUNT;
+    uint32_t PA_SHADER_ATTRIBUTES[VIVS_PA_SHADER_ATTRIBUTES__LEN];
+
+    uint32_t VS_END_PC;
+    uint32_t VS_OUTPUT_COUNT;
+    uint32_t VS_INPUT_COUNT;
+    uint32_t VS_TEMP_REGISTER_CONTROL;
+    uint32_t VS_OUTPUT[4];
+    uint32_t VS_INPUT[4];
+    uint32_t VS_LOAD_BALANCING; 
+    uint32_t VS_START_PC;
+
+    uint32_t PS_END_PC;
+    uint32_t PS_OUTPUT_REG;
+    uint32_t PS_INPUT_COUNT;
+    uint32_t PS_TEMP_REGISTER_CONTROL;
+    uint32_t PS_CONTROL;
+    uint32_t PS_START_PC;
+
+    uint32_t GL_VARYING_TOTAL_COMPONENTS;
+    uint32_t GL_VARYING_NUM_COMPONENTS;
+    uint32_t GL_VARYING_COMPONENT_USE[2];
+
+    unsigned vs_inst_mem_size;
+    unsigned vs_uniforms_size;
+    unsigned ps_inst_mem_size;
+    unsigned ps_uniforms_size;
+    uint32_t *VS_INST_MEM;
+    uint32_t *VS_UNIFORMS;
+    uint32_t *PS_INST_MEM;
+    uint32_t *PS_UNIFORMS;
+};
+
+#define SET_STATE(addr, value) cs->addr = (value)
+#define SET_STATE_FIXP(addr, value) cs->addr = (value)
+#define SET_STATE_F32(addr, value) cs->addr = f32_to_u32(value)
+
+/* strdup for string of 32-bit words */
+static inline uint32_t *copy32(uint32_t *data, unsigned size)
+{
+    uint32_t *retval = malloc(size * 4);
+    if(retval)
+        memcpy(retval, data, size * 4);
+    return retval;
+}
+
+static void compile_shader_state(struct compiled_shader_state *cs, const struct etna_shader_program *rs)
+{
+    SET_STATE(RA_CONTROL, rs->ra_control);
+
+    SET_STATE(PA_ATTRIBUTE_ELEMENT_COUNT, VIVS_PA_ATTRIBUTE_ELEMENT_COUNT_COUNT(rs->num_varyings));
+    for(int idx=0; idx<rs->num_varyings; ++idx)
+        SET_STATE(PA_SHADER_ATTRIBUTES[idx], rs->varyings[idx].pa_attributes);
+
+    SET_STATE(VS_END_PC, rs->vs_code_size / 4);
+    SET_STATE(VS_OUTPUT_COUNT, rs->num_varyings + 1); /* position + varyings */
+    SET_STATE(VS_INPUT_COUNT, VIVS_VS_INPUT_COUNT_COUNT(rs->num_inputs) |
+                              VIVS_VS_INPUT_COUNT_UNK8(1));
+    SET_STATE(VS_TEMP_REGISTER_CONTROL,
+                              VIVS_VS_TEMP_REGISTER_CONTROL_NUM_TEMPS(rs->vs_num_temps));
+    /* vs outputs (varyings) */ 
+    uint32_t vs_output[4] = {0};
+    vs_output[0] = rs->vs_pos_out_reg;
+    for(int idx=0; idx<rs->num_varyings; ++idx)
+        vs_output[idx/4] |= rs->varyings[idx].vs_reg << (((idx+1)%4)*8);
+    for(int idx=0; idx<4; ++idx)
+        SET_STATE(VS_OUTPUT[idx], vs_output[idx]);
+    
+    /* vs inputs (attributes) */
+    uint32_t vs_input[4] = {0};
+    for(int idx=0; idx<rs->num_inputs; ++idx)
+        vs_input[idx/4] |= rs->inputs[idx].vs_reg << ((idx%4)*8);
+    for(int idx=0; idx<4; ++idx)
+        SET_STATE(VS_INPUT[idx], vs_input[idx]);
+
+    SET_STATE(VS_LOAD_BALANCING, rs->vs_load_balancing); 
+    SET_STATE(VS_START_PC, 0);
+
+    SET_STATE(PS_END_PC, rs->ps_code_size / 4);
+    SET_STATE(PS_OUTPUT_REG, rs->ps_color_out_reg);
+    SET_STATE(PS_INPUT_COUNT, VIVS_PS_INPUT_COUNT_COUNT(rs->num_varyings + 1) | 
+                              VIVS_PS_INPUT_COUNT_UNK8(31));
+    SET_STATE(PS_TEMP_REGISTER_CONTROL,
+                              VIVS_PS_TEMP_REGISTER_CONTROL_NUM_TEMPS(rs->ps_num_temps));
+    SET_STATE(PS_CONTROL, VIVS_PS_CONTROL_UNK1);
+    SET_STATE(PS_START_PC, 0);
+
+    uint32_t total_components = 0;
+    uint32_t num_components = 0;
+    uint32_t component_use[2] = {0};
+    for(int idx=0; idx<rs->num_varyings; ++idx)
+    {
+        num_components |= rs->varyings[idx].num_components << ((idx%8)*4);
+        for(int comp=0; comp<rs->varyings[idx].num_components; ++comp)
+        {
+            int compid = total_components + comp;
+            unsigned use = VARYING_COMPONENT_USE_USED;
+            if(rs->varyings[idx].special == ETNA_VARYING_POINTCOORD)
+            {
+                if(comp == 0)
+                    use = VARYING_COMPONENT_USE_POINTCOORD_X;
+                else if(comp == 1)
+                    use = VARYING_COMPONENT_USE_POINTCOORD_Y;
+            }
+            component_use[compid/16] |= use << ((compid%16)*2);
+        }
+        total_components += rs->varyings[idx].num_components;
+    }
+    SET_STATE(GL_VARYING_TOTAL_COMPONENTS, VIVS_GL_VARYING_TOTAL_COMPONENTS_NUM(total_components));
+    SET_STATE(GL_VARYING_NUM_COMPONENTS, num_components);
+    SET_STATE(GL_VARYING_COMPONENT_USE[0], component_use[0]);
+    SET_STATE(GL_VARYING_COMPONENT_USE[1], component_use[1]);
+
+    cs->vs_inst_mem_size = rs->vs_code_size;
+    cs->vs_uniforms_size = rs->vs_uniforms_size;
+    cs->ps_inst_mem_size = rs->ps_code_size;
+    cs->ps_uniforms_size = rs->ps_uniforms_size;
+    cs->VS_INST_MEM = copy32(rs->vs_code, rs->vs_code_size);
+    cs->VS_UNIFORMS = copy32(rs->vs_uniforms, rs->vs_uniforms_size);
+    cs->PS_INST_MEM = copy32(rs->ps_code, rs->ps_code_size);
+    cs->PS_UNIFORMS = copy32(rs->ps_uniforms, rs->ps_uniforms_size);
+}
+
+/* test.... */
+static void submit_shader_state(etna_ctx *ctx, struct compiled_shader_state *cs)
+{
+    etna_set_state(ctx, VIVS_RA_CONTROL, cs->RA_CONTROL);
+
+    etna_set_state(ctx, VIVS_PA_ATTRIBUTE_ELEMENT_COUNT, cs->PA_ATTRIBUTE_ELEMENT_COUNT);
+    etna_set_state_multi(ctx, VIVS_PA_SHADER_ATTRIBUTES(0), VIVS_PA_SHADER_ATTRIBUTES__LEN, 
+            cs->PA_SHADER_ATTRIBUTES);
+    
+    etna_set_state(ctx, VIVS_VS_END_PC, cs->VS_END_PC);
+    etna_set_state(ctx, VIVS_VS_OUTPUT_COUNT, cs->VS_OUTPUT_COUNT);
+    etna_set_state(ctx, VIVS_VS_INPUT_COUNT, cs->VS_INPUT_COUNT);
+    etna_set_state(ctx, VIVS_VS_TEMP_REGISTER_CONTROL, cs->VS_TEMP_REGISTER_CONTROL);
+    etna_set_state_multi(ctx, VIVS_VS_OUTPUT(0), 4, cs->VS_OUTPUT);
+    etna_set_state_multi(ctx, VIVS_VS_INPUT(0), 4, cs->VS_INPUT);
+    etna_set_state(ctx, VIVS_VS_LOAD_BALANCING, cs->VS_LOAD_BALANCING); 
+    etna_set_state(ctx, VIVS_VS_START_PC, cs->VS_START_PC);
+
+    etna_set_state(ctx, VIVS_PS_END_PC, cs->PS_END_PC);
+    etna_set_state(ctx, VIVS_PS_OUTPUT_REG, cs->PS_OUTPUT_REG);
+    etna_set_state(ctx, VIVS_PS_INPUT_COUNT, cs->PS_INPUT_COUNT);
+    etna_set_state(ctx, VIVS_PS_TEMP_REGISTER_CONTROL, cs->PS_TEMP_REGISTER_CONTROL);
+    etna_set_state(ctx, VIVS_PS_CONTROL, cs->PS_CONTROL);
+    etna_set_state(ctx, VIVS_PS_START_PC, cs->PS_START_PC);
+
+    etna_set_state(ctx, VIVS_GL_VARYING_TOTAL_COMPONENTS, cs->GL_VARYING_TOTAL_COMPONENTS);
+    etna_set_state(ctx, VIVS_GL_VARYING_NUM_COMPONENTS, cs->GL_VARYING_NUM_COMPONENTS);
+    etna_set_state_multi(ctx, VIVS_GL_VARYING_COMPONENT_USE(0), 2, cs->GL_VARYING_COMPONENT_USE);
+
+    etna_set_state_multi(ctx, VIVS_VS_INST_MEM(0), cs->vs_inst_mem_size, cs->VS_INST_MEM);
+    etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(0), cs->vs_uniforms_size, cs->VS_UNIFORMS);
+    etna_set_state_multi(ctx, VIVS_PS_INST_MEM(0), cs->ps_inst_mem_size, cs->PS_INST_MEM);
+    etna_set_state_multi(ctx, VIVS_PS_UNIFORMS(0), cs->ps_uniforms_size, cs->PS_UNIFORMS);
+}
+
 /*********************************************************************/
 #define VERTEX_BUFFER_SIZE 0x60000
 
-uint32_t vs[] = {
+const uint32_t vs[] = {
     0x01831009,0x00000000,0x00000000,0x203fc048,
     0x02031009,0x00000000,0x00000000,0x203fc058,
     0x07841003,0x39000800,0x00000050,0x00000000,
@@ -84,13 +291,49 @@ uint32_t vs[] = {
     0x02041001,0x2a804800,0x00000000,0x003fc048,
     0x02041003,0x2a804800,0x00aa05c0,0x00000002,
 };
-uint32_t ps[] = { /* texture sampling */
+const uint32_t ps[] = { /* texture sampling */
     0x07811003,0x00000800,0x01c800d0,0x00000000,
     0x07821018,0x29002f20,0x00000000,0x00000000,
     0x07811003,0x39001800,0x01c80140,0x00000000,
 };
 size_t vs_size = sizeof(vs);
 size_t ps_size = sizeof(ps);
+
+const struct etna_shader_program shader = {
+    .ra_control = 1,
+    .num_inputs = 3,
+    .inputs = {{.vs_reg=0},{.vs_reg=1},{.vs_reg=2}},
+    .num_varyings = 2,
+    .varyings = {
+        {.num_components=4, .special=ETNA_VARYING_VSOUT, .pa_attributes=0x200, .vs_reg=0},
+        {.num_components=3, .special=ETNA_VARYING_VSOUT, .pa_attributes=0x200, .vs_reg=1}
+    }, 
+    .vs_code_size = sizeof(vs)/4,
+    .vs_code = (uint32_t*)vs,
+    .vs_pos_out_reg = 4, // t4 out
+    .vs_load_balancing = 0xf3f0542,
+    .vs_num_temps = 6,
+    .vs_uniforms_size = 12*4,
+    .vs_uniforms = (uint32_t*)(const float[12*4]){
+        [19] = 2.0f, /* u4.w */
+        [23] = 20.0f, /* u5.w */
+        [27] = 0.0f, /* u6.w */
+        [45] = 0.5f, /* u11.y */
+        [44] = 1.0f, /* u11.x */
+    },
+    .ps_code_size = sizeof(ps)/4,
+    .ps_code = (uint32_t*)ps,
+    .ps_color_out_reg = 1, // t1 out
+    .ps_num_temps = 3,
+    .ps_uniforms_size = 2*4,
+    .ps_uniforms = (uint32_t*)(const float[2*4]){
+        [0] = 1.0f,
+        [4] = 1.0f,
+        [5] = -1.0f,
+        [6] = -1.0f,
+        [7] = 0.0f
+    },
+};
 
 int main(int argc, char **argv)
 {
@@ -361,6 +604,10 @@ int main(int argc, char **argv)
             .user_buffer = 0
             }); /* non-indexed rendering */
 
+    struct compiled_shader_state shader_state = {};
+    compile_shader_state(&shader_state, &shader);
+    submit_shader_state(ctx, &shader_state);
+     
     for(int frame=0; frame<1000; ++frame)
     {
         if(frame%50 == 0)
@@ -386,68 +633,11 @@ int main(int argc, char **argv)
                 .f = {0.2, 0.2, 0.2, 1.0}
                 }, 1.0, 0xff);
         
-        //etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH | VIVS_GL_FLUSH_CACHE_TEXTURE);
-        //etna_set_state(ctx, VIVS_RS_FLUSH_CACHE, VIVS_RS_FLUSH_CACHE_FLUSH);
-        
-        /* shaders etc, not yet molded into gallium state */
-        etna_set_state(ctx, VIVS_RA_CONTROL, 0x1);
-        etna_set_state(ctx, VIVS_GL_VARYING_NUM_COMPONENTS,  
-                VIVS_GL_VARYING_NUM_COMPONENTS_VAR0(4)| /* color */
-                VIVS_GL_VARYING_NUM_COMPONENTS_VAR1(3)  /* texture coordinate */
-                );
-        etna_set_state(ctx, VIVS_GL_VARYING_TOTAL_COMPONENTS,
-                VIVS_GL_VARYING_TOTAL_COMPONENTS_NUM(4 + 3)
-                );
-        etna_set_state_multi(ctx, VIVS_GL_VARYING_COMPONENT_USE(0), 2, (uint32_t[]){
-                VIVS_GL_VARYING_COMPONENT_USE_COMP0(VARYING_COMPONENT_USE_USED) |
-                VIVS_GL_VARYING_COMPONENT_USE_COMP1(VARYING_COMPONENT_USE_USED) |
-                VIVS_GL_VARYING_COMPONENT_USE_COMP2(VARYING_COMPONENT_USE_USED) |
-                VIVS_GL_VARYING_COMPONENT_USE_COMP3(VARYING_COMPONENT_USE_USED) |
-                VIVS_GL_VARYING_COMPONENT_USE_COMP4(VARYING_COMPONENT_USE_USED) |
-                VIVS_GL_VARYING_COMPONENT_USE_COMP5(VARYING_COMPONENT_USE_USED) |
-                VIVS_GL_VARYING_COMPONENT_USE_COMP6(VARYING_COMPONENT_USE_USED)
-                , 0
-                });
-        etna_set_state(ctx, VIVS_PA_ATTRIBUTE_ELEMENT_COUNT, 0x200);
-        etna_set_state(ctx, VIVS_PA_SHADER_ATTRIBUTES(0), 0x200);
-        etna_set_state(ctx, VIVS_PA_SHADER_ATTRIBUTES(1), 0x200);
-
-        etna_set_state(ctx, VIVS_VS_START_PC, 0x0);
-        etna_set_state(ctx, VIVS_VS_END_PC, vs_size/16);
-        etna_set_state_multi(ctx, VIVS_VS_INPUT_COUNT, 3, (uint32_t[]){
-                /* VIVS_VS_INPUT_COUNT */ VIVS_VS_INPUT_COUNT_UNK8(1) | VIVS_VS_INPUT_COUNT_COUNT(3),
-                /* VIVS_VS_TEMP_REGISTER_CONTROL */ VIVS_VS_TEMP_REGISTER_CONTROL_NUM_TEMPS(6),
-                /* VIVS_VS_OUTPUT(0) */ VIVS_VS_OUTPUT_O0(4) | 
-                                        VIVS_VS_OUTPUT_O1(0) | 
-                                        VIVS_VS_OUTPUT_O2(1)});
-        etna_set_state_multi(ctx, VIVS_VS_INST_MEM(0), vs_size/4, vs);
-        etna_set_state(ctx, VIVS_VS_OUTPUT_COUNT, 3);
-        etna_set_state(ctx, VIVS_VS_LOAD_BALANCING, 0xf3f0542); /* depends on number of inputs/outputs/varyings? XXX how exactly */
         etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(0), 16, (uint32_t*)&modelviewprojection.m[0][0]);
         etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(16), 3, (uint32_t*)&normal.m[0][0]); /* u4.xyz */
         etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(20), 3, (uint32_t*)&normal.m[1][0]); /* u5.xyz */
         etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(24), 3, (uint32_t*)&normal.m[2][0]); /* u6.xyz */
         etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(28), 16, (uint32_t*)&modelview.m[0][0]);
-        etna_set_state_f32(ctx, VIVS_VS_UNIFORMS(19), 2.0); /* u4.w */
-        etna_set_state_f32(ctx, VIVS_VS_UNIFORMS(23), 20.0); /* u5.w */
-        etna_set_state_f32(ctx, VIVS_VS_UNIFORMS(27), 0.0); /* u6.w */
-        etna_set_state_f32(ctx, VIVS_VS_UNIFORMS(45), 0.5); /* u11.y */
-        etna_set_state_f32(ctx, VIVS_VS_UNIFORMS(44), 1.0); /* u11.x */
-        etna_set_state(ctx, VIVS_VS_INPUT(0), VIVS_VS_INPUT_I0(0) | 
-                                        VIVS_VS_INPUT_I1(1) | 
-                                        VIVS_VS_INPUT_I2(2));
-
-        etna_set_state(ctx, VIVS_PS_START_PC, 0x0);
-        etna_set_state_multi(ctx, VIVS_PS_END_PC, 2, (uint32_t[]){
-                /* VIVS_PS_END_PC */ ps_size/16,
-                /* VIVS_PS_OUTPUT_REG */ 0x1});
-        etna_set_state_multi(ctx, VIVS_PS_INST_MEM(0), ps_size/4, ps);
-        etna_set_state(ctx, VIVS_PS_INPUT_COUNT, VIVS_PS_INPUT_COUNT_UNK8(31) | VIVS_PS_INPUT_COUNT_COUNT(3));
-        etna_set_state(ctx, VIVS_PS_TEMP_REGISTER_CONTROL, VIVS_PS_TEMP_REGISTER_CONTROL_NUM_TEMPS(3));
-        etna_set_state(ctx, VIVS_PS_CONTROL, VIVS_PS_CONTROL_UNK1);
-        etna_set_state_f32(ctx, VIVS_PS_UNIFORMS(0), 1.0); /* u0.x */
-        etna_set_state_multi(ctx, VIVS_PS_UNIFORMS(4), 4, 
-              (uint32_t*)(float[]){1.0,-1.0,-1.0,0.0}); /* u1.x */
 
         pipe->draw_vbo(pipe, &(struct pipe_draw_info){
                 .indexed = 1,
@@ -455,10 +645,11 @@ int main(int argc, char **argv)
                 .start = 0,
                 .count = numIndices
                 });
-        //etna_stall(ctx, SYNC_RECIPIENT_FE, SYNC_RECIPIENT_PE);
-        
-        //etna_dump_cmd_buffer(ctx);
-        //exit(0);
+
+#if 0
+        etna_dump_cmd_buffer(ctx);
+        exit(0);
+#endif    
         /* copy to screen */
         etna_bswap_wait_available(buffers);
         /*  this flush is really needed, otherwise some quads will have pieces undrawn */

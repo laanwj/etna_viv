@@ -10,7 +10,7 @@ static inline void etna_set_state(etna_ctx *cmdbuf, uint32_t address, uint32_t v
     ETNA_EMIT(cmdbuf, value);
 }
 
-static inline void etna_set_state_multi(etna_ctx *cmdbuf, uint32_t base, uint32_t num, uint32_t *values)
+static inline void etna_set_state_multi(etna_ctx *cmdbuf, uint32_t base, uint32_t num, const uint32_t *values)
 {
     etna_reserve(cmdbuf, 1 + num + 1); /* 1 extra for potential alignment */
     ETNA_EMIT_LOAD_STATE(cmdbuf, base >> 2, num, 0);
