@@ -1,7 +1,7 @@
 # group and sort these by address
 # <struct_name> <source_spec> <dirtybit>
 
-base_setup_state base_setup. ETNA_STATE_BASE
+base_setup_state base_setup. ETNA_STATE_BASE_SETUP
     PA.W_CLIP_LIMIT
     PA.SYSTEM_MODE
     GL.VERTEX_ELEMENT_CONFIG
@@ -99,4 +99,34 @@ set_vertex_buffer vertex_buffer. ETNA_STATE_VERTEX_BUFFERS
 set_index_buffer index_buffer. ETNA_STATE_INDEX_BUFFER
     FE.INDEX_STREAM_CONTROL
     FE.INDEX_STREAM_BASE_ADDR
+
+shader_state shader_state-> ETNA_STATE_SHADER
+    RA.CONTROL
+    PA.ATTRIBUTE_ELEMENT_COUNT
+    PA.SHADER_ATTRIBUTES
+    VS.END_PC
+    VS.OUTPUT_COUNT
+    VS.INPUT_COUNT
+    VS.TEMP_REGISTER_CONTROL
+    VS.OUTPUT
+    VS.INPUT
+    VS.LOAD_BALANCING
+    VS.START_PC
+    PS.END_PC
+    PS.OUTPUT_REG
+    PS.INPUT_COUNT
+    PS.TEMP_REGISTER_CONTROL
+    PS.CONTROL
+    PS.START_PC
+    GL.VARYING_TOTAL_COMPONENTS
+    GL.VARYING_NUM_COMPONENTS
+    GL.VARYING_COMPONENT_USE
+    VS.INST_MEM
+    PS.INST_MEM
+
+shader_state shader_state-> ETNA_STATE_VS_UNIFORMS
+    VS.UNIFORMS
+
+shader_state shader_state-> ETNA_STATE_PS_UNIFORMS
+    PS.UNIFORMS
 

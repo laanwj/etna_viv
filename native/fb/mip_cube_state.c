@@ -190,8 +190,38 @@ uint32_t ps[] = { /* texture sampling */
     0x07821018, 0x15002f20, 0x00000000, 0x00000000,
     0x07811003, 0x39001800, 0x01c80140, 0x00000000,
 };
-size_t vs_size = sizeof(vs);
-size_t ps_size = sizeof(ps);
+
+const struct etna_shader_program shader = {
+    .ra_control = 3,
+    .num_inputs = 3,
+    .inputs = {{.vs_reg=0},{.vs_reg=1},{.vs_reg=2}},
+    .num_varyings = 2,
+    .varyings = {
+        {.num_components=4, .special=ETNA_VARYING_VSOUT, .pa_attributes=0x200, .vs_reg=0}, /* color */
+        {.num_components=2, .special=ETNA_VARYING_VSOUT, .pa_attributes=0x200, .vs_reg=1}  /* texcoord */
+    }, 
+    .vs_code_size = sizeof(vs)/4,
+    .vs_code = (uint32_t*)vs,
+    .vs_pos_out_reg = 4, // t4 out
+    .vs_load_balancing = 0xf3f0542,  /* depends on number of inputs/outputs/varyings? XXX how exactly */
+    .vs_num_temps = 6,
+    .vs_uniforms_size = 12*4,
+    .vs_uniforms = (uint32_t*)(const float[12*4]){
+        [19] = 2.0f, /* u4.w */
+        [23] = 20.0f, /* u5.w */
+        [27] = 0.0f, /* u6.w */
+        [45] = 0.5f, /* u11.y */
+        [44] = 1.0f, /* u11.x */
+    },
+    .ps_code_size = sizeof(ps)/4,
+    .ps_code = (uint32_t*)ps,
+    .ps_color_out_reg = 1, // t1 out
+    .ps_num_temps = 3,
+    .ps_uniforms_size = 1*4,
+    .ps_uniforms = (uint32_t*)(const float[1*4]){
+        [0] = 1.0f,
+    },
+};
 
 int main(int argc, char **argv)
 {
@@ -485,6 +515,9 @@ int main(int argc, char **argv)
             .buffer = 0,
             .user_buffer = 0
             });*/ /* non-indexed rendering */
+    
+    void *shader_state = pipe->create_etna_shader_state(pipe, &shader);
+    pipe->bind_etna_shader_state(pipe, shader_state);
 
     for(int frame=0; frame<1000; ++frame)
     {
@@ -511,65 +544,11 @@ int main(int argc, char **argv)
                 .f = {0.2, 0.2, 0.2, 1.0}
                 }, 1.0, 0xff);
         
-        //etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH | VIVS_GL_FLUSH_CACHE_TEXTURE);
-        //etna_set_state(ctx, VIVS_RS_FLUSH_CACHE, VIVS_RS_FLUSH_CACHE_FLUSH);
-        
-        /* shaders etc, not yet molded into gallium state */
-        etna_set_state(ctx, VIVS_RA_CONTROL, 0x3);
-        etna_set_state(ctx, VIVS_GL_VARYING_NUM_COMPONENTS,  
-                VIVS_GL_VARYING_NUM_COMPONENTS_VAR0(4)| /* position */
-                VIVS_GL_VARYING_NUM_COMPONENTS_VAR1(2)  /* texture coordinate */
-                );
-        etna_set_state(ctx, VIVS_GL_VARYING_TOTAL_COMPONENTS,
-                VIVS_GL_VARYING_TOTAL_COMPONENTS_NUM(4 + 2)
-                );
-        etna_set_state_multi(ctx, VIVS_GL_VARYING_COMPONENT_USE(0), 2, (uint32_t[]){
-                VIVS_GL_VARYING_COMPONENT_USE_COMP0(VARYING_COMPONENT_USE_USED) |
-                VIVS_GL_VARYING_COMPONENT_USE_COMP1(VARYING_COMPONENT_USE_USED) |
-                VIVS_GL_VARYING_COMPONENT_USE_COMP2(VARYING_COMPONENT_USE_USED) |
-                VIVS_GL_VARYING_COMPONENT_USE_COMP3(VARYING_COMPONENT_USE_USED) |
-                VIVS_GL_VARYING_COMPONENT_USE_COMP4(VARYING_COMPONENT_USE_USED) |
-                VIVS_GL_VARYING_COMPONENT_USE_COMP5(VARYING_COMPONENT_USE_USED)
-                , 0
-                });
-        etna_set_state(ctx, VIVS_PA_ATTRIBUTE_ELEMENT_COUNT, 0x200);
-        etna_set_state(ctx, VIVS_PA_SHADER_ATTRIBUTES(0), 0x200);
-        etna_set_state(ctx, VIVS_PA_SHADER_ATTRIBUTES(1), 0x200);
-
-        etna_set_state(ctx, VIVS_VS_START_PC, 0x0);
-        etna_set_state(ctx, VIVS_VS_END_PC, vs_size/16);
-        etna_set_state_multi(ctx, VIVS_VS_INPUT_COUNT, 3, (uint32_t[]){
-                /* VIVS_VS_INPUT_COUNT */ VIVS_VS_INPUT_COUNT_UNK8(1) | VIVS_VS_INPUT_COUNT_COUNT(3),
-                /* VIVS_VS_TEMP_REGISTER_CONTROL */ VIVS_VS_TEMP_REGISTER_CONTROL_NUM_TEMPS(6),
-                /* VIVS_VS_OUTPUT(0) */ VIVS_VS_OUTPUT_O0(4) | 
-                                        VIVS_VS_OUTPUT_O1(0) | 
-                                        VIVS_VS_OUTPUT_O2(1)});
-        etna_set_state_multi(ctx, VIVS_VS_INST_MEM(0), vs_size/4, vs);
-        etna_set_state(ctx, VIVS_VS_OUTPUT_COUNT, 3);
-        etna_set_state(ctx, VIVS_VS_LOAD_BALANCING, 0xf3f0542); /* depends on number of inputs/outputs/varyings? XXX how exactly */
-        etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(0), 16, (uint32_t*)&modelviewprojection.m[0][0]);
-        etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(16), 3, (uint32_t*)&normal.m[0][0]); /* u4.xyz */
-        etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(20), 3, (uint32_t*)&normal.m[1][0]); /* u5.xyz */
-        etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(24), 3, (uint32_t*)&normal.m[2][0]); /* u6.xyz */
-        etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(28), 16, (uint32_t*)&modelview.m[0][0]);
-        etna_set_state_f32(ctx, VIVS_VS_UNIFORMS(19), 2.0); /* u4.w */
-        etna_set_state_f32(ctx, VIVS_VS_UNIFORMS(23), 20.0); /* u5.w */
-        etna_set_state_f32(ctx, VIVS_VS_UNIFORMS(27), 0.0); /* u6.w */
-        etna_set_state_f32(ctx, VIVS_VS_UNIFORMS(45), 0.5); /* u11.y */
-        etna_set_state_f32(ctx, VIVS_VS_UNIFORMS(44), 1.0); /* u11.x */
-        etna_set_state(ctx, VIVS_VS_INPUT(0), VIVS_VS_INPUT_I0(0) | 
-                                        VIVS_VS_INPUT_I1(1) | 
-                                        VIVS_VS_INPUT_I2(2));
-
-        etna_set_state(ctx, VIVS_PS_START_PC, 0x0);
-        etna_set_state_multi(ctx, VIVS_PS_END_PC, 2, (uint32_t[]){
-                /* VIVS_PS_END_PC */ ps_size/16,
-                /* VIVS_PS_OUTPUT_REG */ 0x1});
-        etna_set_state_multi(ctx, VIVS_PS_INST_MEM(0), ps_size/4, ps);
-        etna_set_state(ctx, VIVS_PS_INPUT_COUNT, VIVS_PS_INPUT_COUNT_UNK8(31) | VIVS_PS_INPUT_COUNT_COUNT(3));
-        etna_set_state(ctx, VIVS_PS_TEMP_REGISTER_CONTROL, VIVS_PS_TEMP_REGISTER_CONTROL_NUM_TEMPS(3));
-        etna_set_state(ctx, VIVS_PS_CONTROL, VIVS_PS_CONTROL_UNK1);
-        etna_set_state_f32(ctx, VIVS_PS_UNIFORMS(0), 1.0); /* u0.x */
+        pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 0, 16, (uint32_t*)&modelviewprojection.m[0][0]);
+        pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 16, 3, (uint32_t*)&normal.m[0][0]); /* u4.xyz */
+        pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 20, 3, (uint32_t*)&normal.m[1][0]); /* u5.xyz */
+        pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 24, 3, (uint32_t*)&normal.m[2][0]); /* u6.xyz */
+        pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 28, 16, (uint32_t*)&modelview.m[0][0]);
 
         for(int prim=0; prim<6; ++prim)
         {

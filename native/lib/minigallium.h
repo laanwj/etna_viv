@@ -483,6 +483,14 @@ enum pipe_format {
    PIPE_FORMAT_COUNT
 };
 
+/**
+ * Shaders
+ */
+#define PIPE_SHADER_VERTEX   0
+#define PIPE_SHADER_FRAGMENT 1
+#define PIPE_SHADER_GEOMETRY 2
+#define PIPE_SHADER_COMPUTE  3
+#define PIPE_SHADER_TYPES    4
 
 struct pipe_rasterizer_state
 {
@@ -911,6 +919,7 @@ enum pipe_flush_flags {
    PIPE_FLUSH_END_OF_FRAME = (1 << 0)
 };
 struct pipe_fence_handle;
+struct etna_shader_program;
 /**
  * Gallium rendering context.  Basically:
  *  - state setting functions
@@ -1024,6 +1033,12 @@ struct pipe_context {
                                           const struct pipe_vertex_element *);
    void   (*bind_vertex_elements_state)(struct pipe_context *, void *);
    void   (*delete_vertex_elements_state)(struct pipe_context *, void *);
+
+   /* temp for testing until a real shader compiler */
+   void * (*create_etna_shader_state)(struct pipe_context *, const struct etna_shader_program *prog);
+   void   (*bind_etna_shader_state)(struct pipe_context *, void *);
+   void   (*delete_etna_shader_state)(struct pipe_context *, void*);
+   void   (*set_etna_uniforms)(struct pipe_context *pipe, void *sh_, unsigned type, unsigned offset, unsigned count, const uint32_t *values);
 
    /*@}*/
 

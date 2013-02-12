@@ -39,6 +39,53 @@ enum etna_resource_flags
     ETNA_IS_CUBEMAP = 0x10 /* cubemap texture */
 };
 
+#define ETNA_NUM_INPUTS 16
+#define ETNA_NUM_VARYINGS 16
+
+struct etna_shader_input
+{
+    int vs_reg; /* VS input register */
+};
+
+enum etna_varying_special {
+    ETNA_VARYING_VSOUT = 0, /* from VS */
+    ETNA_VARYING_POINTCOORD, /* point texture coord */
+};
+
+struct etna_shader_varying
+{
+    int num_components;
+    enum etna_varying_special special; 
+    int pa_attributes;
+    int vs_reg; /* VS output register */
+};
+
+
+struct etna_shader_program 
+{
+    unsigned ra_control; // unknown 1 or 3
+    unsigned num_inputs;
+    struct etna_shader_input inputs[ETNA_NUM_INPUTS];
+    unsigned num_varyings;
+    struct etna_shader_varying varyings[ETNA_NUM_VARYINGS]; 
+    
+    unsigned vs_code_size; /* Vertex shader code size in words */ 
+    uint32_t *vs_code;
+    unsigned vs_pos_out_reg; /* VS position output */
+    unsigned vs_load_balancing;
+    unsigned vs_num_temps; /* number of temporaries, can never be less than num_varyings+1 */
+    unsigned vs_uniforms_size; /* Size of uniforms (in words) */
+    uint32_t *vs_uniforms; /* Initial values for VS uniforms */
+
+    unsigned ps_code_size; /* Pixel shader code size in words */
+    uint32_t *ps_code;
+    unsigned ps_color_out_reg; /* color output register */
+    unsigned ps_num_temps; /* number of temporaries, can never be less than num_varyings+1 */;
+    unsigned ps_uniforms_size; /* Size of uniforms (in words) */
+    uint32_t *ps_uniforms; /* Initial values for VS uniforms */
+};
+
+
 struct pipe_context *etna_new_pipe_context(etna_ctx *ctx);
 
 /* Allocate 2D texture or render target resource 
