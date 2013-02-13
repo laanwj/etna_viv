@@ -95,11 +95,8 @@ uint32_t vs[] = {
 uint32_t ps[] = {
     0x00000000, 0x00000000, 0x00000000, 0x00000000
 };
-size_t vs_size = sizeof(vs);
-size_t ps_size = sizeof(ps);
 
 const struct etna_shader_program shader = {
-    .ra_control = 1,
     .num_inputs = 3,
     .inputs = {{.vs_reg=0},{.vs_reg=1},{.vs_reg=2}},
     .num_varyings = 1,

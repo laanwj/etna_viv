@@ -223,7 +223,12 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="23" low="16" name="I2" type="uint"/>
             <bitfield high="31" low="24" name="I3" type="uint"/>
         </reg32>
-        <reg32 offset="0x00830" name="LOAD_BALANCING" value="0x00000000"/>
+        <reg32 offset="0x00830" name="LOAD_BALANCING" value="0x00000000">
+            <bitfield high="7" low="0" name="A"/>
+            <bitfield high="15" low="8" name="B"/>
+            <bitfield high="23" low="16" name="C"/>
+            <bitfield high="31" low="24" name="D"/>
+        </reg32>
         <reg32 offset="0x00834" name="PERF_COUNTER" brief="Performance counter control"/>
         <reg32 offset="0x00838" name="START_PC" value="0x00000000"/>
         <reg32 offset="0x00850" name="UNK00850" value="0x000003e8"/>
@@ -335,7 +340,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <doc>Configuration for the rasterizer. This mainly controls multisampling.</doc>
         <reg32 offset="0x00E00" name="CONTROL" value="0x00000001">
             <bitfield pos="0" name="UNK0"/>
-            <bitfield pos="1" name="UNK1"><doc>Set based on number of PS varyings</doc></bitfield>
+            <bitfield pos="1" name="LAST_VARYING_2X" brief="Last varying has 1 or 2 components"></bitfield>
         </reg32>
         <reg32 offset="0x00E04" name="MULTISAMPLE_UNK00E04" value="0x00000000"/>
         <reg32 offset="0x00E08" name="DEPTH_UNK00E08" value="0x00000031"/>

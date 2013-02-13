@@ -192,7 +192,6 @@ uint32_t ps[] = { /* texture sampling */
 };
 
 const struct etna_shader_program shader = {
-    .ra_control = 3,
     .num_inputs = 3,
     .inputs = {{.vs_reg=0},{.vs_reg=1},{.vs_reg=2}},
     .num_varyings = 2,

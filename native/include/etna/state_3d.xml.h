@@ -8,11 +8,11 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- /home/orion/projects/etna_viv/rnndb/state.xml    (  14840 bytes, from 2013-02-03 09:57:13)
-- /home/orion/projects/etna_viv/rnndb/common.xml   (  15601 bytes, from 2013-02-01 12:03:20)
+- /home/orion/projects/etna_viv/rnndb/state.xml    (  14925 bytes, from 2013-02-10 13:30:30)
+- /home/orion/projects/etna_viv/rnndb/common.xml   (  15985 bytes, from 2013-02-10 12:55:03)
 - /home/orion/projects/etna_viv/rnndb/state_hi.xml (  11825 bytes, from 2013-02-01 10:14:08)
 - /home/orion/projects/etna_viv/rnndb/state_2d.xml (  30577 bytes, from 2013-02-01 10:02:25)
-- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  49072 bytes, from 2013-02-10 11:27:07)
+- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  49302 bytes, from 2013-02-13 17:47:34)
 
 Copyright (C) 2013
 */
@@ -179,6 +179,18 @@ Copyright (C) 2013
 #define VIVS_VS_INPUT_I3(x)					(((x) << VIVS_VS_INPUT_I3__SHIFT) & VIVS_VS_INPUT_I3__MASK)
 
 #define VIVS_VS_LOAD_BALANCING					0x00000830
+#define VIVS_VS_LOAD_BALANCING_A__MASK				0x000000ff
+#define VIVS_VS_LOAD_BALANCING_A__SHIFT				0
+#define VIVS_VS_LOAD_BALANCING_A(x)				(((x) << VIVS_VS_LOAD_BALANCING_A__SHIFT) & VIVS_VS_LOAD_BALANCING_A__MASK)
+#define VIVS_VS_LOAD_BALANCING_B__MASK				0x0000ff00
+#define VIVS_VS_LOAD_BALANCING_B__SHIFT				8
+#define VIVS_VS_LOAD_BALANCING_B(x)				(((x) << VIVS_VS_LOAD_BALANCING_B__SHIFT) & VIVS_VS_LOAD_BALANCING_B__MASK)
+#define VIVS_VS_LOAD_BALANCING_C__MASK				0x00ff0000
+#define VIVS_VS_LOAD_BALANCING_C__SHIFT				16
+#define VIVS_VS_LOAD_BALANCING_C(x)				(((x) << VIVS_VS_LOAD_BALANCING_C__SHIFT) & VIVS_VS_LOAD_BALANCING_C__MASK)
+#define VIVS_VS_LOAD_BALANCING_D__MASK				0xff000000
+#define VIVS_VS_LOAD_BALANCING_D__SHIFT				24
+#define VIVS_VS_LOAD_BALANCING_D(x)				(((x) << VIVS_VS_LOAD_BALANCING_D__SHIFT) & VIVS_VS_LOAD_BALANCING_D__MASK)
 
 #define VIVS_VS_PERF_COUNTER					0x00000834
 
@@ -320,7 +332,7 @@ Copyright (C) 2013
 
 #define VIVS_RA_CONTROL						0x00000e00
 #define VIVS_RA_CONTROL_UNK0					0x00000001
-#define VIVS_RA_CONTROL_UNK1					0x00000002
+#define VIVS_RA_CONTROL_LAST_VARYING_2X				0x00000002
 
 #define VIVS_RA_MULTISAMPLE_UNK00E04				0x00000e04
 

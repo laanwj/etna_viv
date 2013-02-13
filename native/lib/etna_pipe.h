@@ -63,7 +63,6 @@ struct etna_shader_varying
 
 struct etna_shader_program 
 {
-    unsigned ra_control; // unknown 1 or 3
     unsigned num_inputs;
     struct etna_shader_input inputs[ETNA_NUM_INPUTS];
     unsigned num_varyings;

@@ -687,7 +687,13 @@ static void compile_set_index_buffer(struct compiled_set_index_buffer *cs, const
 
 static void compile_shader_state(struct compiled_shader_state *cs, const struct etna_shader_program *rs)
 {
-    SET_STATE(RA_CONTROL, rs->ra_control);
+    /* set last_varying_2x flag if the last varying has 1 or 2 components */
+    bool last_varying_2x = false;
+    if(rs->num_varyings>0 && rs->varyings[rs->num_varyings-1].num_components <= 2)
+        last_varying_2x = true;
+
+    SET_STATE(RA_CONTROL, VIVS_RA_CONTROL_UNK0 |
+                          (last_varying_2x ? VIVS_RA_CONTROL_LAST_VARYING_2X : 0));
 
     SET_STATE(PA_ATTRIBUTE_ELEMENT_COUNT, VIVS_PA_ATTRIBUTE_ELEMENT_COUNT_COUNT(rs->num_varyings));
     for(int idx=0; idx<rs->num_varyings; ++idx)
