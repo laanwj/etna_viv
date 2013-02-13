@@ -806,6 +806,9 @@ struct pipe_sampler_view
    unsigned swizzle_g:3;         /**< PIPE_SWIZZLE_x for green component */
    unsigned swizzle_b:3;         /**< PIPE_SWIZZLE_x for blue component */
    unsigned swizzle_a:3;         /**< PIPE_SWIZZLE_x for alpha component */
+
+   /* etna */
+   struct compiled_sampler_view *internal;
 };
 
 /**

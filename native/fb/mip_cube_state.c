@@ -159,6 +159,7 @@ float vNormals[] = {
 #define COMPONENTS_PER_VERTEX (3)
 #define NUM_VERTICES (6*4)
 
+/* cube_state_vs.asm */
 uint32_t vs[] = {
     0x01831009, 0x00000000, 0x00000000, 0x203fc048,
     0x02031009, 0x00000000, 0x00000000, 0x203fc058,
@@ -185,6 +186,7 @@ uint32_t vs[] = {
     0x02041001, 0x2a804800, 0x00000000, 0x003fc048,
     0x02041003, 0x2a804800, 0x00aa05c0, 0x00000002,
 };
+/* cube_state_ps.asm */
 uint32_t ps[] = { /* texture sampling */
     0x07811003, 0x00000800, 0x01c800d0, 0x00000000,
     0x07821018, 0x15002f20, 0x00000000, 0x00000000,

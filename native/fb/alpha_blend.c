@@ -82,6 +82,7 @@ float vNormals[] = {
 #define COMPONENTS_PER_VERTEX (3)
 #define NUM_VERTICES (8)
 
+/* alpha_blend_vs.asm */
 uint32_t vs[] = {
     0x07841003,0x39000800,0x00000050,0x00000000,
     0x07841002,0x39001800,0x00aa0050,0x00390048,
@@ -92,6 +93,8 @@ uint32_t vs[] = {
     0x02041001,0x2a804800,0x00000000,0x003fc048,
     0x02041003,0x2a804800,0x00aa05c0,0x00000002,
 };
+/* passthrough (nop) 
+ * register 1 will contain color on input, and will be used as output */
 uint32_t ps[] = {
     0x00000000, 0x00000000, 0x00000000, 0x00000000
 };

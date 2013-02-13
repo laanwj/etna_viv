@@ -382,394 +382,6 @@ struct etna_pipe_context_priv
     struct etna_3d_state gpu3d;
 };
 
-static void compile_rasterizer_state(struct compiled_rasterizer_state *cs, const struct pipe_rasterizer_state *rs)
-{
-    if(rs->fill_front != rs->fill_back)
-    {
-        printf("Different front and back fill mode not supported\n");
-    }
-    SET_STATE(PA_CONFIG, 
-            (rs->flatshade ? VIVS_PA_CONFIG_SHADE_MODEL_FLAT : VIVS_PA_CONFIG_SHADE_MODEL_SMOOTH) | 
-            translate_cull_face(rs->cull_face, rs->front_ccw) |
-            translate_polygon_mode(rs->fill_front) |
-            (rs->point_quad_rasterization ? VIVS_PA_CONFIG_POINT_SPRITE_ENABLE : 0) |
-            (rs->point_size_per_vertex ? VIVS_PA_CONFIG_POINT_SIZE_ENABLE : 0));
-    SET_STATE_F32(PA_LINE_WIDTH, rs->line_width);
-    SET_STATE_F32(PA_POINT_SIZE, rs->point_size);
-    SET_STATE_F32(SE_DEPTH_SCALE, rs->offset_scale);
-    SET_STATE_F32(SE_DEPTH_BIAS, rs->offset_units);
-    SET_STATE(SE_CONFIG, 
-            (rs->line_last_pixel ? VIVS_SE_CONFIG_LAST_PIXEL_ENABLE : 0) 
-            /* XXX anything else? */
-            );
-    /* XXX rs->gl_rasterization_rules is likely one of the bits in VIVS_PA_SYSTEM_MODE */
-    /* rs->scissor overrides the scissor, defaulting to the whole framebuffer, with the scissor state */
-    cs->scissor = rs->scissor;
-}
-
-static void compile_depth_stencil_alpha_state(struct compiled_depth_stencil_alpha_state *cs, const struct pipe_depth_stencil_alpha_state *dsa)
-{
-    /* XXX does stencil[0] / stencil[1] order depend on rs->front_ccw? */
-    /* compare funcs have 1 to 1 mapping */
-    SET_STATE(PE_DEPTH_CONFIG, 
-            VIVS_PE_DEPTH_CONFIG_DEPTH_FUNC(dsa->depth.enabled ? dsa->depth.func : PIPE_FUNC_ALWAYS) |
-            (dsa->depth.writemask ? VIVS_PE_DEPTH_CONFIG_WRITE_ENABLE : 0)
-            /* XXX EARLY_Z */
-            );
-    SET_STATE(PE_ALPHA_OP, 
-            (dsa->alpha.enabled ? VIVS_PE_ALPHA_OP_ALPHA_TEST : 0) |
-            VIVS_PE_ALPHA_OP_ALPHA_FUNC(dsa->alpha.func) |
-            VIVS_PE_ALPHA_OP_ALPHA_REF(cfloat_to_uint8(dsa->alpha.ref_value)));
-    SET_STATE(PE_STENCIL_OP, 
-            VIVS_PE_STENCIL_OP_FUNC_FRONT(dsa->stencil[0].func) |
-            VIVS_PE_STENCIL_OP_FUNC_BACK(dsa->stencil[1].func) |
-            VIVS_PE_STENCIL_OP_FAIL_FRONT(translate_stencil_op(dsa->stencil[0].fail_op)) | 
-            VIVS_PE_STENCIL_OP_FAIL_BACK(translate_stencil_op(dsa->stencil[1].fail_op)) |
-            VIVS_PE_STENCIL_OP_DEPTH_FAIL_FRONT(translate_stencil_op(dsa->stencil[0].zfail_op)) |
-            VIVS_PE_STENCIL_OP_DEPTH_FAIL_BACK(translate_stencil_op(dsa->stencil[1].zfail_op)) |
-            VIVS_PE_STENCIL_OP_PASS_FRONT(translate_stencil_op(dsa->stencil[0].zpass_op)) |
-            VIVS_PE_STENCIL_OP_PASS_BACK(translate_stencil_op(dsa->stencil[1].zpass_op)));
-    SET_STATE(PE_STENCIL_CONFIG, 
-            translate_stencil_mode(dsa->stencil[0].enabled, dsa->stencil[1].enabled) |
-            VIVS_PE_STENCIL_CONFIG_MASK_FRONT(dsa->stencil[0].valuemask) | 
-            VIVS_PE_STENCIL_CONFIG_WRITE_MASK(dsa->stencil[0].writemask) 
-            /* XXX back masks in VIVS_PE_DEPTH_CONFIG_EXT? */
-            /* XXX VIVS_PE_STENCIL_CONFIG_REF_FRONT comes from pipe_stencil_ref */
-            );
-    /* XXX does alpha/stencil test affect PE_COLOR_FORMAT_OVERWRITE? */
-}
-
-static void compile_blend_state(struct compiled_blend_state *cs, const struct pipe_blend_state *bs)
-{
-    const struct pipe_rt_blend_state *rt0 = &bs->rt[0];
-    bool enable = rt0->blend_enable && !(rt0->rgb_src_factor == PIPE_BLENDFACTOR_ONE && rt0->rgb_dst_factor == PIPE_BLENDFACTOR_ZERO &&
-                                         rt0->alpha_src_factor == PIPE_BLENDFACTOR_ONE && rt0->alpha_dst_factor == PIPE_BLENDFACTOR_ZERO);
-    bool separate_alpha = enable && !(rt0->rgb_src_factor == rt0->alpha_src_factor &&
-                                      rt0->rgb_dst_factor == rt0->alpha_dst_factor);
-    bool full_overwrite = (rt0->colormask == 15) && !enable;
-    SET_STATE(PE_ALPHA_CONFIG, 
-            (enable ? VIVS_PE_ALPHA_CONFIG_BLEND_ENABLE_COLOR : 0) | 
-            (separate_alpha ? VIVS_PE_ALPHA_CONFIG_BLEND_SEPARATE_ALPHA : 0) |
-            VIVS_PE_ALPHA_CONFIG_SRC_FUNC_COLOR(translate_blend_factor(rt0->rgb_src_factor)) |
-            VIVS_PE_ALPHA_CONFIG_SRC_FUNC_ALPHA(translate_blend_factor(rt0->alpha_src_factor)) |
-            VIVS_PE_ALPHA_CONFIG_DST_FUNC_COLOR(translate_blend_factor(rt0->rgb_dst_factor)) |
-            VIVS_PE_ALPHA_CONFIG_DST_FUNC_ALPHA(translate_blend_factor(rt0->alpha_dst_factor)) |
-            VIVS_PE_ALPHA_CONFIG_EQ_COLOR(translate_blend(rt0->rgb_func)) |
-            VIVS_PE_ALPHA_CONFIG_EQ_ALPHA(translate_blend(rt0->alpha_func))
-            );
-    SET_STATE(PE_COLOR_FORMAT, 
-            VIVS_PE_COLOR_FORMAT_COMPONENTS(rt0->colormask) |
-            (full_overwrite ? VIVS_PE_COLOR_FORMAT_OVERWRITE : 0)
-            );
-    SET_STATE(PE_LOGIC_OP, 
-            VIVS_PE_LOGIC_OP_OP(bs->logicop_enable ? bs->logicop_func : LOGIC_OP_COPY) /* 1-to-1 mapping */ |
-            0x000E4000 /* ??? */
-            );
-    /* independent_blend_enable not needed: only one rt supported */
-    /* XXX alpha_to_coverage / alpha_to_one? */
-    /* XXX dither? VIVS_PE_DITHER(...) and/or VIVS_RS_DITHER(...) on resolve */
-}
-
-static void compile_blend_color(struct compiled_blend_color *cs, const struct pipe_blend_color *bc)
-{
-    SET_STATE(PE_ALPHA_BLEND_COLOR, 
-            VIVS_PE_ALPHA_BLEND_COLOR_R(cfloat_to_uint8(bc->color[0])) |
-            VIVS_PE_ALPHA_BLEND_COLOR_G(cfloat_to_uint8(bc->color[1])) |
-            VIVS_PE_ALPHA_BLEND_COLOR_B(cfloat_to_uint8(bc->color[2])) |
-            VIVS_PE_ALPHA_BLEND_COLOR_A(cfloat_to_uint8(bc->color[3]))
-            );
-}
-
-static void compile_stencil_ref(struct compiled_stencil_ref *cs, const struct pipe_stencil_ref *sr)
-{
-    SET_STATE(PE_STENCIL_CONFIG, 
-            VIVS_PE_STENCIL_CONFIG_REF_FRONT(sr->ref_value[0]) 
-            /* rest of bits comes from depth_stencil_alpha, merged in */
-            );
-    SET_STATE(PE_STENCIL_CONFIG_EXT, 
-            VIVS_PE_STENCIL_CONFIG_EXT_REF_BACK(sr->ref_value[0]) 
-            );
-}
-
-static void compile_scissor_state(struct compiled_scissor_state *cs, const struct pipe_scissor_state *ss)
-{
-    SET_STATE_FIXP(SE_SCISSOR_LEFT, (ss->minx << 16));
-    SET_STATE_FIXP(SE_SCISSOR_TOP, (ss->miny << 16));
-    SET_STATE_FIXP(SE_SCISSOR_RIGHT, (ss->maxx << 16)-1);
-    SET_STATE_FIXP(SE_SCISSOR_BOTTOM, (ss->maxy << 16)-1);
-    /* note that this state is only used when rasterizer_state->scissor is on */
-}
-
-static void compile_viewport_state(struct compiled_viewport_state *cs, const struct pipe_viewport_state *vs)
-{
-    /**
-     * For Vivante GPU, viewport z transformation is 0..1 to 0..1 instead of -1..1 to 0..1.
-     * scaling and translation to 0..1 already happened, so remove that
-     *
-     * z' = (z * 2 - 1) * scale + translate
-     *    = z * (2 * scale) + (translate - scale)
-     *
-     * scale' = 2 * scale
-     * translate' = translate - scale
-     */
-    SET_STATE_F32(PA_VIEWPORT_SCALE_X, vs->scale[0]);
-    SET_STATE_F32(PA_VIEWPORT_SCALE_Y, vs->scale[1]);
-    SET_STATE_F32(PA_VIEWPORT_SCALE_Z, vs->scale[2] * 2.0f);
-    SET_STATE_F32(PA_VIEWPORT_OFFSET_X, vs->translate[0]);
-    SET_STATE_F32(PA_VIEWPORT_OFFSET_Y, vs->translate[1]);
-    SET_STATE_F32(PA_VIEWPORT_OFFSET_Z, vs->translate[2] - vs->scale[2]);
-
-    SET_STATE_F32(PE_DEPTH_NEAR, 0.0); /* not affected if depth mode is Z (as in GL) */
-    SET_STATE_F32(PE_DEPTH_FAR, 1.0);
-}
-
-static void compile_sample_mask(struct compiled_sample_mask *cs, unsigned sample_mask)
-{
-    SET_STATE(GL_MULTI_SAMPLE_CONFIG, 
-            /* to be merged with render target state */
-            VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_ENABLES(sample_mask));
-}
-
-static void compile_sampler_state(struct compiled_sampler_state *cs, const struct pipe_sampler_state *ss)
-{
-    SET_STATE(TE_SAMPLER_CONFIG0, 
-                /* XXX get from sampler view: VIVS_TE_SAMPLER_CONFIG0_TYPE(TEXTURE_TYPE_2D)| */
-                VIVS_TE_SAMPLER_CONFIG0_UWRAP(translate_texture_wrapmode(ss->wrap_s))|
-                VIVS_TE_SAMPLER_CONFIG0_VWRAP(translate_texture_wrapmode(ss->wrap_t))|
-                VIVS_TE_SAMPLER_CONFIG0_MIN(translate_texture_filter(ss->min_img_filter))|
-                VIVS_TE_SAMPLER_CONFIG0_MIP(translate_texture_mipfilter(ss->min_mip_filter))|
-                VIVS_TE_SAMPLER_CONFIG0_MAG(translate_texture_filter(ss->mag_img_filter))
-                /* XXX get from sampler view: VIVS_TE_SAMPLER_CONFIG0_FORMAT(tex_format) */
-            );
-    /* VIVS_TE_SAMPLER_CONFIG1 (swizzle, extended format) fully determined by sampler view */
-    SET_STATE(TE_SAMPLER_LOD_CONFIG,
-            (ss->lod_bias != 0.0 ? VIVS_TE_SAMPLER_LOD_CONFIG_BIAS_ENABLE : 0) | 
-            VIVS_TE_SAMPLER_LOD_CONFIG_BIAS(float_to_fixp55(ss->lod_bias))
-            );
-    cs->min_lod = float_to_fixp55(ss->min_lod);
-    cs->max_lod = float_to_fixp55(ss->max_lod);
-}
-
-static void compile_sampler_view(struct compiled_sampler_view *cs, const struct pipe_sampler_view *sv)
-{
-    assert(sv->texture);
-    struct pipe_resource *res = sv->texture;
-    assert(res != NULL);
-
-    SET_STATE(TE_SAMPLER_CONFIG0, 
-                VIVS_TE_SAMPLER_CONFIG0_TYPE(translate_texture_target(res->target)) |
-                VIVS_TE_SAMPLER_CONFIG0_FORMAT(translate_texture_format(sv->format)) 
-                /* merged with sampler state */
-            );
-    /* XXX VIVS_TE_SAMPLER_CONFIG1 (swizzle, extended format), swizzle_(r|g|b|a) */
-    SET_STATE(TE_SAMPLER_SIZE, 
-            VIVS_TE_SAMPLER_SIZE_WIDTH(res->width0)|
-            VIVS_TE_SAMPLER_SIZE_HEIGHT(res->height0));
-    SET_STATE(TE_SAMPLER_LOG_SIZE, 
-            VIVS_TE_SAMPLER_LOG_SIZE_WIDTH(log2_fixp55(res->width0)) |
-            VIVS_TE_SAMPLER_LOG_SIZE_HEIGHT(log2_fixp55(res->height0)));
-    /* XXX in principle we only have to define lods sv->first_level .. sv->last_level */
-    for(int lod=0; lod<=res->last_level; ++lod)
-    {
-        SET_STATE(TE_SAMPLER_LOD_ADDR[lod], res->levels[lod].address);
-    }
-    cs->min_lod = sv->u.tex.first_level << 5;
-    cs->max_lod = etna_umin(sv->u.tex.last_level, res->last_level) << 5;
-}
-
-static void compile_framebuffer_state(struct compiled_framebuffer_state *cs, const struct pipe_framebuffer_state *sv)
-{
-    struct pipe_surface *cbuf = (sv->nr_cbufs > 0) ? sv->cbufs[0] : NULL;
-    struct pipe_surface *zsbuf = sv->zsbuf;
-    /* XXX rendering with only color or only depth should be possible */
-    assert(cbuf != NULL && zsbuf != NULL);
-    uint32_t depth_format = translate_depth_format(zsbuf->format);
-    unsigned depth_bits = depth_format == VIVS_PE_DEPTH_CONFIG_DEPTH_FORMAT_D16 ? 16 : 24; 
-    assert((cbuf->layout & 1) && (zsbuf->layout & 1)); /* color and depth buffer must be at least tiled */
-    bool color_supertiled = (cbuf->layout & 2)!=0;
-    bool depth_supertiled = (zsbuf->layout & 2)!=0;
-
-    /* XXX support multisample 2X/4X, take care that required width/height is doubled */
-    SET_STATE(GL_MULTI_SAMPLE_CONFIG, 
-            VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_SAMPLES_NONE
-            /* VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_ENABLES(0xf)
-            VIVS_GL_MULTI_SAMPLE_CONFIG_UNK12 |
-            VIVS_GL_MULTI_SAMPLE_CONFIG_UNK16 */
-            );  /* merged with sample_mask */
-    SET_STATE(PE_COLOR_FORMAT, 
-            VIVS_PE_COLOR_FORMAT_FORMAT(translate_rt_format(cbuf->format)) |
-            (color_supertiled ? VIVS_PE_COLOR_FORMAT_SUPER_TILED : 0) /* XXX depends on layout */
-            /* XXX VIVS_PE_COLOR_FORMAT_OVERWRITE and the rest comes from blend_state / depth_stencil_alpha */
-            ); /* merged with depth_stencil_alpha */
-    SET_STATE(PE_DEPTH_CONFIG, 
-            depth_format |
-            (depth_supertiled ? VIVS_PE_DEPTH_CONFIG_SUPER_TILED : 0) | /* XXX depends on layout */
-            VIVS_PE_DEPTH_CONFIG_EARLY_Z |
-            VIVS_PE_DEPTH_CONFIG_DEPTH_MODE_Z /* XXX set to NONE if no Z buffer */
-            /* VIVS_PE_DEPTH_CONFIG_ONLY_DEPTH */
-            ); /* merged with depth_stencil_alpha */
-
-    SET_STATE(PE_DEPTH_ADDR, zsbuf->surf.address);
-    SET_STATE(PE_DEPTH_STRIDE, zsbuf->surf.stride);
-    SET_STATE(PE_HDEPTH_CONTROL, VIVS_PE_HDEPTH_CONTROL_FORMAT_DISABLED);
-    SET_STATE_F32(PE_DEPTH_NORMALIZE, exp2f(depth_bits) - 1.0f);
-    SET_STATE(PE_COLOR_ADDR, cbuf->surf.address);
-    SET_STATE(PE_COLOR_STRIDE, cbuf->surf.stride);
-    
-    SET_STATE_FIXP(SE_SCISSOR_LEFT, 0); /* affected by rasterizer and scissor state as well */
-    SET_STATE_FIXP(SE_SCISSOR_TOP, 0);
-    SET_STATE_FIXP(SE_SCISSOR_RIGHT, (sv->width << 16)-1);
-    SET_STATE_FIXP(SE_SCISSOR_BOTTOM, (sv->height << 16)-1);
-
-    /* Set up TS as well. Warning: this is shared with RS */
-    SET_STATE(TS_MEM_CONFIG, 
-            VIVS_TS_MEM_CONFIG_DEPTH_FAST_CLEAR |
-            VIVS_TS_MEM_CONFIG_COLOR_FAST_CLEAR |
-            (depth_bits == 16 ? VIVS_TS_MEM_CONFIG_DEPTH_16BPP : 0) | 
-            VIVS_TS_MEM_CONFIG_DEPTH_COMPRESSION /* |
-            VIVS_TS_MEM_CONFIG_MSAA | 
-            translate_msaa_format(cbuf->format) */);
-    SET_STATE(TS_DEPTH_CLEAR_VALUE, zsbuf->clear_value);
-    SET_STATE(TS_DEPTH_STATUS_BASE, zsbuf->surf.ts_address);
-    SET_STATE(TS_DEPTH_SURFACE_BASE, zsbuf->surf.address);
-    SET_STATE(TS_COLOR_CLEAR_VALUE, cbuf->clear_value);
-    SET_STATE(TS_COLOR_STATUS_BASE, cbuf->surf.ts_address);
-    SET_STATE(TS_COLOR_SURFACE_BASE, cbuf->surf.address);
-}
-
-static void compile_vertex_elements_state(struct compiled_vertex_elements_state *cs, unsigned num_elements, const struct pipe_vertex_element * elements)
-{
-    /* VERTEX_ELEMENT_STRIDE is in pipe_vertex_buffer */
-    cs->num_elements = num_elements;
-    for(unsigned idx=0; idx<num_elements; ++idx)
-    {
-        unsigned element_size = pipe_element_size(elements[idx].src_format);
-        unsigned end_offset = elements[idx].src_offset + element_size;
-        assert(element_size != 0 && end_offset <= 256);
-        /* check whether next element is consecutive to this one */
-        bool nonconsecutive = (idx == (num_elements-1)) || 
-                    elements[idx+1].vertex_buffer_index != elements[idx].vertex_buffer_index ||
-                    end_offset != elements[idx+1].src_offset;
-        SET_STATE(FE_VERTEX_ELEMENT_CONFIG[idx], 
-                (nonconsecutive ? VIVS_FE_VERTEX_ELEMENT_CONFIG_NONCONSECUTIVE : 0) |
-                translate_vertex_format_type(elements[idx].src_format) |
-                VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM(vertex_format_num(elements[idx].src_format)) |
-                translate_vertex_format_normalize(elements[idx].src_format) |
-                VIVS_FE_VERTEX_ELEMENT_CONFIG_ENDIAN(ENDIAN_MODE_NO_SWAP) |
-                VIVS_FE_VERTEX_ELEMENT_CONFIG_STREAM(elements[idx].vertex_buffer_index) |
-                VIVS_FE_VERTEX_ELEMENT_CONFIG_START(elements[idx].src_offset) |
-                VIVS_FE_VERTEX_ELEMENT_CONFIG_END(end_offset));
-    }
-}
-
-static void compile_set_vertex_buffer(struct compiled_set_vertex_buffer *cs, const struct pipe_vertex_buffer * vb)
-{
-    assert(vb[0].buffer); /* XXX user_buffer */
-    SET_STATE(FE_VERTEX_STREAM_CONTROL, 
-            VIVS_FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE(vb[0].stride));
-    SET_STATE(FE_VERTEX_STREAM_BASE_ADDR, vb[0].buffer->levels[0].address + vb[0].buffer_offset);
-}
-
-static void compile_set_index_buffer(struct compiled_set_index_buffer *cs, const struct pipe_index_buffer * ib)
-{
-    if(ib == NULL)
-    {
-        SET_STATE(FE_INDEX_STREAM_CONTROL, 0);
-        SET_STATE(FE_INDEX_STREAM_BASE_ADDR, 0);
-    } else
-    {
-        assert(ib->buffer); /* XXX user_buffer */
-        SET_STATE(FE_INDEX_STREAM_CONTROL, 
-                translate_index_size(ib->index_size));
-        SET_STATE(FE_INDEX_STREAM_BASE_ADDR, ib->buffer->levels[0].address + ib->offset);
-    }
-}
-
-static void compile_shader_state(struct compiled_shader_state *cs, const struct etna_shader_program *rs)
-{
-    /* set last_varying_2x flag if the last varying has 1 or 2 components */
-    bool last_varying_2x = false;
-    if(rs->num_varyings>0 && rs->varyings[rs->num_varyings-1].num_components <= 2)
-        last_varying_2x = true;
-
-    SET_STATE(RA_CONTROL, VIVS_RA_CONTROL_UNK0 |
-                          (last_varying_2x ? VIVS_RA_CONTROL_LAST_VARYING_2X : 0));
-
-    SET_STATE(PA_ATTRIBUTE_ELEMENT_COUNT, VIVS_PA_ATTRIBUTE_ELEMENT_COUNT_COUNT(rs->num_varyings));
-    for(int idx=0; idx<rs->num_varyings; ++idx)
-        SET_STATE(PA_SHADER_ATTRIBUTES[idx], rs->varyings[idx].pa_attributes);
-
-    SET_STATE(VS_END_PC, rs->vs_code_size / 4);
-    SET_STATE(VS_OUTPUT_COUNT, rs->num_varyings + 1); /* position + varyings */
-    SET_STATE(VS_INPUT_COUNT, VIVS_VS_INPUT_COUNT_COUNT(rs->num_inputs) |
-                              VIVS_VS_INPUT_COUNT_UNK8(1));
-    SET_STATE(VS_TEMP_REGISTER_CONTROL,
-                              VIVS_VS_TEMP_REGISTER_CONTROL_NUM_TEMPS(rs->vs_num_temps));
-    /* vs outputs (varyings) */ 
-    uint32_t vs_output[4] = {0};
-    vs_output[0] = rs->vs_pos_out_reg;
-    for(int idx=0; idx<rs->num_varyings; ++idx)
-        vs_output[idx/4] |= rs->varyings[idx].vs_reg << (((idx+1)%4)*8);
-    for(int idx=0; idx<4; ++idx)
-        SET_STATE(VS_OUTPUT[idx], vs_output[idx]);
-    
-    /* vs inputs (attributes) */
-    uint32_t vs_input[4] = {0};
-    for(int idx=0; idx<rs->num_inputs; ++idx)
-        vs_input[idx/4] |= rs->inputs[idx].vs_reg << ((idx%4)*8);
-    for(int idx=0; idx<4; ++idx)
-        SET_STATE(VS_INPUT[idx], vs_input[idx]);
-
-    SET_STATE(VS_LOAD_BALANCING, rs->vs_load_balancing); 
-    SET_STATE(VS_START_PC, 0);
-
-    SET_STATE(PS_END_PC, rs->ps_code_size / 4);
-    SET_STATE(PS_OUTPUT_REG, rs->ps_color_out_reg);
-    SET_STATE(PS_INPUT_COUNT, VIVS_PS_INPUT_COUNT_COUNT(rs->num_varyings + 1) | 
-                              VIVS_PS_INPUT_COUNT_UNK8(31));
-    SET_STATE(PS_TEMP_REGISTER_CONTROL,
-                              VIVS_PS_TEMP_REGISTER_CONTROL_NUM_TEMPS(rs->ps_num_temps));
-    SET_STATE(PS_CONTROL, VIVS_PS_CONTROL_UNK1);
-    SET_STATE(PS_START_PC, 0);
-
-    uint32_t total_components = 0;
-    uint32_t num_components = 0;
-    uint32_t component_use[2] = {0};
-    for(int idx=0; idx<rs->num_varyings; ++idx)
-    {
-        num_components |= rs->varyings[idx].num_components << ((idx%8)*4);
-        for(int comp=0; comp<rs->varyings[idx].num_components; ++comp)
-        {
-            int compid = total_components + comp;
-            unsigned use = VARYING_COMPONENT_USE_USED;
-            if(rs->varyings[idx].special == ETNA_VARYING_POINTCOORD)
-            {
-                if(comp == 0)
-                    use = VARYING_COMPONENT_USE_POINTCOORD_X;
-                else if(comp == 1)
-                    use = VARYING_COMPONENT_USE_POINTCOORD_Y;
-            }
-            component_use[compid/16] |= use << ((compid%16)*2);
-        }
-        total_components += rs->varyings[idx].num_components;
-    }
-    SET_STATE(GL_VARYING_TOTAL_COMPONENTS, VIVS_GL_VARYING_TOTAL_COMPONENTS_NUM(total_components));
-    SET_STATE(GL_VARYING_NUM_COMPONENTS, num_components);
-    SET_STATE(GL_VARYING_COMPONENT_USE[0], component_use[0]);
-    SET_STATE(GL_VARYING_COMPONENT_USE[1], component_use[1]);
-
-    cs->vs_inst_mem_size = rs->vs_code_size;
-    cs->vs_uniforms_size = rs->vs_uniforms_size;
-    cs->ps_inst_mem_size = rs->ps_code_size;
-    cs->ps_uniforms_size = rs->ps_uniforms_size;
-    cs->VS_INST_MEM = copy32(rs->vs_code, rs->vs_code_size);
-    cs->VS_UNIFORMS = copy32(rs->vs_uniforms, rs->vs_uniforms_size);
-    cs->PS_INST_MEM = copy32(rs->ps_code, rs->ps_code_size);
-    cs->PS_UNIFORMS = copy32(rs->ps_uniforms, rs->ps_uniforms_size);
-}
-
-
-
 /*********************************************************************/
 #define ETNA_PIPE(pipe) ((struct etna_pipe_context_priv*)(pipe)->priv)
 
@@ -1102,12 +714,38 @@ static void etna_pipe_draw_vbo(struct pipe_context *pipe,
 }
 
 static void * etna_pipe_create_blend_state(struct pipe_context *pipe,
-                            const struct pipe_blend_state *info)
+                            const struct pipe_blend_state *bs)
 {
     //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
-    struct compiled_blend_state *blend = ETNA_NEW(struct compiled_blend_state);
-    compile_blend_state(blend, info);
-    return blend;
+    struct compiled_blend_state *cs = ETNA_NEW(struct compiled_blend_state);
+    const struct pipe_rt_blend_state *rt0 = &bs->rt[0];
+    bool enable = rt0->blend_enable && !(rt0->rgb_src_factor == PIPE_BLENDFACTOR_ONE && rt0->rgb_dst_factor == PIPE_BLENDFACTOR_ZERO &&
+                                         rt0->alpha_src_factor == PIPE_BLENDFACTOR_ONE && rt0->alpha_dst_factor == PIPE_BLENDFACTOR_ZERO);
+    bool separate_alpha = enable && !(rt0->rgb_src_factor == rt0->alpha_src_factor &&
+                                      rt0->rgb_dst_factor == rt0->alpha_dst_factor);
+    bool full_overwrite = (rt0->colormask == 15) && !enable;
+    SET_STATE(PE_ALPHA_CONFIG, 
+            (enable ? VIVS_PE_ALPHA_CONFIG_BLEND_ENABLE_COLOR : 0) | 
+            (separate_alpha ? VIVS_PE_ALPHA_CONFIG_BLEND_SEPARATE_ALPHA : 0) |
+            VIVS_PE_ALPHA_CONFIG_SRC_FUNC_COLOR(translate_blend_factor(rt0->rgb_src_factor)) |
+            VIVS_PE_ALPHA_CONFIG_SRC_FUNC_ALPHA(translate_blend_factor(rt0->alpha_src_factor)) |
+            VIVS_PE_ALPHA_CONFIG_DST_FUNC_COLOR(translate_blend_factor(rt0->rgb_dst_factor)) |
+            VIVS_PE_ALPHA_CONFIG_DST_FUNC_ALPHA(translate_blend_factor(rt0->alpha_dst_factor)) |
+            VIVS_PE_ALPHA_CONFIG_EQ_COLOR(translate_blend(rt0->rgb_func)) |
+            VIVS_PE_ALPHA_CONFIG_EQ_ALPHA(translate_blend(rt0->alpha_func))
+            );
+    SET_STATE(PE_COLOR_FORMAT, 
+            VIVS_PE_COLOR_FORMAT_COMPONENTS(rt0->colormask) |
+            (full_overwrite ? VIVS_PE_COLOR_FORMAT_OVERWRITE : 0)
+            );
+    SET_STATE(PE_LOGIC_OP, 
+            VIVS_PE_LOGIC_OP_OP(bs->logicop_enable ? bs->logicop_func : LOGIC_OP_COPY) /* 1-to-1 mapping */ |
+            0x000E4000 /* ??? */
+            );
+    /* independent_blend_enable not needed: only one rt supported */
+    /* XXX alpha_to_coverage / alpha_to_one? */
+    /* XXX dither? VIVS_PE_DITHER(...) and/or VIVS_RS_DITHER(...) on resolve */
+    return cs;
 }
 
 static void etna_pipe_bind_blend_state(struct pipe_context *pipe, void *bs)
@@ -1123,13 +761,28 @@ static void etna_pipe_delete_blend_state(struct pipe_context *pipe, void *bs)
     free(bs);
 }
 
-static void * etna_pipe_create_sampler_state(struct pipe_context *pipe,
-                              const struct pipe_sampler_state *info)
+static void *etna_pipe_create_sampler_state(struct pipe_context *pipe,
+                              const struct pipe_sampler_state *ss)
 {
     //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
-    struct compiled_sampler_state *sampler = ETNA_NEW(struct compiled_sampler_state);
-    compile_sampler_state(sampler, info);
-    return sampler;
+    struct compiled_sampler_state *cs = ETNA_NEW(struct compiled_sampler_state);
+    SET_STATE(TE_SAMPLER_CONFIG0, 
+                /* XXX get from sampler view: VIVS_TE_SAMPLER_CONFIG0_TYPE(TEXTURE_TYPE_2D)| */
+                VIVS_TE_SAMPLER_CONFIG0_UWRAP(translate_texture_wrapmode(ss->wrap_s))|
+                VIVS_TE_SAMPLER_CONFIG0_VWRAP(translate_texture_wrapmode(ss->wrap_t))|
+                VIVS_TE_SAMPLER_CONFIG0_MIN(translate_texture_filter(ss->min_img_filter))|
+                VIVS_TE_SAMPLER_CONFIG0_MIP(translate_texture_mipfilter(ss->min_mip_filter))|
+                VIVS_TE_SAMPLER_CONFIG0_MAG(translate_texture_filter(ss->mag_img_filter))
+                /* XXX get from sampler view: VIVS_TE_SAMPLER_CONFIG0_FORMAT(tex_format) */
+            );
+    /* VIVS_TE_SAMPLER_CONFIG1 (swizzle, extended format) fully determined by sampler view */
+    SET_STATE(TE_SAMPLER_LOD_CONFIG,
+            (ss->lod_bias != 0.0 ? VIVS_TE_SAMPLER_LOD_CONFIG_BIAS_ENABLE : 0) | 
+            VIVS_TE_SAMPLER_LOD_CONFIG_BIAS(float_to_fixp55(ss->lod_bias))
+            );
+    cs->min_lod = float_to_fixp55(ss->min_lod);
+    cs->max_lod = float_to_fixp55(ss->max_lod);
+    return cs;
 }
 
 static void etna_pipe_bind_fragment_sampler_states(struct pipe_context *pipe,
@@ -1150,12 +803,32 @@ static void etna_pipe_delete_sampler_state(struct pipe_context *pipe, void *ss)
 }
 
 static void * etna_pipe_create_rasterizer_state(struct pipe_context *pipe,
-                                 const struct pipe_rasterizer_state *info)
+                                 const struct pipe_rasterizer_state *rs)
 {
     //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
-    struct compiled_rasterizer_state *rasterizer = ETNA_NEW(struct compiled_rasterizer_state);
-    compile_rasterizer_state(rasterizer, info);
-    return rasterizer;
+    struct compiled_rasterizer_state *cs = ETNA_NEW(struct compiled_rasterizer_state);
+    if(rs->fill_front != rs->fill_back)
+    {
+        printf("Different front and back fill mode not supported\n");
+    }
+    SET_STATE(PA_CONFIG, 
+            (rs->flatshade ? VIVS_PA_CONFIG_SHADE_MODEL_FLAT : VIVS_PA_CONFIG_SHADE_MODEL_SMOOTH) | 
+            translate_cull_face(rs->cull_face, rs->front_ccw) |
+            translate_polygon_mode(rs->fill_front) |
+            (rs->point_quad_rasterization ? VIVS_PA_CONFIG_POINT_SPRITE_ENABLE : 0) |
+            (rs->point_size_per_vertex ? VIVS_PA_CONFIG_POINT_SIZE_ENABLE : 0));
+    SET_STATE_F32(PA_LINE_WIDTH, rs->line_width);
+    SET_STATE_F32(PA_POINT_SIZE, rs->point_size);
+    SET_STATE_F32(SE_DEPTH_SCALE, rs->offset_scale);
+    SET_STATE_F32(SE_DEPTH_BIAS, rs->offset_units);
+    SET_STATE(SE_CONFIG, 
+            (rs->line_last_pixel ? VIVS_SE_CONFIG_LAST_PIXEL_ENABLE : 0) 
+            /* XXX anything else? */
+            );
+    /* XXX rs->gl_rasterization_rules is likely one of the bits in VIVS_PA_SYSTEM_MODE */
+    /* rs->scissor overrides the scissor, defaulting to the whole framebuffer, with the scissor state */
+    cs->scissor = rs->scissor;
+    return cs;
 }
 
 static void etna_pipe_bind_rasterizer_state(struct pipe_context *pipe, void *rs)
@@ -1171,13 +844,40 @@ static void etna_pipe_delete_rasterizer_state(struct pipe_context *pipe, void *r
     free(rs);
 }
 
-static void * etna_pipe_create_depth_stencil_alpha_state(struct pipe_context *pipe,
-                                    const struct pipe_depth_stencil_alpha_state *info)
+static void *etna_pipe_create_depth_stencil_alpha_state(struct pipe_context *pipe,
+                                    const struct pipe_depth_stencil_alpha_state *dsa)
 {
     //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
-    struct compiled_depth_stencil_alpha_state *dsa = ETNA_NEW(struct compiled_depth_stencil_alpha_state);
-    compile_depth_stencil_alpha_state(dsa, info);
-    return dsa;
+    struct compiled_depth_stencil_alpha_state *cs = ETNA_NEW(struct compiled_depth_stencil_alpha_state);
+    /* XXX does stencil[0] / stencil[1] order depend on rs->front_ccw? */
+    /* compare funcs have 1 to 1 mapping */
+    SET_STATE(PE_DEPTH_CONFIG, 
+            VIVS_PE_DEPTH_CONFIG_DEPTH_FUNC(dsa->depth.enabled ? dsa->depth.func : PIPE_FUNC_ALWAYS) |
+            (dsa->depth.writemask ? VIVS_PE_DEPTH_CONFIG_WRITE_ENABLE : 0)
+            /* XXX EARLY_Z */
+            );
+    SET_STATE(PE_ALPHA_OP, 
+            (dsa->alpha.enabled ? VIVS_PE_ALPHA_OP_ALPHA_TEST : 0) |
+            VIVS_PE_ALPHA_OP_ALPHA_FUNC(dsa->alpha.func) |
+            VIVS_PE_ALPHA_OP_ALPHA_REF(cfloat_to_uint8(dsa->alpha.ref_value)));
+    SET_STATE(PE_STENCIL_OP, 
+            VIVS_PE_STENCIL_OP_FUNC_FRONT(dsa->stencil[0].func) |
+            VIVS_PE_STENCIL_OP_FUNC_BACK(dsa->stencil[1].func) |
+            VIVS_PE_STENCIL_OP_FAIL_FRONT(translate_stencil_op(dsa->stencil[0].fail_op)) | 
+            VIVS_PE_STENCIL_OP_FAIL_BACK(translate_stencil_op(dsa->stencil[1].fail_op)) |
+            VIVS_PE_STENCIL_OP_DEPTH_FAIL_FRONT(translate_stencil_op(dsa->stencil[0].zfail_op)) |
+            VIVS_PE_STENCIL_OP_DEPTH_FAIL_BACK(translate_stencil_op(dsa->stencil[1].zfail_op)) |
+            VIVS_PE_STENCIL_OP_PASS_FRONT(translate_stencil_op(dsa->stencil[0].zpass_op)) |
+            VIVS_PE_STENCIL_OP_PASS_BACK(translate_stencil_op(dsa->stencil[1].zpass_op)));
+    SET_STATE(PE_STENCIL_CONFIG, 
+            translate_stencil_mode(dsa->stencil[0].enabled, dsa->stencil[1].enabled) |
+            VIVS_PE_STENCIL_CONFIG_MASK_FRONT(dsa->stencil[0].valuemask) | 
+            VIVS_PE_STENCIL_CONFIG_WRITE_MASK(dsa->stencil[0].writemask) 
+            /* XXX back masks in VIVS_PE_DEPTH_CONFIG_EXT? */
+            /* XXX VIVS_PE_STENCIL_CONFIG_REF_FRONT comes from pipe_stencil_ref */
+            );
+    /* XXX does alpha/stencil test affect PE_COLOR_FORMAT_OVERWRITE? */
+    return cs;
 }
 
 static void etna_pipe_bind_depth_stencil_alpha_state(struct pipe_context *pipe, void *dsa)
@@ -1193,14 +893,34 @@ static void etna_pipe_delete_depth_stencil_alpha_state(struct pipe_context *pipe
     free(dsa);
 }
 
-static void * etna_pipe_create_vertex_elements_state(struct pipe_context *pipe,
+static void *etna_pipe_create_vertex_elements_state(struct pipe_context *pipe,
                                       unsigned num_elements,
-                                      const struct pipe_vertex_element *info)
+                                      const struct pipe_vertex_element *elements)
 {
     //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
-    struct compiled_vertex_elements_state  *vertex_elements = ETNA_NEW(struct compiled_vertex_elements_state);
-    compile_vertex_elements_state(vertex_elements, num_elements, info);
-    return vertex_elements;
+    struct compiled_vertex_elements_state *cs = ETNA_NEW(struct compiled_vertex_elements_state);
+    /* VERTEX_ELEMENT_STRIDE is in pipe_vertex_buffer */
+    cs->num_elements = num_elements;
+    for(unsigned idx=0; idx<num_elements; ++idx)
+    {
+        unsigned element_size = pipe_element_size(elements[idx].src_format);
+        unsigned end_offset = elements[idx].src_offset + element_size;
+        assert(element_size != 0 && end_offset <= 256);
+        /* check whether next element is consecutive to this one */
+        bool nonconsecutive = (idx == (num_elements-1)) || 
+                    elements[idx+1].vertex_buffer_index != elements[idx].vertex_buffer_index ||
+                    end_offset != elements[idx+1].src_offset;
+        SET_STATE(FE_VERTEX_ELEMENT_CONFIG[idx], 
+                (nonconsecutive ? VIVS_FE_VERTEX_ELEMENT_CONFIG_NONCONSECUTIVE : 0) |
+                translate_vertex_format_type(elements[idx].src_format) |
+                VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM(vertex_format_num(elements[idx].src_format)) |
+                translate_vertex_format_normalize(elements[idx].src_format) |
+                VIVS_FE_VERTEX_ELEMENT_CONFIG_ENDIAN(ENDIAN_MODE_NO_SWAP) |
+                VIVS_FE_VERTEX_ELEMENT_CONFIG_STREAM(elements[idx].vertex_buffer_index) |
+                VIVS_FE_VERTEX_ELEMENT_CONFIG_START(elements[idx].src_offset) |
+                VIVS_FE_VERTEX_ELEMENT_CONFIG_END(end_offset));
+    }
+    return cs;
 }
 
 static void etna_pipe_bind_vertex_elements_state(struct pipe_context *pipe, void *ve)
@@ -1217,53 +937,150 @@ static void etna_pipe_delete_vertex_elements_state(struct pipe_context *pipe, vo
 }
 
 static void etna_pipe_set_blend_color(struct pipe_context *pipe,
-                        const struct pipe_blend_color *info)
+                        const struct pipe_blend_color *bc)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct compiled_blend_color *cs = &priv->blend_color;
+    SET_STATE(PE_ALPHA_BLEND_COLOR, 
+            VIVS_PE_ALPHA_BLEND_COLOR_R(cfloat_to_uint8(bc->color[0])) |
+            VIVS_PE_ALPHA_BLEND_COLOR_G(cfloat_to_uint8(bc->color[1])) |
+            VIVS_PE_ALPHA_BLEND_COLOR_B(cfloat_to_uint8(bc->color[2])) |
+            VIVS_PE_ALPHA_BLEND_COLOR_A(cfloat_to_uint8(bc->color[3]))
+            );
     priv->dirty_bits |= ETNA_STATE_BLEND_COLOR;
-    compile_blend_color(&priv->blend_color, info);
 }
 
 static void etna_pipe_set_stencil_ref(struct pipe_context *pipe,
-                        const struct pipe_stencil_ref *info)
+                        const struct pipe_stencil_ref *sr)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct compiled_stencil_ref *cs = &priv->stencil_ref;
+    SET_STATE(PE_STENCIL_CONFIG, 
+            VIVS_PE_STENCIL_CONFIG_REF_FRONT(sr->ref_value[0]) 
+            /* rest of bits comes from depth_stencil_alpha, merged in */
+            );
+    SET_STATE(PE_STENCIL_CONFIG_EXT, 
+            VIVS_PE_STENCIL_CONFIG_EXT_REF_BACK(sr->ref_value[0]) 
+            );
     priv->dirty_bits |= ETNA_STATE_STENCIL_REF;
-    compile_stencil_ref(&priv->stencil_ref, info);
 }
 
 static void etna_pipe_set_sample_mask(struct pipe_context *pipe,
                         unsigned sample_mask)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct compiled_sample_mask *cs = &priv->sample_mask;
+
+    SET_STATE(GL_MULTI_SAMPLE_CONFIG, 
+            /* to be merged with render target state */
+            VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_ENABLES(sample_mask));
     priv->dirty_bits |= ETNA_STATE_SAMPLE_MASK;
-    compile_sample_mask(&priv->sample_mask, sample_mask);
 }
 
 static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
-                              const struct pipe_framebuffer_state *info)
+                              const struct pipe_framebuffer_state *sv)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
-    priv->dirty_bits |= ETNA_STATE_VIEWPORT;
-    priv->framebuffer_s = *info;
-    compile_framebuffer_state(&priv->framebuffer, info);
+    struct compiled_framebuffer_state *cs = &priv->framebuffer;
+    struct pipe_surface *cbuf = (sv->nr_cbufs > 0) ? sv->cbufs[0] : NULL;
+    struct pipe_surface *zsbuf = sv->zsbuf;
+    /* XXX rendering with only color or only depth should be possible */
+    assert(cbuf != NULL && zsbuf != NULL);
+    uint32_t depth_format = translate_depth_format(zsbuf->format);
+    unsigned depth_bits = depth_format == VIVS_PE_DEPTH_CONFIG_DEPTH_FORMAT_D16 ? 16 : 24; 
+    assert((cbuf->layout & 1) && (zsbuf->layout & 1)); /* color and depth buffer must be at least tiled */
+    bool color_supertiled = (cbuf->layout & 2)!=0;
+    bool depth_supertiled = (zsbuf->layout & 2)!=0;
 
+    /* XXX support multisample 2X/4X, take care that required width/height is doubled */
+    SET_STATE(GL_MULTI_SAMPLE_CONFIG, 
+            VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_SAMPLES_NONE
+            /* VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_ENABLES(0xf)
+            VIVS_GL_MULTI_SAMPLE_CONFIG_UNK12 |
+            VIVS_GL_MULTI_SAMPLE_CONFIG_UNK16 */
+            );  /* merged with sample_mask */
+    SET_STATE(PE_COLOR_FORMAT, 
+            VIVS_PE_COLOR_FORMAT_FORMAT(translate_rt_format(cbuf->format)) |
+            (color_supertiled ? VIVS_PE_COLOR_FORMAT_SUPER_TILED : 0) /* XXX depends on layout */
+            /* XXX VIVS_PE_COLOR_FORMAT_OVERWRITE and the rest comes from blend_state / depth_stencil_alpha */
+            ); /* merged with depth_stencil_alpha */
+    SET_STATE(PE_DEPTH_CONFIG, 
+            depth_format |
+            (depth_supertiled ? VIVS_PE_DEPTH_CONFIG_SUPER_TILED : 0) | /* XXX depends on layout */
+            VIVS_PE_DEPTH_CONFIG_EARLY_Z |
+            VIVS_PE_DEPTH_CONFIG_DEPTH_MODE_Z /* XXX set to NONE if no Z buffer */
+            /* VIVS_PE_DEPTH_CONFIG_ONLY_DEPTH */
+            ); /* merged with depth_stencil_alpha */
+
+    SET_STATE(PE_DEPTH_ADDR, zsbuf->surf.address);
+    SET_STATE(PE_DEPTH_STRIDE, zsbuf->surf.stride);
+    SET_STATE(PE_HDEPTH_CONTROL, VIVS_PE_HDEPTH_CONTROL_FORMAT_DISABLED);
+    SET_STATE_F32(PE_DEPTH_NORMALIZE, exp2f(depth_bits) - 1.0f);
+    SET_STATE(PE_COLOR_ADDR, cbuf->surf.address);
+    SET_STATE(PE_COLOR_STRIDE, cbuf->surf.stride);
+    
+    SET_STATE_FIXP(SE_SCISSOR_LEFT, 0); /* affected by rasterizer and scissor state as well */
+    SET_STATE_FIXP(SE_SCISSOR_TOP, 0);
+    SET_STATE_FIXP(SE_SCISSOR_RIGHT, (sv->width << 16)-1);
+    SET_STATE_FIXP(SE_SCISSOR_BOTTOM, (sv->height << 16)-1);
+
+    /* Set up TS as well. Warning: this is shared with RS */
+    SET_STATE(TS_MEM_CONFIG, 
+            VIVS_TS_MEM_CONFIG_DEPTH_FAST_CLEAR |
+            VIVS_TS_MEM_CONFIG_COLOR_FAST_CLEAR |
+            (depth_bits == 16 ? VIVS_TS_MEM_CONFIG_DEPTH_16BPP : 0) | 
+            VIVS_TS_MEM_CONFIG_DEPTH_COMPRESSION /* |
+            VIVS_TS_MEM_CONFIG_MSAA | 
+            translate_msaa_format(cbuf->format) */);
+    SET_STATE(TS_DEPTH_CLEAR_VALUE, zsbuf->clear_value);
+    SET_STATE(TS_DEPTH_STATUS_BASE, zsbuf->surf.ts_address);
+    SET_STATE(TS_DEPTH_SURFACE_BASE, zsbuf->surf.address);
+    SET_STATE(TS_COLOR_CLEAR_VALUE, cbuf->clear_value);
+    SET_STATE(TS_COLOR_STATUS_BASE, cbuf->surf.ts_address);
+    SET_STATE(TS_COLOR_SURFACE_BASE, cbuf->surf.address);
+
+    priv->dirty_bits |= ETNA_STATE_VIEWPORT;
+    priv->framebuffer_s = *sv; /* keep copy of original structure */
 }
 
 static void etna_pipe_set_scissor_state( struct pipe_context *pipe,
-                          const struct pipe_scissor_state *info)
+                          const struct pipe_scissor_state *ss)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct compiled_scissor_state *cs = &priv->scissor;
+    SET_STATE_FIXP(SE_SCISSOR_LEFT, (ss->minx << 16));
+    SET_STATE_FIXP(SE_SCISSOR_TOP, (ss->miny << 16));
+    SET_STATE_FIXP(SE_SCISSOR_RIGHT, (ss->maxx << 16)-1);
+    SET_STATE_FIXP(SE_SCISSOR_BOTTOM, (ss->maxy << 16)-1);
+    /* note that this state is only used when rasterizer_state->scissor is on */
     priv->dirty_bits |= ETNA_STATE_FRAMEBUFFER;
-    compile_scissor_state(&priv->scissor, info);
 }
 
 static void etna_pipe_set_viewport_state( struct pipe_context *pipe,
-                           const struct pipe_viewport_state *info)
+                           const struct pipe_viewport_state *vs)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct compiled_viewport_state *cs = &priv->viewport;
+    /**
+     * For Vivante GPU, viewport z transformation is 0..1 to 0..1 instead of -1..1 to 0..1.
+     * scaling and translation to 0..1 already happened, so remove that
+     *
+     * z' = (z * 2 - 1) * scale + translate
+     *    = z * (2 * scale) + (translate - scale)
+     *
+     * scale' = 2 * scale
+     * translate' = translate - scale
+     */
+    SET_STATE_F32(PA_VIEWPORT_SCALE_X, vs->scale[0]);
+    SET_STATE_F32(PA_VIEWPORT_SCALE_Y, vs->scale[1]);
+    SET_STATE_F32(PA_VIEWPORT_SCALE_Z, vs->scale[2] * 2.0f);
+    SET_STATE_F32(PA_VIEWPORT_OFFSET_X, vs->translate[0]);
+    SET_STATE_F32(PA_VIEWPORT_OFFSET_Y, vs->translate[1]);
+    SET_STATE_F32(PA_VIEWPORT_OFFSET_Z, vs->translate[2] - vs->scale[2]);
+
+    SET_STATE_F32(PE_DEPTH_NEAR, 0.0); /* not affected if depth mode is Z (as in GL) */
+    SET_STATE_F32(PE_DEPTH_FAR, 1.0);
     priv->dirty_bits |= ETNA_STATE_SCISSOR;
-    compile_viewport_state(&priv->viewport, info);
 }
 
 static void etna_pipe_set_fragment_sampler_views(struct pipe_context *pipe,
@@ -1274,26 +1091,43 @@ static void etna_pipe_set_fragment_sampler_views(struct pipe_context *pipe,
     priv->dirty_bits |= ETNA_STATE_SAMPLER_VIEWS;
     priv->num_sampler_views = num_views;
     for(int idx=0; idx<num_views; ++idx)
-        compile_sampler_view(&priv->sampler_view[idx], info[idx]); 
+        priv->sampler_view[idx] = *info[idx]->internal;
 }
 
 static void etna_pipe_set_vertex_buffers( struct pipe_context *pipe,
                            unsigned start_slot,
                            unsigned num_buffers,
-                           const struct pipe_vertex_buffer *info)
+                           const struct pipe_vertex_buffer *vb)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
-    priv->dirty_bits |= ETNA_STATE_VERTEX_BUFFERS;
+    struct compiled_set_vertex_buffer *cs = &priv->vertex_buffer;
+
     assert(start_slot == 0 && num_buffers == 1); /* XXX TODO */
-    compile_set_vertex_buffer(&priv->vertex_buffer, info);
+    assert(vb[0].buffer); /* XXX user_buffer */
+    SET_STATE(FE_VERTEX_STREAM_CONTROL, 
+            VIVS_FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE(vb[0].stride));
+    SET_STATE(FE_VERTEX_STREAM_BASE_ADDR, vb[0].buffer->levels[0].address + vb[0].buffer_offset);
+    
+    priv->dirty_bits |= ETNA_STATE_VERTEX_BUFFERS;
 }
 
 static void etna_pipe_set_index_buffer( struct pipe_context *pipe,
-                         const struct pipe_index_buffer *info)
+                         const struct pipe_index_buffer *ib)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct compiled_set_index_buffer *cs = &priv->index_buffer;
+    if(ib == NULL)
+    {
+        SET_STATE(FE_INDEX_STREAM_CONTROL, 0);
+        SET_STATE(FE_INDEX_STREAM_BASE_ADDR, 0);
+    } else
+    {
+        assert(ib->buffer); /* XXX user_buffer */
+        SET_STATE(FE_INDEX_STREAM_CONTROL, 
+                translate_index_size(ib->index_size));
+        SET_STATE(FE_INDEX_STREAM_BASE_ADDR, ib->buffer->levels[0].address + ib->offset);
+    }
     priv->dirty_bits |= ETNA_STATE_INDEX_BUFFER;
-    compile_set_index_buffer(&priv->index_buffer, info);
 }
 
 static void etna_pipe_clear(struct pipe_context *pipe,
@@ -1371,7 +1205,32 @@ static struct pipe_sampler_view *etna_pipe_create_sampler_view(struct pipe_conte
     sv->context = pipe;
     sv->texture = texture;
 
-    /* TODO: something to precompile? */
+    struct compiled_sampler_view *cs = ETNA_NEW(struct compiled_sampler_view);
+    assert(sv->texture);
+    struct pipe_resource *res = sv->texture;
+    assert(res != NULL);
+
+    SET_STATE(TE_SAMPLER_CONFIG0, 
+                VIVS_TE_SAMPLER_CONFIG0_TYPE(translate_texture_target(res->target)) |
+                VIVS_TE_SAMPLER_CONFIG0_FORMAT(translate_texture_format(sv->format)) 
+                /* merged with sampler state */
+            );
+    /* XXX VIVS_TE_SAMPLER_CONFIG1 (swizzle, extended format), swizzle_(r|g|b|a) */
+    SET_STATE(TE_SAMPLER_SIZE, 
+            VIVS_TE_SAMPLER_SIZE_WIDTH(res->width0)|
+            VIVS_TE_SAMPLER_SIZE_HEIGHT(res->height0));
+    SET_STATE(TE_SAMPLER_LOG_SIZE, 
+            VIVS_TE_SAMPLER_LOG_SIZE_WIDTH(log2_fixp55(res->width0)) |
+            VIVS_TE_SAMPLER_LOG_SIZE_HEIGHT(log2_fixp55(res->height0)));
+    /* XXX in principle we only have to define lods sv->first_level .. sv->last_level */
+    for(int lod=0; lod<=res->last_level; ++lod)
+    {
+        SET_STATE(TE_SAMPLER_LOD_ADDR[lod], res->levels[lod].address);
+    }
+    cs->min_lod = sv->u.tex.first_level << 5;
+    cs->max_lod = etna_umin(sv->u.tex.last_level, res->last_level) << 5;
+
+    sv->internal = cs;
     return sv;
 }
 
@@ -1379,6 +1238,7 @@ static void etna_pipe_sampler_view_destroy(struct pipe_context *pipe,
                             struct pipe_sampler_view *view)
 {
     //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    free(view->internal);
     free(view);
 }
 
@@ -1437,11 +1297,90 @@ static void etna_pipe_texture_barrier(struct pipe_context *pipe)
     /* TODO fill me in */
 }
    
-static void *etna_create_etna_shader_state(struct pipe_context *pipe, const struct etna_shader_program *prog)
+static void *etna_create_etna_shader_state(struct pipe_context *pipe, const struct etna_shader_program *rs)
 {
-    struct compiled_shader_state *sh = ETNA_NEW(struct compiled_shader_state);
-    compile_shader_state(sh, prog);
-    return sh;
+    struct compiled_shader_state *cs = ETNA_NEW(struct compiled_shader_state);
+    /* set last_varying_2x flag if the last varying has 1 or 2 components */
+    bool last_varying_2x = false;
+    if(rs->num_varyings>0 && rs->varyings[rs->num_varyings-1].num_components <= 2)
+        last_varying_2x = true;
+
+    SET_STATE(RA_CONTROL, VIVS_RA_CONTROL_UNK0 |
+                          (last_varying_2x ? VIVS_RA_CONTROL_LAST_VARYING_2X : 0));
+
+    SET_STATE(PA_ATTRIBUTE_ELEMENT_COUNT, VIVS_PA_ATTRIBUTE_ELEMENT_COUNT_COUNT(rs->num_varyings));
+    for(int idx=0; idx<rs->num_varyings; ++idx)
+        SET_STATE(PA_SHADER_ATTRIBUTES[idx], rs->varyings[idx].pa_attributes);
+
+    SET_STATE(VS_END_PC, rs->vs_code_size / 4);
+    SET_STATE(VS_OUTPUT_COUNT, rs->num_varyings + 1); /* position + varyings */
+    SET_STATE(VS_INPUT_COUNT, VIVS_VS_INPUT_COUNT_COUNT(rs->num_inputs) |
+                              VIVS_VS_INPUT_COUNT_UNK8(1));
+    SET_STATE(VS_TEMP_REGISTER_CONTROL,
+                              VIVS_VS_TEMP_REGISTER_CONTROL_NUM_TEMPS(rs->vs_num_temps));
+    /* vs outputs (varyings) */ 
+    uint32_t vs_output[4] = {0};
+    vs_output[0] = rs->vs_pos_out_reg;
+    for(int idx=0; idx<rs->num_varyings; ++idx)
+        vs_output[idx/4] |= rs->varyings[idx].vs_reg << (((idx+1)%4)*8);
+    for(int idx=0; idx<4; ++idx)
+        SET_STATE(VS_OUTPUT[idx], vs_output[idx]);
+    
+    /* vs inputs (attributes) */
+    uint32_t vs_input[4] = {0};
+    for(int idx=0; idx<rs->num_inputs; ++idx)
+        vs_input[idx/4] |= rs->inputs[idx].vs_reg << ((idx%4)*8);
+    for(int idx=0; idx<4; ++idx)
+        SET_STATE(VS_INPUT[idx], vs_input[idx]);
+
+    SET_STATE(VS_LOAD_BALANCING, rs->vs_load_balancing); 
+    SET_STATE(VS_START_PC, 0);
+
+    SET_STATE(PS_END_PC, rs->ps_code_size / 4);
+    SET_STATE(PS_OUTPUT_REG, rs->ps_color_out_reg);
+    SET_STATE(PS_INPUT_COUNT, VIVS_PS_INPUT_COUNT_COUNT(rs->num_varyings + 1) | 
+                              VIVS_PS_INPUT_COUNT_UNK8(31));
+    SET_STATE(PS_TEMP_REGISTER_CONTROL,
+                              VIVS_PS_TEMP_REGISTER_CONTROL_NUM_TEMPS(rs->ps_num_temps));
+    SET_STATE(PS_CONTROL, VIVS_PS_CONTROL_UNK1);
+    SET_STATE(PS_START_PC, 0);
+
+    uint32_t total_components = 0;
+    uint32_t num_components = 0;
+    uint32_t component_use[2] = {0};
+    for(int idx=0; idx<rs->num_varyings; ++idx)
+    {
+        num_components |= rs->varyings[idx].num_components << ((idx%8)*4);
+        for(int comp=0; comp<rs->varyings[idx].num_components; ++comp)
+        {
+            int compid = total_components + comp;
+            unsigned use = VARYING_COMPONENT_USE_USED;
+            if(rs->varyings[idx].special == ETNA_VARYING_POINTCOORD)
+            {
+                if(comp == 0)
+                    use = VARYING_COMPONENT_USE_POINTCOORD_X;
+                else if(comp == 1)
+                    use = VARYING_COMPONENT_USE_POINTCOORD_Y;
+            }
+            component_use[compid/16] |= use << ((compid%16)*2);
+        }
+        total_components += rs->varyings[idx].num_components;
+    }
+    SET_STATE(GL_VARYING_TOTAL_COMPONENTS, VIVS_GL_VARYING_TOTAL_COMPONENTS_NUM(total_components));
+    SET_STATE(GL_VARYING_NUM_COMPONENTS, num_components);
+    SET_STATE(GL_VARYING_COMPONENT_USE[0], component_use[0]);
+    SET_STATE(GL_VARYING_COMPONENT_USE[1], component_use[1]);
+
+    cs->vs_inst_mem_size = rs->vs_code_size;
+    cs->vs_uniforms_size = rs->vs_uniforms_size;
+    cs->ps_inst_mem_size = rs->ps_code_size;
+    cs->ps_uniforms_size = rs->ps_uniforms_size;
+    cs->VS_INST_MEM = copy32(rs->vs_code, rs->vs_code_size);
+    cs->VS_UNIFORMS = copy32(rs->vs_uniforms, rs->vs_uniforms_size);
+    cs->PS_INST_MEM = copy32(rs->ps_code, rs->ps_code_size);
+    cs->PS_UNIFORMS = copy32(rs->ps_uniforms, rs->ps_uniforms_size);
+
+    return cs;
 }
 
 static void etna_bind_etna_shader_state(struct pipe_context *pipe, void *sh)
