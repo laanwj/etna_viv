@@ -1,3 +1,4 @@
+; vertex shader for mip_cube_state
 MOV t3.xy__, void, void, u4.wwww
 MOV t3.__z_, void, void, u5.wwww
 MUL t4, u0, t0.xxxx, void

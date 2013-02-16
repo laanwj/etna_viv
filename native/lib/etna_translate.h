@@ -38,8 +38,15 @@
 static inline uint8_t cfloat_to_uint8(float f)
 {
     if(f<=0.0f) return 0;
-    if(f>=1.0f) return 255;
+    if(f>=(1.0f-1.0f/256.0f)) return 255;
     return f * 256.0f;
+}
+
+static inline uint32_t cfloat_to_uintN(float f, int bits)
+{
+    if(f<=0.0f) return 0;
+    if(f>=(1.0f-1.0f/(1<<bits))) return (1<<bits)-1;
+    return f * (1<<bits);
 }
 
 /* float to fixp 5.5 */
@@ -781,5 +788,66 @@ static inline bool pipe_format_is_depth(enum pipe_format fmt)
 {
     return (fmt == PIPE_FORMAT_Z16_UNORM) || (fmt == PIPE_FORMAT_Z24X8_UNORM) || (fmt == PIPE_FORMAT_Z24_UNORM_S8_UINT);
 }
+
+/* return 32-bit clear pattern for color */
+static uint32_t translate_clear_color(enum pipe_format format, const union pipe_color_union *color)
+{
+    uint32_t clear_value = 0;
+    switch(format) // XXX util_pack_color
+    {
+    case PIPE_FORMAT_B8G8R8A8_UNORM:
+    case PIPE_FORMAT_B8G8R8X8_UNORM:
+        clear_value = cfloat_to_uintN(color->f[2], 8) |
+                (cfloat_to_uintN(color->f[1], 8) << 8) |
+                (cfloat_to_uintN(color->f[0], 8) << 16) |
+                (cfloat_to_uintN(color->f[3], 8) << 24);
+        break;
+    case PIPE_FORMAT_B4G4R4X4_UNORM: 
+    case PIPE_FORMAT_B4G4R4A4_UNORM: 
+        clear_value = cfloat_to_uintN(color->f[2], 4) |
+                (cfloat_to_uintN(color->f[1], 4) << 4) |
+                (cfloat_to_uintN(color->f[0], 4) << 8) |
+                (cfloat_to_uintN(color->f[3], 4) << 12);
+        clear_value |= clear_value << 16;
+        break;
+    case PIPE_FORMAT_B5G5R5X1_UNORM: 
+    case PIPE_FORMAT_B5G5R5A1_UNORM: 
+        clear_value = cfloat_to_uintN(color->f[2], 5) |
+                (cfloat_to_uintN(color->f[1], 5) << 5) |
+                (cfloat_to_uintN(color->f[0], 5) << 10) |
+                (cfloat_to_uintN(color->f[3], 1) << 15);
+        clear_value |= clear_value << 16;
+        break;
+    case PIPE_FORMAT_B5G6R5_UNORM: 
+        clear_value = cfloat_to_uintN(color->f[2], 5) |
+                (cfloat_to_uintN(color->f[1], 6) << 5) |
+                (cfloat_to_uintN(color->f[0], 5) << 11);
+        clear_value |= clear_value << 16;
+        break;
+    default:
+        printf("Unhandled pipe format for color clear: %i\n", format);
+    }
+    return clear_value;
+}
+
+static uint32_t translate_clear_depth_stencil(enum pipe_format format, float depth, unsigned stencil)
+{
+    uint32_t clear_value = 0;
+    switch(format) // XXX util_pack_color
+    {
+    case PIPE_FORMAT_Z16_UNORM: 
+        clear_value = cfloat_to_uintN(depth, 16);
+        clear_value |= clear_value << 16;
+        break;
+    case PIPE_FORMAT_Z24X8_UNORM: 
+    case PIPE_FORMAT_Z24_UNORM_S8_UINT: 
+        clear_value = (cfloat_to_uintN(depth, 24) << 8) | (stencil & 0xFF);
+        break;
+    default:
+        printf("Unhandled pipe format for depth stencil clear: %i\n", format);
+    }
+    return clear_value;
+}
+
 #endif
 

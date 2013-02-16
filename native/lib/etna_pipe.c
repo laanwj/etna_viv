@@ -1146,7 +1146,7 @@ static void etna_pipe_clear(struct pipe_context *pipe,
         {
             struct pipe_surface *surf = priv->framebuffer_s.cbufs[idx];
 
-            surf->clear_value = 0xff303030; /* XXX actually use color[idx] */
+            surf->clear_value = translate_clear_color(surf->format, &color[idx]); 
             priv->framebuffer.TS_COLOR_CLEAR_VALUE = surf->clear_value;
             priv->dirty_bits |= ETNA_STATE_TS;
             etna_submit_rs_state(priv->ctx, &surf->clear_command);
@@ -1156,7 +1156,7 @@ static void etna_pipe_clear(struct pipe_context *pipe,
     {
         struct pipe_surface *surf = priv->framebuffer_s.zsbuf;
 
-        surf->clear_value = 0xffffffff; /* XXX actually use depth/stencil */
+        surf->clear_value = translate_clear_depth_stencil(surf->format, depth, stencil);
         priv->framebuffer.TS_DEPTH_CLEAR_VALUE = surf->clear_value;
         priv->dirty_bits |= ETNA_STATE_TS;
         etna_submit_rs_state(priv->ctx, &surf->clear_command);
