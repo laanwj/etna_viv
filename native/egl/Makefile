@@ -39,3 +39,6 @@ simple_texture_cubemap: simple_texture_cubemap.o $(LIB_OBJS)
 eglinfo: eglinfo.o $(LIB_OBJS)
 	$(CXX) $(CFLAGS) -o $@ $^  $(GL_LIBS) $(LDFLAGS)
 
+stencil_test: stencil_test.o ${LIB_OBJS}
+	$(CXX) $(CFLAGS) -o $@ $^  $(GL_LIBS) $(LDFLAGS)
+
