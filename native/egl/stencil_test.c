@@ -197,7 +197,6 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-
 	glShaderSource(vertex_shader, 1, &vertex_shader_source, NULL);
 	glCompileShader(vertex_shader);
 
@@ -308,7 +307,7 @@ int main(int argc, char *argv[])
    //   stencil test, which is
    //
    //        ref   mask   stencil  mask
-   //      ( 0x7 & 0x3 ) < ( 0x1 & 0x7 )
+   //      ( 0x7 & 0x3 ) < ( 0x1 & 0x3 )
    //
    //   The value in the stencil buffer for these pixels will
    //   be 0x7.

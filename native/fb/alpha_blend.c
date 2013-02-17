@@ -169,7 +169,8 @@ int main(int argc, char **argv)
     struct pipe_resource *vtx_resource = etna_pipe_create_buffer(pipe, ETNA_IS_VERTEX, VERTEX_BUFFER_SIZE);
 
     /* interleave vertex data */
-    float *vtx_logical = vtx_resource->levels[0].logical;
+    float *vtx_logical = etna_pipe_get_resource_ptr(pipe, vtx_resource, 0, 0);
+    assert(vtx_logical);
     for(int vert=0; vert<NUM_VERTICES; ++vert)
     {
         int dest_idx = vert * (3 + 3 + 3);

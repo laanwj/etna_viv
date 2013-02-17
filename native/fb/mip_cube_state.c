@@ -290,9 +290,10 @@ int main(int argc, char **argv)
     {
         for(int ix=0; ix<dds->num_mipmaps; ++ix)
         {
-            assert(tex_resource->levels[ix].size >= dds->slices[0][ix].size);
+            void *logical = etna_pipe_get_resource_ptr(pipe, tex_resource, 0, ix);
+            assert(logical);
             printf("%08x: Tiling mipmap %i (%ix%i)\n", dds->slices[0][ix].offset, ix, dds->slices[0][ix].width, dds->slices[0][ix].height);
-            etna_texture_tile(tex_resource->levels[ix].logical, 
+            etna_texture_tile(logical, 
                     dds->slices[0][ix].data, dds->slices[0][ix].width, dds->slices[0][ix].height, dds->slices[0][ix].stride, 4);
         }
     } else if(dds->fmt == FMT_DXT1 || dds->fmt == FMT_DXT3 || dds->fmt == FMT_DXT5 || dds->fmt == FMT_ETC1)
@@ -300,8 +301,9 @@ int main(int argc, char **argv)
         printf("Uploading compressed texture\n");
         for(int ix=0; ix<dds->num_mipmaps; ++ix)
         {
-            assert(tex_resource->levels[ix].size == dds->slices[0][ix].size);
-            memcpy(tex_resource->levels[ix].logical, dds->slices[0][ix].data, dds->slices[0][ix].size);
+            void *logical = etna_pipe_get_resource_ptr(pipe, tex_resource, 0, ix);
+            assert(logical);
+            memcpy(logical, dds->slices[0][ix].data, dds->slices[0][ix].size);
         }
     }     
     /* resources */
@@ -314,7 +316,8 @@ int main(int argc, char **argv)
      * Unlike the GL example we only do this once, not every time glDrawArrays is called, the same would be accomplished
      * from GL by using a vertex buffer object.
      */
-    float *vtx_logical = vtx_resource->levels[0].logical;
+    float *vtx_logical = etna_pipe_get_resource_ptr(pipe, vtx_resource, 0, 0);
+    assert(vtx_logical);
     for(int vert=0; vert<NUM_VERTICES; ++vert)
     {
         int dest_idx = vert * (3 + 3 + 2);

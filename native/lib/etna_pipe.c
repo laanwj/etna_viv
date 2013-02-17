@@ -850,11 +850,31 @@ static void *etna_pipe_create_depth_stencil_alpha_state(struct pipe_context *pip
     //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
     struct compiled_depth_stencil_alpha_state *cs = ETNA_NEW(struct compiled_depth_stencil_alpha_state);
     /* XXX does stencil[0] / stencil[1] order depend on rs->front_ccw? */
+    /* Determine whether to enable early z reject. Don't enable it when any of the stencil functions is used. */
+    bool early_z = true;
+    if(dsa->stencil[0].enabled)
+    {
+        if(dsa->stencil[0].fail_op != PIPE_STENCIL_OP_KEEP || 
+           dsa->stencil[0].zfail_op != PIPE_STENCIL_OP_KEEP ||
+           dsa->stencil[0].zpass_op != PIPE_STENCIL_OP_KEEP)
+        {
+            early_z = false;
+        }
+        else if(dsa->stencil[1].enabled)
+        {
+            if(dsa->stencil[1].fail_op != PIPE_STENCIL_OP_KEEP || 
+               dsa->stencil[1].zfail_op != PIPE_STENCIL_OP_KEEP ||
+               dsa->stencil[1].zpass_op != PIPE_STENCIL_OP_KEEP)
+            {
+                early_z = false;
+            }
+        }
+    }
     /* compare funcs have 1 to 1 mapping */
     SET_STATE(PE_DEPTH_CONFIG, 
             VIVS_PE_DEPTH_CONFIG_DEPTH_FUNC(dsa->depth.enabled ? dsa->depth.func : PIPE_FUNC_ALWAYS) |
-            (dsa->depth.writemask ? VIVS_PE_DEPTH_CONFIG_WRITE_ENABLE : 0)
-            /* XXX EARLY_Z */
+            (dsa->depth.writemask ? VIVS_PE_DEPTH_CONFIG_WRITE_ENABLE : 0) |
+            (early_z ? VIVS_PE_DEPTH_CONFIG_EARLY_Z : 0)
             );
     SET_STATE(PE_ALPHA_OP, 
             (dsa->alpha.enabled ? VIVS_PE_ALPHA_OP_ALPHA_TEST : 0) |
@@ -876,6 +896,7 @@ static void *etna_pipe_create_depth_stencil_alpha_state(struct pipe_context *pip
             /* XXX back masks in VIVS_PE_DEPTH_CONFIG_EXT? */
             /* XXX VIVS_PE_STENCIL_CONFIG_REF_FRONT comes from pipe_stencil_ref */
             );
+
     /* XXX does alpha/stencil test affect PE_COLOR_FORMAT_OVERWRITE? */
     return cs;
 }
@@ -1007,7 +1028,6 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
     SET_STATE(PE_DEPTH_CONFIG, 
             depth_format |
             (depth_supertiled ? VIVS_PE_DEPTH_CONFIG_SUPER_TILED : 0) | /* XXX depends on layout */
-            VIVS_PE_DEPTH_CONFIG_EARLY_Z |
             VIVS_PE_DEPTH_CONFIG_DEPTH_MODE_Z /* XXX set to NONE if no Z buffer */
             /* VIVS_PE_DEPTH_CONFIG_ONLY_DEPTH */
             ); /* merged with depth_stencil_alpha */
@@ -1445,6 +1465,7 @@ struct pipe_context *etna_new_pipe_context(etna_ctx *ctx)
     priv->specs.bits_per_tile = VIV_FEATURE(chipMinorFeatures0,2BITPERTILE)?2:4;
     priv->specs.ts_clear_value = VIV_FEATURE(chipMinorFeatures0,2BITPERTILE)?0x55555555:0x11111111;
 
+    /* TODO set sensible defaults for the other state */
     priv->base_setup.PA_W_CLIP_LIMIT = 0x34000001;
     priv->base_setup.PA_SYSTEM_MODE = 0x11;
     priv->base_setup.GL_VERTEX_ELEMENT_CONFIG = 0x1;
@@ -1638,6 +1659,7 @@ struct pipe_resource *etna_pipe_create_buffer(struct pipe_context *pipe, unsigne
     resource->layout = ETNA_LAYOUT_LINEAR;
     resource->surface = vtx;
     resource->ts = 0;
+    resource->num_layers = 1;
     resource->levels[0].address = resource->surface->address;
     resource->levels[0].logical = resource->surface->logical;
     resource->levels[0].ts_address = 0;
@@ -1654,4 +1676,13 @@ void etna_pipe_destroy_resource(struct pipe_context *pipe, struct pipe_resource 
     etna_vidmem_free(resource->ts);
     free(resource);
 }
+
+void *etna_pipe_get_resource_ptr(struct pipe_context *pipe, struct pipe_resource *resource, int layer, int lod)
+{
+    if(layer >= resource->num_layers || lod > resource->last_level)
+        return NULL;
+    /// XXX size of returned area is resource->levels[lod].layer_stride 
+    return resource->levels[lod].logical + resource->levels[lod].layer_stride * layer;
+}
+
 

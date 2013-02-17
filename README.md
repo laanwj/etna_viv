@@ -77,6 +77,8 @@ to the Vivante hardware while abstracting away kernel interface details.
 
 - `cubemap_sphere`: Cube mapping textures
 
+- `stencil_test`: Test stencil buffer handling
+
 If you are executing these demos on an Android device, make sure that you are root, otherwise the framebuffer
 is not accessible.
 

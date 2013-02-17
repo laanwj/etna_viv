@@ -192,7 +192,7 @@ int main(int argc, char **argv)
     int numIndices = esGenSphere(20, 1.0f, &vVertices, &vNormals,
                                         &vTexCoords, &vIndices, &numVertices);
 
-    float *vtx_logical = vtx_resource->levels[0].logical;
+    float *vtx_logical = etna_pipe_get_resource_ptr(pipe, vtx_resource, 0, 0);
     for(int vert=0; vert<numVertices; ++vert)
     {
         int dest_idx = vert * (3 + 3 + 2);

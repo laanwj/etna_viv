@@ -97,5 +97,11 @@ struct pipe_resource *etna_pipe_create_buffer(struct pipe_context *pipe, unsigne
 /* Free previously allocated resource */
 void etna_pipe_destroy_resource(struct pipe_context *pipe, struct pipe_resource *resource);
 
+/* Temporary entry point to get access to the memory behind a resource.
+ * Eventually we should use screen / pipe transfers and lock/unlock like gallium,
+ * to enable sane handling of cache etc, but for now at least it's better than directly accessing the internal structure
+ */
+void *etna_pipe_get_resource_ptr(struct pipe_context *pipe, struct pipe_resource *resource, int layer, int lod);
+
 #endif
 
