@@ -24,6 +24,9 @@
 #ifndef H_ETNA_FB
 #define H_ETNA_FB
 
+#include "etna.h"
+#include "etna_rs.h"
+
 #include <stdint.h>
 #include <linux/fb.h>
 #include <unistd.h>
@@ -40,6 +43,9 @@ typedef struct
     struct fb_var_screeninfo fb_var;
     struct fb_fix_screeninfo fb_fix;
     void *map;
+
+    struct pipe_resource *resource;
+    struct compiled_rs_state copy_to_screen[ETNA_FB_MAX_BUFFERS];
 } fb_info;
 
 /* Open framebuffer and get information */
@@ -50,6 +56,12 @@ int fb_set_buffer(fb_info *fb, int buffer);
 
 /* Close framebuffer */
 int fb_close(fb_info *fb);
+
+/* Bind framebuffer to render target resource */
+int etna_fb_bind_resource(fb_info *fb, struct pipe_resource *rt_resource);
+
+/* Copy framebuffer from bound render target resource */
+int etna_fb_copy_buffer(fb_info *fb, etna_ctx *ctx, int buffer);
 
 #endif
 

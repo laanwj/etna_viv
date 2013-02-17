@@ -21,6 +21,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 #include "etna_fb.h"
+#include "etna/state.xml.h"
+#include "etna/state_3d.xml.h"
+#include "minigallium.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -35,6 +38,7 @@
 #include <string.h>
 
 #include <errno.h>
+#include <assert.h>
 
 #ifdef ANDROID
 #define FBDEV_DEV "/dev/graphics/fb%i"
@@ -52,6 +56,7 @@
 int fb_open(int num, fb_info *out)
 {
     char devname[256];
+    memset(out, 0, sizeof(fb_info));
 
     snprintf(devname, 256, FBDEV_DEV, num);
 	
@@ -132,6 +137,38 @@ int fb_set_buffer(fb_info *fb, int buffer)
 int fb_close(fb_info *fb)
 {
     close(fb->fd);
+    return 0;
+}
+
+int etna_fb_bind_resource(fb_info *fb, struct pipe_resource *rt_resource)
+{
+    fb->resource = rt_resource;
+    for(int bi=0; bi<ETNA_FB_MAX_BUFFERS; ++bi)
+    {
+        etna_compile_rs_state(&fb->copy_to_screen[bi], &(struct rs_state){
+                    .source_format = RS_FORMAT_X8R8G8B8,
+                    .source_tiling = rt_resource->layout,
+                    .source_addr = rt_resource->levels[0].address,
+                    .source_stride = rt_resource->levels[0].stride,
+                    .dest_format = RS_FORMAT_X8R8G8B8, /* XXX */
+                    .dest_tiling = ETNA_LAYOUT_LINEAR,
+                    .dest_addr = fb->physical[bi],
+                    .dest_stride = fb->fb_fix.line_length,
+                    .swap_rb = true, /* XXX */
+                    .dither = {0xffffffff, 0xffffffff},
+                    .clear_mode = VIVS_RS_CLEAR_CONTROL_MODE_DISABLED,
+                    .width = fb->fb_var.xres,
+                    .height = fb->fb_var.yres
+                });
+    }
+    return 0;
+}
+
+int etna_fb_copy_buffer(fb_info *fb, etna_ctx *ctx, int buffer)
+{
+    assert(fb->resource);
+    /*  XXX assumes TS is still set up correctly */
+    etna_submit_rs_state(ctx, &fb->copy_to_screen[buffer]);
     return 0;
 }
 

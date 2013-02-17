@@ -24,8 +24,12 @@
 
 #include "viv.h"
 #include "etna.h"
+#include "etna_state.h"
+#include "etna/state.xml.h"
+#include "etna/state_3d.xml.h"
 
 #include <stdio.h>
+#include <assert.h>
 
 static int etna_bswap_init_buffer(etna_bswap_buffer *buf)
 {
@@ -76,7 +80,10 @@ static void etna_bswap_thread(etna_bswap_buffers *bufs)
     }
 }
 
-int etna_bswap_create(etna_ctx *ctx, etna_bswap_buffers **bufs_out, int (*set_buffer)(void *, int), void *userptr)
+int etna_bswap_create(etna_ctx *ctx, etna_bswap_buffers **bufs_out, 
+        etna_set_buffer_cb_t set_buffer, 
+        etna_copy_buffer_cb_t copy_buffer,
+        void *userptr)
 {
     if(ctx == NULL || bufs_out == NULL)
         return ETNA_INVALID_ADDR;
@@ -85,6 +92,7 @@ int etna_bswap_create(etna_ctx *ctx, etna_bswap_buffers **bufs_out, int (*set_bu
         return ETNA_INTERNAL_ERROR;
     bufs->ctx = ctx;
     bufs->set_buffer = set_buffer;
+    bufs->copy_buffer = copy_buffer;
     bufs->userptr = userptr;
     bufs->backbuffer = bufs->frontbuffer = 0;
     bufs->terminate = false;
@@ -142,4 +150,21 @@ int etna_bswap_queue_swap(etna_bswap_buffers *bufs)
     bufs->backbuffer = (bufs->backbuffer + 1) % ETNA_BSWAP_NUM_BUFFERS;
     return ETNA_OK;
 }
+
+int etna_swap_buffers(etna_bswap_buffers *bufs)
+{
+    assert(bufs->copy_buffer);
+    /* copy to screen */
+    etna_bswap_wait_available(bufs);
+
+    /*  this flush is really needed, otherwise some quads will have pieces undrawn */
+    etna_set_state(bufs->ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
+
+    /*  assumes TS is still set up correctly */
+    bufs->copy_buffer(bufs->userptr, bufs->ctx, bufs->backbuffer);
+
+    etna_bswap_queue_swap(bufs);
+    return 0;
+}
+
 

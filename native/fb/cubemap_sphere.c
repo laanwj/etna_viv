@@ -154,7 +154,7 @@ int main(int argc, char **argv)
     struct pipe_context *pipe = 0;
     etna_bswap_buffers *buffers = 0;
     if(etna_create(&ctx) != ETNA_OK ||
-        etna_bswap_create(ctx, &buffers, (int (*)(void *, int))&fb_set_buffer, &fb) != ETNA_OK ||
+        etna_bswap_create(ctx, &buffers, (etna_set_buffer_cb_t)&fb_set_buffer, (etna_copy_buffer_cb_t)&etna_fb_copy_buffer, &fb) != ETNA_OK ||
         (pipe = etna_new_pipe_context(ctx)) == NULL)
     {
         printf("Unable to create etna context\n");
@@ -178,6 +178,9 @@ int main(int argc, char **argv)
     struct pipe_resource *z_resource = etna_pipe_create_2d(pipe, ETNA_IS_RENDER_TARGET, PIPE_FORMAT_Z16_UNORM, width, height, 0);
     struct pipe_resource *vtx_resource = etna_pipe_create_buffer(pipe, ETNA_IS_VERTEX, VERTEX_BUFFER_SIZE);
     struct pipe_resource *idx_resource = etna_pipe_create_buffer(pipe, ETNA_IS_INDEX, VERTEX_BUFFER_SIZE);
+    
+    /* bind render target to framebuffer */
+    etna_fb_bind_resource(&fb, rt_resource);
 
     /* Phew, now we got all the memory we need.
      * Write interleaved attribute vertex stream.
@@ -204,28 +207,6 @@ int main(int argc, char **argv)
             vtx_logical[dest_idx+comp+6] = vTexCoords[vert*2 + comp]; /* 2 */
     }
     memcpy(idx_resource->levels[0].logical, vIndices, numIndices*sizeof(GLushort));
-
-    /* pre-compile RS states, one to clear buffer, and one for each back/front buffer */
-    struct compiled_rs_state copy_to_screen[ETNA_BSWAP_NUM_BUFFERS] = {};
-
-    for(int bi=0; bi<ETNA_BSWAP_NUM_BUFFERS; ++bi)
-    {
-        etna_compile_rs_state(&copy_to_screen[bi], &(struct rs_state){
-                    .source_format = RS_FORMAT_X8R8G8B8,
-                    .source_tiling = rt_resource->layout,
-                    .source_addr = rt_resource->levels[0].address,
-                    .source_stride = rt_resource->levels[0].stride,
-                    .dest_format = RS_FORMAT_X8R8G8B8,
-                    .dest_tiling = ETNA_LAYOUT_LINEAR,
-                    .dest_addr = fb.physical[bi],
-                    .dest_stride = fb.fb_fix.line_length,
-                    .swap_rb = true,
-                    .dither = {0xffffffff, 0xffffffff},
-                    .clear_mode = VIVS_RS_CLEAR_CONTROL_MODE_DISABLED,
-                    .width = width,
-                    .height = height
-                });
-    }
 
     /* compile gallium3d states */
     void *blend = pipe->create_blend_state(pipe, &(struct pipe_blend_state) {
@@ -441,14 +422,7 @@ int main(int argc, char **argv)
         etna_dump_cmd_buffer(ctx);
         exit(0);
 #endif    
-        /* copy to screen */
-        etna_bswap_wait_available(buffers);
-        /*  this flush is really needed, otherwise some quads will have pieces undrawn */
-        etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
-        /*  assumes TS is still set up correctly */
-        etna_submit_rs_state(ctx, &copy_to_screen[buffers->backbuffer]);
-
-        etna_bswap_queue_swap(buffers);
+        etna_swap_buffers(buffers);
     }
 #ifdef DUMP
     bmp_dump32(fb.logical[1-backbuffer], width, height, false, "/mnt/sdcard/fb.bmp");

@@ -790,7 +790,7 @@ static inline bool pipe_format_is_depth(enum pipe_format fmt)
 }
 
 /* return 32-bit clear pattern for color */
-static uint32_t translate_clear_color(enum pipe_format format, const union pipe_color_union *color)
+static inline uint32_t translate_clear_color(enum pipe_format format, const union pipe_color_union *color)
 {
     uint32_t clear_value = 0;
     switch(format) // XXX util_pack_color
@@ -830,7 +830,7 @@ static uint32_t translate_clear_color(enum pipe_format format, const union pipe_
     return clear_value;
 }
 
-static uint32_t translate_clear_depth_stencil(enum pipe_format format, float depth, unsigned stencil)
+static inline uint32_t translate_clear_depth_stencil(enum pipe_format format, float depth, unsigned stencil)
 {
     uint32_t clear_value = 0;
     switch(format) // XXX util_pack_color
