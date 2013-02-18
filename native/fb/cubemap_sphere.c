@@ -163,15 +163,16 @@ int main(int argc, char **argv)
 
     struct pipe_resource *tex_resource = etna_pipe_create_2d(pipe, ETNA_IS_TEXTURE | ETNA_IS_CUBEMAP, FMT_X8R8G8B8, 1, 1, 0);
     
-    uint32_t *tex_data[6];
+    uint32_t tex_data[6] = {
+        0xffff0000,
+        0xff00ff00,
+        0xff0000ff,
+        0xffffff00,
+        0xffff00ff,
+        0xffffffff
+    };
     for(int layerid=0; layerid<6; ++layerid)
-        tex_data[layerid] = tex_resource->levels[0].logical + tex_resource->levels[0].layer_stride * layerid;
-    tex_data[0][0] = 0xffff0000;
-    tex_data[1][0] = 0xff00ff00;
-    tex_data[2][0] = 0xff0000ff;
-    tex_data[3][0] = 0xffffff00;
-    tex_data[4][0] = 0xffff00ff;
-    tex_data[5][0] = 0xffffffff;
+        etna_pipe_inline_write(pipe, tex_resource, layerid, 0, &tex_data[layerid], sizeof(uint32_t));
 
     /* resources */
     struct pipe_resource *rt_resource = etna_pipe_create_2d(pipe, ETNA_IS_RENDER_TARGET, PIPE_FORMAT_B8G8R8X8_UNORM, width, height, 0);

@@ -402,7 +402,7 @@ static void sync_context(struct pipe_context *pipe)
      * - caching, don't re-emit cached state ?
      * - group consecutive states into one LOAD_STATE command stream
      * - update context
-     * - flush texture? etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_TEXTURE);
+     * - flush texture? 
      * - flush depth/color on depth/color framebuffer change
      */
 #define EMIT_STATE(state_name, dest_field, src_value) etna_set_state(ctx, VIVS_##state_name, (src_value)); 
@@ -674,7 +674,12 @@ static void sync_context(struct pipe_context *pipe)
         }
     }
 #undef EMIT_STATE
-    if(dirty) /* XXX more specific */
+    if(dirty & (ETNA_STATE_SAMPLER_VIEWS))
+    {
+        /* clear texture cache */
+        etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_TEXTURE);
+    }
+    if(dirty & (ETNA_STATE_FRAMEBUFFER | ETNA_STATE_TS))
     {
         /* wait rasterizer until PE finished configuration */
         etna_stall(ctx, SYNC_RECIPIENT_RA, SYNC_RECIPIENT_PE);
@@ -1271,7 +1276,7 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
     assert(templat->u.tex.first_layer == templat->u.tex.last_layer);
     unsigned layer = templat->u.tex.first_layer;
     unsigned level = templat->u.tex.level;
-    assert(layer < resource->num_layers);
+    assert(layer < resource->array_size);
    
     surf->context = pipe;
     surf->texture = resource;
@@ -1610,19 +1615,19 @@ struct pipe_resource *etna_pipe_create_2d(struct pipe_context *pipe, unsigned fl
     resource->width0 = width;
     resource->height0 = height;
     resource->depth0 = 1;
-    resource->array_size = 1;
+    resource->array_size = num_layers;
     resource->layout = layout;
     resource->surface = rt;
     resource->ts = rt_ts;
-    resource->num_layers = num_layers;
     for(unsigned ix=0; ix<=resource->last_level; ++ix)
     {
         struct etna_resource_level *mip = &resource->levels[ix];
         mip->address = resource->surface->address + mip->offset;
         mip->logical = resource->surface->logical + mip->offset;
-        printf("  %08x level %i: %ix%i (%i) stride=%i\n", 
+        printf("  %08x level %i: %ix%i (%i) stride=%i layer_stride=%i\n", 
                 (int)mip->address, ix, (int)mip->width, (int)mip->height, (int)mip->size,
-                (int)mip->stride);
+                (int)mip->stride, (int)mip->layer_stride);
+        memset(mip->logical, 0, mip->size);
     }
     if(resource->ts) /* TS, if requested, only for level 0 */
     {
@@ -1633,7 +1638,9 @@ struct pipe_resource *etna_pipe_create_2d(struct pipe_context *pipe, unsigned fl
     return resource;
 }
 
-/* Allocate buffer resource */
+/* Allocate buffer resource 
+ * Analogous to pipe_buffer_create in gallium tree
+ */
 struct pipe_resource *etna_pipe_create_buffer(struct pipe_context *pipe, unsigned flags, unsigned size)
 {
     //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
@@ -1650,20 +1657,20 @@ struct pipe_resource *etna_pipe_create_buffer(struct pipe_context *pipe, unsigne
 
     struct pipe_resource *resource = ETNA_NEW(struct pipe_resource);
     resource->target = PIPE_BUFFER;
-    resource->format = PIPE_FORMAT_NONE;
-    resource->width0 = 0;
+    resource->format = PIPE_FORMAT_R8_UNORM; /* want TYPELESS or similar */
+    resource->width0 = vtx->size;
     resource->height0 = 0;
     resource->depth0 = 0;
-    resource->array_size = vtx->size; //?
+    resource->array_size = 1;
     resource->last_level = 0;
     resource->layout = ETNA_LAYOUT_LINEAR;
     resource->surface = vtx;
     resource->ts = 0;
-    resource->num_layers = 1;
+    resource->array_size = 1;
     resource->levels[0].address = resource->surface->address;
     resource->levels[0].logical = resource->surface->logical;
     resource->levels[0].ts_address = 0;
-    resource->levels[0].stride = 0;
+    resource->levels[0].stride = resource->levels[0].layer_stride = vtx->size;
 
     return resource;
 }
@@ -1677,12 +1684,41 @@ void etna_pipe_destroy_resource(struct pipe_context *pipe, struct pipe_resource 
     free(resource);
 }
 
-void *etna_pipe_get_resource_ptr(struct pipe_context *pipe, struct pipe_resource *resource, int layer, int lod)
+void *etna_pipe_get_resource_ptr(struct pipe_context *pipe, struct pipe_resource *resource, unsigned layer, unsigned level)
 {
-    if(layer >= resource->num_layers || lod > resource->last_level)
+    if(layer >= resource->array_size || level > resource->last_level)
         return NULL;
     /// XXX size of returned area is resource->levels[lod].layer_stride 
-    return resource->levels[lod].logical + resource->levels[lod].layer_stride * layer;
+    return resource->levels[level].logical + resource->levels[level].layer_stride * layer;
 }
 
+void etna_pipe_inline_write(struct pipe_context *pipe, struct pipe_resource *resource, unsigned layer, unsigned level, void *data, size_t size)
+{
+    if(layer >= resource->array_size || level > resource->last_level)
+        return; /// XXX
+    /// XXX size of returned area is resource->levels[lod].layer_stride 
+    void *ptr = etna_pipe_get_resource_ptr(pipe, resource, layer, level);
+    if(resource->layout == ETNA_LAYOUT_LINEAR)
+    {
+        assert(size <= resource->levels[level].layer_stride);
+        memcpy(ptr, data, size);
+    } else if(resource->layout == ETNA_LAYOUT_TILED)
+    {
+        unsigned divx=0, divy=0;
+        pipe_element_divsize(resource->format, &divx, &divy);
+        assert(divx && divy);
+        assert(size <= resource->levels[level].layer_stride);
+        if(divx == 1 && divy == 1)
+        {
+            etna_texture_tile(ptr, data, resource->levels[level].width, resource->levels[level].height, 
+                    resource->levels[level].stride, pipe_element_size(resource->format));
+        } else { /* compressed format */
+            printf("%p %p %i\n", ptr, data, size);
+            memcpy(ptr, data, size);
+        }
+    } else
+    {
+        printf("etna_pipe_inline_write: unsupported tiling %i\n", resource->layout);
+    }
+}
 

@@ -91,17 +91,28 @@ struct pipe_context *etna_new_pipe_context(etna_ctx *ctx);
  */
 struct pipe_resource *etna_pipe_create_2d(struct pipe_context *pipe, unsigned flags, unsigned format, unsigned width, unsigned height, unsigned max_mip_level);
 
-/* Allocate buffer resource */
+/* Allocate buffer resource.
+ * Like with gallium, a buffer is essentially an 1D texture of width size, and format PIPE_FORMAT_R8_UNORM, and target
+ * PIPE_BUFFER (see u_inlines.h in mesa tree).
+ */
 struct pipe_resource *etna_pipe_create_buffer(struct pipe_context *pipe, unsigned flags, unsigned size);
 
 /* Free previously allocated resource */
 void etna_pipe_destroy_resource(struct pipe_context *pipe, struct pipe_resource *resource);
 
 /* Temporary entry point to get access to the memory behind a resource.
- * Eventually we should use screen / pipe transfers and lock/unlock like gallium,
+ * Eventually we should use pipe transfers and lock/unlock like gallium,
  * to enable sane handling of cache etc, but for now at least it's better than directly accessing the internal structure
+ * XXX tiling textures need currently be done manually using etna_texture_tile
  */
-void *etna_pipe_get_resource_ptr(struct pipe_context *pipe, struct pipe_resource *resource, int layer, int lod);
+void *etna_pipe_get_resource_ptr(struct pipe_context *pipe, struct pipe_resource *resource, unsigned layer, unsigned level);
+
+/** 
+ * One-shot write to texture or buffer, similar to gallium transfer_inline_write but somewhat more limited right now.
+ * Does tiling if needed.
+ * XXX no stride parameter, assumes that data is tightly packed.
+ */
+void etna_pipe_inline_write(struct pipe_context *pipe, struct pipe_resource *resource, unsigned layer, unsigned level, void *data, size_t size);
 
 #endif
 

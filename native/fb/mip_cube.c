@@ -286,26 +286,12 @@ int main(int argc, char **argv)
     
     printf("Loading compressed texture (format %i, %ix%i)\n", dds->fmt, tex_base_width, tex_base_height);
     
-    if(dds->fmt == FMT_X8R8G8B8 || dds->fmt == FMT_A8R8G8B8)
+    for(int ix=0; ix<dds->num_mipmaps; ++ix)
     {
-        for(int ix=0; ix<dds->num_mipmaps; ++ix)
-        {
-            void *logical = etna_pipe_get_resource_ptr(pipe, tex_resource, 0, ix);
-            assert(logical);
-            printf("%08x: Tiling mipmap %i (%ix%i)\n", dds->slices[0][ix].offset, ix, dds->slices[0][ix].width, dds->slices[0][ix].height);
-            etna_texture_tile(logical, 
-                    dds->slices[0][ix].data, dds->slices[0][ix].width, dds->slices[0][ix].height, dds->slices[0][ix].stride, 4);
-        }
-    } else if(dds->fmt == FMT_DXT1 || dds->fmt == FMT_DXT3 || dds->fmt == FMT_DXT5 || dds->fmt == FMT_ETC1)
-    {
-        printf("Uploading compressed texture\n");
-        for(int ix=0; ix<dds->num_mipmaps; ++ix)
-        {
-            void *logical = etna_pipe_get_resource_ptr(pipe, tex_resource, 0, ix);
-            assert(logical);
-            memcpy(logical, dds->slices[0][ix].data, dds->slices[0][ix].size);
-        }
-    }     
+        printf("%08x: Uploading mipmap %i (%ix%i)\n", dds->slices[0][ix].offset, ix, dds->slices[0][ix].width, dds->slices[0][ix].height);
+        etna_pipe_inline_write(pipe, tex_resource, 0, ix, dds->slices[0][ix].data, dds->slices[0][ix].size);
+    }
+
     /* resources */
     struct pipe_resource *rt_resource = etna_pipe_create_2d(pipe, ETNA_IS_RENDER_TARGET, PIPE_FORMAT_B8G8R8X8_UNORM, width, height, 0);
     struct pipe_resource *z_resource = etna_pipe_create_2d(pipe, ETNA_IS_RENDER_TARGET, PIPE_FORMAT_Z16_UNORM, width, height, 0);

@@ -7,30 +7,24 @@ void etna_texture_tile(void *dest, void *src, unsigned width, unsigned height, u
 #define TEX_TILE_WIDTH (4)
 #define TEX_TILE_HEIGHT (4)
 #define TEX_TILE_WORDS (TEX_TILE_WIDTH*TEX_TILE_HEIGHT)
-    unsigned ytiles = height / TEX_TILE_HEIGHT;
-    unsigned xtiles = width / TEX_TILE_WIDTH;
+    //unsigned ytiles = (height + TEX_TILE_HEIGHT - 1) / TEX_TILE_HEIGHT;
+    unsigned xtiles = (width + TEX_TILE_WIDTH - 1) / TEX_TILE_WIDTH;
     unsigned dst_stride = xtiles * TEX_TILE_WORDS;
     if(elmtsize == 4)
     {
         src_stride >>= 2;
-
-        for(unsigned ty=0; ty<ytiles; ++ty)
+        for(unsigned srcy=0; srcy<height; ++srcy)
         {
-            for(unsigned tx=0; tx<xtiles; ++tx)
+            unsigned ty = (srcy/TEX_TILE_HEIGHT) * dst_stride + (srcy%TEX_TILE_HEIGHT) * TEX_TILE_WIDTH;
+            for(unsigned srcx=0; srcx<width; ++srcx)
             {
-                unsigned ofs = ty * dst_stride + tx * TEX_TILE_WORDS;
-                for(unsigned y=0; y<TEX_TILE_HEIGHT; ++y)
-                {
-                    for(unsigned x=0; x<TEX_TILE_WIDTH; ++x)
-                    {
-                        unsigned srcy = ty*TEX_TILE_HEIGHT + y;
-                        unsigned srcx = tx*TEX_TILE_WIDTH + x;
-                        ((uint32_t*)dest)[ofs] = ((uint32_t*)src)[srcy*src_stride+srcx];
-                        ofs += 1;
-                    }
-                }
+                ((uint32_t*)dest)[ty + (srcx/TEX_TILE_WIDTH)*TEX_TILE_WORDS + (srcx%TEX_TILE_WIDTH)] = 
+                    ((uint32_t*)src)[srcy * src_stride + srcx];
             }
         }
+    } else
+    {
+        printf("etna_texture_tile: unhandled element size %i\n", elmtsize);
     }
 }
 

@@ -735,7 +735,6 @@ struct pipe_resource
 
    /* XXX etna specific. This must be moved to subclass on integration. */
    /* only lod 0 used for non-texture buffers */
-   unsigned num_layers;
    enum etna_surface_layout layout;
    etna_vidmem *surface; /* Surface video memory */
    etna_vidmem *ts; /* Tile status video memory */
