@@ -78,7 +78,6 @@ static inline uint32_t *copy32(uint32_t *data, unsigned size)
 struct compiled_base_setup_state
 {
     uint32_t PA_W_CLIP_LIMIT;
-    uint32_t PA_SYSTEM_MODE;
     uint32_t GL_VERTEX_ELEMENT_CONFIG;
 };
 
@@ -87,6 +86,7 @@ struct compiled_rasterizer_state
     uint32_t PA_CONFIG;
     uint32_t PA_LINE_WIDTH;
     uint32_t PA_POINT_SIZE;
+    uint32_t PA_SYSTEM_MODE;
     uint32_t SE_DEPTH_SCALE;
     uint32_t SE_DEPTH_BIAS;
     uint32_t SE_CONFIG;
@@ -463,10 +463,10 @@ static void sync_context(struct pipe_context *pipe)
     {
         /*00A18*/ EMIT_STATE(PA_LINE_WIDTH, PA_LINE_WIDTH, e->rasterizer->PA_LINE_WIDTH);
         /*00A1C*/ EMIT_STATE(PA_POINT_SIZE, PA_POINT_SIZE, e->rasterizer->PA_POINT_SIZE);
+        /*00A28*/ EMIT_STATE(PA_SYSTEM_MODE, PA_SYSTEM_MODE, e->rasterizer->PA_SYSTEM_MODE);
     }
     if(dirty & (ETNA_STATE_BASE_SETUP))
     {
-        /*00A28*/ EMIT_STATE(PA_SYSTEM_MODE, PA_SYSTEM_MODE, e->base_setup.PA_SYSTEM_MODE);
         /*00A2C*/ EMIT_STATE(PA_W_CLIP_LIMIT, PA_W_CLIP_LIMIT, e->base_setup.PA_W_CLIP_LIMIT);
     }
     if(dirty & (ETNA_STATE_SHADER))
@@ -831,6 +831,8 @@ static void * etna_pipe_create_rasterizer_state(struct pipe_context *pipe,
             /* XXX anything else? */
             );
     /* XXX rs->gl_rasterization_rules is likely one of the bits in VIVS_PA_SYSTEM_MODE */
+    SET_STATE(PA_SYSTEM_MODE, 
+            (rs->gl_rasterization_rules ? (VIVS_PA_SYSTEM_MODE_UNK0 | VIVS_PA_SYSTEM_MODE_UNK4) : 0));
     /* rs->scissor overrides the scissor, defaulting to the whole framebuffer, with the scissor state */
     cs->scissor = rs->scissor;
     return cs;
@@ -1318,8 +1320,9 @@ static void etna_pipe_surface_destroy(struct pipe_context *pipe, struct pipe_sur
 
 static void etna_pipe_texture_barrier(struct pipe_context *pipe)
 {
-    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
-    /* TODO fill me in */
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    /* clear texture cache */
+    etna_set_state(priv->ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_TEXTURE);
 }
    
 static void *etna_create_etna_shader_state(struct pipe_context *pipe, const struct etna_shader_program *rs)
@@ -1472,7 +1475,6 @@ struct pipe_context *etna_new_pipe_context(etna_ctx *ctx)
 
     /* TODO set sensible defaults for the other state */
     priv->base_setup.PA_W_CLIP_LIMIT = 0x34000001;
-    priv->base_setup.PA_SYSTEM_MODE = 0x11;
     priv->base_setup.GL_VERTEX_ELEMENT_CONFIG = 0x1;
 
     /* fill in vtable entries one by one */

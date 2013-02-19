@@ -3,13 +3,13 @@
 
 base_setup_state base_setup. ETNA_STATE_BASE_SETUP
     PA.W_CLIP_LIMIT
-    PA.SYSTEM_MODE
     GL.VERTEX_ELEMENT_CONFIG
 
 rasterizer_state rasterizer-> ETNA_STATE_RASTERIZER
     PA.CONFIG
     PA.LINE_WIDTH
     PA.POINT_SIZE
+    PA.SYSTEM_MODE
     SE.DEPTH_SCALE
     SE.DEPTH_BIAS
     SE.CONFIG

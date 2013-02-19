@@ -21,6 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 #include "etna_fb.h"
+#include "etna_translate.h"
 #include "etna/state.xml.h"
 #include "etna/state_3d.xml.h"
 #include "minigallium.h"
@@ -140,22 +141,76 @@ int fb_close(fb_info *fb)
     return 0;
 }
 
+/* Structure to convert framebuffer format to RS destination conf */
+struct etna_fb_format_desc
+{
+    unsigned bits_per_pixel;
+    unsigned red_offset;
+    unsigned red_length;
+    unsigned green_offset;
+    unsigned green_length;
+    unsigned blue_offset;
+    unsigned blue_length;
+    unsigned rs_format;
+    bool swap_rb;
+};
+
+static const struct etna_fb_format_desc etna_fb_formats[] = {
+    {32, 16, 8, 8, 8, 0 , 8, RS_FORMAT_X8R8G8B8, false}, /* X8R8G8B8 */
+    {32, 0 , 8, 8, 8, 16, 8, RS_FORMAT_X8R8G8B8, true},  /* X8B8G8R8 */
+    {16, 8 , 4, 4, 4, 0,  4, RS_FORMAT_X4R4G4B4, false}, /* X4R4G4B4 */
+    {16, 0 , 4, 4, 4, 8,  4, RS_FORMAT_X4R4G4B4, true},  /* X4B4G4R4 */
+    {16, 10, 5, 5, 5, 0,  5, RS_FORMAT_X1R5G5B5, false}, /* X1R5G5B5 */
+    {16, 0,  5, 5, 5, 10, 5, RS_FORMAT_X1R5G5B5, true},  /* X1B5G5R5 */
+    {16, 11, 5, 5, 6, 0,  5, RS_FORMAT_R5G6B5, false},   /* R5G6B5 */
+    {16, 0,  5, 5, 6, 11, 5, RS_FORMAT_R5G6B5, true},    /* B5G6R5 */
+    /* I guess we could support YUV outputs as well... */
+};
+#define NUM_FB_FORMATS (sizeof(etna_fb_formats) / sizeof(etna_fb_formats[0]))
+
 int etna_fb_bind_resource(fb_info *fb, struct pipe_resource *rt_resource)
 {
+    int fmt_idx = 0;
     fb->resource = rt_resource;
+    
+    for(fmt_idx=0; fmt_idx<NUM_FB_FORMATS; ++fmt_idx)
+    {
+        const struct etna_fb_format_desc *desc = &etna_fb_formats[fmt_idx];
+        if(desc->red_offset == fb->fb_var.red.offset &&
+            desc->red_length == fb->fb_var.red.length &&
+            desc->green_offset == fb->fb_var.green.offset &&
+            desc->green_length == fb->fb_var.green.length &&
+            desc->blue_offset == fb->fb_var.blue.offset &&
+            desc->blue_length == fb->fb_var.blue.length)
+        {
+            break;
+        }
+    }
+    if(fmt_idx == NUM_FB_FORMATS)
+    {
+        printf("Unsupported framebuffer format: red_offset=%i red_length=%i green_offset=%i green_length=%i blue_offset=%i blue_length=%i\n",
+                (int)fb->fb_var.red.offset, (int)fb->fb_var.red.length,
+                (int)fb->fb_var.green.offset, (int)fb->fb_var.green.length,
+                (int)fb->fb_var.blue.offset, (int)fb->fb_var.blue.length);
+        fmt_idx = 0; // XXX
+    } else {
+        printf("Framebuffer format: %i, flip_rb=%i\n", 
+                etna_fb_formats[fmt_idx].rs_format, 
+                etna_fb_formats[fmt_idx].swap_rb);
+    }
     for(int bi=0; bi<ETNA_FB_MAX_BUFFERS; ++bi)
     {
         etna_compile_rs_state(&fb->copy_to_screen[bi], &(struct rs_state){
-                    .source_format = RS_FORMAT_X8R8G8B8,
+                    .source_format = translate_rt_format(rt_resource->format),
                     .source_tiling = rt_resource->layout,
                     .source_addr = rt_resource->levels[0].address,
                     .source_stride = rt_resource->levels[0].stride,
-                    .dest_format = RS_FORMAT_X8R8G8B8, /* XXX */
+                    .dest_format = etna_fb_formats[fmt_idx].rs_format,
                     .dest_tiling = ETNA_LAYOUT_LINEAR,
                     .dest_addr = fb->physical[bi],
                     .dest_stride = fb->fb_fix.line_length,
-                    .swap_rb = true, /* XXX */
-                    .dither = {0xffffffff, 0xffffffff},
+                    .swap_rb = etna_fb_formats[fmt_idx].swap_rb,
+                    .dither = {0xffffffff, 0xffffffff}, // XXX dither when going from 24 to 16 bit?
                     .clear_mode = VIVS_RS_CLEAR_CONTROL_MODE_DISABLED,
                     .width = fb->fb_var.xres,
                     .height = fb->fb_var.yres

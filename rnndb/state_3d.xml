@@ -271,7 +271,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00A18" name="LINE_WIDTH" value="0x00000000"/>
         <reg32 offset="0x00A1C" name="POINT_SIZE" value="0x00000000"/>
         <reg32 offset="0x00A28" name="SYSTEM_MODE" value="0x00000000"> <!-- D3D/OpenGL switch -->
-            <doc>0x11 for OpenGL</doc>
+            <doc>0x11 for OpenGL, 0x00 for D3D9</doc>
+            <bitfield pos="0" name="UNK0"/>
+            <bitfield pos="4" name="UNK4"/>
         </reg32>
         <reg32 offset="0x00A2C" name="W_CLIP_LIMIT" value="0x00000000"/>
         <reg32 offset="0x00A30" name="ATTRIBUTE_ELEMENT_COUNT" value="0x00000000">
@@ -310,7 +312,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00A38" name="LINE_UNK00A38" value="0x00000000"/>
         <reg32 offset="0x00A3C" name="LINE_UNK00A3C" value="0x00000000"/>
         <reg32 offset="0x00A40" name="SHADER_ATTRIBUTES" value="0x00000000" length="10" stride="4">
-            <doc>Flags word per shader attribute</doc>
+            <doc>Flags word per shader attribute. I suspect that these determine the type of interpolation
+                (color, perspective, linear, ...).</doc>
             <bitfield high="7" low="0" name="UNK0"/>
             <bitfield high="15" low="8" name="UNK8"/>
         </reg32>
