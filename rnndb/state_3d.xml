@@ -772,6 +772,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <stripe name="TE" brief="TExture sampler states">
         <doc>Texture sampling, filtering, LOD, etc</doc>
         <stripe name="SAMPLER" length="12" stride="4"> 
+            <doc>8 fragment texture samplers, 4 vertex texture samplers</doc>
             <reg32 offset="0x2000" name="CONFIG0" value="0x00000000" type="TE_SAMPLER_CONFIG0"/>
             <reg32 offset="0x2040" name="SIZE" value="0x00000000" type="TE_SAMPLER_SIZE"/>
             <reg32 offset="0x2080" name="LOG_SIZE" value="0x00000000" type="TE_SAMPLER_LOG_SIZE"/>
@@ -789,6 +790,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <stripe name="NTE" brief="New texture states">
         <doc>Extra texture states for newer hardware. These exist if chipMinorFeatures2 bit 11 set.</doc>
         <array offset="0x10000" name="SAMPLER" length="32" stride="4">
+            <doc>16 fragment texture samplers, 16 vertex texture samplers</doc>
             <reg32 offset="0x000" name="CONFIG0" value="0x00000000" type="TE_SAMPLER_CONFIG0"/>
             <reg32 offset="0x080" name="SIZE" value="0x00000000" type="TE_SAMPLER_SIZE"/>
             <reg32 offset="0x100" name="LOG_SIZE" value="0x00000000" type="TE_SAMPLER_LOG_SIZE"/>

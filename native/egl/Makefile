@@ -42,3 +42,6 @@ eglinfo: eglinfo.o $(LIB_OBJS)
 stencil_test: stencil_test.o ${LIB_OBJS}
 	$(CXX) $(CFLAGS) -o $@ $^  $(GL_LIBS) $(LDFLAGS)
 
+particle_system_x11: particle_system_x11.o ../lib/esUtil.o ../lib/esShader.o $(LIB_OBJS)
+	$(CXX) $(CFLAGS) -o $@ $^  $(GL_LIBS) $(LDFLAGS) -lX11
+

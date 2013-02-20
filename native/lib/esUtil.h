@@ -151,6 +151,8 @@ void ESUTIL_API esRegisterKeyFunc ( ESContext *esContext,
 //
 void ESUTIL_API esLogMessage ( const char *formatStr, ... );
 
+char* ESUTIL_API esLoadTGA ( char *fileName, int *width, int *height );
+
 #ifdef __cplusplus
 }
 #endif

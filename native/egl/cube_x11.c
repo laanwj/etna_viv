@@ -42,29 +42,6 @@
 #include "dump_gl_screen.h"
 #include "viv_hook.h"
 
-static EGLint const config_attribute_list[] = {
-	EGL_RED_SIZE, 8,
-	EGL_GREEN_SIZE, 8,
-	EGL_BLUE_SIZE, 8,
-	EGL_SURFACE_TYPE, EGL_PBUFFER_BIT,
-	EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-	EGL_DEPTH_SIZE, 8,
-	EGL_NONE
-};
-
-static EGLint const pbuffer_attribute_list[] = {
-	EGL_WIDTH, 400,
-	EGL_HEIGHT, 240,
-	EGL_LARGEST_PBUFFER, EGL_TRUE,
-    EGL_NONE
-};
-
-static const EGLint context_attribute_list[] = {
-	EGL_CONTEXT_CLIENT_VERSION, 2,
-	EGL_NONE
-};
-
-
 typedef struct
 {
     GLuint program;
