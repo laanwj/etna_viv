@@ -29,6 +29,24 @@ The `dove` (cubox) driver also has a `gpu_frequency` parameter that sets the AXI
 if compiled with `ENABLE_GPU_CLOCK_BY_DRIVER`. Some devices may need this, although not the CuBox itself (it is disabled in the makefile).
 In that case your GPU will have an entry `GC` in `/proc/clocks`. 
 
+On a Freescale i.MX6 (GK802) device the parameters are:
+
+    irqLine           41
+    irqLine2D         42
+    irqLineVG         43
+    registerMemBase   0x00130000
+    registerMemBase2D 0x00134000
+    registerMemBaseVG 0x02204000
+    registerMemSize   16384
+    registerMemSize2D 16384
+    registerMemSizeVG 16384
+    contiguousBase    0x34000000
+    contiguousSize    0x0c000000  (192 MB)
+    coreClock         156000000
+    signal            48
+    baseAddress       0 
+
+
 User to kernel interface
 ========================
 

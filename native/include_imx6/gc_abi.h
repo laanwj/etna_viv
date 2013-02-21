@@ -30,5 +30,8 @@
 //#define GCABI_HAS_CONTEXT
 #define GCABI_HAS_STATE_DELTAS
 
+// Interface structure has hardware type (core id)
 #define GCABI_HAS_HARDWARE_TYPE
 
+// Chip identity has pixelPipes, instructionCount, numConstants, bufferSize
+#define GCABI_CHIPIDENTITY_EXT

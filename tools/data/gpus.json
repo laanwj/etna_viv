@@ -90,6 +90,67 @@
             "vertexCacheSize": "8",
             "vertexOutputBufferSize": "128"
         }]
+    },
+    {
+        "platform": "Freescale i.MX 6",
+        "chips": [{
+            "type": "GC2000",
+            "chipModel": "0x2000",
+            "chipRevision": "0x5108",
+            "chipFeatures": "0xe0296cad",
+            "chipMinorFeatures": "0xc9799eff",
+            "chipMinorFeatures1": "0x2efbf2d9",
+            "chipMinorFeatures2": "0x0",
+            "chipMinorFeatures3": "0x0",
+            "streamCount": "8",
+            "registerMax": "64",
+            "threadCount": "1024",
+            "shaderCoreCount": "4",
+            "vertexCacheSize": "16",
+            "vertexOutputBufferSize": "512",
+            "pixelPipes": "2",
+            "instructionCount": "512",
+            "numConstants": "168",
+            "bufferSize": "0"
+        }, {
+            "type": "GC320",
+            "chipModel": "0x0320",
+            "chipRevision": "0x5007",
+            "chipFeatures": "0xe02c7eca",
+            "chipMinorFeatures": "0xc1399eff",
+            "chipMinorFeatures1": "0x020fb2db",
+            "chipMinorFeatures2": "0x00000000",
+            "chipMinorFeatures3": "0x00000000",
+            "streamCount": "1",
+            "registerMax": "64",
+            "threadCount": "1024",
+            "shaderCoreCount": "4",
+            "vertexCacheSize": "16",
+            "vertexOutputBufferSize": "1024",
+            "pixelPipes": "2",
+            "instructionCount": "256",
+            "numConstants": "256",
+            "bufferSize": "8"
+        }, {
+            "type": "GC355",
+            "chipModel": "0x0355",
+            "chipRevision": "0x1215",
+            "chipFeatures": "0x1e2c7cc8",
+            "chipMinorFeatures": "0x0024207f",
+            "chipMinorFeatures1": "0x00000000",
+            "chipMinorFeatures2": "0x00010104",
+            "chipMinorFeatures3": "0x00000000",
+            "streamCount": "0",
+            "registerMax": "0",
+            "threadCount": "0",
+            "shaderCoreCount": "0",
+            "vertexCacheSize": "0",
+            "vertexOutputBufferSize": "0",
+            "pixelPipes": "0",
+            "instructionCount": "0",
+            "numConstants": "0",
+            "bufferSize": "0"
+        }]
     }
 ]
 

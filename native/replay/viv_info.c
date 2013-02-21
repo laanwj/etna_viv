@@ -14,8 +14,9 @@
 #include "gc_hal_base.h"
 #include "gc_hal.h"
 #include "gc_hal_driver.h"
+#include "gc_abi.h"
 
-const char *galcore_device = "/dev/galcore";
+const char *galcore_device[] = {"/dev/galcore", "/dev/graphics/galcore", NULL};
 
 typedef struct 
 {
@@ -165,6 +166,7 @@ const char *vivante_chipMinorFeatures2[32] = {
     /*31*/ "UNKNOWN_31"
 };
 
+#if 0
 const char *vivante_power_state(gceCHIPPOWERSTATE state)
 {
     switch(state)
@@ -188,6 +190,7 @@ const char *vivante_power_state(gceCHIPPOWERSTATE state)
         return "UNKNOWN";
     }
 }
+#endif
 
 int main()
 {
@@ -196,15 +199,29 @@ int main()
     int fd = -1;
     int rv = 0;
 
-    fd = open(galcore_device, O_RDWR);
+    for(int idx=0; fd == -1 && galcore_device[idx]; ++idx)
+    {
+        fd = open(galcore_device[idx], O_RDWR);
+        if(fd >= 0)
+        {
+            printf("Succesfully opened %s\n", galcore_device[idx]);
+        }
+    }
     if(fd < 0)
     {
         perror("Cannot open device");
         exit(1);
     }
-
+#ifdef GCABI_HAS_HARDWARE_TYPE
+    for(int hwtype=1; hwtype<8; hwtype<<=1) 
+    {
+        printf("********** core: %i ***********\n", hwtype);
+#endif
     memset((void*)&id, 0, sizeof(id));
     id.command = gcvHAL_QUERY_CHIP_IDENTITY;
+#ifdef GCABI_HAS_HARDWARE_TYPE
+    id.hardwareType = hwtype;
+#endif
 
     ic.in_buf = &id;
     ic.in_buf_size = sizeof(id);
@@ -218,6 +235,10 @@ int main()
         perror("Ioctl error");
         exit(1);
     }
+#ifdef GCABI_HAS_HARDWARE_TYPE
+    if(id.status != 0) /* no such core */
+        continue;
+#endif
     
     printf("* Chip identity:\n");
     printf("Chip model: %08x\n", id.u.QueryChipIdentity.chipModel);
@@ -252,22 +273,28 @@ int main()
     }
 #endif
     printf("\n");
-    //printf("Chip minor features 3: 0x%08x\n", id.u.QueryChipIdentity.chipMinorFeatures3);
+#ifdef GCABI_HAS_MINOR_FEATURES_3
+    printf("Chip minor features 3: 0x%08x\n", id.u.QueryChipIdentity.chipMinorFeatures3);
+#endif
     printf("Stream count: 0x%08x\n", id.u.QueryChipIdentity.streamCount);
     printf("Register max: 0x%08x\n", id.u.QueryChipIdentity.registerMax);
     printf("Thread count: 0x%08x\n", id.u.QueryChipIdentity.threadCount);
     printf("Shader core count: 0x%08x\n", id.u.QueryChipIdentity.shaderCoreCount);
     printf("Vertex cache size: 0x%08x\n", id.u.QueryChipIdentity.vertexCacheSize);
     printf("Vertex output buffer size: 0x%08x\n", id.u.QueryChipIdentity.vertexOutputBufferSize);
-    printf("\n");
-    /*printf("Pixel pipes: 0x%08x\n", id.u.QueryChipIdentity.pixelPipes);
+#ifdef GCABI_CHIPIDENTITY_EXT
+    printf("Pixel pipes: 0x%08x\n", id.u.QueryChipIdentity.pixelPipes);
     printf("Instruction count: 0x%08x\n", id.u.QueryChipIdentity.instructionCount);
     printf("Num constants: 0x%08x\n", id.u.QueryChipIdentity.numConstants);
     printf("Buffer size: 0x%08x\n", id.u.QueryChipIdentity.bufferSize);
-    */
-    //
+#endif
+    printf("\n");
+
     memset((void*)&id, 0, sizeof(id));
     id.command = gcvHAL_QUERY_VIDEO_MEMORY;
+#ifdef GCABI_HAS_HARDWARE_TYPE
+    id.hardwareType = hwtype;
+#endif
 
     rv = ioctl(fd, IOCTL_GCHAL_INTERFACE, &ic);
     if(rv < 0)
@@ -285,22 +312,28 @@ int main()
     printf("Contiguous size: 0x%08x\n", (unsigned)id.u.QueryVideoMemory.contiguousSize);
     printf("\n");
 
+#if 0 
     memset((void*)&id, 0, sizeof(id));
     id.command = gcvHAL_QUERY_POWER_MANAGEMENT_STATE;
+#ifdef GCABI_HAS_HARDWARE_TYPE
+    id.hardwareType = hwtype;
+#endif
     rv = ioctl(fd, IOCTL_GCHAL_INTERFACE, &ic);
     if(rv < 0)
     {
         perror("Ioctl error");
         exit(1);
     }
-    
     printf("* Power management:\n");
     printf("Power state: %s\n", vivante_power_state(id.u.QueryPowerManagement.state));
     printf("Is idle: %s\n", id.u.QueryPowerManagement.isIdle?"yes":"no");
     printf("\n");
-
+#endif
     memset((void*)&id, 0, sizeof(id));
     id.command = gcvHAL_QUERY_KERNEL_SETTINGS;
+#ifdef GCABI_HAS_HARDWARE_TYPE
+    id.hardwareType = hwtype;
+#endif
     rv = ioctl(fd, IOCTL_GCHAL_INTERFACE, &ic);
     if(rv < 0)
     {
@@ -313,6 +346,9 @@ int main()
     printf("\n");
 
     id.command = gcvHAL_GET_BASE_ADDRESS;
+#ifdef GCABI_HAS_HARDWARE_TYPE
+    id.hardwareType = hwtype;
+#endif
     memset((void*)&id, 0, sizeof(id));
     rv = ioctl(fd, IOCTL_GCHAL_INTERFACE, &ic);
     if(rv < 0)
@@ -324,6 +360,9 @@ int main()
     printf("Physical address of internal memory: %08x\n", id.u.GetBaseAddress.baseAddress);
     printf("\n");
 
+#ifdef GCABI_HAS_HARDWARE_TYPE
+    }
+#endif
 
     close(fd);
 
