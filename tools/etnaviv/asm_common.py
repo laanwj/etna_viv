@@ -207,7 +207,7 @@ def format_instruction(isa, inst):
     if inst.cond:
         atoms.append(isa.types['INST_CONDITION'].describe(inst.cond))
     if inst.sat:
-        atoms.append(sat)
+        atoms.append('SAT')
     opcode = '.'.join(atoms)
 
     if isinstance(inst.dst, DstOperandAReg):
