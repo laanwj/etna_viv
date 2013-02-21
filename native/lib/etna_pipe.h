@@ -71,6 +71,7 @@ struct etna_shader_program
     unsigned vs_code_size; /* Vertex shader code size in words */ 
     uint32_t *vs_code;
     unsigned vs_pos_out_reg; /* VS position output */
+    unsigned vs_pointsize_out_reg; /* VS point size output */
     unsigned vs_load_balancing;
     unsigned vs_num_temps; /* number of temporaries, can never be less than num_varyings+1 */
     unsigned vs_uniforms_size; /* Size of uniforms (in words) */

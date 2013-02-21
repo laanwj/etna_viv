@@ -90,6 +90,7 @@ struct compiled_rasterizer_state
     uint32_t SE_DEPTH_SCALE;
     uint32_t SE_DEPTH_BIAS;
     uint32_t SE_CONFIG;
+    uint32_t VS_OUTPUT_COUNT; /* 0 or 1 */
     bool scissor;
 };
 
@@ -436,7 +437,13 @@ static void sync_context(struct pipe_context *pipe)
     if(dirty & (ETNA_STATE_SHADER))
     {
         /*00800*/ EMIT_STATE(VS_END_PC, VS_END_PC, e->shader_state->VS_END_PC);
-        /*00804*/ EMIT_STATE(VS_OUTPUT_COUNT, VS_OUTPUT_COUNT, e->shader_state->VS_OUTPUT_COUNT);
+    }
+    if(dirty & (ETNA_STATE_SHADER | ETNA_STATE_RASTERIZER))
+    {
+        /*00804*/ EMIT_STATE(VS_OUTPUT_COUNT, VS_OUTPUT_COUNT, e->shader_state->VS_OUTPUT_COUNT + e->rasterizer->VS_OUTPUT_COUNT);
+    }
+    if(dirty & (ETNA_STATE_SHADER))
+    {
         /*00808*/ EMIT_STATE(VS_INPUT_COUNT, VS_INPUT_COUNT, e->shader_state->VS_INPUT_COUNT);
         /*0080C*/ EMIT_STATE(VS_TEMP_REGISTER_CONTROL, VS_TEMP_REGISTER_CONTROL, e->shader_state->VS_TEMP_REGISTER_CONTROL);
         for(int x=0; x<4; ++x)
@@ -516,6 +523,7 @@ static void sync_context(struct pipe_context *pipe)
         /*00E00*/ EMIT_STATE(RA_CONTROL, RA_CONTROL, e->shader_state->RA_CONTROL);
         /*01000*/ EMIT_STATE(PS_END_PC, PS_END_PC, e->shader_state->PS_END_PC);
         /*01004*/ EMIT_STATE(PS_OUTPUT_REG, PS_OUTPUT_REG, e->shader_state->PS_OUTPUT_REG);
+        /* XXX affected by supersampling as well (supersampling adds an input, and possible temp) */
         /*01008*/ EMIT_STATE(PS_INPUT_COUNT, PS_INPUT_COUNT, e->shader_state->PS_INPUT_COUNT);
         /*0100C*/ EMIT_STATE(PS_TEMP_REGISTER_CONTROL, PS_TEMP_REGISTER_CONTROL, e->shader_state->PS_TEMP_REGISTER_CONTROL);
         /*01010*/ EMIT_STATE(PS_CONTROL, PS_CONTROL, e->shader_state->PS_CONTROL);
@@ -835,6 +843,8 @@ static void * etna_pipe_create_rasterizer_state(struct pipe_context *pipe,
             (rs->gl_rasterization_rules ? (VIVS_PA_SYSTEM_MODE_UNK0 | VIVS_PA_SYSTEM_MODE_UNK4) : 0));
     /* rs->scissor overrides the scissor, defaulting to the whole framebuffer, with the scissor state */
     cs->scissor = rs->scissor;
+    /* point size per vertex adds a vertex shader output */
+    cs->VS_OUTPUT_COUNT = rs->point_size_per_vertex;
     return cs;
 }
 
@@ -1343,16 +1353,23 @@ static void *etna_create_etna_shader_state(struct pipe_context *pipe, const stru
     SET_STATE(VS_END_PC, rs->vs_code_size / 4);
     SET_STATE(VS_OUTPUT_COUNT, rs->num_varyings + 1); /* position + varyings */
     SET_STATE(VS_INPUT_COUNT, VIVS_VS_INPUT_COUNT_COUNT(rs->num_inputs) |
-                              VIVS_VS_INPUT_COUNT_UNK8(1));
+                              VIVS_VS_INPUT_COUNT_UNK8(1)); /// XXX what is this
     SET_STATE(VS_TEMP_REGISTER_CONTROL,
                               VIVS_VS_TEMP_REGISTER_CONTROL_NUM_TEMPS(rs->vs_num_temps));
+    
     /* vs outputs (varyings) */ 
-    uint32_t vs_output[4] = {0};
-    vs_output[0] = rs->vs_pos_out_reg;
+    uint32_t vs_output[16] = {0};
+    int varid = 0;
+    vs_output[varid++] = rs->vs_pos_out_reg;
     for(int idx=0; idx<rs->num_varyings; ++idx)
-        vs_output[idx/4] |= rs->varyings[idx].vs_reg << (((idx+1)%4)*8);
+        vs_output[varid++] = rs->varyings[idx].vs_reg;
+    vs_output[varid++] = rs->vs_pointsize_out_reg; /* pointsize is last */
+
     for(int idx=0; idx<4; ++idx)
-        SET_STATE(VS_OUTPUT[idx], vs_output[idx]);
+    {
+        SET_STATE(VS_OUTPUT[idx], vs_output[idx*4] | (vs_output[idx*4+1] << 8) | 
+                                 (vs_output[idx*4+2] << 16) | (vs_output[idx*4+3] << 24));
+    }
     
     /* vs inputs (attributes) */
     uint32_t vs_input[4] = {0};
@@ -1394,7 +1411,7 @@ static void *etna_create_etna_shader_state(struct pipe_context *pipe, const stru
         }
         total_components += rs->varyings[idx].num_components;
     }
-    SET_STATE(GL_VARYING_TOTAL_COMPONENTS, VIVS_GL_VARYING_TOTAL_COMPONENTS_NUM(total_components));
+    SET_STATE(GL_VARYING_TOTAL_COMPONENTS, VIVS_GL_VARYING_TOTAL_COMPONENTS_NUM(etna_align_up(total_components, 2)));
     SET_STATE(GL_VARYING_NUM_COMPONENTS, num_components);
     SET_STATE(GL_VARYING_COMPONENT_USE[0], component_use[0]);
     SET_STATE(GL_VARYING_COMPONENT_USE[1], component_use[1]);

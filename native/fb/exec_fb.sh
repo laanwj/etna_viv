@@ -22,6 +22,11 @@ if [[ "$DEMO" == "mip_cube" || "$DEMO" == "mip_cube_raw" ]]; then
     adb push ../resources/${TEX}.dds /mnt/sdcard
     ARG="/mnt/sdcard/${TEX}.dds"
 fi
+if [[ "$DEMO" == "particle_system" ]]; then
+    TEX="smoke"
+    adb push ../resources/${TEX}.tga /mnt/sdcard
+    ARG="/mnt/sdcard/${TEX}.tga"
+fi
 make ${DEMO}
 [ $? -ne 0 ] && exit
 adb push ${DEMO} /data/mine

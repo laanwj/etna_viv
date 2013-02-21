@@ -446,3 +446,18 @@ input is likely added to the end.
 
 [1] http://www.faqs.org/patents/app/20110249901
 
+Rendering points
+------------------
+When rendering points (PRIMITIVE_TYPE_POINTS) there are some differences:
+
+- VS can have an extra output, the size of the point `gl_pointSize`
+  if `PA_CONFIG.POINT_SIZE_ENABLE` is set. This will be the last output in `VS_OUTPUT`.
+
+- There is an extra varying for `gl_pointCoord` with two components. This varying has
+  its components in `GL_VARYING_COMPONENT_USE` set to `POINTCOORD_X` and `POINTCOORD_Y`.
+  Its `PA_SHADER_ATTRIBUTES` is set to `0x000002f1`.
+  The VS output associated to this varying in `VS_OUTPUT` is discarded, so can be set 
+  to any output register.
+
+- `rasterizer.point_size_per_vertex` affects number of vs outputs (just like MSAA!).
+

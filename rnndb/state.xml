@@ -197,7 +197,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="19" name="UNK16_MASK"/>
         </reg32>
         <reg32 offset="0x0381C" name="VARYING_TOTAL_COMPONENTS" brief="Total number of components in all varyings" value="0x00000000">
-            <doc>Number of components for all varyings together.</doc>
+            <doc>Number of components for all varyings together, rounded to a multiple of 2.</doc>
             <bitfield high="7" low="0" name="NUM"/>
         </reg32>
         <reg32 offset="0x03820" name="VARYING_NUM_COMPONENTS" brief="Number of components in varyings" value="0x00000000">

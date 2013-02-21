@@ -137,14 +137,6 @@ const struct etna_shader_program shader = {
     },
 };
 
-inline void convert_r8g8b8_to_b8g8r8x8(uint32_t *dst, const uint8_t *src, unsigned num_pixels)
-{
-    for(unsigned idx=0; idx<num_pixels; ++idx)
-    {
-        dst[idx] = ((0xFF) << 24) | (src[idx*3+0] << 16) | (src[idx*3+1] << 8) | src[idx*3+2];
-    }
-}
-
 int main(int argc, char **argv)
 {
     int rv;
@@ -183,7 +175,7 @@ int main(int argc, char **argv)
     struct pipe_resource *tex_resource = etna_pipe_create_2d(pipe, ETNA_IS_TEXTURE, PIPE_FORMAT_B8G8R8X8_UNORM, 
             COMPANION_TEXTURE_WIDTH, COMPANION_TEXTURE_HEIGHT, 0);
     void *temp = malloc(COMPANION_TEXTURE_WIDTH * COMPANION_TEXTURE_HEIGHT * 4); 
-    convert_r8g8b8_to_b8g8r8x8(temp, (const uint8_t*)companion_texture, COMPANION_TEXTURE_WIDTH * COMPANION_TEXTURE_HEIGHT);
+    etna_convert_r8g8b8_to_b8g8r8x8(temp, (const uint8_t*)companion_texture, COMPANION_TEXTURE_WIDTH * COMPANION_TEXTURE_HEIGHT);
     etna_pipe_inline_write(pipe, tex_resource, 0, 0, temp, COMPANION_TEXTURE_WIDTH * COMPANION_TEXTURE_HEIGHT * 4);
     free(temp);
 

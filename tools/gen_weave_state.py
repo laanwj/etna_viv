@@ -90,7 +90,8 @@ def main():
             if not line or line.startswith('#'):
                 continue
             if line.startswith('    '):
-                fields.append(line.strip())
+                line = line.strip().split()
+                fields.append(line[0])
             else:
                 if recordname is not None:
                     data.append([recordname, fields])

@@ -1,5 +1,6 @@
 # group and sort these by address
 # <struct_name> <source_spec> <dirtybit>
+# TODO: specify how to combine fields (if not simply |)
 
 base_setup_state base_setup. ETNA_STATE_BASE_SETUP
     PA.W_CLIP_LIMIT
@@ -17,6 +18,7 @@ rasterizer_state rasterizer-> ETNA_STATE_RASTERIZER
     SE.SCISSOR_TOP
     SE.SCISSOR_RIGHT
     SE.SCISSOR_BOTTOM
+    VS.OUTPUT_COUNT      Added to shader state output count
 
 depth_stencil_alpha_state depth_stencil_alpha-> ETNA_STATE_DSA
     PE.DEPTH_CONFIG

@@ -1,5 +1,18 @@
 ; fs for particle system demo 
 ; different from the others in that it uses branching, and a .SAT modifier
+; uniform inputs
+;  u0.x    u_time
+;  u0.yzw  u_centerPosition
+; uniform constants
+;  u1.x 1.0
+;  u1.y -1000.0
+;  u1.z 0.0
+;  u1.w 40.0
+;  u2.x 0.5
+; outputs
+;  t0  v_lifetime
+;  t1  position
+;  t2  pointsize
  BRANCH.GT void, u0.xxxx, t0.xxxx, label_5
  MAD t1.xyz_, u0.xxxx, t2.xyzz, t1.xyzz
  ADD t1.xyz_, t1.xyzz, void, u0.yzww

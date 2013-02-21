@@ -27,6 +27,7 @@
 #include <EGL/egl.h>
 #include "esUtil.h"
 
+#ifndef ANDROID
 #include  <X11/Xlib.h>
 #include  <X11/Xatom.h>
 #include  <X11/Xutil.h>
@@ -347,6 +348,7 @@ void ESUTIL_API esRegisterKeyFunc ( ESContext *esContext,
    esContext->keyFunc = keyFunc;
 }
 
+#endif
 
 ///
 // esLogMessage()
