@@ -473,6 +473,15 @@ sampler 0..7 are used as fragment samplers and 8..11 are used as vertex samplers
 The shaders themselves refer to the absolute shader number; so tex8 is the first texture unit used in a
 vertex shader.
 
+It appears that Vivante hw has two texture caches that need to be
+flushed separately, one for fragment shaders one for vertex shaders 
+(GL.FLUSH_CACHE.TEXTURE and GL.FLUSH_CACHE.TEXTUREVS respectively).
+
+This solves a problem with running cubemap_sphere after displacement demo;
+it seemed that some leftover cache from using a texture in displacement
+caused the texture in cubemap_sphere (which is only 1x1x6) to be messed
+up.
+
 XXX maybe figure out if the sampler units are shared between fragment and vertex shaders and thus interchangeable. This is 
   not important for GL/Gallium because it already lives with the assumption that vertex and fragment shaders
   are distinct.

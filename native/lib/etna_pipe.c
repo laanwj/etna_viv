@@ -715,8 +715,8 @@ static void sync_context(struct pipe_context *pipe)
 #endif
     if(dirty & (ETNA_STATE_SAMPLER_VIEWS | ETNA_STATE_SAMPLERS))
     {
-        /* clear texture cache */
-        etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_TEXTURE);
+        /* clear texture cache (both fragment and vertex) */
+        etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_TEXTURE | VIVS_GL_FLUSH_CACHE_TEXTUREVS);
     }
     if(dirty & (ETNA_STATE_FRAMEBUFFER | ETNA_STATE_TS))
     {
@@ -1788,7 +1788,6 @@ void etna_pipe_inline_write(struct pipe_context *pipe, struct pipe_resource *res
             etna_texture_tile(ptr, data, resource->levels[level].width, resource->levels[level].height, 
                     resource->levels[level].stride, pipe_element_size(resource->format));
         } else { /* compressed format */
-            printf("%p %p %i\n", ptr, data, size);
             memcpy(ptr, data, size);
         }
     } else

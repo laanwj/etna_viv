@@ -8,11 +8,11 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- /home/orion/projects/etna_viv/rnndb/state.xml    (  14925 bytes, from 2013-02-10 13:30:30)
+- /home/orion/projects/etna_viv/rnndb/state.xml    (  15002 bytes, from 2013-02-23 18:59:36)
 - /home/orion/projects/etna_viv/rnndb/common.xml   (  15985 bytes, from 2013-02-10 12:55:03)
 - /home/orion/projects/etna_viv/rnndb/state_hi.xml (  11825 bytes, from 2013-02-01 10:14:08)
 - /home/orion/projects/etna_viv/rnndb/state_2d.xml (  30577 bytes, from 2013-02-01 10:02:25)
-- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  49514 bytes, from 2013-02-20 17:04:50)
+- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  49672 bytes, from 2013-02-20 18:04:17)
 
 Copyright (C) 2013
 */
@@ -171,6 +171,7 @@ Copyright (C) 2013
 #define VIVS_GL_FLUSH_CACHE_COLOR				0x00000002
 #define VIVS_GL_FLUSH_CACHE_TEXTURE				0x00000004
 #define VIVS_GL_FLUSH_CACHE_PE2D				0x00000008
+#define VIVS_GL_FLUSH_CACHE_TEXTUREVS				0x00000010
 #define VIVS_GL_FLUSH_CACHE_SHADER_L1				0x00000020
 #define VIVS_GL_FLUSH_CACHE_SHADER_L2				0x00000040
 
