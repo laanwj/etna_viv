@@ -2,7 +2,7 @@
 '''
 Shader disassembler.
 
-Usage: disasm.py ../rnndb/isa.xml (vs|ps)_x.bin
+Usage: disasm.py --isa-file ../rnndb/isa.xml (vs|ps)_x.bin
 '''
 # Copyright (c) 2012-2013 Wladimir J. van der Laan
 #
@@ -30,6 +30,7 @@ import sys
 from binascii import b2a_hex
 from collections import namedtuple 
 
+from etnaviv.util import rnndb_path
 from etnaviv.parse_rng import parse_rng_file, format_path, BitSet, Domain
 from etnaviv.asm_common import format_instruction, disassemble
 
@@ -37,7 +38,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description='Disassemble shader')
     parser.add_argument('--isa-file', metavar='ISAFILE', type=str, 
             help='Shader ISA definition file (rules-ng-ng)',
-            default='../rnndb/isa.xml')
+            default=rnndb_path('isa.xml'))
     parser.add_argument('input', metavar='INFILE', type=str, 
             help='Binary shader file')
     parser.add_argument('-a', dest='addr',

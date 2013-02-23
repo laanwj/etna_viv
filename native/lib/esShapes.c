@@ -100,7 +100,7 @@ int ESUTIL_API esGenSphere ( int numSlices, float radius, GLfloat **vertices, GL
          {
             int texIndex = ( i * (numSlices + 1) + j ) * 2;
             (*texCoords)[texIndex + 0] = (float) j / (float) numSlices;
-            (*texCoords)[texIndex + 1] = ( 1.0f - (float) i ) / (float) (numParallels - 1 );
+            (*texCoords)[texIndex + 1] = 1.0f - ((float) i / (float) (numParallels));
          }
       }
    }

@@ -222,5 +222,6 @@ static inline uint32_t etna_umin(uint32_t a, uint32_t b) { return (a<b)?a:b; }
 static inline uint32_t etna_umax(uint32_t a, uint32_t b) { return (a>b)?a:b; }
 static inline uint32_t etna_smin(int32_t a, int32_t b) { return (a<b)?a:b; }
 static inline uint32_t etna_smax(int32_t a, int32_t b) { return (a>b)?a:b; }
+static inline uint32_t etna_bits_ones(unsigned num) { return (1<<num)-1; }
 
 #endif

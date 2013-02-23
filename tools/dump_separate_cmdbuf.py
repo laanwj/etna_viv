@@ -31,6 +31,7 @@ from collections import defaultdict
 from binascii import b2a_hex
 
 # Parse rules-ng-ng format for state space
+from etnaviv.util import rnndb_path
 from etnaviv.parse_rng import parse_rng_file, format_path, BitSet, Domain
 
 DEBUG = False
@@ -158,7 +159,7 @@ def parse_arguments():
             help='FDR file')
     parser.add_argument('--rules-file', metavar='RULESFILE', type=str, 
             help='State map definition file (rules-ng-ng)',
-            default='../rnndb/state.xml')
+            default=rnndb_path('state.xml'))
     parser.add_argument('-l', '--hide-load-state', dest='hide_load_state',
             default=False, action='store_const', const=True,
             help='Hide "LOAD_STATE" entries, this can make command stream a bit easier to read')

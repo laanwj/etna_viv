@@ -59,15 +59,15 @@ sample_mask sample_mask. ETNA_STATE_SAMPLE_MASK
     GL.MULTI_SAMPLE_CONFIG
 
 sampler_state sampler[{0}]-> ETNA_STATE_SAMPLERS
-    TE.SAMPLER.CONFIG0
-    TE.SAMPLER.LOD_CONFIG
+    TE.SAMPLER.CONFIG0        Set to 0 for inactive samplers
+    TE.SAMPLER.LOD_CONFIG     Only set for active samplers
 
 sampler_view sampler_view[{0}]. ETNA_STATE_SAMPLER_VIEWS
-    TE.SAMPLER.CONFIG0
-    TE.SAMPLER.LOD_CONFIG
-    TE.SAMPLER.SIZE
-    TE.SAMPLER.LOG_SIZE
-    TE.SAMPLER.LOD_ADDR
+    TE.SAMPLER.CONFIG0        Only set for active samplers
+    TE.SAMPLER.LOD_CONFIG     Only set for active samplers
+    TE.SAMPLER.SIZE           Only set for active samplers
+    TE.SAMPLER.LOG_SIZE       Only set for active samplers
+    TE.SAMPLER.LOD_ADDR       Only set for active samplers
 
 framebuffer_state framebuffer. ETNA_STATE_FRAMEBUFFER
     GL.MULTI_SAMPLE_CONFIG

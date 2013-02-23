@@ -27,6 +27,7 @@ import argparse
 from collections import defaultdict
 import sys
 # Parse rules-ng-ng format for state space
+from etnaviv.util import rnndb_path
 from etnaviv.parse_rng import parse_rng_file, format_path, BitSet, Domain, Stripe, Register, Array, BaseType
 
 SRC_SPEC = 'e->'
@@ -39,7 +40,7 @@ def parse_args():
             default='data/viv_gallium_state.txt')
     parser.add_argument('--rules-file', metavar='RULESFILE', type=str, 
             help='State map definition file (rules-ng-ng)',
-            default='../rnndb/state.xml')
+            default=rnndb_path('state.xml'))
 
     return parser.parse_args()        
 

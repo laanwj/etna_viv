@@ -79,6 +79,10 @@ to the Vivante hardware while abstracting away kernel interface details.
 
 - `stencil_test`: Test stencil buffer handling
 
+- `particle_system`: Simple particle system using vertex shader and point sprites
+
+- `displacement`: Displacement mapping using vertex textur fetch
+
 If you are executing these demos on an Android device, make sure that you are root, otherwise the framebuffer
 is not accessible.
 

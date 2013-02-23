@@ -200,6 +200,12 @@ enum pipe_texture_target {
 #define PIPE_TEX_COMPARE_NONE          0
 #define PIPE_TEX_COMPARE_R_TO_TEXTURE  1
 
+/**
+ * Point sprite coord modes
+ */
+#define PIPE_SPRITE_COORD_UPPER_LEFT 0
+#define PIPE_SPRITE_COORD_LOWER_LEFT 1
+
 enum pipe_type {
    PIPE_TYPE_UNORM = 0,
    PIPE_TYPE_SNORM,
@@ -991,10 +997,10 @@ struct pipe_context {
    void   (*bind_fragment_sampler_states)(struct pipe_context *,
                                           unsigned num_samplers,
                                           void **samplers);
-#if 0 /* XXX todo */
    void   (*bind_vertex_sampler_states)(struct pipe_context *,
                                         unsigned num_samplers,
                                         void **samplers);
+#if 0 /* XXX todo */
    void   (*bind_geometry_sampler_states)(struct pipe_context *,
                                           unsigned num_samplers,
                                           void **samplers);
@@ -1080,10 +1086,10 @@ struct pipe_context {
    void (*set_fragment_sampler_views)(struct pipe_context *,
                                       unsigned num_views,
                                       struct pipe_sampler_view **);
-#if 0 /* XXX todo */
    void (*set_vertex_sampler_views)(struct pipe_context *,
                                     unsigned num_views,
                                     struct pipe_sampler_view **);
+#if 0 /* XXX todo */
 
    void (*set_geometry_sampler_views)(struct pipe_context *,
                                       unsigned num_views,

@@ -461,3 +461,23 @@ When rendering points (PRIMITIVE_TYPE_POINTS) there are some differences:
 
 - `rasterizer.point_size_per_vertex` affects number of vs outputs (just like MSAA!).
 
+- Distinction between sprite coordinate origin `UPPER_LEFT` / `LOWER_LEFT` is implemented by adding 
+  a 1.0-y instruction when glPointCoord is used. XXX figure out what is the default.
+
+Vertex texture fetch
+--------------------
+
+Vertex samplers live in the same space as fragment samplers. The blob uses a fixed mapping:
+sampler 0..7 are used as fragment samplers and 8..11 are used as vertex samplers. 
+
+The shaders themselves refer to the absolute shader number; so tex8 is the first texture unit used in a
+vertex shader.
+
+XXX maybe figure out if the sampler units are shared between fragment and vertex shaders and thus interchangeable. This is 
+  not important for GL/Gallium because it already lives with the assumption that vertex and fragment shaders
+  are distinct.
+
+XXX figure out which texture filtering options are allowed for vertex texture fetch
+
+XXX figure out wether normal texture2D works or that texture2DLod is needed
+

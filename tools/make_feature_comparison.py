@@ -27,11 +27,12 @@ The input data is specified in JSON format, the output is in HTML.
 from __future__ import print_function, division, unicode_literals
 import argparse
 import json, cgi
+from etnaviv.util import rnndb_path
 from etnaviv.parse_rng import parse_rng_file, format_path, BitSet, Domain
 import sys
 
 GPUS_FILE = 'data/gpus.json'
-STATE_MAP = '../rnndb/state.xml'
+STATE_MAP = rnndb_path('state.xml')
 
 class Cell(object):
     def __init__(self, row, column, value, rowspan=1, colspan=1, cls=None):
