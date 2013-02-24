@@ -48,6 +48,7 @@
 #include "etna_rs.h"
 #include "etna_fb.h"
 #include "etna_mem.h"
+#include "etna_util.h"
 
 #include "esTransform.h"
 

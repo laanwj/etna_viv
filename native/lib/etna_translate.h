@@ -29,25 +29,12 @@
 #include "etna/state.xml.h"
 #include "etna/state_3d.xml.h"
 #include "etna/cmdstream.xml.h"
+#include "etna_util.h"
 
 #include <stdio.h>
 #include <math.h>
 
 #define RCPLOG2 (1.4426950408889634f)
-/* [0.0 .. 1.0] -> [0 .. 255] */
-static inline uint8_t cfloat_to_uint8(float f)
-{
-    if(f<=0.0f) return 0;
-    if(f>=(1.0f-1.0f/256.0f)) return 255;
-    return f * 256.0f;
-}
-
-static inline uint32_t cfloat_to_uintN(float f, int bits)
-{
-    if(f<=0.0f) return 0;
-    if(f>=(1.0f-1.0f/(1<<bits))) return (1<<bits)-1;
-    return f * (1<<bits);
-}
 
 /* float to fixp 5.5 */
 static inline uint32_t float_to_fixp55(float f)
@@ -61,15 +48,6 @@ static inline uint32_t float_to_fixp55(float f)
 static inline uint32_t log2_fixp55(unsigned width)
 {
     return float_to_fixp55(logf((float)width) * RCPLOG2);
-}
-
-static inline uint32_t f32_to_u32(float value)
-{
-    union {
-        uint32_t u32;
-        float f32;
-    } x = { .f32 = value };
-    return x.u32;
 }
 
 static inline uint32_t translate_cull_face(unsigned cull_face, unsigned front_ccw)
@@ -797,31 +775,31 @@ static inline uint32_t translate_clear_color(enum pipe_format format, const unio
     {
     case PIPE_FORMAT_B8G8R8A8_UNORM:
     case PIPE_FORMAT_B8G8R8X8_UNORM:
-        clear_value = cfloat_to_uintN(color->f[2], 8) |
-                (cfloat_to_uintN(color->f[1], 8) << 8) |
-                (cfloat_to_uintN(color->f[0], 8) << 16) |
-                (cfloat_to_uintN(color->f[3], 8) << 24);
+        clear_value = etna_cfloat_to_uintN(color->f[2], 8) |
+                (etna_cfloat_to_uintN(color->f[1], 8) << 8) |
+                (etna_cfloat_to_uintN(color->f[0], 8) << 16) |
+                (etna_cfloat_to_uintN(color->f[3], 8) << 24);
         break;
     case PIPE_FORMAT_B4G4R4X4_UNORM: 
     case PIPE_FORMAT_B4G4R4A4_UNORM: 
-        clear_value = cfloat_to_uintN(color->f[2], 4) |
-                (cfloat_to_uintN(color->f[1], 4) << 4) |
-                (cfloat_to_uintN(color->f[0], 4) << 8) |
-                (cfloat_to_uintN(color->f[3], 4) << 12);
+        clear_value = etna_cfloat_to_uintN(color->f[2], 4) |
+                (etna_cfloat_to_uintN(color->f[1], 4) << 4) |
+                (etna_cfloat_to_uintN(color->f[0], 4) << 8) |
+                (etna_cfloat_to_uintN(color->f[3], 4) << 12);
         clear_value |= clear_value << 16;
         break;
     case PIPE_FORMAT_B5G5R5X1_UNORM: 
     case PIPE_FORMAT_B5G5R5A1_UNORM: 
-        clear_value = cfloat_to_uintN(color->f[2], 5) |
-                (cfloat_to_uintN(color->f[1], 5) << 5) |
-                (cfloat_to_uintN(color->f[0], 5) << 10) |
-                (cfloat_to_uintN(color->f[3], 1) << 15);
+        clear_value = etna_cfloat_to_uintN(color->f[2], 5) |
+                (etna_cfloat_to_uintN(color->f[1], 5) << 5) |
+                (etna_cfloat_to_uintN(color->f[0], 5) << 10) |
+                (etna_cfloat_to_uintN(color->f[3], 1) << 15);
         clear_value |= clear_value << 16;
         break;
     case PIPE_FORMAT_B5G6R5_UNORM: 
-        clear_value = cfloat_to_uintN(color->f[2], 5) |
-                (cfloat_to_uintN(color->f[1], 6) << 5) |
-                (cfloat_to_uintN(color->f[0], 5) << 11);
+        clear_value = etna_cfloat_to_uintN(color->f[2], 5) |
+                (etna_cfloat_to_uintN(color->f[1], 6) << 5) |
+                (etna_cfloat_to_uintN(color->f[0], 5) << 11);
         clear_value |= clear_value << 16;
         break;
     default:
@@ -836,12 +814,12 @@ static inline uint32_t translate_clear_depth_stencil(enum pipe_format format, fl
     switch(format) // XXX util_pack_color
     {
     case PIPE_FORMAT_Z16_UNORM: 
-        clear_value = cfloat_to_uintN(depth, 16);
+        clear_value = etna_cfloat_to_uintN(depth, 16);
         clear_value |= clear_value << 16;
         break;
     case PIPE_FORMAT_Z24X8_UNORM: 
     case PIPE_FORMAT_Z24_UNORM_S8_UINT: 
-        clear_value = (cfloat_to_uintN(depth, 24) << 8) | (stencil & 0xFF);
+        clear_value = (etna_cfloat_to_uintN(depth, 24) << 8) | (stencil & 0xFF);
         break;
     default:
         printf("Unhandled pipe format for depth stencil clear: %i\n", format);

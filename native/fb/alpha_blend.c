@@ -359,7 +359,7 @@ int main(int argc, char **argv)
         ESMatrix projection;
         GLfloat aspect = (GLfloat)(height) / (GLfloat)(width);
         esMatrixLoadIdentity(&projection);
-        esFrustum(&projection, -2.8f, +2.8f, -2.8f * aspect, +2.8f * aspect, 5.0f, 10.0f);
+        esFrustum(&projection, -1.8f, +1.8f, -1.8f * aspect, +1.8f * aspect, 5.0f, 10.0f);
 
         /* Clear render target */
         pipe->clear(pipe, PIPE_CLEAR_COLOR | PIPE_CLEAR_DEPTHSTENCIL, &(const union pipe_color_union) {

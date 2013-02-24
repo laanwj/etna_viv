@@ -51,6 +51,7 @@
 #include "etna_fb.h"
 #include "etna_bswap.h"
 #include "etna_tex.h"
+#include "etna_util.h"
 
 #include "esTransform.h"
 #include "esShapes.h"
@@ -64,6 +65,7 @@ const uint32_t vs[] = {
 0x01831009,0x00000000,0x00000000,0x203fc048,
 0x02031009,0x00000000,0x00000000,0x203fc058,
 0x47841018,0x15000f20,0x00000000,0x00000000,
+0x00841003,0x00004800,0x015405c0,0x00000002,
 0x03841003,0x00004800,0x01480140,0x00000000,
 0x04041009,0x00000000,0x00000000,0x203fc068,
 0x07841001,0x39001800,0x00000000,0x00390048,
@@ -112,8 +114,9 @@ const struct etna_shader_program shader = {
         [19] = 2.0f, /* u4.w */
         [23] = 20.0f, /* u5.w */
         [27] = 0.0f, /* u6.w */
-        [45] = 0.5f, /* u11.y */
         [44] = 1.0f, /* u11.x */
+        [45] = 0.5f, /* u11.y */
+        [46] = 0.2f, /* u11.z -- scaling factor applied to displacement */
     },
     .ps_code_size = sizeof(ps)/4,
     .ps_code = (uint32_t*)ps,
@@ -123,8 +126,8 @@ const struct etna_shader_program shader = {
     .ps_uniforms = NULL,
 };
 
-#define TEX_WIDTH (16)
-#define TEX_HEIGHT (16)
+#define TEX_WIDTH (32)
+#define TEX_HEIGHT (32)
 struct pipe_resource *createSimpleTexture(struct pipe_context *pipe)
 {
     struct pipe_resource *tex_resource = etna_pipe_create_2d(pipe, ETNA_IS_TEXTURE, PIPE_FORMAT_L8_UNORM, TEX_WIDTH, TEX_HEIGHT, 0);
@@ -136,7 +139,11 @@ struct pipe_resource *createSimpleTexture(struct pipe_context *pipe)
         {
             float xx = (float)x / (float)(TEX_WIDTH-1) * 2.0f - 1.0f;
             float yy = (float)y / (float)(TEX_HEIGHT-1) * 2.0f - 1.0f;
-            pixels[y][x] = (0.25*xx*xx*yy*yy)*255.0f;
+            //float vv = (0.25*xx*xx*yy*yy);
+            //float vv = (sin(xx*2.0*M_PI*2.0)*sin(yy*2.0*M_PI*2.0) + 1.0f) / 2.0f;
+            float vv = sin(xx*2.0*M_PI*2.0)*sin(yy*2.0*M_PI*2.0);
+            vv = vv * (1.0 - yy * yy); /* flatten over poles */
+            pixels[y][x] = etna_cfloat_to_uint8(vv);
             printf("%3i ", pixels[y][x]);
         }
         printf("\n");
@@ -182,7 +189,6 @@ int main(int argc, char **argv)
         printf("Unable to create etna context\n");
         exit(1);
     }
-
     
     /* resources */
     struct pipe_resource *rt_resource = etna_pipe_create_2d(pipe, ETNA_IS_RENDER_TARGET, PIPE_FORMAT_B8G8R8X8_UNORM, width, height, 0);
@@ -203,7 +209,7 @@ int main(int argc, char **argv)
     GLfloat *vTexCoords;
     GLushort *vIndices;
     int numVertices = 0;
-    int numIndices = esGenSphere(40, 1.0f, &vVertices, &vNormals,
+    int numIndices = esGenSphere(80, 1.0f, &vVertices, &vNormals,
                                         &vTexCoords, &vIndices, &numVertices);
 
     unsigned vtxStride = 3+3+2;
@@ -329,9 +335,9 @@ int main(int argc, char **argv)
                 .wrap_s = PIPE_TEX_WRAP_REPEAT,
                 .wrap_t = PIPE_TEX_WRAP_REPEAT,
                 .wrap_r = PIPE_TEX_WRAP_REPEAT,
-                .min_img_filter = PIPE_TEX_FILTER_NEAREST, /* XXX linear supported for vertex texture fetch? */
+                .min_img_filter = PIPE_TEX_FILTER_LINEAR,
                 .min_mip_filter = PIPE_TEX_MIPFILTER_NONE,
-                .mag_img_filter = PIPE_TEX_FILTER_NEAREST,
+                .mag_img_filter = PIPE_TEX_FILTER_LINEAR,
                 .normalized_coords = 1,
                 .lod_bias = 0.0f,
                 .min_lod = 0.0f, .max_lod=1000.0f
@@ -432,6 +438,11 @@ int main(int argc, char **argv)
         pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 24, 3, (uint32_t*)&normal.m[2][0]); /* u6.xyz */
         pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 28, 16, (uint32_t*)&modelview.m[0][0]);
 
+        float scaling = fmodf(frame* 0.025f, 2.0f);
+        if(scaling > 1.0f)
+            scaling = 2.0f - scaling;  // sawtooth
+        pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 46, 1, (uint32_t*)&scaling);
+
         pipe->draw_vbo(pipe, &(struct pipe_draw_info){
                 .indexed = 1,
                 .mode = PIPE_PRIM_TRIANGLES,
@@ -446,7 +457,7 @@ int main(int argc, char **argv)
         etna_swap_buffers(buffers);
     }
 #ifdef DUMP
-    bmp_dump32(fb.logical[1-backbuffer], width, height, false, "/mnt/sdcard/fb.bmp");
+    bmp_dump32(fb.logical[1-buffers->backbuffer], width, height, false, "/mnt/sdcard/fb.bmp");
     printf("Dump complete\n");
 #endif
     etna_bswap_free(buffers);

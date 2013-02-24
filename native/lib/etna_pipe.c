@@ -61,7 +61,7 @@
 /* Define state */
 #define SET_STATE(addr, value) cs->addr = (value)
 #define SET_STATE_FIXP(addr, value) cs->addr = (value)
-#define SET_STATE_F32(addr, value) cs->addr = f32_to_u32(value)
+#define SET_STATE_F32(addr, value) cs->addr = etna_f32_to_u32(value)
 
 /* duplicate string of 32-bit words */
 static inline uint32_t *copy32(uint32_t *data, unsigned size)
@@ -938,7 +938,7 @@ static void *etna_pipe_create_depth_stencil_alpha_state(struct pipe_context *pip
     SET_STATE(PE_ALPHA_OP, 
             (dsa->alpha.enabled ? VIVS_PE_ALPHA_OP_ALPHA_TEST : 0) |
             VIVS_PE_ALPHA_OP_ALPHA_FUNC(dsa->alpha.func) |
-            VIVS_PE_ALPHA_OP_ALPHA_REF(cfloat_to_uint8(dsa->alpha.ref_value)));
+            VIVS_PE_ALPHA_OP_ALPHA_REF(etna_cfloat_to_uint8(dsa->alpha.ref_value)));
     SET_STATE(PE_STENCIL_OP, 
             VIVS_PE_STENCIL_OP_FUNC_FRONT(dsa->stencil[0].func) |
             VIVS_PE_STENCIL_OP_FUNC_BACK(dsa->stencil[1].func) |
@@ -1022,10 +1022,10 @@ static void etna_pipe_set_blend_color(struct pipe_context *pipe,
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
     struct compiled_blend_color *cs = &priv->blend_color;
     SET_STATE(PE_ALPHA_BLEND_COLOR, 
-            VIVS_PE_ALPHA_BLEND_COLOR_R(cfloat_to_uint8(bc->color[0])) |
-            VIVS_PE_ALPHA_BLEND_COLOR_G(cfloat_to_uint8(bc->color[1])) |
-            VIVS_PE_ALPHA_BLEND_COLOR_B(cfloat_to_uint8(bc->color[2])) |
-            VIVS_PE_ALPHA_BLEND_COLOR_A(cfloat_to_uint8(bc->color[3]))
+            VIVS_PE_ALPHA_BLEND_COLOR_R(etna_cfloat_to_uint8(bc->color[0])) |
+            VIVS_PE_ALPHA_BLEND_COLOR_G(etna_cfloat_to_uint8(bc->color[1])) |
+            VIVS_PE_ALPHA_BLEND_COLOR_B(etna_cfloat_to_uint8(bc->color[2])) |
+            VIVS_PE_ALPHA_BLEND_COLOR_A(etna_cfloat_to_uint8(bc->color[3]))
             );
     priv->dirty_bits |= ETNA_STATE_BLEND_COLOR;
 }
@@ -1385,7 +1385,7 @@ static void etna_pipe_texture_barrier(struct pipe_context *pipe)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
     /* clear texture cache */
-    etna_set_state(priv->ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_TEXTURE);
+    etna_set_state(priv->ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_TEXTURE | VIVS_GL_FLUSH_CACHE_TEXTUREVS);
 }
    
 static void *etna_create_etna_shader_state(struct pipe_context *pipe, const struct etna_shader_program *rs)

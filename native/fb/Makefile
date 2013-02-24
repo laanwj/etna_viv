@@ -3,7 +3,7 @@ TOP=..
 include $(TOP)/Makefile.inc
 
 COMMON_FLAGS = -I$(TOP)/lib -I$(TOP)/include_$(GCABI) -g -std=c99 -fPIC  -I../resources  -I../include
-CFLAGS += $(COMMON_FLAGS)
+CFLAGS += $(COMMON_FLAGS) -DDUMP
 CXXFLAGS += $(COMMON_FLAGS) 
 LDFLAGS += -lm
 

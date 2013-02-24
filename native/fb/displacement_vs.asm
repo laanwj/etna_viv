@@ -1,9 +1,11 @@
 ; test for vertex texture fetch
 ; this crashes the blob driver on my Arnova as it doesn't properly set up sampler 8
-; so I wonder if this will work when I properly setup that sampler
+; so I wonder if this will work when I properly setup that sampler (it does!)
+; u11.z   scaling factor applied to displacement
 MOV t3.xy__, void, void, u4.wwww
 MOV t3.__z_, void, void, u5.wwww
 TEXLD t4, tex8, t0.xyyy, void, void
+MUL t4.x___, t4.x, u11.z, void   ; apply scaling factor to displacement
 MUL t4.xyz_, t4.xxxx, t2.xyzz, void
 MOV t4.___w, void, void, u6.wwww
 ADD t4, t1, void, t4

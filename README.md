@@ -42,6 +42,7 @@ Framebuffer tests
 ![cube_companion output](https://raw.github.com/laanwj/etna_viv/master/native/replay/cube_companion_replay.png)
 
 ![mip_cube output](https://raw.github.com/laanwj/etna_viv/master/doc/images/mipmap.png)
+![displacement output](https://raw.github.com/laanwj/etna_viv/master/doc/images/displacement.png)
 
 To execise the initial-stage driver there are a few framebuffer tests in:
 
@@ -81,7 +82,7 @@ to the Vivante hardware while abstracting away kernel interface details.
 
 - `particle_system`: Simple particle system using vertex shader and point sprites
 
-- `displacement`: Displacement mapping using vertex textur fetch
+- `displacement`: Displacement mapping using vertex texture fetch
 
 If you are executing these demos on an Android device, make sure that you are root, otherwise the framebuffer
 is not accessible.

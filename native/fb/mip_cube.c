@@ -504,7 +504,7 @@ int main(int argc, char **argv)
         esRotate(&modelview, frame*0.5f, 0.0f, 0.0f, 1.0f);
         GLfloat aspect = (GLfloat)(height) / (GLfloat)(width);
         esMatrixLoadIdentity(&projection);
-        esFrustum(&projection, -2.8f, +2.8f, -2.8f * aspect, +2.8f * aspect, 6.0f, 10.0f);
+        esFrustum(&projection, -2.4f, +2.4f, -2.4f * aspect, +2.4f * aspect, 6.0f, 10.0f);
         esMatrixLoadIdentity(&modelviewprojection);
         esMatrixMultiply(&modelviewprojection, &modelview, &projection);
         esMatrixInverse3x3(&inverse, &modelview);
@@ -534,7 +534,7 @@ int main(int argc, char **argv)
         etna_swap_buffers(buffers);
     }
 #ifdef DUMP
-    bmp_dump32(fb.logical[1-backbuffer], width, height, false, "/mnt/sdcard/fb.bmp");
+    bmp_dump32(fb.logical[1-buffers->backbuffer], width, height, false, "/mnt/sdcard/fb.bmp");
     printf("Dump complete\n");
 #endif
     etna_bswap_free(buffers);

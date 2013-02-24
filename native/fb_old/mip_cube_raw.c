@@ -50,6 +50,7 @@
 #include "etna_mem.h"
 #include "etna_bswap.h"
 #include "etna_tex.h"
+#include "etna_util.h"
 
 #include "esTransform.h"
 #include "dds.h"
