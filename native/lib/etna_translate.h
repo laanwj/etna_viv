@@ -52,7 +52,7 @@ static inline uint32_t log2_fixp55(unsigned width)
 
 static inline uint32_t translate_cull_face(unsigned cull_face, unsigned front_ccw)
 {
-    switch(cull_face) /* XXX verify this is the right way around */
+    switch(cull_face)
     {
     case PIPE_FACE_NONE: return VIVS_PA_CONFIG_CULL_FACE_MODE_OFF;
     case PIPE_FACE_FRONT: return front_ccw ? VIVS_PA_CONFIG_CULL_FACE_MODE_CW : VIVS_PA_CONFIG_CULL_FACE_MODE_CCW;
@@ -178,9 +178,9 @@ static inline uint32_t translate_texture_filter(unsigned filter)
 
 static inline uint32_t translate_texture_format(enum pipe_format fmt)
 {
-    /* XXX these are all reversed - does it matter? */
     switch(fmt) /* XXX with TEXTURE_FORMAT_EXT and swizzle on newer chips we can support much more */
     {
+    /* Note: Pipe format convention is LSB to MSB, VIVS is MSB to LSB */
     case PIPE_FORMAT_A8_UNORM: return TEXTURE_FORMAT_A8;
     case PIPE_FORMAT_L8_UNORM: return TEXTURE_FORMAT_L8;
     case PIPE_FORMAT_I8_UNORM: return TEXTURE_FORMAT_I8;
@@ -197,8 +197,8 @@ static inline uint32_t translate_texture_format(enum pipe_format fmt)
     case PIPE_FORMAT_YUYV: return TEXTURE_FORMAT_YUY2;
     case PIPE_FORMAT_UYVY: return TEXTURE_FORMAT_UYVY;
     case PIPE_FORMAT_Z16_UNORM: return TEXTURE_FORMAT_D16;
-    case PIPE_FORMAT_Z24X8_UNORM: return TEXTURE_FORMAT_D24S8;
-    case PIPE_FORMAT_Z24_UNORM_S8_UINT: return TEXTURE_FORMAT_D24S8;
+    case PIPE_FORMAT_X8Z24_UNORM: return TEXTURE_FORMAT_D24S8;
+    case PIPE_FORMAT_S8_UINT_Z24_UNORM: return TEXTURE_FORMAT_D24S8;
     case PIPE_FORMAT_DXT1_RGB:  return TEXTURE_FORMAT_DXT1;
     case PIPE_FORMAT_DXT1_RGBA: return TEXTURE_FORMAT_DXT1;
     case PIPE_FORMAT_DXT3_RGBA: return TEXTURE_FORMAT_DXT2_DXT3;
@@ -211,10 +211,9 @@ static inline uint32_t translate_texture_format(enum pipe_format fmt)
 /* render target format */
 static inline uint32_t translate_rt_format(enum pipe_format fmt)
 {
-    /* XXX these are all reversed - does it matter? */
-    /* XXX RS: swap rb flag */
     switch(fmt) 
     {
+    /* Note: Pipe format convention is LSB to MSB, VIVS is MSB to LSB */
     case PIPE_FORMAT_B4G4R4X4_UNORM: return RS_FORMAT_X4R4G4B4;
     case PIPE_FORMAT_B4G4R4A4_UNORM: return RS_FORMAT_A4R4G4B4;
     case PIPE_FORMAT_B5G5R5X1_UNORM: return RS_FORMAT_X1R5G5B5;
@@ -231,9 +230,10 @@ static inline uint32_t translate_depth_format(enum pipe_format fmt)
 {
     switch(fmt) 
     {
+    /* Note: Pipe format convention is LSB to MSB, VIVS is MSB to LSB */
     case PIPE_FORMAT_Z16_UNORM: return VIVS_PE_DEPTH_CONFIG_DEPTH_FORMAT_D16;
-    case PIPE_FORMAT_Z24X8_UNORM: return VIVS_PE_DEPTH_CONFIG_DEPTH_FORMAT_D24S8;
-    case PIPE_FORMAT_Z24_UNORM_S8_UINT: return VIVS_PE_DEPTH_CONFIG_DEPTH_FORMAT_D24S8;
+    case PIPE_FORMAT_X8Z24_UNORM: return VIVS_PE_DEPTH_CONFIG_DEPTH_FORMAT_D24S8;
+    case PIPE_FORMAT_S8_UINT_Z24_UNORM: return VIVS_PE_DEPTH_CONFIG_DEPTH_FORMAT_D24S8;
     default: printf("Unhandled depth format: %i\n", fmt); return 0;
     }
 }
@@ -243,13 +243,14 @@ static inline uint32_t translate_msaa_format(enum pipe_format fmt)
 {
     switch(fmt) 
     {
+    /* Note: Pipe format convention is LSB to MSB, VIVS is MSB to LSB */
     case PIPE_FORMAT_B4G4R4X4_UNORM: return VIVS_TS_MEM_CONFIG_MSAA_FORMAT_A4R4G4B4;
     case PIPE_FORMAT_B4G4R4A4_UNORM: return VIVS_TS_MEM_CONFIG_MSAA_FORMAT_A4R4G4B4;
     case PIPE_FORMAT_B5G5R5X1_UNORM: return VIVS_TS_MEM_CONFIG_MSAA_FORMAT_A1R5G5B5;
     case PIPE_FORMAT_B5G5R5A1_UNORM: return VIVS_TS_MEM_CONFIG_MSAA_FORMAT_A1R5G5B5;
     case PIPE_FORMAT_B5G6R5_UNORM:   return VIVS_TS_MEM_CONFIG_MSAA_FORMAT_R5G6B5;
-    case PIPE_FORMAT_X8R8G8B8_UNORM: return VIVS_TS_MEM_CONFIG_MSAA_FORMAT_X8R8G8B8;
-    case PIPE_FORMAT_A8R8G8B8_UNORM: return VIVS_TS_MEM_CONFIG_MSAA_FORMAT_A8R8G8B8;
+    case PIPE_FORMAT_B8G8R8X8_UNORM: return VIVS_TS_MEM_CONFIG_MSAA_FORMAT_X8R8G8B8;
+    case PIPE_FORMAT_B8G8R8A8_UNORM: return VIVS_TS_MEM_CONFIG_MSAA_FORMAT_A8R8G8B8;
     /* MSAA with YUYV not supported */
     default: printf("Unhandled msaa surface format: %i\n", fmt); return 0;
     }
@@ -562,8 +563,8 @@ static inline uint32_t pipe_element_size(enum pipe_format fmt)
     case PIPE_FORMAT_B8G8R8A8_UNORM:
     case PIPE_FORMAT_B8G8R8X8_UNORM:
     case PIPE_FORMAT_R8G8B8X8_UNORM:
-    case PIPE_FORMAT_Z24X8_UNORM:
-    case PIPE_FORMAT_Z24_UNORM_S8_UINT:
+    case PIPE_FORMAT_X8Z24_UNORM:
+    case PIPE_FORMAT_S8_UINT_Z24_UNORM:
         return 4;
     case PIPE_FORMAT_R16G16B16_UNORM:
     case PIPE_FORMAT_R16G16B16_UINT:
@@ -661,8 +662,8 @@ static inline void pipe_element_divsize(enum pipe_format fmt, unsigned *divSizeX
     case PIPE_FORMAT_B8G8R8A8_UNORM:
     case PIPE_FORMAT_B8G8R8X8_UNORM:
     case PIPE_FORMAT_R8G8B8X8_UNORM:
-    case PIPE_FORMAT_Z24X8_UNORM:
-    case PIPE_FORMAT_Z24_UNORM_S8_UINT:
+    case PIPE_FORMAT_X8Z24_UNORM:
+    case PIPE_FORMAT_S8_UINT_Z24_UNORM:
     case PIPE_FORMAT_R16G16B16_UNORM:
     case PIPE_FORMAT_R16G16B16_UINT:
     case PIPE_FORMAT_R16G16B16_SNORM:
@@ -764,7 +765,7 @@ static inline unsigned etna_layout_multiple(unsigned layout)
 
 static inline bool pipe_format_is_depth(enum pipe_format fmt)
 {
-    return (fmt == PIPE_FORMAT_Z16_UNORM) || (fmt == PIPE_FORMAT_Z24X8_UNORM) || (fmt == PIPE_FORMAT_Z24_UNORM_S8_UINT);
+    return (fmt == PIPE_FORMAT_Z16_UNORM) || (fmt == PIPE_FORMAT_X8Z24_UNORM) || (fmt == PIPE_FORMAT_S8_UINT_Z24_UNORM);
 }
 
 /* return 32-bit clear pattern for color */
@@ -817,8 +818,8 @@ static inline uint32_t translate_clear_depth_stencil(enum pipe_format format, fl
         clear_value = etna_cfloat_to_uintN(depth, 16);
         clear_value |= clear_value << 16;
         break;
-    case PIPE_FORMAT_Z24X8_UNORM: 
-    case PIPE_FORMAT_Z24_UNORM_S8_UINT: 
+    case PIPE_FORMAT_X8Z24_UNORM: 
+    case PIPE_FORMAT_S8_UINT_Z24_UNORM: 
         clear_value = (etna_cfloat_to_uintN(depth, 24) << 8) | (stencil & 0xFF);
         break;
     default:

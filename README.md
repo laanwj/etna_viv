@@ -23,7 +23,7 @@ ARM-based:
 - Devices based on Freescale i.MX6 Series (GC2000, GC320, GC355)
 
 MIPS-based:
-- Devices based on Ingenic JZ4770 MIPS SoC (GC860), JZ4760 (GC200, 2D only) such as the GCW zero.
+- Devices based on Ingenic JZ4770 MIPS SoC (GC860), such as the GCW zero, and JZ4760 (GC200, 2D only).
 
 See also [wikipedia](https://en.wikipedia.org/wiki/Vivante_Corporation).
 
@@ -316,24 +316,17 @@ On hardfloat targets you should use `gcc-arm-linux-gnueabihf-` instead.
 
 General
 --------
-Run make in `native/replay` and `native/egl` separately.
+Run make in `native/fb`, `native/replay` and/or `native/egl` separately.
 
 Compatibility
 ================
 
-Wladimir's primary development device is an Android tablet based on Rockchip RK2918 (Arnova 10B G3), containing a GC800 GPU.
-It has pretty ancient Vivante kernel driver 2.2.2.
+Etna_pipe is currently compatible with the following GC chips at least:
 
-I do not currently have a device with a newer chip or driver, so every statement about those devices
-is based on educated guesses.
+- GC600
+- GC800
 
-In case your kernel uses 4.x kernel driver
-- use the state dumper with `gcs_hal_interface_v4.json` instead of `gcs_hal_interface_v2.json`
-- provide the right kernel headers when building the `egl` samples
-- adapt `viv_hook.c` to log state deltas
-
-If you have a different device, or one based on a different operating system than Android (such as bare Linux), 
-some modifications to the build system may be necessary to make it compatible. Let me know if you get it to work.
+GC2000 support is under way.
 
 The command stream on different device GCxxx variants will also likely be slightly different; the features bit system
 allows for a ton of slightly different chips. When porting it, look for:
