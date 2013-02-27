@@ -380,6 +380,7 @@ int main(int argc, char **argv)
        (*particleData++) = ( (float)(rand() % 10000) / 40000.0f ) - 0.125f;
     }
 
+    double prevTime = esNow();
     float time = 1.0f;
     for(int frame=0; frame<1000; ++frame)
     {
@@ -390,8 +391,10 @@ int main(int argc, char **argv)
         pipe->clear(pipe, PIPE_CLEAR_COLOR | PIPE_CLEAR_DEPTHSTENCIL, &(const union pipe_color_union) {
                 .f = {0.2, 0.2, 0.2, 1.0}
                 }, 1.0, 0xff);
-        
-        time += 0.01f; /// XXX base on real delta time
+       
+        double newTime = esNow();
+        time += newTime - prevTime;
+        prevTime = newTime;
         if ( time >= 1.0f )
         {
             float centerPos[3];

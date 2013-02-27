@@ -418,3 +418,16 @@ char* ESUTIL_API esLoadTGA ( char *fileName, int *width, int *height )
     fclose(f);
     return buffer;
 }
+
+double esNow(void)
+{
+   struct timeval tv;
+#ifdef __VMS
+   (void) gettimeofday(&tv, NULL );
+#else
+   struct timezone tz;
+   (void) gettimeofday(&tv, &tz);
+#endif
+   return tv.tv_sec * 1.0 + tv.tv_usec / 1000000.0;
+}
+

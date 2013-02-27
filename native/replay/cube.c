@@ -21,7 +21,6 @@
 float vVertices[] = {
   // front
   -1.0f, -1.0f, +1.0f, // point blue
-  //-0.5f, -0.6f, +0.5f, // point blue
   +1.0f, -1.0f, +1.0f, // point magenta
   -1.0f, +1.0f, +1.0f, // point cyan
   +1.0f, +1.0f, +1.0f, // point white

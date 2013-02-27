@@ -42,3 +42,6 @@ particle_system: particle_system.o ../lib/write_bmp.o ../lib/esUtil.o ../lib/esT
 displacement: displacement.o ../lib/write_bmp.o ../lib/esUtil.o ../lib/esTransform.o ../lib/esShapes.o $(ETNA_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 
+etna_gears: etna_gears.o ../lib/write_bmp.o ../lib/esUtil.o ../lib/esTransform.o ../lib/esShapes.o $(ETNA_OBJS)
+	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
+

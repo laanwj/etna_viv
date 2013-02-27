@@ -153,6 +153,9 @@ void ESUTIL_API esLogMessage ( const char *formatStr, ... );
 
 char* ESUTIL_API esLoadTGA ( char *fileName, int *width, int *height );
 
+/* return current time (in seconds) */
+double ESUTIL_API esNow(void);
+
 #ifdef __cplusplus
 }
 #endif
