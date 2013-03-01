@@ -76,6 +76,23 @@
         }]
     },
     {
+        "platform": "Ingenic JZ4770 MIPS",
+        "chips": [{
+            "type": "GC860",
+            "chipModel": "0x860",
+            "chipRevision": "0x4621",
+            "chipFeatures": "0xe0286ecd",
+            "chipMinorFeatures": "0xcbf99fff",
+            "chipMinorFeatures1": "0x0003b219",
+            "streamCount": "1",
+            "registerMax": "64",
+            "threadCount": "256",
+            "shaderCoreCount": "1",
+            "vertexCacheSize": "8",
+            "vertexOutputBufferSize": "512"
+        }]
+    },
+    {
         "platform": "Marvell 88SV331x",
         "chips": [{
             "type": "GC530",
@@ -153,5 +170,4 @@
         }]
     }
 ]
-
 
