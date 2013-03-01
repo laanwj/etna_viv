@@ -111,7 +111,7 @@ static struct gear *gear1, *gear2, *gear3;
 /** The current gear rotation angle */
 static GLfloat angle = 0.0;
 /** The projection matrix */
-static GLfloat ProjectionMatrix[16];
+static ESMatrix ProjectionMatrix;
 /** The direction of the directional light for the scene */
 static const GLfloat LightSourcePosition[4] = { 5.0, 5.0, 10.0, 1.0};
 
@@ -318,172 +318,6 @@ create_gear(struct pipe_context *pipe, GLfloat inner_radius, GLfloat outer_radiu
    return gear;
 }
 
-/** 
- * Multiplies two 4x4 matrices.
- * 
- * The result is stored in matrix m.
- * 
- * @param m the first matrix to multiply
- * @param n the second matrix to multiply
- */
-static void
-multiply(GLfloat *m, const GLfloat *n)
-{
-   GLfloat tmp[16];
-   const GLfloat *row, *column;
-   div_t d;
-   int i, j;
-
-   for (i = 0; i < 16; i++) {
-      tmp[i] = 0;
-      d = div(i, 4);
-      row = n + d.quot * 4;
-      column = m + d.rem;
-      for (j = 0; j < 4; j++)
-         tmp[i] += row[j] * column[j * 4];
-   }
-   memcpy(m, &tmp, sizeof tmp);
-}
-
-/** 
- * Rotates a 4x4 matrix.
- * 
- * @param[in,out] m the matrix to rotate
- * @param angle the angle to rotate
- * @param x the x component of the direction to rotate to
- * @param y the y component of the direction to rotate to
- * @param z the z component of the direction to rotate to
- */
-static void
-rotate(GLfloat *m, GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
-{
-   double s, c;
-
-   sincos(angle, &s, &c);
-   GLfloat r[16] = {
-      x * x * (1 - c) + c,     y * x * (1 - c) + z * s, x * z * (1 - c) - y * s, 0,
-      x * y * (1 - c) - z * s, y * y * (1 - c) + c,     y * z * (1 - c) + x * s, 0, 
-      x * z * (1 - c) + y * s, y * z * (1 - c) - x * s, z * z * (1 - c) + c,     0,
-      0, 0, 0, 1
-   };
-
-   multiply(m, r);
-}
-
-
-/** 
- * Translates a 4x4 matrix.
- * 
- * @param[in,out] m the matrix to translate
- * @param x the x component of the direction to translate to
- * @param y the y component of the direction to translate to
- * @param z the z component of the direction to translate to
- */
-static void
-translate(GLfloat *m, GLfloat x, GLfloat y, GLfloat z)
-{
-   GLfloat t[16] = { 1, 0, 0, 0,  0, 1, 0, 0,  0, 0, 1, 0,  x, y, z, 1 };
-
-   multiply(m, t);
-}
-
-/** 
- * Creates an identity 4x4 matrix.
- * 
- * @param m the matrix make an identity matrix
- */
-static void
-identity(GLfloat *m)
-{
-   GLfloat t[16] = {
-      1.0, 0.0, 0.0, 0.0,
-      0.0, 1.0, 0.0, 0.0,
-      0.0, 0.0, 1.0, 0.0,
-      0.0, 0.0, 0.0, 1.0,
-   };
-
-   memcpy(m, t, sizeof(t));
-}
-
-/** 
- * Transposes a 4x4 matrix.
- *
- * @param m the matrix to transpose
- */
-static void 
-transpose(GLfloat *m)
-{
-   GLfloat t[16] = {
-      m[0], m[4], m[8],  m[12],
-      m[1], m[5], m[9],  m[13],
-      m[2], m[6], m[10], m[14],
-      m[3], m[7], m[11], m[15]};
-
-   memcpy(m, t, sizeof(t));
-}
-
-/**
- * Inverts a 4x4 matrix.
- *
- * This function can currently handle only pure translation-rotation matrices.
- * Read http://www.gamedev.net/community/forums/topic.asp?topic_id=425118
- * for an explanation.
- */
-static void
-invert(GLfloat *m)
-{
-   GLfloat t[16];
-   identity(t);
-
-   // Extract and invert the translation part 't'. The inverse of a
-   // translation matrix can be calculated by negating the translation
-   // coordinates.
-   t[12] = -m[12]; t[13] = -m[13]; t[14] = -m[14];
-
-   // Invert the rotation part 'r'. The inverse of a rotation matrix is
-   // equal to its transpose.
-   m[12] = m[13] = m[14] = 0;
-   transpose(m);
-
-   // inv(m) = inv(r) * inv(t)
-   multiply(m, t);
-}
-
-/** 
- * Calculate a perspective projection transformation.
- * 
- * @param m the matrix to save the transformation in
- * @param fovy the field of view in the y direction
- * @param aspect the view aspect ratio
- * @param zNear the near clipping plane
- * @param zFar the far clipping plane
- */
-void perspective(GLfloat *m, GLfloat fovy, GLfloat aspect, GLfloat zNear, GLfloat zFar)
-{
-   GLfloat tmp[16];
-   identity(tmp);
-
-   double sine, cosine, cotangent, deltaZ;
-   GLfloat radians = fovy / 2 * M_PI / 180;
-
-   deltaZ = zFar - zNear;
-   sincos(radians, &sine, &cosine);
-
-   if ((deltaZ == 0) || (sine == 0) || (aspect == 0))
-      return;
-
-   cotangent = cosine / sine;
-
-   tmp[0] = cotangent / aspect;
-   tmp[5] = cotangent;
-   tmp[10] = -(zFar + zNear) / deltaZ;
-   tmp[11] = -1;
-   tmp[14] = -2 * zNear * zFar / deltaZ;
-   tmp[15] = 0;
-
-   memcpy(m, tmp, sizeof(tmp));
-}
-
 /**
  * Draws a gear.
  *
@@ -495,32 +329,31 @@ void perspective(GLfloat *m, GLfloat fovy, GLfloat aspect, GLfloat zNear, GLfloa
  * @param color the color of the gear
  */
 static void
-draw_gear(struct pipe_context *pipe, struct gear *gear, void *shader_state, GLfloat *transform,
+draw_gear(struct pipe_context *pipe, struct gear *gear, void *shader_state, ESMatrix *transform,
       GLfloat x, GLfloat y, GLfloat angle, const GLfloat color[4])
 {
-    GLfloat model_view[16];
-    GLfloat normal_matrix[16];
-    GLfloat model_view_projection[16];
+    ESMatrix model_view;
+    ESMatrix normal_matrix;
+    ESMatrix model_view_projection;
 
     /* Translate and rotate the gear */
-    memcpy(model_view, transform, sizeof (model_view));
-    translate(model_view, x, y, 0);
-    rotate(model_view, 2 * M_PI * angle / 360.0, 0, 0, 1);
-
+    model_view = *transform;
+    esTranslate(&model_view, x, y, 0);
+    esRotate(&model_view, angle, 0, 0, 1);
+    
     /* Create and set the ModelViewProjectionMatrix */
-    memcpy(model_view_projection, ProjectionMatrix, sizeof(model_view_projection));
-    multiply(model_view_projection, model_view);
+    esMatrixMultiply(&model_view_projection, &model_view, &ProjectionMatrix);
 
-    pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 6*4, 16, (uint32_t*)model_view_projection);
+    pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 6*4, 16, (uint32_t*)&model_view_projection.m[0][0]);
 
     /* 
      * Create and set the NormalMatrix. It's the inverse transpose of the
      * ModelView matrix.
      */
-    memcpy(normal_matrix, model_view, sizeof (normal_matrix));
-    invert(normal_matrix);
-    transpose(normal_matrix);
-    pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 0*4, 16, (uint32_t*)normal_matrix);
+    ESMatrix inverse_model_view;
+    esMatrixInverse3x3(&inverse_model_view, &model_view);
+    esMatrixTranspose(&normal_matrix, &inverse_model_view);
+    pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 0*4, 16, (uint32_t*)&normal_matrix.m[0][0]);
 
     /* Set the gear color */
     pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 5*4, 4, (uint32_t*)color);
@@ -552,23 +385,23 @@ gears_draw(struct pipe_context *pipe, void *shader_state)
     const static GLfloat red[4] = { 0.8, 0.1, 0.0, 1.0 };
     const static GLfloat green[4] = { 0.0, 0.8, 0.2, 1.0 };
     const static GLfloat blue[4] = { 0.2, 0.2, 1.0, 1.0 };
-    GLfloat transform[16];
-    identity(transform);
+    ESMatrix transform;
+    esMatrixLoadIdentity(&transform);
 
     pipe->clear(pipe, PIPE_CLEAR_COLOR | PIPE_CLEAR_DEPTHSTENCIL, &(const union pipe_color_union) {
             .f = {0.2, 0.2, 0.2, 1.0}
             }, 1.0, 0xff);
 
     /* Translate and rotate the view */
-    translate(transform, 0, 0, -15);
-    rotate(transform, 2 * M_PI * view_rot[0] / 360.0, 1, 0, 0);
-    rotate(transform, 2 * M_PI * view_rot[1] / 360.0, 0, 1, 0);
-    rotate(transform, 2 * M_PI * view_rot[2] / 360.0, 0, 0, 1);
+    esTranslate(&transform, 0, 0, -15);
+    esRotate(&transform, view_rot[0], 1, 0, 0);
+    esRotate(&transform, view_rot[1], 0, 1, 0);
+    esRotate(&transform, view_rot[2], 0, 0, 1);
 
     /* Draw the gears */
-    draw_gear(pipe, gear1, shader_state, transform, -3.0, -2.0, angle, red);
-    draw_gear(pipe, gear2, shader_state, transform, 3.1, -2.0, -2 * angle - 9.0, green);
-    draw_gear(pipe, gear3, shader_state, transform, -3.1, 4.2, -2 * angle - 25.0, blue);
+    draw_gear(pipe, gear1, shader_state, &transform, -3.0, -2.0, angle, red);
+    draw_gear(pipe, gear2, shader_state, &transform, 3.1, -2.0, -2 * angle - 9.0, green);
+    draw_gear(pipe, gear3, shader_state, &transform, -3.1, 4.2, -2 * angle - 25.0, blue);
 }
 
 /** 
@@ -581,7 +414,8 @@ static void
 gears_reshape(struct pipe_context *pipe, int width, int height)
 {
     /* Update the projection matrix */
-    perspective(ProjectionMatrix, 60.0, width / (float)height, 1.0, 1024.0);
+    esMatrixLoadIdentity(&ProjectionMatrix);
+    esPerspective(&ProjectionMatrix, 60.0, width / (float)height, 1.0, 1024.0);
     
     /* Set the viewport */
     pipe->set_viewport_state(pipe, &(struct pipe_viewport_state){
@@ -621,44 +455,6 @@ gears_idle(etna_bswap_buffers *buffers)
         frames = 0;
     }
 }
-#if 0
-static const char vertex_shader[] =
-"attribute vec3 position;\n"
-"attribute vec3 normal;\n"
-"\n"
-"uniform mat4 ModelViewProjectionMatrix;\n"
-"uniform mat4 NormalMatrix;\n"
-"uniform vec4 LightSourcePosition;\n"
-"uniform vec4 MaterialColor;\n"
-"\n"
-"varying vec4 Color;\n"
-"\n"
-"void main(void)\n"
-"{\n"
-"    // Transform the normal to eye coordinates\n"
-"    vec3 N = normalize(vec3(NormalMatrix * vec4(normal, 1.0)));\n"
-"\n"
-"    // The LightSourcePosition is actually its direction for directional light\n"
-"    vec3 L = normalize(LightSourcePosition.xyz);\n"
-"\n"
-"    // Multiply the diffuse value by the vertex color (which is fixed in this case)\n"
-"    // to get the actual color that we will use to draw this vertex with\n"
-"    float diffuse = max(dot(N, L), 0.0);\n"
-"    Color = diffuse * MaterialColor;\n"
-"\n"
-"    // Transform the position to clip coordinates\n"
-"    gl_Position = ModelViewProjectionMatrix * vec4(position, 1.0);\n"
-"}";
-
-static const char fragment_shader[] =
-"precision mediump float;\n"
-"varying vec4 Color;\n"
-"\n"
-"void main(void)\n"
-"{\n"
-"    gl_FragColor = Color;\n"
-"}";
-#endif
 
 /* etna_gears_vs.asm */
 uint32_t vs[] = {
