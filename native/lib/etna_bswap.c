@@ -94,8 +94,11 @@ int etna_bswap_create(etna_ctx *ctx, etna_bswap_buffers **bufs_out,
     bufs->set_buffer = set_buffer;
     bufs->copy_buffer = copy_buffer;
     bufs->userptr = userptr;
-    bufs->backbuffer = bufs->frontbuffer = 0;
+    bufs->frontbuffer = 0;
+    bufs->backbuffer = 1;
     bufs->terminate = false;
+    bufs->set_buffer(bufs->userptr, bufs->frontbuffer);
+
     for(int idx=0; idx<ETNA_BSWAP_NUM_BUFFERS; ++idx)
         etna_bswap_init_buffer(&bufs->buf[idx]);
     pthread_create(&bufs->thread, NULL, (void * (*)(void *))&etna_bswap_thread, bufs);
@@ -160,7 +163,6 @@ int etna_swap_buffers(etna_bswap_buffers *bufs)
     /*  this flush is really needed, otherwise some quads will have pieces undrawn */
     etna_set_state(bufs->ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
 
-    /*  assumes TS is still set up correctly */
     bufs->copy_buffer(bufs->userptr, bufs->ctx, bufs->backbuffer);
 
     etna_bswap_queue_swap(bufs);
