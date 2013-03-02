@@ -74,7 +74,6 @@ static mapping_t mappings[MAX_MAPPINGS];
 int my_open(const char* path, int flags, ...)
 {
     int ret=0;
-
     if (flags & O_CREAT) 
     {
         int mode=0;
@@ -264,11 +263,13 @@ void log_interface_out(flightrec_event_t evctx, gcsHAL_INTERFACE *id)
 
 int my_ioctl(int d, int request, vivante_ioctl_data_t *ptr)
 {
+#if 0 /* UGH, this handle gets passed in instead of opened for i.mx6 blobster */
     if(d != _galcore_handle)
     {
-        printf("unhandled ioctl\n");
+        printf("unhandled ioctl %08x on fd %i\n", request, d);
         return -1;
     }
+#endif
     int ret=0;
     if(request == IOCTL_GCHAL_INTERFACE)
     {
@@ -281,6 +282,9 @@ int my_ioctl(int d, int request, vivante_ioctl_data_t *ptr)
         fdr_event_add_oneshot_range(evctx, ptr->in_buf, ptr->in_buf_size);
         log_interface_in(evctx, ptr->in_buf);
         fdr_log_event(_fdr, evctx);
+    } else {
+        printf("unhandled ioctl %08x on fd %i\n", request, d);
+        return -1;
     }
     ret = ioctl(d, request, ptr);
     if(request == IOCTL_GCHAL_INTERFACE)

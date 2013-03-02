@@ -268,8 +268,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00A0C" name="VIEWPORT_OFFSET_X" value="0x00000000" type="float"/>
         <reg32 offset="0x00A10" name="VIEWPORT_OFFSET_Y" value="0x00000000" type="float"/>
         <reg32 offset="0x00A14" name="VIEWPORT_OFFSET_Z" value="0x00000000" type="float"/>
-        <reg32 offset="0x00A18" name="LINE_WIDTH" value="0x00000000"/>
-        <reg32 offset="0x00A1C" name="POINT_SIZE" value="0x00000000"/>
+        <reg32 offset="0x00A18" name="LINE_WIDTH" value="0x00000000" type="float"/>
+        <reg32 offset="0x00A1C" name="POINT_SIZE" value="0x00000000" type="float"/>
         <reg32 offset="0x00A28" name="SYSTEM_MODE" value="0x00000000"> <!-- D3D/OpenGL switch -->
             <doc>0x11 for OpenGL, 0x00 for D3D9</doc>
             <bitfield pos="0" name="UNK0"/>
@@ -309,8 +309,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="22" name="UNK22"/>
             <bitfield pos="23" name="UNK22_MASK"/>
         </reg32>
-        <reg32 offset="0x00A38" name="LINE_UNK00A38" value="0x00000000"/>
-        <reg32 offset="0x00A3C" name="LINE_UNK00A3C" value="0x00000000"/>
+        <reg32 offset="0x00A38" name="LINE_UNK00A38" value="0x00000000" type="float"/>
+        <reg32 offset="0x00A3C" name="LINE_UNK00A3C" value="0x00000000" type="float"/>
         <reg32 offset="0x00A40" name="SHADER_ATTRIBUTES" value="0x00000000" length="10" stride="4">
             <doc>Flags word per shader attribute. I suspect that these determine the type of interpolation
                 (color, perspective, linear, ...).</doc>
@@ -701,6 +701,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x01674" name="DEPTH_AUTO_DISABLE_COUNT" brief="Auto disable color counter" value="0x00000000"/>
         <reg32 offset="0x016A4" name="HDEPTH_BASE" value="0x00000000" type="VIVM"/>
         <reg32 offset="0x016A8" name="HDEPTH_CLEAR_VALUE" brief="Hierarchical depth clear value" value="0x00000000"/>
+        <reg32 offset="0x016AC" name="HDEPTH_UNK016AC"/>
         <stripe name="SAMPLER" length="8" stride="4"> <!-- Tile status for samplers -->
             <reg32 offset="0x01720" name="CONFIG" value="0x00000000">
                 <bitfield high="1" low="0" name="ENABLE"/>

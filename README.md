@@ -171,7 +171,7 @@ Other tools live in:
 
 The most useful ones are:
 
-- `show_egl2_log.sh` (uses `dump_cmdstream.py`)
+- `show_egl2_log.sh` (uses `dump_cmdstream.py`, you may have to adapt this script to use another structure definition json depending on your kernel interface)
 
 Decodes and dumps the intercepted command stream in human readable format, making use of rnndb state maps.
 

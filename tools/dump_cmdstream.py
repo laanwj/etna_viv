@@ -30,10 +30,11 @@ from collections import defaultdict
 
 from binascii import b2a_hex
 
+from etnaviv.util import rnndb_path
 # Parse execution data log files
 from etnaviv.parse_fdr import ENDIAN, WORD_SPEC, ADDR_SPEC, ADDR_CHAR, WORD_CHAR, FDRLoader, Event
 # Extract C structures from memory
-from etnaviv.extract_structure import extract_structure, ResolverBase
+from etnaviv.extract_structure import extract_structure, ResolverBase, UNRESOLVED
 # Print C structures
 from etnaviv.dump_structure import dump_structure, print_address
 # Parse rules-ng-ng format for state space
@@ -73,6 +74,8 @@ class HalResolver(ResolverBase):
     def filter_fields(self, s, fields_in):
         name = s.type['name']
         if name == '_u':
+            if s.parent.members['command'] is UNRESOLVED:
+                return {}
             enum = s.parent.members['command'].name
             if ((self.dir == 'in' and enum in CMDS_NO_INPUT) or
                 (self.dir == 'out' and enum in CMDS_NO_OUTPUT)):
@@ -333,8 +336,9 @@ def parse_arguments():
             help='FDR file')
     parser.add_argument('struct_file', metavar='STRUCTFILE', type=str, 
             help='Structures definition file')
-    parser.add_argument('rules_file', metavar='RULESFILE', type=str, 
-            help='State map definition file (rules-ng-ng)')
+    parser.add_argument('--rules-file', metavar='RULESFILE', type=str, 
+            help='State map definition file (rules-ng-ng)',
+            default=rnndb_path('state.xml'))
     parser.add_argument('-l', '--hide-load-state', dest='hide_load_state',
             default=False, action='store_const', const=True,
             help='Hide "LOAD_STATE" entries, this can make command stream a bit easier to read')
