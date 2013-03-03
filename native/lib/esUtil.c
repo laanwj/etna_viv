@@ -289,16 +289,15 @@ GLboolean ESUTIL_API esCreateWindow ( ESContext *esContext, const char* title, G
 void ESUTIL_API esMainLoop ( ESContext *esContext )
 {
     struct timeval t1, t2;
-    struct timezone tz;
     float deltatime;
     float totaltime = 0.0f;
     unsigned int frames = 0;
 
-    gettimeofday ( &t1 , &tz );
+    gettimeofday (&t1 , NULL);
 
     while(userInterrupt(esContext) == GL_FALSE && !esContext->terminate)
     {
-        gettimeofday(&t2, &tz);
+        gettimeofday(&t2, NULL);
         deltatime = (float)(t2.tv_sec - t1.tv_sec + (t2.tv_usec - t1.tv_usec) * 1e-6);
         t1 = t2;
 
@@ -425,8 +424,7 @@ double esNow(void)
 #ifdef __VMS
    (void) gettimeofday(&tv, NULL );
 #else
-   struct timezone tz;
-   (void) gettimeofday(&tv, &tz);
+   (void) gettimeofday(&tv, NULL);
 #endif
    return tv.tv_sec * 1.0 + tv.tv_usec / 1000000.0;
 }
