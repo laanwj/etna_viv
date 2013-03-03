@@ -144,11 +144,11 @@ COMPS = 'xyzw'
 def format_state(pos, value, fixp, state_map):
     try:
         path = state_map.lookup_address(pos)
-        path_str = format_path(path) #+ ('(0x%05X)' % pos)
+        path_str = format_path(path)
     except KeyError:
         path = None
-        path_str = '0x%05X' % pos
-    desc = '  ' + path_str 
+        path_str = ''
+    desc = ('  [%05X]' % pos) + ' ' + path_str 
     if fixp:
         desc += ' = %f' % fixp_as_float(value)
     else:
@@ -297,6 +297,8 @@ def dump_command_buffer(f, mem, addr, end_addr, depth, state_map):
         # 0x04000 and 0x06000 contain shader instructions
         dump_shader(f, 'vs', state_by_pos, 0x04000, 0x05000)
         dump_shader(f, 'ps', state_by_pos, 0x06000, 0x07000)
+        dump_shader(f, 'vs', state_by_pos, 0x0C000, 0x0D000) # gc2000
+        dump_shader(f, 'ps', state_by_pos, 0x0D000, 0x0E000) # XXX this offset is probably variable (gc2000)
 
 def dump_context_map(f, mem, addr, end_addr, depth, state_map):
     '''

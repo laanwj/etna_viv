@@ -234,6 +234,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00850" name="UNK00850" value="0x000003e8"/>
         <reg32 offset="0x00854" name="UNK00854" value="0x00000100"/>
         <reg32 offset="0x00858" name="UNK00858" value="0x00001005"/>
+        <reg32 offset="0x0085C" name="RANGE" value="0x00000000"> <!-- instructionCount > 1024 -->
+            <bitfield high="15" low="0" name="LOW" brief="Index of first VS instruction?"/>
+            <bitfield high="31" low="16" name="HIGH" brief="Index of last VS instruction"/>
+        </reg32>
+        <reg32 offset="0x00860" name="NEW_UNK00860" value="0x00000000"/> <!-- instructionCount > 1024 -->
         <reg32 offset="0x04000" name="INST_MEM" value="0x00000000" length="1024" stride="4"> <!-- instructionCount <= 256 -->
             <!-- length="instructionCount * 4" -->
         </reg32>
@@ -317,8 +322,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="7" low="0" name="UNK0"/>
             <bitfield high="15" low="8" name="UNK8"/>
         </reg32>
-        <reg32 offset="0x00A80" name="VIEWPORT_UNK00A80" value="0x00000000"/>
-        <reg32 offset="0x00A84" name="VIEWPORT_UNK00A84" value="0x00000000"/>
+        <reg32 offset="0x00A80" name="VIEWPORT_UNK00A80" value="0x00000000" type="float"/>
+        <reg32 offset="0x00A84" name="VIEWPORT_UNK00A84" value="0x00000000" type="float"/>
+        <reg32 offset="0x00A8C" name="VIEWPORT_UNK00A8C" value="0x00000000" type="float"/>
     </stripe>
    
     <stripe name="SE" brief="Setup Engine states">
@@ -368,6 +374,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x01014" name="PERF_COUNTER" brief="Performance counter control"/>
         <reg32 offset="0x01018" name="START_PC" value="0x01000000"/>
+        <reg32 offset="0x0101C" name="RANGE" value="0x00000100"> <!-- instructionCount > 1024 -->
+            <bitfield high="15" low="0" name="LOW" brief="Index of first PS instruction?"/>
+            <bitfield high="31" low="16" name="HIGH" brief="Index of last PS instruction?"/>
+        </reg32>
         <reg32 offset="0x06000" name="INST_MEM" value="0x00000000" length="1024" stride="4"> <!-- instructionCount <= 256 -->
             <!-- length="instructionCount * 4" -->
         </reg32>
@@ -503,10 +513,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x01458" name="HDEPTH_ADDR" value="0x00000000" type="VIVM"/>
         <reg32 offset="0x0145C" name="UNK0145C" value="0x00000010"/>
-        <stripe name="UNK01460" length="8" stride="4"> <!-- pixelPipes != 1 -->
+        <stripe name="PIPE" length="8" stride="4"> <!-- pixelPipes != 1 -->
             <!-- length="pixelPipes" -->
-            <reg32 offset="0x1460" name="ADDR_UNK01460" value="0x00000000" type="VIVM"/>
-            <reg32 offset="0x1480" name="ADDR_UNK01480" value="0x00000000" type="VIVM"/>
+            <reg32 offset="0x1460" name="COLOR_ADDR" value="0x00000000" type="VIVM"/>
+            <reg32 offset="0x1480" name="DEPTH_ADDR" value="0x00000000" type="VIVM"/>
             <reg32 offset="0x1500" name="ADDR_UNK01500" value="0x00000000" type="VIVM"/>
             <reg32 offset="0x1520" name="ADDR_UNK01520" value="0x00000000" type="VIVM"/>
         </stripe>
@@ -604,11 +614,13 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x01608" name="SOURCE_ADDR" value="0x00000000" type="VIVM"/>
         <reg32 offset="0x0160C" name="SOURCE_STRIDE" value="0x00000000">
             <bitfield high="17" low="0" name="STRIDE" brief="Source stride"/>
+            <bitfield pos="30" name="MULTI" brief="Source is multi pipe"/> <!-- pixelPipes > 1 -->
             <bitfield pos="31" name="TILING" brief="Source is tiled"/>
         </reg32>
         <reg32 offset="0x01610" name="DEST_ADDR" value="0x00000000" type="VIVM"/>
         <reg32 offset="0x01614" name="DEST_STRIDE" value="0x00000000">
             <bitfield high="17" low="0" name="STRIDE" brief="Destination stride"/>
+            <bitfield pos="30" name="MULTI" brief="Destination is multi pipe"/> <!-- pixelPipes > 1 -->
             <bitfield pos="31" name="TILING" brief="Destination is tiled"/>
         </reg32>
         <reg32 offset="0x01620" name="WINDOW_SIZE" value="0x00000000" brief="Size of area to resolve">
@@ -653,11 +665,14 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="9" low="8" name="ENDIAN" type="ENDIAN_MODE"/>
         </reg32>
         <reg32 offset="0x016B4" name="UNK016B4" value="0x00000000"/>
-        <stripe name="UNK016C0" length="8" stride="4"> <!-- pixelPipes > 1 -->
+        <stripe name="PIPE" length="8" stride="4"> <!-- pixelPipes > 1 -->
             <!-- length="pixelPipes" -->
-            <reg32 offset="0x016C0" name="UNK016C0" value="0x00000000" type="VIVM"/>
-            <reg32 offset="0x016E0" name="UNK016E0" value="0x00000000" type="VIVM"/>
-            <reg32 offset="0x01700" name="UNK01700" value="0x00000000"/>
+            <reg32 offset="0x016C0" name="SOURCE_ADDR" value="0x00000000" type="VIVM"/>
+            <reg32 offset="0x016E0" name="DEST_ADDR" value="0x00000000" type="VIVM"/>
+            <reg32 offset="0x01700" name="OFFSET" value="0x00000000">
+                <bitfield high="15" low="0" name="X" type="int"/> <!-- guess -->
+                <bitfield high="31" low="16" name="Y" type="int"/> <!-- guess -->
+            </reg32>
         </stripe>
     </stripe>
     
@@ -690,6 +705,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <value value="3" name="A8R8G8B8"/>
                 <value value="4" name="X8R8G8B8"/>
             </bitfield>
+            <bitfield high="13" low="12" name="HDEPTH"/> <!-- likely has to do with hdepth -->
         </reg32>
         <reg32 offset="0x01658" name="COLOR_STATUS_BASE" brief="Color tile status base address" value="0x00000000" type="VIVM"/>
         <reg32 offset="0x0165C" name="COLOR_SURFACE_BASE" brief="Color surface base address" value="0x00000000" type="VIVM"/>
@@ -699,9 +715,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x0166C" name="DEPTH_CLEAR_VALUE" brief="Depth clear value" value="0x00000000"/>
         <reg32 offset="0x01670" name="COLOR_AUTO_DISABLE_COUNT" brief="Auto disable depth counter" value="0x00000000"/>
         <reg32 offset="0x01674" name="DEPTH_AUTO_DISABLE_COUNT" brief="Auto disable color counter" value="0x00000000"/>
-        <reg32 offset="0x016A4" name="HDEPTH_BASE" value="0x00000000" type="VIVM"/>
+        <reg32 offset="0x016A4" name="HDEPTH_STATUS_BASE" value="0x00000000" type="VIVM">
+            <doc>Hierarchical Z allocates multiple depth buffers for one surface, which have their own TS.</doc>
+        </reg32>
         <reg32 offset="0x016A8" name="HDEPTH_CLEAR_VALUE" brief="Hierarchical depth clear value" value="0x00000000"/>
-        <reg32 offset="0x016AC" name="HDEPTH_UNK016AC"/>
+        <reg32 offset="0x016AC" name="HDEPTH_SIZE" brief="Size of hierarchical depth buffer divided by 16"/>
         <stripe name="SAMPLER" length="8" stride="4"> <!-- Tile status for samplers -->
             <reg32 offset="0x01720" name="CONFIG" value="0x00000000">
                 <bitfield high="1" low="0" name="ENABLE"/>
@@ -816,9 +834,6 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <stripe name="SH" brief="Unified shader instruction memory">
         <doc>Shader instruction memory on new hardware that supports more than 256, or more than
             1024 shader instructions (different areas are used based on these cases).</doc>
-        <reg32 offset="0x0085C" name="UNK0085C" value="0x00000000"/> <!-- instructionCount > 1024 -->
-        <reg32 offset="0x00860" name="UNK00860" value="0x00000000"/> <!-- instructionCount > 1024 -->
-        <reg32 offset="0x0101C" name="UNK0101C" value="0x00000100"/> <!-- instructionCount > 1024 -->
         <reg32 offset="0x20000" name="UNK20000" value="0x00000000" length="8192" stride="4"> <!-- instructionCount > 1024 -->
             <!-- length="instructionCount * 4" -->
         </reg32>

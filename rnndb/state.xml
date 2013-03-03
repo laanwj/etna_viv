@@ -117,8 +117,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <value value="2" name="UNSIGNED_INT" brief="32-bit indices"/>
             </bitfield>
         </reg32>
-        <reg32 offset="0x0064C" name="VERTEX_STREAM_BASE_ADDR" value="0x00000000" type="VIVM"/> <!-- vertex stream 0 -->
-        <reg32 offset="0x00650" name="VERTEX_STREAM_CONTROL" value="0x00000000"> <!-- vertex stream 0 -->
+        <reg32 offset="0x0064C" name="VERTEX_STREAM_BASE_ADDR" value="0x00000000" type="VIVM"/> <!-- streamCount == 1 -->
+        <reg32 offset="0x00650" name="VERTEX_STREAM_CONTROL" value="0x00000000"> <!-- streamCount == 1 -->
             <bitfield high="7" low="0" name="VERTEX_STRIDE"/>
         </reg32>
         <reg32 offset="0x00654" name="COMMAND_ADDRESS" brief="Base address for the command buffer">
@@ -143,7 +143,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00670" name="AUTO_FLUSH" value="0x00000000" brief="Auto flush cycles"/>
         <reg32 offset="0x00678" name="UNK00678" value="0x00000000"/>
         <reg32 offset="0x0067C" name="UNK0067C" value="0xFFFFFFFF"/>
-        <stripe name="VERTEX_STREAMS" length="8" stride="4"> <!-- vertex stream 1..N -->
+        <stripe name="VERTEX_STREAMS" length="8" stride="4"> <!-- streamCount > 1 -->
             <reg32 offset="0x00680" name="BASE_ADDR" value="0x00000000" type="VIVM"/>
             <reg32 offset="0x006A0" name="CONTROL" value="0x00000000"/>
         </stripe>

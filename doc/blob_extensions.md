@@ -1,4 +1,3 @@
-
 EGL/GLES2 extension list from blob drivers
 ===========================================
 
