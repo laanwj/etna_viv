@@ -20,19 +20,19 @@ ARM-based:
 - OLPC (also Marvell Armada something with GC1000)
 - CuBox, including pro variant (Marvell Armada 510, GC600)
 - Many older tablets and such based on Rockchip 2918 SoC (GC800)
-- Devices based on Freescale i.MX6 Series (GC2000, GC320, GC355)
+- Devices based on Freescale i.MX6 Series (GC2000 + GC320 + GC355)
 
 MIPS-based:
 - Devices based on Ingenic JZ4770 MIPS SoC (GC860), such as the GCW zero, and JZ4760 (GC200, 2D only).
 
 See also [wikipedia](https://en.wikipedia.org/wiki/Vivante_Corporation).
 
-For the Vivante GPUs on some platforms the detailed features and specs are known, these can be found in `doc/gpus_comparison.html`.
+For the Vivante GPUs on many platforms the detailed features and specs are known, these can be found in `doc/gpus_comparison.html`.
 
 Contents
 ==========
 
-The repository contains different tools and documentation related to figuring out how to 
+The repository contains various tools and documentation related to figuring out how to 
 program Vivante GCxxx GPU chips.
 
 Framebuffer tests
@@ -44,15 +44,15 @@ Framebuffer tests
 ![mip_cube output](https://raw.github.com/laanwj/etna_viv/master/doc/images/mipmap.png)
 ![displacement output](https://raw.github.com/laanwj/etna_viv/master/doc/images/displacement.png)
 
-To execise the initial-stage driver there are a few framebuffer tests in:
+To exercise the initial-stage driver there are a few framebuffer tests in:
 
     native/fb/
 
-These do double-buffered animated rendering of 1000 frames to the framebuffer using 
-the proof-of-concept `etna` command stream building API. The goal of this API is to provide an low-level interface
-to the Vivante hardware while abstracting away kernel interface details.
+These demos do double-buffered animated rendering of 1000 frames to the framebuffer using 
+the proof-of-concept `etna` rendering and command stream building API. The goal of this API is to provide a Gallium-like 
+low-level interface to the Vivante hardware while abstracting away kernel interface details.
 
-- `companion_cube`: Animated rotating "weighted companion cube", using array or indexed rendering. Exercised in this demo:
+- `companion_cube`: Rotating "weighted companion cube", using array or indexed rendering. Exercised in this demo:
   - Array and indexed rendering of arbitrary mesh
   - Video memory allocation
   - Setting up render state
@@ -61,10 +61,6 @@ to the Vivante hardware while abstracting away kernel interface details.
   - Texturing
   - Double-buffered rendering to framebuffer
   - MSAA (off / 2X / 4X)
-
-- `etna_test`: Full screen pixel shader with frame number passed in as uniform. Can be used as a visual shader sandbox.
-
-- `rotate_cube`: Rotating smoothed color cube
 
 - `mip_cube_state`: Rotating cube with a mipmapped texture loaded from a `dds` file provided on the command line. One 
   of the example textures have a different color and number on each mipmap level, to explicitly show interpolation 
@@ -76,7 +72,7 @@ to the Vivante hardware while abstracting away kernel interface details.
 
 - `alpha_blend`: Alpha blending quads
 
-- `cubemap_sphere`: Cube mapping textures
+- `cubemap_sphere`: Cubemap textures
 
 - `stencil_test`: Test stencil buffer handling
 
@@ -99,7 +95,10 @@ State map
 
 Map of documentation for known render state and registers. Mapped in rules-ng-ng (envytools) format:
 
-    rnndb/state.xml
+    rnndb/state.xml     Top-level database, global state
+    rnndb/state_hi.xml  Host interface registers
+    rnndb/state_2d.xml  2D engine state
+    rnndb/state_3d.xml  3D engine state
 
 Other scattered bits of documentation about the hardware and ISA can be found in `doc/hardware.md`.
 
@@ -123,18 +122,18 @@ Assembler and disassembler
 
 A basic disassembler for the shader instructions (to a custom format) can be found in the tools directory:
 
-    tools/disasm.py rnn/isa.xml <shader.bin>
+    tools/disasm.py <shader.bin>
 
 This can be used to disassemble shaders extracted using `dump_cmdstream.py --dump-shaders`.
 
 There is also an assembler, which accepts the same syntax that is produced by the disassembler:
 
-    tools/asm.py rnn/isa.xml <shader.asm> -o <shader.bin>
+    tools/asm.py <shader.asm> [-o <shader.bin>]
 
 Command stream format
 -----------------------
 
-Like many other GPUs, the primary means of programming the chip is through a command stream 
+Like other modern GPUs, the primary means of programming the chip is through a command stream 
 interpreted by a DMA engine. This "Front End" takes care of distributing state changes through
 the individual modules of the GPU, kicking off primitive rendering, synchronization, 
 and also supports basic flow control (branch, call, return).
@@ -148,9 +147,10 @@ The command stream format represented in rules-ng-ng XML format can be found her
 Command stream interception
 ----------------------------
 
-`viv_hook`: A library to intercept and log the traffic between libGAL (the Vivante user space blob) and the kernel
+A significant part of reverse engineering was done by intercepting command streams while running GL simple demos. 
+`viv_hook` is a library to intercept and log the traffic between libGAL (the Vivante user space blob) and the kernel
 driver / hardware.
-
+    
 This library uses ELF hooks to intercept only system calls such as ioctl and mmap coming from the driver, not from
 other parts of the application, unlike more crude hacks using `LD_PRELOAD`.
 
@@ -160,8 +160,6 @@ and flush buffers. This should even work for native android applications that fo
 The raw binary structures interchanged with the kernel are written to disk in a `.fdr` file, along 
 with updates to video memory, to be parsed by the accompanying command stream dumper and other tools.
 
-    native/egl/*.c
-
 Command stream dumper
 ----------------------
 
@@ -169,7 +167,7 @@ Other tools live in:
 
     tools/
 
-The most useful ones are:
+The most useful ones, aside from the assembler and disassembler mentioned before are:
 
 - `show_egl2_log.sh` (uses `dump_cmdstream.py`, you may have to adapt this script to use another structure definition json depending on your kernel interface)
 
@@ -209,7 +207,7 @@ The headers and implementation files for the Vivante GPL kernel drivers are also
 
     kernel_drivers/
 
-Three GPL kernel driver versions, `gc600_driver_dove`, `v2` and `v4`, are provided. They are useful in understanding the kernel 
+Four GPL kernel driver versions, `gc600_driver_dove`, `v2` and `v4` and `imx6`, are provided. They are useful in understanding the kernel 
 interface, and the hardware at a basic level.
 
 As open source drivers for the kernel are available, there are currently no plans to write a DRM/DRI kernel driver for Vivante.
@@ -245,10 +243,11 @@ different offsets for fields, different management of context, and so on). These
 - `dove_old`: Marvell Dove, older drivers (0.8.0.1998, 0.8.0.1123)
 - `arnova`: Android, Arnova 10B G3 tablet (RK2918)
 - `v2`: Various Android, for older chips (RK2918 etc)
+- `imx6`: Various Android, for newer chips (i.MX6 specific)
 - `v4`: Various Android, for newer chips (i.MX6 etc)
 
-If possible get the `gc_*.h` headers for your specific kernel version. If that's not possible, try to find which of the above is most similar,
-and adapt that.
+If possible get the `gc_*.h` headers for your specific kernel version. If that's not possible, try to find which of the above sets
+of headers is most similar, and adapt that.
 
 gc_abi.h
 ----------
@@ -262,9 +261,10 @@ setting of the environment variable `GCABI`:
 - `GCABI_HAS_CONTEXT`: `struct _gcsHAL_COMMIT` has `contextBuffer` field
 - `GCABI_HAS_STATE_DELTAS`: `struct _gcsHAL_COMMIT` has `delta` field
 
-It would be really nice to have an auto-detection of the Vivante kernel version, to prevent crashes and such from wrong
+It would be very useful to have an auto-detection of the Vivante kernel version, to prevent crashes and such from wrong
 interfaces. However, I don't currently know any way to do this. The kernel does check the size of the passed ioctl structure, however
-this guarantees nothing about the field offsets. There is `/proc/driver/gc` that in some cases contains a version number.
+this guarantees nothing about the field offsets. There is `/proc/driver/gc` that in some cases contains a version number. In
+very new drivers there is an ioctl call `gcvHAL_VERSION` that returns the major, minor and build version.
 
 Android
 ---------
@@ -287,14 +287,14 @@ environment variables, for example like this:
     #export GCABI="v4"
     export GCABI="arnova"
 
-To build the egl samples, you need to copy `libEGL_VIVANTE.so` `libGLESv2_VIVANTE.so` from the device `/system/lib/egl` to
-`native/lib/egl`. This is not needed if you just want to build the replay or etna tests, which do not rely in any way on the
-userspace blob.
+To build the egl samples (for command stream interception), you need to copy `libEGL_VIVANTE.so` `libGLESv2_VIVANTE.so` from 
+the device `/system/lib/egl` to `native/lib/egl`. This is not needed if you just want to build the `replay`, `etna` or `fb`
+tests, which do not rely in any way on the userspace blob.
 
 Linux
 -------
 
-For Linux ARM cross compile, create a script like this (example for CuBox) to set up the build environment. 
+For non-Android Linux ARM cross compile, create a script like this (example for CuBox) to set up the build environment. 
 Don't forget to also copy the EGL/GLES2/KDR headers from some place and put them in a directory `include` under the location
 where the script is installed, and get the `libEGL.so` and `libGLESv2.so` from the device into `lib`:
 
@@ -326,7 +326,7 @@ Etna_pipe is currently compatible with the following GC chips at least:
 - GC600
 - GC800
 
-GC2000 support is under way.
+GC2000 support is underway.
 
 The command stream on different device GCxxx variants will also likely be slightly different; the features bit system
 allows for a ton of slightly different chips. When porting it, look for:

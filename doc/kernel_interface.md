@@ -55,7 +55,9 @@ At startup, the application connects to galcore device using `open` with the dev
 - `/dev/galcore`, or
 - `/dev/graphics/galcore`
 
-Immediately after connecting the entire chunk of contiguous memory, after requesting its address and size, is mapped into user space using `mmap`.
+After connecting to the device the entire chunk of contiguous memory, after requesting its address and size, 
+is mapped into user space using `mmap`. The kernel will return addresses in this range when the user space driver allocates
+contiguous (unified) memory used for communication with the GPU. 
 
 Ioctl
 -------
@@ -92,8 +94,8 @@ uses the fields in `interface->u.AllocateLinearVideoMemory` to pass in the numbe
 also to pass out the number of bytes actually allocated. 
 
 What is curious about the ioctl protocol is that the communication structures contains fields that are not 
-used by the kernel at all, but only in user-space. There is no good reason why these values would need 
-to be present in kernel-facing structures at all. The line is blurry sometimes.
+used by the kernel at all. There is no good reason why these values would need 
+to be present in kernel-facing structures. The line is blurry sometimes.
 It also appears that the structure has been designed with platform-independence in mind, and so some of the fields are not used in the Linux
 drivers such as `status`, `handle`, `pid`.
 

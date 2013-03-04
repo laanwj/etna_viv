@@ -247,7 +247,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
     </stripe>
 
-    <stripe name="THREAD_WALKER" brief="Thread walker states">
+    <stripe name="CL" brief="Thread walker states">
         <doc>The thread walker drives shaders in a predefined grid for GPGPU computing (OpenCL).
         These states are not used for normal rendering.</doc>
         <reg32 offset="0x00900" name="UNK00900" value="0x00000000"/>

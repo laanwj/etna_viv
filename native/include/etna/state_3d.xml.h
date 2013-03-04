@@ -8,11 +8,11 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- /home/orion/projects/etna_viv/rnndb/state.xml    (  15002 bytes, from 2013-02-23 18:59:36)
+- /home/orion/projects/etna_viv/rnndb/state.xml    (  15001 bytes, from 2013-03-03 11:55:38)
 - /home/orion/projects/etna_viv/rnndb/common.xml   (  15985 bytes, from 2013-02-10 12:55:03)
 - /home/orion/projects/etna_viv/rnndb/state_hi.xml (  11825 bytes, from 2013-02-01 10:14:08)
 - /home/orion/projects/etna_viv/rnndb/state_2d.xml (  30577 bytes, from 2013-02-01 10:02:25)
-- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  49672 bytes, from 2013-02-20 18:04:17)
+- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  50943 bytes, from 2013-03-04 16:52:52)
 
 Copyright (C) 2013
 */
@@ -202,6 +202,16 @@ Copyright (C) 2013
 
 #define VIVS_VS_UNK00858					0x00000858
 
+#define VIVS_VS_RANGE						0x0000085c
+#define VIVS_VS_RANGE_LOW__MASK					0x0000ffff
+#define VIVS_VS_RANGE_LOW__SHIFT				0
+#define VIVS_VS_RANGE_LOW(x)					(((x) << VIVS_VS_RANGE_LOW__SHIFT) & VIVS_VS_RANGE_LOW__MASK)
+#define VIVS_VS_RANGE_HIGH__MASK				0xffff0000
+#define VIVS_VS_RANGE_HIGH__SHIFT				16
+#define VIVS_VS_RANGE_HIGH(x)					(((x) << VIVS_VS_RANGE_HIGH__SHIFT) & VIVS_VS_RANGE_HIGH__MASK)
+
+#define VIVS_VS_NEW_UNK00860					0x00000860
+
 #define VIVS_VS_INST_MEM(i0)				       (0x00004000 + 0x4*(i0))
 #define VIVS_VS_INST_MEM__ESIZE					0x00000004
 #define VIVS_VS_INST_MEM__LEN					0x00000400
@@ -210,27 +220,27 @@ Copyright (C) 2013
 #define VIVS_VS_UNIFORMS__ESIZE					0x00000004
 #define VIVS_VS_UNIFORMS__LEN					0x00000400
 
-#define VIVS_THREAD_WALKER					0x00000000
+#define VIVS_CL							0x00000000
 
-#define VIVS_THREAD_WALKER_UNK00900				0x00000900
+#define VIVS_CL_UNK00900					0x00000900
 
-#define VIVS_THREAD_WALKER_UNK00904				0x00000904
+#define VIVS_CL_UNK00904					0x00000904
 
-#define VIVS_THREAD_WALKER_UNK00908				0x00000908
+#define VIVS_CL_UNK00908					0x00000908
 
-#define VIVS_THREAD_WALKER_UNK0090C				0x0000090c
+#define VIVS_CL_UNK0090C					0x0000090c
 
-#define VIVS_THREAD_WALKER_UNK00910				0x00000910
+#define VIVS_CL_UNK00910					0x00000910
 
-#define VIVS_THREAD_WALKER_UNK00914				0x00000914
+#define VIVS_CL_UNK00914					0x00000914
 
-#define VIVS_THREAD_WALKER_UNK00918				0x00000918
+#define VIVS_CL_UNK00918					0x00000918
 
-#define VIVS_THREAD_WALKER_UNK0091C				0x0000091c
+#define VIVS_CL_UNK0091C					0x0000091c
 
-#define VIVS_THREAD_WALKER_KICKER				0x00000920
+#define VIVS_CL_KICKER						0x00000920
 
-#define VIVS_THREAD_WALKER_UNK00924				0x00000924
+#define VIVS_CL_UNK00924					0x00000924
 
 #define VIVS_PA							0x00000000
 
@@ -307,6 +317,8 @@ Copyright (C) 2013
 
 #define VIVS_PA_VIEWPORT_UNK00A84				0x00000a84
 
+#define VIVS_PA_VIEWPORT_UNK00A8C				0x00000a8c
+
 #define VIVS_SE							0x00000000
 
 #define VIVS_SE_SCISSOR_LEFT					0x00000c00
@@ -374,6 +386,14 @@ Copyright (C) 2013
 #define VIVS_PS_PERF_COUNTER					0x00001014
 
 #define VIVS_PS_START_PC					0x00001018
+
+#define VIVS_PS_RANGE						0x0000101c
+#define VIVS_PS_RANGE_LOW__MASK					0x0000ffff
+#define VIVS_PS_RANGE_LOW__SHIFT				0
+#define VIVS_PS_RANGE_LOW(x)					(((x) << VIVS_PS_RANGE_LOW__SHIFT) & VIVS_PS_RANGE_LOW__MASK)
+#define VIVS_PS_RANGE_HIGH__MASK				0xffff0000
+#define VIVS_PS_RANGE_HIGH__SHIFT				16
+#define VIVS_PS_RANGE_HIGH(x)					(((x) << VIVS_PS_RANGE_HIGH__SHIFT) & VIVS_PS_RANGE_HIGH__MASK)
 
 #define VIVS_PS_INST_MEM(i0)				       (0x00006000 + 0x4*(i0))
 #define VIVS_PS_INST_MEM__ESIZE					0x00000004
@@ -559,17 +579,17 @@ Copyright (C) 2013
 
 #define VIVS_PE_UNK0145C					0x0000145c
 
-#define VIVS_PE_UNK01460(i0)				       (0x00000000 + 0x4*(i0))
-#define VIVS_PE_UNK01460__ESIZE					0x00000004
-#define VIVS_PE_UNK01460__LEN					0x00000008
+#define VIVS_PE_PIPE(i0)				       (0x00000000 + 0x4*(i0))
+#define VIVS_PE_PIPE__ESIZE					0x00000004
+#define VIVS_PE_PIPE__LEN					0x00000008
 
-#define VIVS_PE_UNK01460_ADDR_UNK01460(i0)		       (0x00001460 + 0x4*(i0))
+#define VIVS_PE_PIPE_COLOR_ADDR(i0)			       (0x00001460 + 0x4*(i0))
 
-#define VIVS_PE_UNK01460_ADDR_UNK01480(i0)		       (0x00001480 + 0x4*(i0))
+#define VIVS_PE_PIPE_DEPTH_ADDR(i0)			       (0x00001480 + 0x4*(i0))
 
-#define VIVS_PE_UNK01460_ADDR_UNK01500(i0)		       (0x00001500 + 0x4*(i0))
+#define VIVS_PE_PIPE_ADDR_UNK01500(i0)			       (0x00001500 + 0x4*(i0))
 
-#define VIVS_PE_UNK01460_ADDR_UNK01520(i0)		       (0x00001520 + 0x4*(i0))
+#define VIVS_PE_PIPE_ADDR_UNK01520(i0)			       (0x00001520 + 0x4*(i0))
 
 #define VIVS_PE_STENCIL_CONFIG_EXT				0x000014a0
 #define VIVS_PE_STENCIL_CONFIG_EXT_REF_BACK__MASK		0x000000ff
@@ -685,6 +705,7 @@ Copyright (C) 2013
 #define VIVS_RS_SOURCE_STRIDE_STRIDE__MASK			0x0003ffff
 #define VIVS_RS_SOURCE_STRIDE_STRIDE__SHIFT			0
 #define VIVS_RS_SOURCE_STRIDE_STRIDE(x)				(((x) << VIVS_RS_SOURCE_STRIDE_STRIDE__SHIFT) & VIVS_RS_SOURCE_STRIDE_STRIDE__MASK)
+#define VIVS_RS_SOURCE_STRIDE_MULTI				0x40000000
 #define VIVS_RS_SOURCE_STRIDE_TILING				0x80000000
 
 #define VIVS_RS_DEST_ADDR					0x00001610
@@ -693,6 +714,7 @@ Copyright (C) 2013
 #define VIVS_RS_DEST_STRIDE_STRIDE__MASK			0x0003ffff
 #define VIVS_RS_DEST_STRIDE_STRIDE__SHIFT			0
 #define VIVS_RS_DEST_STRIDE_STRIDE(x)				(((x) << VIVS_RS_DEST_STRIDE_STRIDE__SHIFT) & VIVS_RS_DEST_STRIDE_STRIDE__MASK)
+#define VIVS_RS_DEST_STRIDE_MULTI				0x40000000
 #define VIVS_RS_DEST_STRIDE_TILING				0x80000000
 
 #define VIVS_RS_WINDOW_SIZE					0x00001620
@@ -735,15 +757,21 @@ Copyright (C) 2013
 
 #define VIVS_RS_UNK016B4					0x000016b4
 
-#define VIVS_RS_UNK016C0(i0)				       (0x00000000 + 0x4*(i0))
-#define VIVS_RS_UNK016C0__ESIZE					0x00000004
-#define VIVS_RS_UNK016C0__LEN					0x00000008
+#define VIVS_RS_PIPE(i0)				       (0x00000000 + 0x4*(i0))
+#define VIVS_RS_PIPE__ESIZE					0x00000004
+#define VIVS_RS_PIPE__LEN					0x00000008
 
-#define VIVS_RS_UNK016C0_UNK016C0(i0)			       (0x000016c0 + 0x4*(i0))
+#define VIVS_RS_PIPE_SOURCE_ADDR(i0)			       (0x000016c0 + 0x4*(i0))
 
-#define VIVS_RS_UNK016C0_UNK016E0(i0)			       (0x000016e0 + 0x4*(i0))
+#define VIVS_RS_PIPE_DEST_ADDR(i0)			       (0x000016e0 + 0x4*(i0))
 
-#define VIVS_RS_UNK016C0_UNK01700(i0)			       (0x00001700 + 0x4*(i0))
+#define VIVS_RS_PIPE_OFFSET(i0)				       (0x00001700 + 0x4*(i0))
+#define VIVS_RS_PIPE_OFFSET_X__MASK				0x0000ffff
+#define VIVS_RS_PIPE_OFFSET_X__SHIFT				0
+#define VIVS_RS_PIPE_OFFSET_X(x)				(((x) << VIVS_RS_PIPE_OFFSET_X__SHIFT) & VIVS_RS_PIPE_OFFSET_X__MASK)
+#define VIVS_RS_PIPE_OFFSET_Y__MASK				0xffff0000
+#define VIVS_RS_PIPE_OFFSET_Y__SHIFT				16
+#define VIVS_RS_PIPE_OFFSET_Y(x)				(((x) << VIVS_RS_PIPE_OFFSET_Y__SHIFT) & VIVS_RS_PIPE_OFFSET_Y__MASK)
 
 #define VIVS_TS							0x00000000
 
@@ -762,6 +790,9 @@ Copyright (C) 2013
 #define VIVS_TS_MEM_CONFIG_MSAA_FORMAT_R5G6B5			0x00000200
 #define VIVS_TS_MEM_CONFIG_MSAA_FORMAT_A8R8G8B8			0x00000300
 #define VIVS_TS_MEM_CONFIG_MSAA_FORMAT_X8R8G8B8			0x00000400
+#define VIVS_TS_MEM_CONFIG_HDEPTH__MASK				0x00003000
+#define VIVS_TS_MEM_CONFIG_HDEPTH__SHIFT			12
+#define VIVS_TS_MEM_CONFIG_HDEPTH(x)				(((x) << VIVS_TS_MEM_CONFIG_HDEPTH__SHIFT) & VIVS_TS_MEM_CONFIG_HDEPTH__MASK)
 
 #define VIVS_TS_COLOR_STATUS_BASE				0x00001658
 
@@ -779,9 +810,11 @@ Copyright (C) 2013
 
 #define VIVS_TS_DEPTH_AUTO_DISABLE_COUNT			0x00001674
 
-#define VIVS_TS_HDEPTH_BASE					0x000016a4
+#define VIVS_TS_HDEPTH_STATUS_BASE				0x000016a4
 
 #define VIVS_TS_HDEPTH_CLEAR_VALUE				0x000016a8
+
+#define VIVS_TS_HDEPTH_SIZE					0x000016ac
 
 #define VIVS_TS_SAMPLER(i0)				       (0x00000000 + 0x4*(i0))
 #define VIVS_TS_SAMPLER__ESIZE					0x00000004
@@ -1010,12 +1043,6 @@ Copyright (C) 2013
 #define VIVS_NTE_UNK12400__LEN					0x00000100
 
 #define VIVS_SH							0x00000000
-
-#define VIVS_SH_UNK0085C					0x0000085c
-
-#define VIVS_SH_UNK00860					0x00000860
-
-#define VIVS_SH_UNK0101C					0x0000101c
 
 #define VIVS_SH_UNK20000(i0)				       (0x00020000 + 0x4*(i0))
 #define VIVS_SH_UNK20000__ESIZE					0x00000004
