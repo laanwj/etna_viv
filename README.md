@@ -279,8 +279,8 @@ environment variables, for example like this:
 
     export GCCPREFIX="arm-linux-androideabi-"
     export CXXABI="armeabi-v7a"
-    export PLATFORM_CFLAGS="--sysroot=${SYSROOT} -DANDROID"
-    export PLATFORM_CXXFLAGS="--sysroot=${SYSROOT} -DANDROID -I${NDK}/sources/cxx-stl/gnu-libstdc++/4.6/include -I${NDK}/sources/cxx-stl/gnu-libstdc++/4.6/libs/${CXXABI}/include"
+    export PLATFORM_CFLAGS="--sysroot=${SYSROOT} -DANDROID -DPIPE_ARCH_LITTLE_ENDIAN"
+    export PLATFORM_CXXFLAGS="--sysroot=${SYSROOT} -DANDROID -DPIPE_ARCH_LITTLE_ENDIAN -I${NDK}/sources/cxx-stl/gnu-libstdc++/4.6/include -I${NDK}/sources/cxx-stl/gnu-libstdc++/4.6/libs/${CXXABI}/include"
     export PLATFORM_LDFLAGS="--sysroot=${SYSROOT} -L${NDK}/sources/cxx-stl/gnu-libstdc++/4.6/libs/${CXXABI} -lgnustl_static"
     # Set GC kernel ABI (important!)
     #export GCABI="v2"
@@ -316,7 +316,7 @@ On hardfloat targets you should use `gcc-arm-linux-gnueabihf-` instead.
 
 General
 --------
-Run make in `native/fb`, `native/replay` and/or `native/egl` separately.
+Run make in `native`, or alternatively in `native/gallium`, `native/fb`, `native/replay` and/or `native/egl` separately.
 
 Compatibility
 ================

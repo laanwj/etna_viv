@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
 	  "                             \n"
 	  "void main()                  \n"
 	  "{                            \n"
-          "    float texvalue = 1.0;//texture2D(s_texture, in_texcoord).x;\n"
+          "    float texvalue = texture2D(s_texture, in_texcoord).x;\n"
 	  "    gl_Position = modelviewprojectionMatrix * (in_position + vec4(0.2 * texvalue * in_normal, 0));\n"
 	  "    vec3 vEyeNormal = normalMatrix * in_normal;\n"
 	  "    vec4 vPosition4 = modelviewMatrix * in_position;\n"

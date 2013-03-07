@@ -658,7 +658,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x01640" name="FILL_VALUE" value="0x00000000" length="4" stride="4"/>
         <reg32 offset="0x01650" name="FLUSH_CACHE" brief="Flush resolve cache" value="0x00000000">
-            <bitfield pos="0" name="FLUSH"/>
+            <bitfield pos="0" name="FLUSH" brief="Flush tile status cache"/>
         </reg32>
         <reg32 offset="0x016A0" name="EXTRA_CONFIG" value="0x00000000">
             <bitfield high="1" low="0" name="AA" brief="Anti-aliasing mode (not used for MSAA)"/>

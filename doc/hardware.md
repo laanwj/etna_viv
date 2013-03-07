@@ -178,6 +178,21 @@ this example it stalls the rasterizer until the pixel engine has completed the c
 The `STALL` command is used to stall the command queue until the semaphore has been received. The stall command has
 one argument that has the same format as the `_TOKEN` states above, except that the FROM module is always the FE. 
 
+Within the 3D engine, not many explicit synchronization points appear to be needed. Some exceptions:
+
+- The blob issues a semaphore and stall from RA to PE when 
+
+  - Changing depth configuration in PE
+  - Sometimes when changing stencil config in PE
+
+- The blob issues a just a semaphore from RA to PE, and a stall before drawing a primitive when 
+
+  - Tile status address/configuration changes
+  - Clearing depth
+  - Clearing tile status
+
+- The blob issues a semaphor and stall from FE to PE before changing the pipe from 2D to 3D or vice versa
+
 XXX (cwabbott) usually, isa's have some sort of texture barrier or sync operation to be able to load textures asyncronously
 (mali does it w/ pipeline registers) i'm wondering where that is in the vivante isa
 

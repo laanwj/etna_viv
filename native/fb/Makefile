@@ -2,10 +2,10 @@ TOP=..
 
 include $(TOP)/Makefile.inc
 
-COMMON_FLAGS = -I$(TOP)/lib -I$(TOP)/include_$(GCABI) -g -std=c99 -fPIC  -I../resources  -I../include
-CFLAGS += $(COMMON_FLAGS) -DDUMP
-CXXFLAGS += $(COMMON_FLAGS) 
-LDFLAGS += -lm
+COMMON_FLAGS += -I../resources -I../gallium/include
+CFLAGS += -DDUMP
+CXXFLAGS += 
+LDFLAGS += 
 
 TARGETS = mip_cube cubemap_sphere stencil_test alpha_blend cube_companion particle_system displacement etna_gears
 COMPANION_OBJS = ../resources/companion_array.o ../resources/companion_mesh.o ../resources/companion_texture.o

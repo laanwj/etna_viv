@@ -2,10 +2,10 @@ TOP=..
 
 include $(TOP)/Makefile.inc
 
-COMMON_FLAGS = -I../lib -I../resources -I$(TOP)/include_$(GCABI) -g -std=c99 -fPIC 
+COMMON_FLAGS += -I../resources 
 CFLAGS += $(COMMON_FLAGS)
 CXXFLAGS += $(COMMON_FLAGS) 
-LDFLAGS += -lm
+LDFLAGS += 
 
 GL_LIBS = $(PLATFORM_GL_LIBS)
 TARGETS = cube cube_companion ps_sandbox eglinfo cube_companion_idx simple_texture_cubemap displacement
