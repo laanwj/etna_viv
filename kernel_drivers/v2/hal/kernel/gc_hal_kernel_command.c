@@ -484,6 +484,13 @@ gckCOMMAND_Destroy(
     return gcvSTATUS_OK;
 }
 
+#if FIXED_MMAP_AS_CACHEABLE && FLUSH_CACHE_ALL_IN_KERNEL
+gceSTATUS
+gckOS_CacheFlushAll(
+    IN gckOS Os
+    );
+#endif
+
 /*******************************************************************************
 **
 **  gckCOMMAND_Start
@@ -519,6 +526,11 @@ gckCOMMAND_Start(
         gcmkFOOTER_NO();
         return gcvSTATUS_OK;
     }
+
+#if FIXED_MMAP_AS_CACHEABLE && FLUSH_CACHE_ALL_IN_KERNEL
+    /* Flush all caches. */
+    gcmkONERROR(gckOS_CacheFlushAll(Command->os));
+#endif
 
     /* Extract the gckHARDWARE object. */
     hardware = Command->kernel->hardware;
@@ -773,6 +785,11 @@ gckCOMMAND_Commit(
     return gcvSTATUS_OK;
 #endif
 
+#if FIXED_MMAP_AS_CACHEABLE && FLUSH_CACHE_ALL_IN_KERNEL
+    /* Flush all caches. */
+    gcmkONERROR(gckOS_CacheFlushAll(Command->os));
+#endif
+
     gcmkONERROR(
         _AddMap(Command->os,
                 CommandBuffer,
@@ -836,6 +853,9 @@ gckCOMMAND_Commit(
     /* Release the power mutex. */
     if (powerAcquired)
     {
+#ifdef CONFIG_JZSOC
+        hardware->powerProcess = hardware->powerThread = 0x0;
+#endif
         /* Release the power mutex. */
         gcmkONERROR(gckOS_ReleaseMutex(Command->os, hardware->powerMutex));
         powerAcquired = gcvFALSE;
@@ -1361,6 +1381,9 @@ OnError:
 
     if (powerAcquired)
     {
+#ifdef CONFIG_JZSOC
+        hardware->powerProcess = hardware->powerThread = 0x0;
+#endif
         /* Release the power mutex. */
         gcmkONERROR(gckOS_ReleaseMutex(Command->os, hardware->powerMutex));
     }
@@ -1463,6 +1486,9 @@ gckCOMMAND_Reserve(
 
     if (powerAcquired)
     {
+#ifdef CONFIG_JZSOC
+        hardware->powerProcess = hardware->powerThread = 0x0;
+#endif
         /* Release the power mutex. */
         gcmkONERROR(gckOS_ReleaseMutex(Command->os,
                                        Command->kernel->hardware->powerMutex));
@@ -1550,6 +1576,9 @@ OnError:
 
     if (powerAcquired)
     {
+#ifdef CONFIG_JZSOC
+        hardware->powerProcess = hardware->powerThread = 0x0;
+#endif
         /* Release the power mutex. */
         gcmkONERROR(gckOS_ReleaseMutex(Command->os,
                                        Command->kernel->hardware->powerMutex));

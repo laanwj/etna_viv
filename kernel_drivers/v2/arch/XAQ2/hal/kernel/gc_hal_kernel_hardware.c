@@ -19,6 +19,7 @@
 *****************************************************************************/
 
 
+#include <linux/sched.h>
 
 
 #include "gc_hal.h"
@@ -2588,7 +2589,11 @@ gckHARDWARE_GetIdle(
     pollCount = Wait ? 100 : 1;
 
     /* At most, try for 1 second. */
+#ifdef CONFIG_JZSOC
+    for (retry = 0; retry < 145; ++retry)
+#else
     for (retry = 0; retry < 1000; ++retry)
+#endif
     {
         /* If we have to wait, try 100 polls per millisecond. */
         for (poll = pollCount; poll > 0; --poll)
@@ -2613,7 +2618,17 @@ gckHARDWARE_GetIdle(
                            "%s: Waiting for idle: 0x%08X",
                            __FUNCTION__, idle);
 
+#ifdef CONFIG_JZSOC
+            if(retry < 50) {
+                if ((retry & 0x3) == 1)
+                    schedule(); 
+                else
+                    gcmkVERIFY_OK(gckOS_Delay(Hardware->os, 1));
+            } else
+                gcmkVERIFY_OK(gckOS_Delay(Hardware->os, 10));
+#else
             gcmkVERIFY_OK(gckOS_Delay(Hardware->os, 1));
+#endif
         }
         else
         {
@@ -2926,6 +2941,14 @@ gckHARDWARE_SetPowerManagementState(
         ((((gctUINT32) (0)) & ~(((gctUINT32) (((gctUINT32) ((((1 ? 9:9) - (0 ? 9:9) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 9:9) - (0 ? 9:9) + 1))))))) << (0 ? 9:9))) | (((gctUINT32) ((gctUINT32) (1) & ((gctUINT32) ((((1 ? 9:9) - (0 ? 9:9) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 9:9) - (0 ? 9:9) + 1))))))) << (0 ? 9:9))),
     };
 
+#ifdef CONFIG_JZSOC
+    static const gctUINT halfClock =
+        ((((gctUINT32) (0)) & ~(((gctUINT32) (((gctUINT32) ((((1 ? 0:0) - (0 ? 0:0) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 0:0) - (0 ? 0:0) + 1))))))) << (0 ? 0:0))) | (((gctUINT32) ((gctUINT32) (0) & ((gctUINT32) ((((1 ? 0:0) - (0 ? 0:0) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 0:0) - (0 ? 0:0) + 1))))))) << (0 ? 0:0))) |
+        ((((gctUINT32) (0)) & ~(((gctUINT32) (((gctUINT32) ((((1 ? 1:1) - (0 ? 1:1) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 1:1) - (0 ? 1:1) + 1))))))) << (0 ? 1:1))) | (((gctUINT32) ((gctUINT32) (0) & ((gctUINT32) ((((1 ? 1:1) - (0 ? 1:1) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 1:1) - (0 ? 1:1) + 1))))))) << (0 ? 1:1))) |
+        ((((gctUINT32) (0)) & ~(((gctUINT32) (((gctUINT32) ((((1 ? 8:2) - (0 ? 8:2) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 8:2) - (0 ? 8:2) + 1))))))) << (0 ? 8:2))) | (((gctUINT32) ((gctUINT32) (32) & ((gctUINT32) ((((1 ? 8:2) - (0 ? 8:2) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 8:2) - (0 ? 8:2) + 1))))))) << (0 ? 8:2))) |
+        ((((gctUINT32) (0)) & ~(((gctUINT32) (((gctUINT32) ((((1 ? 9:9) - (0 ? 9:9) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 9:9) - (0 ? 9:9) + 1))))))) << (0 ? 9:9))) | (((gctUINT32) ((gctUINT32) (1) & ((gctUINT32) ((((1 ? 9:9) - (0 ? 9:9) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 9:9) - (0 ? 9:9) + 1))))))) << (0 ? 9:9)));
+#endif
+    
     gcmkHEADER_ARG("Hardware=0x%x State=%d", Hardware, State);
 
     /* Verify the arguments. */
@@ -3030,6 +3053,10 @@ gckHARDWARE_SetPowerManagementState(
 
     if ((flag == 0) || (Hardware->settingPowerState))
     {
+#ifdef CONFIG_JZSOC
+        Hardware->powerProcess = Hardware->powerThread = 0x0;
+#endif
+
         /* Release the power mutex. */
         gcmkONERROR(gckOS_ReleaseMutex(os, Hardware->powerMutex));
 
@@ -3042,6 +3069,10 @@ gckHARDWARE_SetPowerManagementState(
     &&  (Hardware->chipPowerState == gcvPOWER_OFF)
     )
     {
+#ifdef CONFIG_JZSOC
+        Hardware->powerProcess = Hardware->powerThread = 0x0;
+#endif
+
         /* Release the power mutex. */
         gcmkONERROR(gckOS_ReleaseMutex(os, Hardware->powerMutex));
 
@@ -3137,6 +3168,26 @@ gckHARDWARE_SetPowerManagementState(
         gcmkONERROR(Hardware->stopIsr(Hardware->isrContext));
     }
 
+#ifdef CONFIG_JZSOC
+    if (State == gcvPOWER_ON)
+    {
+        volatile static int i;
+
+        /* Write the clock control register. */
+        gcmkONERROR(gckOS_WriteRegister(os,
+                                        0x00000,
+                                        halfClock));
+
+        /* Done loading the frequency scaler. */
+        gcmkONERROR(gckOS_WriteRegister(os,
+                                        0x00000,
+                                        ((((gctUINT32) (halfClock)) & ~(((gctUINT32) (((gctUINT32) ((((1 ? 9:9) - (0 ? 9:9) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 9:9) - (0 ? 9:9) + 1))))))) << (0 ? 9:9))) | (((gctUINT32) ((gctUINT32) (0) & ((gctUINT32) ((((1 ? 9:9) - (0 ? 9:9) + 1) == 32) ? ~0 : (~(~0 << ((1 ? 9:9) - (0 ? 9:9) + 1))))))) << (0 ? 9:9)))));
+
+        /* Wait for a while */
+        for (i = 0; i < 1000; i++);
+    }
+#endif
+
     /* Write the clock control register. */
     gcmkONERROR(gckOS_WriteRegister(os,
                                     0x00000,
@@ -3198,6 +3249,9 @@ gckHARDWARE_SetPowerManagementState(
     Hardware->chipPowerState    = State;
     Hardware->broadcast         = broadcast;
     Hardware->settingPowerState = gcvFALSE;
+#ifdef CONFIG_JZSOC
+    Hardware->powerProcess      = Hardware->powerThread = 0x0;
+#endif
 
     /* Release the power mutex. */
     gcmkONERROR(gckOS_ReleaseMutex(os, Hardware->powerMutex));
@@ -3223,6 +3277,9 @@ OnError:
     if (mutexAcquired)
     {
         Hardware->settingPowerState = gcvFALSE;
+#ifdef CONFIG_JZSOC
+        Hardware->powerProcess = Hardware->powerThread = 0x0;
+#endif
 
         gcmkVERIFY_OK(gckOS_ReleaseMutex(Hardware->os, Hardware->powerMutex));
     }

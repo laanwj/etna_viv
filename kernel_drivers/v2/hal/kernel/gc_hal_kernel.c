@@ -368,7 +368,15 @@ _AllocateMemory(
         if (pool == gcvPOOL_SYSTEM)
         {
             /* Advance to contiguous memory. */
+#ifdef CONFIG_JZSOC
+            /*
+             * Do not use '__get_free_page' or kernel will hang.
+             * - Modified by <Wolfgang@ingenic.cn> on 20110218.
+             */
+            pool = gcvPOOL_VIRTUAL;
+#else
             pool = gcvPOOL_CONTIGUOUS;
+#endif
         }
         else
         if ((pool == gcvPOOL_CONTIGUOUS)

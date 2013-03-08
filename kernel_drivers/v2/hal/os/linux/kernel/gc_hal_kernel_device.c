@@ -725,7 +725,11 @@ gckGALDEVICE_Construct(
 
             device->contiguousPhysical = (gctPHYS_ADDR) ContiguousBase;
             device->contiguousSize     = ContiguousSize;
+#if FIXED_MMAP_AS_CACHEABLE
+            device->contiguousBase     = (gctPOINTER) ioremap_cachable(ContiguousBase, ContiguousSize);
+#else
             device->contiguousBase     = (gctPOINTER) ioremap_nocache(ContiguousBase, ContiguousSize);
+#endif       
             device->contiguousMapped   = gcvTRUE;
 
             if (device->contiguousBase == gcvNULL)

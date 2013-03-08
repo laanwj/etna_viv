@@ -34,6 +34,18 @@
 #include <linux/dma-mapping.h>
 #endif /* NO_DMA_COHERENT */
 
+#if defined(CONFIG_MODULES) && defined(MODULE)
+extern unsigned long plat_do_mmap_pgoff(struct file *file, unsigned long addr,
+                                      unsigned long len, unsigned long prot,
+                                      unsigned long flags, unsigned long pgoff);
+
+extern int plat_do_munmap(struct mm_struct *mm, unsigned long start,
+                                      size_t len);
+
+#define do_mmap_pgoff	plat_do_mmap_pgoff
+#define do_munmap	plat_do_munmap
+#endif
+
 #if !USE_NEW_LINUX_SIGNAL
 #define USER_SIGNAL_TABLE_LEN_INIT  64
 #endif
@@ -1044,7 +1056,16 @@ gckOS_MapMemory(
         }
 #else
         mdlMap->vma->vm_page_prot = pgprot_noncached(mdlMap->vma->vm_page_prot);
+#if FIXED_MMAP_AS_CACHEABLE
+        /* Write-Back */
+        pgprot_val(mdlMap->vma->vm_page_prot) &= ~_CACHE_MASK;
+        pgprot_val(mdlMap->vma->vm_page_prot) |= _CACHE_CACHABLE_NONCOHERENT;
+#endif
+#ifdef VM_RESERVED
         mdlMap->vma->vm_flags |= VM_IO | VM_DONTCOPY | VM_DONTEXPAND | VM_RESERVED;
+#else
+        mdlMap->vma->vm_flags |= VM_IO | VM_DONTCOPY | VM_DONTEXPAND | VM_DONTDUMP;
+#endif
         mdlMap->vma->vm_pgoff = 0;
 
         if (remap_pfn_range(mdlMap->vma,
@@ -1298,7 +1319,11 @@ gckOS_AllocateNonPagedMemory(
         reserved_size  -= PAGE_SIZE;
     }
 
+#if FIXED_MMAP_AS_CACHEABLE
+    addr            = ioremap_cachable(virt_to_phys(vaddr), size);
+#else
     addr            = ioremap_nocache(virt_to_phys(vaddr), size);
+#endif
     mdl->dmaHandle  = virt_to_phys(vaddr);
     mdl->kaddr      = vaddr;
 
@@ -1421,7 +1446,16 @@ gckOS_AllocateNonPagedMemory(
         }
 #else
         mdlMap->vma->vm_page_prot = pgprot_noncached(mdlMap->vma->vm_page_prot);
+#if FIXED_MMAP_AS_CACHEABLE
+        /* Write-Back */
+        pgprot_val(mdlMap->vma->vm_page_prot) &= ~_CACHE_MASK;
+        pgprot_val(mdlMap->vma->vm_page_prot) |= _CACHE_CACHABLE_NONCOHERENT;
+#endif
+#ifdef VM_RESERVED
         mdlMap->vma->vm_flags |= VM_IO | VM_DONTCOPY | VM_DONTEXPAND | VM_RESERVED;
+#else
+        mdlMap->vma->vm_flags |= VM_IO | VM_DONTCOPY | VM_DONTEXPAND | VM_DONTDUMP;
+#endif
         mdlMap->vma->vm_pgoff = 0;
 
         if (remap_pfn_range(mdlMap->vma,
@@ -1977,7 +2011,11 @@ gceSTATUS gckOS_MapPhysical(
     {
         /* Map memory as cached memory. */
         request_mem_region(physical, Bytes, "MapRegion");
+#if FIXED_MMAP_AS_CACHEABLE
+        logical = (gctPOINTER) ioremap_cachable(physical, Bytes);
+#else
         logical = (gctPOINTER) ioremap_nocache(physical, Bytes);
+#endif
 
         if (logical == NULL)
         {
@@ -2572,6 +2610,12 @@ gckOS_Delay(
 
     if (Delay > 0)
     {
+#ifdef CONFIG_MACH_JZ4770
+        unsigned long long clock;
+        unsigned int diffclock;
+        int flag;
+#endif
+
         /* Convert milliseconds into seconds and microseconds. */
         now.tv_sec  = Delay / 1000;
         now.tv_usec = (Delay % 1000) * 1000;
@@ -2579,8 +2623,21 @@ gckOS_Delay(
         /* Convert timeval to jiffies. */
         jiffies = timeval_to_jiffies(&now);
 
+#ifdef CONFIG_MACH_JZ4770
+        flag = 1;
+        clock = sched_clock();
+        while(flag) {
+            schedule_timeout_interruptible(jiffies);
+            diffclock = (unsigned int)(sched_clock() - clock);
+            if (diffclock < Delay * 1000000)
+                jiffies = 1;
+            else
+                flag = 0;
+        }
+#else
         /* Schedule timeout. */
         schedule_timeout_interruptible(jiffies);
+#endif
     }
 
     /* Success. */
@@ -2614,7 +2671,11 @@ gceSTATUS gckOS_MemoryBarrier(
     /* Verify thearguments. */
     gcmkVERIFY_OBJECT(Os, gcvOBJ_OS);
 
+#ifdef CONFIG_MIPS
+    iob();
+#else
     mb();
+#endif
 
     /* Success. */
     return gcvSTATUS_OK;
@@ -3013,9 +3074,18 @@ gceSTATUS gckOS_LockPages(
             return gcvSTATUS_OUT_OF_RESOURCES;
         }
 
+#ifdef VM_RESERVED
         mdlMap->vma->vm_flags |= VM_RESERVED;
+#else
+        mdlMap->vma->vm_flags |= VM_DONTDUMP;
+#endif
         /* Make this mapping non-cached. */
         mdlMap->vma->vm_page_prot = pgprot_noncached(mdlMap->vma->vm_page_prot);
+#if FIXED_MMAP_AS_CACHEABLE
+        /* Write-Back */
+        pgprot_val(mdlMap->vma->vm_page_prot) &= ~_CACHE_MASK;
+        pgprot_val(mdlMap->vma->vm_page_prot) |= _CACHE_CACHABLE_NONCOHERENT;
+#endif
 
         addr = mdl->addr;
 
@@ -4078,6 +4148,16 @@ gckOS_WaitSignal(
     rc = wait_for_completion_interruptible_timeout(&signal->event, timeout);
     status = ((rc == 0) && !signal->event.done) ? gcvSTATUS_TIMEOUT
                                                 : gcvSTATUS_OK;
+
+#if defined(CONFIG_JZSOC) && ANDROID
+    /*
+     * Fix WOWFish suspend resume render bugs. Code from Yun.Li @ Vivante.
+     */
+    if (status == gcvSTATUS_OK)
+    {
+	    INIT_COMPLETION(signal->event);
+    }
+#endif
 
     /* Return status. */
     gcmkFOOTER();
@@ -5673,6 +5753,75 @@ FreeAllMemoryRecord(
 }
 #endif
 
+#if defined(CONFIG_JZSOC) && FIXED_MMAP_AS_CACHEABLE
+static inline void flush_dcache_with_prefetch_allocate(void)
+{
+    int addr;
+
+    for (addr = KSEG0; addr < (KSEG0 + 16384); addr += 256) {
+        /* 256 = 32byte * 8 */
+        asm ( ".set\tmips32\n\t"
+              "pref %0, 0(%1)\n\t"
+              "pref %0, 32(%1)\n\t"
+              "pref %0, 64(%1)\n\t"
+              "pref %0, 96(%1)\n\t"
+              "pref %0, 128(%1)\n\t"
+              "pref %0, 160(%1)\n\t"
+              "pref %0, 192(%1)\n\t"
+              "pref %0, 224(%1)\n\t"
+              :
+              : "I" (30), "r"(addr));
+    }
+    asm ("sync");
+}
+
+static inline void flush_dcache_range_with_prefetch_allocate(unsigned int addr, int bytes)
+{
+    unsigned int start, end;
+
+    start = (addr & 0x00000FE0) | KSEG0;  /* 0xFE0 = address offset (11:5) */
+    end = start + bytes + ((addr & (32-1))? 32 : 0);
+
+    for (; start < end; start += 32) { /* 32byte step */
+        asm ( ".set\tmips32\n\t"
+              "pref %0, 0x0000(%1)\n\t"
+              "pref %0, 0x1000(%1)\n\t"
+              "pref %0, 0x2000(%1)\n\t"
+              "pref %0, 0x3000(%1)\n\t"
+              :
+              : "I" (30), "r"(start));
+    }
+    asm ("sync");
+}
+
+static inline void jz_flush_cache(
+    IN gckOS Os,
+    IN gctHANDLE Process,
+    IN gctPOINTER Logical,
+    IN gctSIZE_T Bytes
+    )
+{
+    if (Bytes < 4096)
+        flush_dcache_range_with_prefetch_allocate((unsigned int)Logical, (int)Bytes);
+    else
+        flush_dcache_with_prefetch_allocate();
+
+    return;
+}
+
+#if defined(CONFIG_JZSOC) && FLUSH_CACHE_ALL_IN_KERNEL
+gceSTATUS
+gckOS_CacheFlushAll(
+    IN gckOS Os
+    )
+{
+    flush_dcache_with_prefetch_allocate();
+
+    return gcvSTATUS_OK;
+}
+#endif
+#endif
+
 /*******************************************************************************
 **  gckOS_CacheFlush
 **
@@ -5703,6 +5852,9 @@ gckOS_CacheFlush(
     IN gctSIZE_T Bytes
     )
 {
+#if defined(CONFIG_JZSOC) && FIXED_MMAP_AS_CACHEABLE
+    jz_flush_cache(Os, Process, Logical, Bytes);
+#endif
     return gcvSTATUS_OK;
 }
 
@@ -5736,6 +5888,9 @@ gckOS_CacheInvalidate(
     IN gctSIZE_T Bytes
     )
 {
+#if FIXED_MMAP_AS_CACHEABLE
+    dma_cache_wback_inv((u32)Logical, Bytes);
+#endif
     return gcvSTATUS_OK;
 }
 

@@ -186,7 +186,11 @@
     Size of the MMU page table in bytes.  Each 4 bytes can hold 4kB worth of
     virtual data.
 */
+#if defined(CONFIG_JZSOC) && ANDROID
+#define gcdMMU_SIZE                 (256 << 10)		/* Fix for Asphalt 5 */
+#else
 #define gcdMMU_SIZE                 (128 << 10)
+#endif
 
 /*
     gcdSECURE_USER
