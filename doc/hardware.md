@@ -203,6 +203,10 @@ optionally tiling/detiling, converting between pixel formats, or scaling down by
 destination address can be the same to fill in tiles that were not touched during the rendering process 
 (according to the Tile Status, see below) with the background color.
 
+The RS and PE (drawing) share one set of pixel pipes. They will never be active concurrently (AFAIK).
+They do however have separate caches, so before using RS to copy from a surface at least the COLOR cache needs to be flushed
+(and possibly the RS cache). The blob also flushes the DEPTH cache, I do however not know why.
+
 Tile status (Fast clear)
 -------------------------
 A render target is divided in tiles, and every tile has a couple of status flags.

@@ -43,6 +43,7 @@
 
 #include "pipe/p_defines.h"
 #include "pipe/p_format.h"
+#include "pipe/p_shader_tokens.h"
 
 /********************************************************************
  * State from gallium, for experimentation

@@ -247,17 +247,35 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
     </stripe>
 
+    <bitset name="GLOBAL_DIM" inline="yes">
+        <bitfield high="15" low="0" name="SIZE"/>
+        <bitfield high="31" low="16" name="OFFSET"/>
+    </bitset>
+    <bitset name="WORKGROUP_DIM" inline="yes">
+        <bitfield high="9" low="0" name="SIZE" brief="Size of work group minus one"/>
+        <bitfield high="31" low="16" name="COUNT" brief="Number of work groups minus one"/>
+    </bitset>
     <stripe name="CL" brief="Thread walker states">
         <doc>The thread walker drives shaders in a predefined grid for GPGPU computing (OpenCL).
         These states are not used for normal rendering.</doc>
-        <reg32 offset="0x00900" name="UNK00900" value="0x00000000"/>
-        <reg32 offset="0x00904" name="UNK00904" value="0x00000000"/>
-        <reg32 offset="0x00908" name="UNK00908" value="0x00000000"/>
-        <reg32 offset="0x0090C" name="UNK0090C" value="0x00000000"/>
-        <reg32 offset="0x00910" name="UNK00910" value="0x00000000"/>
-        <reg32 offset="0x00914" name="UNK00914" value="0x00000000"/>
-        <reg32 offset="0x00918" name="UNK00918" value="0x00000000"/>
-        <reg32 offset="0x0091C" name="UNK0091C" value="0x00000000"/>
+        <reg32 offset="0x00900" name="CONFIG" value="0x00000000">
+            <bitfield high="1" low="0" name="DIMENSIONS" brief="Number of dimensions (1-3)"/>
+            <bitfield high="6" low="4" name="TRAVERSE_ORDER"/>
+            <bitfield high="8" low="8" name="ENABLE_SWATH_X"/>
+            <bitfield high="9" low="9" name="ENABLE_SWATH_Y"/>
+            <bitfield high="10" low="10" name="ENABLE_SWATH_Z"/>
+            <bitfield high="15" low="12" name="SWATH_SIZE_X"/>
+            <bitfield high="19" low="16" name="SWATH_SIZE_Y"/>
+            <bitfield high="23" low="20" name="SWATH_SIZE_Z"/>
+            <bitfield high="26" low="24" name="VALUE_ORDER"/>
+        </reg32>
+        <reg32 offset="0x00904" name="GLOBAL_X" type="GLOBAL_DIM" value="0x00000000"/>
+        <reg32 offset="0x00908" name="GLOBAL_Y" type="GLOBAL_DIM" value="0x00000000"/>
+        <reg32 offset="0x0090C" name="GLOBAL_Z" type="GLOBAL_DIM" value="0x00000000"/>
+        <reg32 offset="0x00910" name="WORKGROUP_X" type="WORKGROUP_DIM" value="0x00000000"/>
+        <reg32 offset="0x00914" name="WORKGROUP_Y" type="WORKGROUP_DIM" value="0x00000000"/>
+        <reg32 offset="0x00918" name="WORKGROUP_Z" type="WORKGROUP_DIM" value="0x00000000"/>
+        <reg32 offset="0x0091C" name="THREAD_ALLOCATION" value="0x00000000"/>
         <reg32 offset="0x00920" name="KICKER" brief="Start thread walker">
             <doc>Write some value to this register to kick off thread walker</doc>
         </reg32>
