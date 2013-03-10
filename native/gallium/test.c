@@ -1,6 +1,7 @@
 #include "tgsi/tgsi_text.h"
 #include "tgsi/tgsi_iterate.h"
 #include "tgsi/tgsi_dump.h"
+#include "tgsi/tgsi_parse.h"
 #include "pipe/p_shader_tokens.h"
 #include "util/u_memory.h"
 
@@ -66,10 +67,10 @@ int main(int argc, char **argv)
     {
         tgsi_dump(tokens, 0); 
 
-        for(int i=0; i<1024; ++i)
+        /*for(int i=0; i<1024; ++i)
         {
-            printf("%08x\n", tokens[i]);
-        }
+            printf("%08x\n", *((uint32_t*)&tokens[i]));
+        }*/
     } else {
         fprintf(stderr, "Unable to parse %s\n", argv[1]);
     }

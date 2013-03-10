@@ -131,8 +131,9 @@ int main(int argc, char** argv)
     }
 
     // Build the program executable
-    //
-    err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
+    err = clBuildProgram(program, 0, NULL, 
+            "-cl-mad-enable -cl-unsafe-math-optimizations -cl-fast-relaxed-math", 
+            NULL, NULL);
     if (err != CL_SUCCESS)
     {
         size_t len;

@@ -43,7 +43,7 @@ def parse_arguments():
             help='Binary shader file')
     parser.add_argument('-a', dest='addr',
             default=False, action='store_const', const=True,
-            help='Show address data with instructions')
+            help='Show address with instructions')
     parser.add_argument('-r', dest='raw',
             default=False, action='store_const', const=True,
             help='Show raw data with instructions')

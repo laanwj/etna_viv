@@ -37,6 +37,7 @@
 #include <stdarg.h>
 
 #include "esUtil.h"
+#include "esWindow.h"
 #include "esTransform.h"
 #include "eglutil.h"
 #include "dump_gl_screen.h"

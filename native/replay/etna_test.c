@@ -1,4 +1,5 @@
-/* shader playground using etna_* functions,
+/* shader playground using etna_* functions, similar to ps_sandbox_etna
+ *
  * more high-level command-buffer building with synchronization
  */
 #include <stdio.h>

@@ -67,7 +67,7 @@ def disassemble(isa, inst, warnings):
             mask |= field.mask
         if mask != 0xffffffff:
             warnings.append('isa for word %i incomplete' % word)
-    op = fields['OPCODE']
+    op = fields['OPCODE'] | (fields['OPCODE_BIT6'] << 6)
 
     if op in [0x0A, 0x0B]: # Move to address register
         dst = DstOperandAReg(
@@ -126,7 +126,7 @@ def disassemble(isa, inst, warnings):
 
     # Unknown fields -- will warn if these are not 0
     unknowns = [
-        ('bit_1_21', fields['UNK1_21']), ('bit_2_16', fields['UNK2_16']),
+        ('bit_1_21', fields['UNK1_21']),
         ('bit_2_30', fields['UNK2_30']), ('bit_3_24', fields['UNK3_24']),
         ('bit_3_31', fields['UNK3_31'])
     ]

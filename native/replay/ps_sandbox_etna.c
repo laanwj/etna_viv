@@ -1,4 +1,8 @@
-/* like cube, but try to generate the command stream ourselves using etna_XXX */
+/* build and submit low-level command buffer to test shader instructions
+ *
+ * see etna_test for a more high-level approach using etna_flush / etna_finish instead of manually
+ * submitting the command buffers one by one
+ */
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>

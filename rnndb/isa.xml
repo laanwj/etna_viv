@@ -262,6 +262,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             Return 1.0 if the sign is positive or zero, -1.0 if negative.
         </doc>
     </value>
+    <!-- OpenCL (GC2000+) -->
+    <value value="0x32" name="LOAD"/>
+    <value value="0x33" name="STORE"/>
+    <value value="0x59" name="LSHIFT" brief="Bitwise left shift"/>
+    <value value="0x5D" name="AND" brief="Bitwise and"/>
 </enum>
 
 <enum name="INST_CONDITION" brief="Condition code">
@@ -353,7 +358,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <!-- operand 1 -->
     <bitfield high="6" low="6" name="SRC1_USE" brief="Source operand 1 used"/>
     <bitfield high="15" low="7" name="SRC1_REG" brief="Source operand 1 register"/>
-    <bitfield high="16" low="16" name="UNK2_16"/>
+    <bitfield high="16" low="16" name="OPCODE_BIT6" brief="Opcode bit 6 (GC2000+)"/>
     <bitfield high="24" low="17" name="SRC1_SWIZ" type="INST_SWIZ" brief="Source operand 1 swizzle"/>
     <bitfield high="25" low="25" name="SRC1_NEG" brief="Source operand 1 negate"/>
     <bitfield high="26" low="26" name="SRC1_ABS" brief="Source operand 1 absolute"/>

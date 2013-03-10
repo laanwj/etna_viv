@@ -61,7 +61,8 @@ def parse_swiz(swiz):
 
 def assemble(isa, inst, warnings):
     fields = {}
-    fields['OPCODE'] = inst.op
+    fields['OPCODE'] = inst.op & 0x3F
+    fields['OPCODE_BIT6'] = (inst.op >> 6) & 0x01
     fields['COND'] = inst.cond
     fields['SAT'] = inst.sat
    

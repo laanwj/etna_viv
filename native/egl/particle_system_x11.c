@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "esUtil.h"
+#include "esWindow.h"
 #include "esShader.h"
 #include "viv_hook.h"
 
