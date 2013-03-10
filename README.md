@@ -349,6 +349,7 @@ Authors
 ========
 
 - Wladimir J. van der Laan
+- Steven J. Hill
 
 Thanks
 =======
