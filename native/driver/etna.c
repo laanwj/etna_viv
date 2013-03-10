@@ -22,13 +22,14 @@
  */
 #include "etna.h"
 #include "viv.h"
-#include "etna_context_cmd.h"
-#include "etna/state.xml.h"
+#include "state.xml.h"
 
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
+
+#include "etna_context_cmd.h"
 
 //#define DEBUG
 //#define DEBUG_CMDBUF

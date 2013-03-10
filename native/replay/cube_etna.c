@@ -11,10 +11,10 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include "etna/common.xml.h"
-#include "etna/state.xml.h"
-#include "etna/state_3d.xml.h"
-#include "etna/cmdstream.xml.h"
+#include "common.xml.h"
+#include "state.xml.h"
+#include "state_3d.xml.h"
+#include "cmdstream.xml.h"
 #include "write_bmp.h"
 #include "viv.h"
 #include "esTransform.h"

@@ -51,11 +51,6 @@
 
 #include "etna_pipe.h"
 
-#include "etna/common.xml.h"
-#include "etna/state.xml.h"
-#include "etna/state_3d.xml.h"
-#include "etna/cmdstream.xml.h"
-
 #include "write_bmp.h"
 #include "viv.h"
 #include "etna.h"
@@ -143,7 +138,7 @@ vert(GearVertex *v, GLfloat x, GLfloat y, GLfloat z, GLfloat n[3])
    return v + 1;
 }
 
-static void sincos(double x, double *s, double *c)
+static void sincos_(double x, double *s, double *c)
 {
     *s = sin(x);
     *c = cos(x);
@@ -195,11 +190,11 @@ create_gear(struct pipe_context *pipe, GLfloat inner_radius, GLfloat outer_radiu
 
    for (i = 0; i < teeth; i++) {
       /* Calculate needed sin/cos for varius angles */
-      sincos(i * 2.0 * M_PI / teeth, &s[0], &c[0]);
-      sincos(i * 2.0 * M_PI / teeth + da, &s[1], &c[1]);
-      sincos(i * 2.0 * M_PI / teeth + da * 2, &s[2], &c[2]);
-      sincos(i * 2.0 * M_PI / teeth + da * 3, &s[3], &c[3]);
-      sincos(i * 2.0 * M_PI / teeth + da * 4, &s[4], &c[4]);
+      sincos_(i * 2.0 * M_PI / teeth, &s[0], &c[0]);
+      sincos_(i * 2.0 * M_PI / teeth + da, &s[1], &c[1]);
+      sincos_(i * 2.0 * M_PI / teeth + da * 2, &s[2], &c[2]);
+      sincos_(i * 2.0 * M_PI / teeth + da * 3, &s[3], &c[3]);
+      sincos_(i * 2.0 * M_PI / teeth + da * 4, &s[4], &c[4]);
 
       /* A set of macros for making the creation of the gears easier */
 #define  GEAR_POINT(r, da) { (r) * c[(da)], (r) * s[(da)] }

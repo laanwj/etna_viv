@@ -263,8 +263,6 @@ void Draw ( ESContext *esContext )
 
    glDrawArrays( GL_POINTS, 0, NUM_PARTICLES );
    
-   eglSwapBuffers ( esContext->eglDisplay, esContext->eglSurface );
-    
    userData->frames ++;
 #ifdef HOOK
     // If logging, exit mainloop after a few frames

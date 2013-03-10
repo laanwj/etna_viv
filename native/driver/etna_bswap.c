@@ -25,8 +25,8 @@
 #include "viv.h"
 #include "etna.h"
 #include "etna_state.h"
-#include "etna/state.xml.h"
-#include "etna/state_3d.xml.h"
+#include "state.xml.h"
+#include "state_3d.xml.h"
 
 #include <stdio.h>
 #include <assert.h>

@@ -31,8 +31,8 @@
 #include "gc_hal_user_context.h"
 #include "gc_hal_types.h"
 
-#include "etna/common.xml.h"
-#include "etna/cmdstream.xml.h"
+#include "common.xml.h"
+#include "cmdstream.xml.h"
 
 #include <stdint.h>
 #include <stdlib.h>

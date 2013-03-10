@@ -136,13 +136,13 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     </value>
     <value value="0x0F" name="SELECT" brief="Choose input based on condition">
         <doc>
-            dst := src0 COND src1 ? src1 : src2
+            dst := src1 COND src0 ? src2 : src1
 
-            Sets temporary register dst to src1 if (src0 COND src1) holds, otherwise to src2.
+            Sets temporary register dst to src2 if (src1 COND src0) holds, otherwise to src1.
             This operation is performed per-component. It is used to implement MIN(a,b) and MAX(a,b)
             in the following way:
-            - MIN(a,b): SELECT.GE dst, a, b, a 
-            - MAX(a,b): SELECT.LE dst, a, b, a 
+            - MIN(a,b): SELECT.GT dst, a, b, a   (b > a ? a : b)
+            - MAX(a,b): SELECT.LT dst, a, b, a   (b &lt; a ? a : b) 
         </doc>
     </value>
     <value value="0x10" name="SET">

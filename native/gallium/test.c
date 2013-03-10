@@ -5,6 +5,8 @@
 #include "pipe/p_shader_tokens.h"
 #include "util/u_memory.h"
 
+#include "etna/isa.xml.h"
+
 #include <stdio.h>
 
 static char *
@@ -67,10 +69,36 @@ int main(int argc, char **argv)
     {
         tgsi_dump(tokens, 0); 
 
-        /*for(int i=0; i<1024; ++i)
+        union {
+            struct tgsi_header h;
+            struct tgsi_token t;
+        } hdr;
+
+        hdr.t = tokens[0];
+        printf("Header size: %i\n", hdr.h.HeaderSize);
+        printf("Body size: %i\n", hdr.h.BodySize);
+        int totalSize = hdr.h.HeaderSize + hdr.h.BodySize;
+
+        for(int i=0; i<totalSize; ++i)
         {
-            printf("%08x\n", *((uint32_t*)&tokens[i]));
-        }*/
+            printf("%08x ", *((uint32_t*)&tokens[i]));
+        }
+        printf("\n");
+
+        /* Parsing test */
+        struct tgsi_parse_context ctx = {};
+        unsigned status = TGSI_PARSE_OK;
+        status = tgsi_parse_init(&ctx, tokens);
+        assert(status == TGSI_PARSE_OK);
+
+        while(!tgsi_parse_end_of_tokens(&ctx))
+        {
+            tgsi_parse_token(&ctx);
+            /* declaration / immediate / instruction / property */
+            printf("Parsed token! %i\n", ctx.FullToken.Token.Type);
+        }
+
+        tgsi_parse_free(&ctx);
     } else {
         fprintf(stderr, "Unable to parse %s\n", argv[1]);
     }

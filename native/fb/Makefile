@@ -2,19 +2,19 @@ TOP=..
 
 include $(TOP)/Makefile.inc
 
-COMMON_FLAGS += -I../resources -I../gallium/include
+COMMON_FLAGS += -I../resources
 CFLAGS += -DDUMP
 CXXFLAGS += 
 LDFLAGS += 
 
 TARGETS = mip_cube cubemap_sphere stencil_test alpha_blend cube_companion particle_system displacement etna_gears
 COMPANION_OBJS = ../resources/companion_array.o ../resources/companion_mesh.o ../resources/companion_texture.o
-ETNA_OBJS = ../lib/viv.o ../lib/etna.o ../lib/etna_rs.o ../lib/etna_fb.o ../lib/etna_mem.o ../lib/etna_bswap.o ../lib/etna_tex.o  ../lib/etna_pipe.o
+ETNA_OBJS = ../driver/viv.o ../driver/etna.o ../driver/etna_rs.o ../driver/etna_fb.o ../driver/etna_mem.o ../driver/etna_bswap.o ../driver/etna_tex.o  ../driver/etna_pipe.o
 
 all: $(TARGETS)
 
 clean:
-	rm -f *.o ../lib/*.o ../resources/*.o
+	rm -f *.o ../lib/*.o ../resources/*.o ../driver/*.o
 	rm -f $(TARGETS)
 
 # XXX port this to etna_pipe

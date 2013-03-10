@@ -1,12 +1,12 @@
 GCABI ?= v2
-PLATFORM_GL_LIBS ?= -lEGL_VIVANTE -lGLESv2_VIVANTE -L$(TOP)/lib/egl -Xlinker --allow-shlib-undefined
+PLATFORM_GL_LIBS ?= -lEGL -lGLESv2
 
 CC = $(GCCPREFIX)gcc
 CXX = $(GCCPREFIX)g++
 LD = $(GCCPREFIX)ld
 AR = $(GCCPREFIX)ar
 
-COMMON_FLAGS =  -O2 -g -Wall -DGCABI_${GCABI} -I$(TOP)/lib -I$(TOP)/include_$(GCABI) -g -std=c99 -fPIC -I$(TOP)/include
+COMMON_FLAGS =  -O2 -g -Wall -DGCABI_${GCABI} -I$(TOP)/lib -I$(TOP)/include_$(GCABI) -g -std=c99 -fPIC -I$(TOP)/driver -I$(TOP)/gallium/include
 
 CFLAGS += $(PLATFORM_CFLAGS) $(COMMON_FLAGS)
 CXXFLAGS += $(PLATFORM_CXXFLAGS) $(COMMON_FLAGS)

@@ -3,15 +3,17 @@ Directory contents
 
 - `egl`: egl demos, to check GL functionality
 
-- `replay`: replay command stream tests
+- `replay`: original replay command stream tests (very low level)
 
-- `fb`: attempts at rendering to framebuffer using etna_pipe
+- `fb`: attempts at rendering to framebuffer using `etna_pipe` (high level gallium-like interface)
 
-- `fb_old`: attempts at rendering to framebuffer using raw state replay
+- `fb_old`: attempts at rendering to framebuffer using raw state queueing (lower level interface)
 
-- `include_v2`, `include_v4`: different versions of Vivante GPL kernel headers
+- `include_*`: different versions of Vivante GPL kernel headers
 
-- `lib`: C files shared between demos and tests
+- `lib`: C files shared between demos and tests, generic math and GL context utilities etc
+
+- `driver`: `etna_pipe` driver
 
 - `resources`: meshes, textures used in demos
 

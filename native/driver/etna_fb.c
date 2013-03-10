@@ -22,8 +22,8 @@
  */
 #include "etna_fb.h"
 #include "etna_translate.h"
-#include "etna/state.xml.h"
-#include "etna/state_3d.xml.h"
+#include "state.xml.h"
+#include "state_3d.xml.h"
 #include "minigallium.h"
 
 #include <stdio.h>

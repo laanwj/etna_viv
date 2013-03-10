@@ -8,7 +8,7 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- /home/orion/projects/etna_viv/rnndb/isa.xml (  17492 bytes, from 2013-01-22 07:45:24)
+- /home/orion/projects/etna_viv/rnndb/isa.xml (  17796 bytes, from 2013-03-10 19:53:25)
 
 Copyright (C) 2013
 */
@@ -53,6 +53,10 @@ Copyright (C) 2013
 #define INST_OPCODE_FLOOR					0x00000025
 #define INST_OPCODE_CEIL					0x00000026
 #define INST_OPCODE_SIGN					0x00000027
+#define INST_OPCODE_LOAD					0x00000032
+#define INST_OPCODE_STORE					0x00000033
+#define INST_OPCODE_LSHIFT					0x00000059
+#define INST_OPCODE_AND						0x0000005d
 #define INST_CONDITION_TRUE					0x00000000
 #define INST_CONDITION_GT					0x00000001
 #define INST_CONDITION_LT					0x00000002
@@ -149,7 +153,7 @@ Copyright (C) 2013
 #define VIV_ISA_WORD_2_SRC1_REG__MASK				0x0000ff80
 #define VIV_ISA_WORD_2_SRC1_REG__SHIFT				7
 #define VIV_ISA_WORD_2_SRC1_REG(x)				(((x) << VIV_ISA_WORD_2_SRC1_REG__SHIFT) & VIV_ISA_WORD_2_SRC1_REG__MASK)
-#define VIV_ISA_WORD_2_UNK2_16					0x00010000
+#define VIV_ISA_WORD_2_OPCODE_BIT6				0x00010000
 #define VIV_ISA_WORD_2_SRC1_SWIZ__MASK				0x01fe0000
 #define VIV_ISA_WORD_2_SRC1_SWIZ__SHIFT				17
 #define VIV_ISA_WORD_2_SRC1_SWIZ(x)				(((x) << VIV_ISA_WORD_2_SRC1_SWIZ__SHIFT) & VIV_ISA_WORD_2_SRC1_SWIZ__MASK)

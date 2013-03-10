@@ -38,11 +38,6 @@
 
 #include "etna_pipe.h"
 
-#include "etna/common.xml.h"
-#include "etna/state.xml.h"
-#include "etna/state_3d.xml.h"
-#include "etna/cmdstream.xml.h"
-
 #include "write_bmp.h"
 #include "viv.h"
 #include "etna.h"

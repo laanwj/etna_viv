@@ -129,7 +129,7 @@ int viv_reset(void);
  */
 bool viv_query_feature(enum viv_features_word, uint32_t bits);
 
-/** Convenience macro to probe featurs from state.xml.h: 
+/** Convenience macro to probe features from state.xml.h: 
  * VIV_FEATURE(chipFeatures, FAST_CLEAR) 
  * VIV_FEATURE(chipMinorFeatures1, AUTO_DISABLE) 
  */
