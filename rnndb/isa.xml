@@ -263,10 +263,19 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </doc>
     </value>
     <!-- OpenCL (GC2000+) -->
-    <value value="0x32" name="LOAD"/>
-    <value value="0x33" name="STORE"/>
+    <value value="0x31" name="CMP" brief="Integer compare"/>
+    <value value="0x32" name="LOAD" brief="Memory load"/>
+    <value value="0x33" name="STORE" brief="Memory store"/>
+    <value value="0x3C" name="IMULLO0" brief="Integer multiply"/>
+    <value value="0x40" name="IMULHI0" brief="High half of the product of x and y (mul_hi intrinsic)"/>
+    <value value="0x58" name="LEADZERO" brief="Count leading zeros (clz intrinsic)"/>
     <value value="0x59" name="LSHIFT" brief="Bitwise left shift"/>
+    <value value="0x5A" name="RSHIFT" brief="Bitwise right shift"/>
+    <value value="0x5B" name="ROTATE" brief="Bitwise rotate (rotate intrinsic)"/>
+    <value value="0x5C" name="OR" brief="Bitwise or"/>
     <value value="0x5D" name="AND" brief="Bitwise and"/>
+    <value value="0x5E" name="XOR" brief="Bitwise exclusive or"/>
+    <value value="0x5F" name="NOT" brief="Bitwise not"/>
 </enum>
 
 <enum name="INST_CONDITION" brief="Condition code">

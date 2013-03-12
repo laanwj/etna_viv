@@ -13,9 +13,8 @@ Directory contents
 
 - `lib`: C files shared between demos and tests, generic math and GL context utilities etc
 
-- `driver`: `etna_pipe` driver
+- `driver`: `etna_pipe` driver and generated hardware header files
 
 - `resources`: meshes, textures used in demos
 
-- `include/etna`: generated hardware header files
 

@@ -509,3 +509,12 @@ XXX maybe figure out if the sampler units are shared between fragment and vertex
 
 XXX figure out wether normal texture2D works or that texture2DLod is needed.
 
+Shader size on GC2000
+----------------------
+
+The "query chip identity" ioctl on GC2000 reports an instructionCount of 512. Looking at the low-level command 
+stream dumps the device appears to have 0x0E000 - 0x0C000 = 8192 bytes of instruction memory, with 128 bit 
+instructions this indeed maps to 512 instructions. 
+
+XXX does the VS/PS split at instruction 256 during rendering affect OpenCL? Hopefully not...
+
