@@ -1,0 +1,31 @@
+VERT
+DCL IN[0]
+DCL IN[1]
+DCL IN[2]
+DCL OUT[0], POSITION
+DCL OUT[1], PSIZE
+DCL OUT[2], GENERIC[12]
+DCL CONST[0..1]
+DCL TEMP[0], LOCAL
+DCL TEMP[1], LOCAL
+DCL TEMP[2], LOCAL
+IMM FLT32 {    1.0000, -1000.0000,     0.0000,    40.0000}
+  0: SGE TEMP[0].x, IN[2].xxxx, CONST[1].xxxx
+  1: IF TEMP[0].xxxx :0
+  2:   MAD TEMP[0].xyz, CONST[1].xxxx, IN[0].xyzz, IN[1].xyzz
+  3:   ADD TEMP[0].xyz, TEMP[0].xyzz, CONST[0].xyzz
+  4:   MOV TEMP[0].w, IMM[0].xxxx
+  5: ELSE :0
+  6:   MOV TEMP[0], IMM[0].yyzz
+  7: ENDIF
+  8: RCP TEMP[1].x, IN[2].xxxx
+  9: MUL TEMP[1].x, CONST[1].xxxx, TEMP[1].xxxx
+ 10: ADD_SAT TEMP[1].x, IMM[0].xxxx, -TEMP[1].xxxx
+ 11: MUL TEMP[2].x, TEMP[1].xxxx, TEMP[1].xxxx
+ 12: MUL TEMP[2].x, TEMP[2].xxxx, IMM[0].wwww
+ 13: MOV TEMP[1].x, TEMP[1].xxxx
+ 14: MOV OUT[2], TEMP[1]
+ 15: MOV OUT[1], TEMP[2].xxxx
+ 16: MOV OUT[0], TEMP[0]
+ 17: END
+

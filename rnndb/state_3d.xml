@@ -247,11 +247,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
     </stripe>
 
-    <bitset name="GLOBAL_DIM" inline="yes">
+    <bitset name="CL_GLOBAL_DIM" inline="yes">
         <bitfield high="15" low="0" name="SIZE"/>
         <bitfield high="31" low="16" name="OFFSET"/>
     </bitset>
-    <bitset name="WORKGROUP_DIM" inline="yes">
+    <bitset name="CL_WORKGROUP_DIM" inline="yes">
         <bitfield high="9" low="0" name="SIZE" brief="Size of work group minus one"/>
         <bitfield high="31" low="16" name="COUNT" brief="Number of work groups minus one"/>
     </bitset>
@@ -269,12 +269,12 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="23" low="20" name="SWATH_SIZE_Z"/>
             <bitfield high="26" low="24" name="VALUE_ORDER"/>
         </reg32>
-        <reg32 offset="0x00904" name="GLOBAL_X" type="GLOBAL_DIM" value="0x00000000"/>
-        <reg32 offset="0x00908" name="GLOBAL_Y" type="GLOBAL_DIM" value="0x00000000"/>
-        <reg32 offset="0x0090C" name="GLOBAL_Z" type="GLOBAL_DIM" value="0x00000000"/>
-        <reg32 offset="0x00910" name="WORKGROUP_X" type="WORKGROUP_DIM" value="0x00000000"/>
-        <reg32 offset="0x00914" name="WORKGROUP_Y" type="WORKGROUP_DIM" value="0x00000000"/>
-        <reg32 offset="0x00918" name="WORKGROUP_Z" type="WORKGROUP_DIM" value="0x00000000"/>
+        <reg32 offset="0x00904" name="GLOBAL_X" type="CL_GLOBAL_DIM" value="0x00000000"/>
+        <reg32 offset="0x00908" name="GLOBAL_Y" type="CL_GLOBAL_DIM" value="0x00000000"/>
+        <reg32 offset="0x0090C" name="GLOBAL_Z" type="CL_GLOBAL_DIM" value="0x00000000"/>
+        <reg32 offset="0x00910" name="WORKGROUP_X" type="CL_WORKGROUP_DIM" value="0x00000000"/>
+        <reg32 offset="0x00914" name="WORKGROUP_Y" type="CL_WORKGROUP_DIM" value="0x00000000"/>
+        <reg32 offset="0x00918" name="WORKGROUP_Z" type="CL_WORKGROUP_DIM" value="0x00000000"/>
         <reg32 offset="0x0091C" name="THREAD_ALLOCATION" value="0x00000000"/>
         <reg32 offset="0x00920" name="KICKER" brief="Start thread walker">
             <doc>Write some value to this register to kick off thread walker</doc>

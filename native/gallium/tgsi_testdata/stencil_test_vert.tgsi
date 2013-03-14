@@ -1,0 +1,6 @@
+VERT
+DCL IN[0]
+DCL OUT[0], POSITION
+  0: MOV OUT[0], IN[0]
+  1: END
+
