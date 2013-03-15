@@ -358,7 +358,7 @@ The stride of these tiled surfaces is the number of bytes between one row of til
 Supertiling
 -------------------
 
-![supertile ordering](https://raw.github.com/laanwj/etna_viv/master/doc/images/supertile.png)
+![supertile ordering](images/supertile.png)
 
 It appears that the blob always pads render buffers pixel sizes to a multiple of 64, ie, a width of 400 becomes 448 and 800 becomes 832.
 This is because the render buffer is also tiled, albeit differently than the 4x4 tiling format of the textures. 

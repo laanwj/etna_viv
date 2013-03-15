@@ -310,7 +310,7 @@ util_format_latc2_snorm_fetch_rgba_float(float *dst, const uint8_t *src, unsigne
 #define T_MIN 0
 #define T_MAX 255
 
-#include "../../../mesa/main/texcompress_rgtc_tmp.h"
+#include "texcompress_rgtc_tmp.h"
 
 #undef TYPE
 #undef TAG
@@ -323,7 +323,7 @@ util_format_latc2_snorm_fetch_rgba_float(float *dst, const uint8_t *src, unsigne
 #define T_MIN (int8_t)-128
 #define T_MAX (int8_t)127
 
-#include "../../../mesa/main/texcompress_rgtc_tmp.h"
+#include "texcompress_rgtc_tmp.h"
 
 #undef TYPE
 #undef TAG

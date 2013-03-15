@@ -38,11 +38,11 @@ program Vivante GCxxx GPU chips.
 Framebuffer tests
 ------------------
 
-![cube_rotate output](https://raw.github.com/laanwj/etna_viv/master/native/replay/cube_replay.png)
-![cube_companion output](https://raw.github.com/laanwj/etna_viv/master/native/replay/cube_companion_replay.png)
+![cube_rotate output](native/replay/cube_replay.png)
+![cube_companion output](native/replay/cube_companion_replay.png)
 
-![mip_cube output](https://raw.github.com/laanwj/etna_viv/master/doc/images/mipmap.png)
-![displacement output](https://raw.github.com/laanwj/etna_viv/master/doc/images/displacement.png)
+![mip_cube output](doc/images/mipmap.png)
+![displacement output](doc/images/displacement.png)
 
 To exercise the initial-stage driver there are a few framebuffer tests in:
 

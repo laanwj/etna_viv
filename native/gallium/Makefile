@@ -2,7 +2,7 @@ TOP=..
 
 include $(TOP)/Makefile.inc
 
-COMMON_FLAGS += -Iauxilary -Iinclude
+COMMON_FLAGS += -Iauxilary -Iinclude -DDEBUG
 CFLAGS += $(COMMON_FLAGS)
 CXXFLAGS += $(COMMON_FLAGS) 
 LDFLAGS +=
@@ -15,6 +15,19 @@ GALLIUM_OBJS = auxilary/tgsi/tgsi_dump.o \
 	auxilary/tgsi/tgsi_build.o \
 	auxilary/tgsi/tgsi_sanity.o \
 	auxilary/util/u_debug.o \
+	auxilary/util/u_format.o \
+	auxilary/util/u_format_etc.o \
+	auxilary/util/u_format_latc.o \
+	auxilary/util/u_format_other.o \
+	auxilary/util/u_format_rgtc.o \
+	auxilary/util/u_format_s3tc.o \
+	auxilary/util/u_format_srgb.o \
+	auxilary/util/u_format_table.o \
+	auxilary/util/u_format_tests.o \
+	auxilary/util/u_format_yuv.o \
+	auxilary/util/u_format_zs.o \
+	auxilary/util/u_surface.o \
+	auxilary/util/u_tile.o \
 	auxilary/os/os_misc.o \
 	auxilary/cso_cache/cso_hash.o \
 	auxilary/cso_cache/cso_cache.o
@@ -30,6 +43,6 @@ clean:
 libminigallium.a: $(GALLIUM_OBJS)
 	$(AR) rcs $@ $^
 
-test: test.o libminigallium.a
+test: test.o etna_asm.o libminigallium.a
 	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 
