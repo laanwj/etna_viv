@@ -56,5 +56,8 @@ struct etna_inst
  */
 int etna_assemble(uint32_t *out, const struct etna_inst *inst);
 
+/* set imm of already-assembled instruction */
+int etna_assemble_set_imm(uint32_t *out, uint32_t imm);
+
 #endif
 

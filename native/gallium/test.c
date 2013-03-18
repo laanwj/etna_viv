@@ -27,6 +27,7 @@
 /* What should the compiler return (see etna_shader_program)?
  *  1) instruction data
  *  2) input-to-temporary mapping (fixed for ps)
+ *      *) in case of ps, semantic -> varying id mapping
  *  3) temporary-to-output mapping
  *  4) for each input/output: possible semantic (position, color, glpointcoord, ...)
  *  5) immediates base offset, immediate data
@@ -148,7 +149,6 @@ struct etna_compile_frame
 /* scratch area for compiling shader */
 struct etna_compile_data
 {
-    int fd; /* debug, for dumping shader binary */
     uint processor; /* TGSI_PROCESSOR_... */
 
     struct etna_reg_desc *file[TGSI_FILE_COUNT];
@@ -176,6 +176,7 @@ struct etna_compile_data
     uint32_t vertex_tex_base; /* base of vertex texture units */
 };
 
+/** Register allocation **/
 enum reg_sort_order
 {
     FIRST_USE_ASC,
@@ -186,7 +187,7 @@ enum reg_sort_order
 
 struct sort_rec
 {
-    int idx;
+    struct etna_reg_desc *ptr;
     int key;
 };
 
@@ -212,7 +213,7 @@ static int sort_registers(
          * space in active ones */
         if(regs[idx].active)
         {
-            sorted[ptr].idx = idx;
+            sorted[ptr].ptr = &regs[idx];
             switch(so)
             {
             case FIRST_USE_ASC:  sorted[ptr].key = regs[idx].first_use; break;
@@ -251,28 +252,32 @@ static void assign_temporaries_to_native(struct etna_compile_data *cd, struct et
  * however Vivante GPUs use temporaries both for passing in inputs and passing back outputs.
  * Try to re-use temporary registers where possible.
  */
-static void assign_inputs_to_temporaries(
-        struct etna_reg_desc *inouts, int num_inouts,
-        struct etna_reg_desc *temps, int num_temps)
+static void assign_inouts_to_temporaries(struct etna_compile_data *cd, uint file)
 {
-    int inout_ptr = 0;
-    int temp_ptr = 0;
+    bool mode_inputs = (file == TGSI_FILE_INPUT);
+    int inout_ptr = 0, num_inouts;
+    int temp_ptr = 0, num_temps;
     struct sort_rec inout_order[ETNA_MAX_TEMPS];
     struct sort_rec temps_order[ETNA_MAX_TEMPS];
-    num_inouts = sort_registers(inout_order, inouts, num_inouts, LAST_USE_ASC);
-    num_temps = sort_registers(temps_order, temps, num_temps, FIRST_USE_ASC);
+    num_inouts = sort_registers(inout_order, 
+            cd->file[file], cd->file_size[file],
+            mode_inputs ? LAST_USE_ASC : FIRST_USE_ASC);
+    num_temps = sort_registers(temps_order, 
+            cd->file[TGSI_FILE_TEMPORARY], cd->file_size[TGSI_FILE_TEMPORARY],
+            mode_inputs ? FIRST_USE_ASC : LAST_USE_ASC);
 
     while(inout_ptr < num_inouts && temp_ptr < num_temps)
     {
-        struct etna_reg_desc *inout = &inouts[inout_order[inout_ptr].idx];
-        struct etna_reg_desc *temp = &temps[temps_order[temp_ptr].idx];
-        if(inout->native.valid) /* Skip if already a native register assigned */
+        struct etna_reg_desc *inout = inout_order[inout_ptr].ptr;
+        struct etna_reg_desc *temp = temps_order[temp_ptr].ptr;
+        if(!inout->active || inout->native.valid) /* Skip if already a native register assigned */
         {
             inout_ptr++;
             continue;
         }
         /* last usage of this input is before or in same instruction of first use of temporary? */
-        if(inout->last_use <= temp->first_use)
+        if(mode_inputs ? (inout->last_use <= temp->first_use) :
+                         (inout->first_use >= temp->last_use))
         {
             /* assign it and advance to next input */
             inout->native = temp->native;
@@ -280,61 +285,51 @@ static void assign_inputs_to_temporaries(
         }
         temp_ptr++;
     }
-}
-
-/* assign outputs to temporaries */
-static void assign_outputs_to_temporaries(
-        struct etna_reg_desc *inouts, int num_inouts,
-        struct etna_reg_desc *temps, int num_temps)
-{
-    int inout_ptr = 0;
-    int temp_ptr = 0;
-    struct sort_rec inout_order[ETNA_MAX_TEMPS];
-    struct sort_rec temps_order[ETNA_MAX_TEMPS];
-    num_inouts = sort_registers(inout_order, inouts, num_inouts, FIRST_USE_ASC);
-    num_temps = sort_registers(temps_order, temps, num_temps, LAST_USE_ASC);
-
-    while(inout_ptr < num_inouts && temp_ptr < num_temps)
+    /* if we couldn't reuse current ones, allocate new temporaries
+     */
+    for(inout_ptr=0; inout_ptr<num_inouts; ++inout_ptr)
     {
-        struct etna_reg_desc *inout = &inouts[inout_order[inout_ptr].idx];
-        struct etna_reg_desc *temp = &temps[temps_order[temp_ptr].idx];
-        if(inout->native.valid) /* Skip if already a native register assigned */
+        struct etna_reg_desc *inout = inout_order[inout_ptr].ptr;
+        if(inout->active && !inout->native.valid)
         {
-            inout_ptr++;
-            continue;
+            inout->native = alloc_new_native_reg(cd);
         }
-        /* first usage of this output is after or in same instruction of last use of temporary? */
-        if(inout->first_use >= temp->last_use)
-        {
-            /* assign it and advance to next output */
-            inout->native = temp->native;
-            inout_ptr++;
-        }
-        temp_ptr++;
     }
 }
 
 /* Allocate an immediate with a certain value and return the index. If 
  * there is already an immediate with that value, return that.
- * XXX last two bits of returned value are the component.
- * XXX add const_size?
  */
-static int alloc_immediate_u32(struct etna_compile_data *cd, uint32_t value)
+static struct etna_inst_src alloc_imm_u32(struct etna_compile_data *cd, uint32_t value)
 {
-    for(int idx=0; idx<cd->imm_size; ++idx)
+    int idx;
+    for(idx = 0; idx<cd->imm_size; ++idx)
     {
         if(cd->imm_data[idx] == value)
-            return idx;
+            break;
     }
-    assert(cd->imm_size < ETNA_MAX_IMM);
-    cd->imm_data[cd->imm_size++] = value;
-    return cd->imm_size - 1;
+    if(idx == cd->imm_size) /* allocate new immediate */
+    {
+        assert(cd->imm_size < ETNA_MAX_IMM);
+        idx = cd->imm_size++;
+        cd->imm_data[idx] = value;
+    }
 
+    /* swizzle so that component with value is returned in all components */
+    idx += cd->imm_base;
+    struct etna_inst_src imm_src = {
+        .use = 1,
+        .rgroup = INST_RGROUP_UNIFORM_0,
+        .reg = idx/4,
+        .swiz = INST_SWIZ_X(idx & 3) | INST_SWIZ_Y(idx & 3) | 
+                INST_SWIZ_Z(idx & 3) | INST_SWIZ_W(idx & 3)
+    };
+    return imm_src;
 }
 
-static int alloc_immediate_f32(struct etna_compile_data *cd, uint32_t value)
+static struct etna_inst_src alloc_imm_f32(struct etna_compile_data *cd, uint32_t value)
 {
-    return alloc_immediate_u32(cd, etna_f32_to_u32(value));
+    return alloc_imm_u32(cd, etna_f32_to_u32(value));
 }
 
 /* Pass -- check register file declarations and immediates */
@@ -464,6 +459,7 @@ static void etna_compile_pass_check_usage(struct etna_compile_data *cd, const st
  * Recognize if 
  * a) there is only a single assignment to an output register and
  * b) the temporary is not used after that
+ * Also recognize direct assignment of IN to OUT (passthrough)
  **/
 static void etna_compile_pass_optimize_outputs(struct etna_compile_data *cd, const struct tgsi_token *tokens)
 {
@@ -500,6 +496,19 @@ static void etna_compile_pass_optimize_outputs(struct etna_compile_data *cd, con
                         cd->dead_inst[inst_idx] = true;
                     }
                 }
+                /* direct assignment of input to output -- 
+                 * allocate a new register, and associate both input and output to it */
+                if(inst->Dst[0].Register.File == TGSI_FILE_OUTPUT &&
+                   inst->Src[0].Register.File == TGSI_FILE_INPUT)
+                {
+                    uint out_idx = inst->Dst[0].Register.Index;
+                    uint in_idx = inst->Src[0].Register.Index;
+
+                    cd->file[TGSI_FILE_OUTPUT][out_idx].native = cd->file[TGSI_FILE_INPUT][in_idx].native = 
+                        alloc_new_native_reg(cd);
+                    /* mark this MOV instruction as a no-op */
+                    cd->dead_inst[inst_idx] = true;
+                }
                 break;
             default: ;
             }
@@ -515,13 +524,12 @@ static void emit_inst(struct etna_compile_data *cd, const struct etna_inst *inst
 {
     uint32_t buf[ETNA_INST_SIZE];
     etna_assemble(buf, inst);
-    if(cd->fd)
-        write(cd->fd, buf, 4*4);
     assert(cd->inst_ptr <= ETNA_MAX_INSTRUCTIONS);
     cd->code[cd->inst_ptr*4+0] = buf[0];
     cd->code[cd->inst_ptr*4+1] = buf[1];
     cd->code[cd->inst_ptr*4+2] = buf[2];
     cd->code[cd->inst_ptr*4+3] = buf[3];
+    cd->inst_ptr ++;
     printf("| %08x %08x %08x %08x\n", buf[0], buf[1], buf[2], buf[3]);
 }
 
@@ -557,10 +565,8 @@ static struct etna_inst_src convert_src(struct etna_compile_data *cd, const stru
 {
     struct etna_inst_src rv = {
         .use = 1,
-        .swiz = INST_SWIZ_X(in->Register.SwizzleX) | 
-                INST_SWIZ_Y(in->Register.SwizzleY) |
-                INST_SWIZ_Z(in->Register.SwizzleZ) |
-                INST_SWIZ_W(in->Register.SwizzleW),
+        .swiz = INST_SWIZ_X(in->Register.SwizzleX) | INST_SWIZ_Y(in->Register.SwizzleY) |
+                INST_SWIZ_Z(in->Register.SwizzleZ) | INST_SWIZ_W(in->Register.SwizzleW),
         .neg = in->Register.Negate,
         .abs = in->Register.Absolute,
         // XXX .amode
@@ -714,21 +720,31 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                 break;
             case TGSI_OPCODE_SLT: 
             case TGSI_OPCODE_SGE: 
+            case TGSI_OPCODE_SEQ:
+            case TGSI_OPCODE_SGT:
+            case TGSI_OPCODE_SLE:
+            case TGSI_OPCODE_SNE:
+            case TGSI_OPCODE_STR: {
+                uint cond = 0;
+                switch(inst->Instruction.Opcode)
+                {
+                case TGSI_OPCODE_SLT: cond = INST_CONDITION_LT; break;
+                case TGSI_OPCODE_SGE: cond = INST_CONDITION_GE; break;
+                case TGSI_OPCODE_SEQ: cond = INST_CONDITION_EQ; break;
+                case TGSI_OPCODE_SGT: cond = INST_CONDITION_GT; break;
+                case TGSI_OPCODE_SLE: cond = INST_CONDITION_LE; break;
+                case TGSI_OPCODE_SNE: cond = INST_CONDITION_NE; break;
+                case TGSI_OPCODE_STR: cond = INST_CONDITION_TRUE; break;
+                }
                 emit_inst(cd, &(struct etna_inst) {
                         .opcode = INST_OPCODE_SET,
-                        .cond = (inst->Instruction.Opcode==TGSI_OPCODE_SLT)?INST_CONDITION_LT:INST_CONDITION_GE,
+                        .cond = cond,
                         .sat = sat,
                         .dst = convert_dst(cd, &inst->Dst[0]),
                         .src[0] = convert_src(cd, &inst->Src[0]),
                         .src[1] = convert_src(cd, &inst->Src[1]), 
                         });
-                break;
-            case TGSI_OPCODE_SEQ: assert(0); break;
-            case TGSI_OPCODE_SFL: assert(0); break;
-            case TGSI_OPCODE_SGT: assert(0); break;
-            case TGSI_OPCODE_SLE: assert(0); break;
-            case TGSI_OPCODE_SNE: assert(0); break;
-            case TGSI_OPCODE_STR: assert(0); break;
+                } break;
             case TGSI_OPCODE_MAD: 
                 emit_inst(cd, &(struct etna_inst) {
                         .opcode = INST_OPCODE_MAD,
@@ -739,6 +755,7 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         .src[2] = convert_src(cd, &inst->Src[2]), 
                         });
                 break;
+            case TGSI_OPCODE_SFL: assert(0); break; /* SET to 0 */
             case TGSI_OPCODE_SUB: assert(0); break; /* XXX INST_OPCODE_ADD + negate? */
             case TGSI_OPCODE_LRP: assert(0); break;
             case TGSI_OPCODE_CND: assert(0); break;
@@ -795,22 +812,49 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
             case TGSI_OPCODE_DP2: assert(0); break;
             case TGSI_OPCODE_TXL: assert(0); break;
             case TGSI_OPCODE_BRK: assert(0); break; /* break from loop */
-            case TGSI_OPCODE_IF: 
-                /*TODO assert(0);*/
+            case TGSI_OPCODE_IF:  {
+                struct etna_compile_frame *f = &cd->frame_stack[cd->frame_sp++];
                 /* push IF to stack */
+                f->type = ETNA_COMPILE_FRAME_IF;
                 /* create "else" label */
-                /* create conditional branch to label if src0 EQ 0 */
+                f->lbl_else = alloc_new_label(cd);
+                f->lbl_endif = NULL;
                 /* mark position in instruction stream of label reference so that it can be filled in in next pass */
-                break;
-            case TGSI_OPCODE_ELSE: 
-                /*TODO assert(0);*/ 
+                label_mark_use(cd, f->lbl_else);
+                /* create conditional branch to label if src0 EQ 0 */
+                emit_inst(cd, &(struct etna_inst) {
+                        .opcode = INST_OPCODE_BRANCH,
+                        .cond = INST_CONDITION_EQ,
+                        .src[0] = convert_src(cd, &inst->Src[0]),
+                        .src[1] = alloc_imm_f32(cd, 0.0f),
+                        /* imm is filled in later */
+                        });
+                } break;
+            case TGSI_OPCODE_ELSE: {
+                assert(cd->frame_sp>0);
+                struct etna_compile_frame *f = &cd->frame_stack[cd->frame_sp-1];
+                assert(f->type == ETNA_COMPILE_FRAME_IF);
                 /* create "endif" label, and branch to endif label */
+                f->lbl_endif = alloc_new_label(cd);
+                label_mark_use(cd, f->lbl_endif);
+                emit_inst(cd, &(struct etna_inst) {
+                        .opcode = INST_OPCODE_BRANCH,
+                        .cond = INST_CONDITION_TRUE,
+                        /* imm is filled in later */
+                        });
                 /* mark "else" label at this position in instruction stream */
-                break;
-            case TGSI_OPCODE_ENDIF: 
-                /*TODO assert(0);*/ 
+                label_place(cd, f->lbl_else);
+                } break;
+            case TGSI_OPCODE_ENDIF: {
+                assert(cd->frame_sp>0);
+                struct etna_compile_frame *f = &cd->frame_stack[--cd->frame_sp];
+                assert(f->type == ETNA_COMPILE_FRAME_IF);
                 /* assign "endif" or "else" (if no ELSE) label to current position in instruction stream, pop IF */
-                break;
+                if(f->lbl_endif != NULL)
+                    label_place(cd, f->lbl_endif);
+                else
+                    label_place(cd, f->lbl_else);
+                } break;
             case TGSI_OPCODE_PUSHA: assert(0); break;
             case TGSI_OPCODE_POPA: assert(0); break;
             case TGSI_OPCODE_CEIL: assert(0); break;
@@ -951,6 +995,57 @@ static void assign_texture_units(struct etna_compile_data *cd)
     }
 }
 
+/* additional pass to fill in branch targets */
+static void etna_compile_fill_in_labels(struct etna_compile_data *cd)
+{
+    for(int idx=0; idx<cd->inst_ptr ; ++idx)
+    {
+        if(cd->lbl_usage[idx])
+        {
+            etna_assemble_set_imm(&cd->code[idx * 4], cd->lbl_usage[idx]->inst_idx);
+        }
+    }
+}
+
+/* compare two etna_native_reg structures, return true if equal */
+static bool cmp_etna_native_reg(const struct etna_native_reg to, const struct etna_native_reg from)
+{
+    return to.valid == from.valid && to.is_tex == from.is_tex && to.rgroup == from.rgroup &&
+           to.id == from.id;
+}
+
+/* go through all declarations and swap native registers to and from */
+static void swap_native_registers(struct etna_compile_data *cd, const struct etna_native_reg to, const struct etna_native_reg from)
+{
+    if(cmp_etna_native_reg(from, to))
+        return; /* Nothing to do */
+    for(int idx=0; idx<cd->total_decls; ++idx)
+    {
+        if(cmp_etna_native_reg(cd->decl[idx].native, from))
+        {
+            cd->decl[idx].native = to;
+        } else if(cmp_etna_native_reg(cd->decl[idx].native, to))
+        {
+            cd->decl[idx].native = from;
+        }
+    }
+}
+
+/* For PS we need to permute so that inputs are always in temporary 0..N-1.
+ * XXX Semantic POS is always t0. If that semantic is not used, avoid t0.
+ */
+static void permute_inputs(struct etna_compile_data *cd)
+{
+    for(int idx=0; idx<cd->file_size[TGSI_FILE_INPUT]; ++idx)
+    {
+        swap_native_registers(cd, (struct etna_native_reg) {
+                .valid = 1,
+                .rgroup = INST_RGROUP_TEMP,
+                .id = idx + 1
+            }, cd->file[TGSI_FILE_INPUT][idx].native); 
+    }
+}
+
 void etna_compile(struct etna_compile_data *cd, const struct tgsi_token *tokens)
 {
     /* Build a map from gallium register to native registers for files
@@ -989,8 +1084,7 @@ void etna_compile(struct etna_compile_data *cd, const struct tgsi_token *tokens)
      *      however, as the temp is not used before this, how would this make sense? uninitialized temporaries have an undefined
      *      value, so this would be ok
      */
-    assign_inputs_to_temporaries(cd->file[TGSI_FILE_INPUT], cd->file_size[TGSI_FILE_INPUT],
-                                 cd->file[TGSI_FILE_TEMPORARY], cd->file_size[TGSI_FILE_TEMPORARY]);
+    assign_inouts_to_temporaries(cd, TGSI_FILE_INPUT);
 
     /* assign outputs: first usage of output should be >= last usage of temp */
     /*   potential optimization case: 
@@ -1009,33 +1103,8 @@ void etna_compile(struct etna_compile_data *cd, const struct tgsi_token *tokens)
      *     else
      *       advance temporary pointer
      */
-    assign_outputs_to_temporaries(cd->file[TGSI_FILE_OUTPUT], cd->file_size[TGSI_FILE_OUTPUT], 
-                                  cd->file[TGSI_FILE_TEMPORARY], cd->file_size[TGSI_FILE_TEMPORARY]);
+    assign_inouts_to_temporaries(cd, TGSI_FILE_OUTPUT);
     
-    /* if we couldn't reuse current ones, allocate new temporaries
-     */
-    /* possible optimization: what if unallocated inputs and output could use the same register? 
-     *    this could turn a passthrough shader into an empty shader; ie
-     *    MOV OUT[0], IN[0] */
-    /* XXX move to assign_inputs_to_temporaries? */
-    for(int idx=0; idx<cd->file_size[TGSI_FILE_INPUT]; ++idx)
-    {
-        if(cd->file[TGSI_FILE_INPUT][idx].active &&
-           !cd->file[TGSI_FILE_INPUT][idx].native.valid)
-        {
-            cd->file[TGSI_FILE_INPUT][idx].native = alloc_new_native_reg(cd);
-        }
-    }
-    /* XXX move to assign_outputs_to_temporaries? */
-    for(int idx=0; idx<cd->file_size[TGSI_FILE_OUTPUT]; ++idx)
-    {
-        if(cd->file[TGSI_FILE_OUTPUT][idx].active && 
-           !cd->file[TGSI_FILE_OUTPUT][idx].native.valid)
-        {
-            cd->file[TGSI_FILE_OUTPUT][idx].native = alloc_new_native_reg(cd);
-        }
-    }
-
     assign_constants_and_immediates(cd);
     assign_texture_units(cd);
     
@@ -1043,6 +1112,10 @@ void etna_compile(struct etna_compile_data *cd, const struct tgsi_token *tokens)
      * There is no "switchboard" for varyings (AFAIK!). The output color, however, can be routed 
      * from an arbitrary temporary.
      */
+    if(cd->processor == TGSI_PROCESSOR_FRAGMENT) 
+    {
+        permute_inputs(cd);
+    }
 
     /* list declarations */
     for(int x=0; x<cd->total_decls; ++x)
@@ -1054,7 +1127,11 @@ void etna_compile(struct etna_compile_data *cd, const struct tgsi_token *tokens)
     /* pass 3: compile instructions
      */
     etna_compile_pass_generate_code(cd, tokens);
+
+    etna_compile_fill_in_labels(cd);
 }
+
+extern const char *tgsi_swizzle_names[];
 
 int main(int argc, char **argv)
 {
@@ -1091,10 +1168,18 @@ int main(int argc, char **argv)
         printf("\n");
 #endif
         struct etna_compile_data cdata = {};
-        cdata.fd = creat("shader.bin", 0777);
         cdata.vertex_tex_base = 8;
         etna_compile(&cdata, tokens);
-        close(cdata.fd);
+
+        printf("immediates:\n");
+        for(int idx=0; idx<cdata.imm_size; ++idx)
+        {
+            printf(" [%i].%s = %f (0x%08x)\n", (idx+cdata.imm_base)/4, tgsi_swizzle_names[idx%4], 
+                    *((float*)&cdata.imm_data[idx]), cdata.imm_data[idx]);
+        }
+        int fd = creat("shader.bin", 0777);
+        write(fd, cdata.code, cdata.inst_ptr*4*4);
+        close(fd);
 
     } else {
         fprintf(stderr, "Unable to parse %s\n", argv[1]);

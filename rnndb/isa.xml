@@ -181,9 +181,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <value value="0x15" name="RET" brief="Return from function"/>
     <value value="0x16" name="BRANCH" brief="Jump to address">
         <doc>
-            pc := src2_imm *if src1 COND src2*
+            pc := src2_imm *if src0 COND src1*
 
-            Changes the current value of the instruction pointer if (src1 COND src2) evaluates
+            Changes the current value of the instruction pointer if (src0 COND src1) evaluates
             to true.
         </doc>
     </value>
