@@ -28,13 +28,19 @@
  *  1) instruction data
  *  2) input-to-temporary mapping (fixed for ps)
  *      *) in case of ps, semantic -> varying id mapping
+ *      *) for each varying: number of components used
  *  3) temporary-to-output mapping
  *  4) for each input/output: possible semantic (position, color, glpointcoord, ...)
  *  5) immediates base offset, immediate data
  *  6) used texture units (and possibly the TGSI_TEXTURE_* type); not needed to configure the hw, but useful
  *       for error checking
+ *  7) enough information to add the z=(z+w)/2.0 necessary for older chips
  *
- *  Empty shaders are not allowed, should always at least generate a NOP.
+ *  Empty shaders are not allowed, should always at least generate a NOP. Also if there is a label
+ *  at the end of the shader, an extra NOP should be generated as jump target.
+ *
+ * TODO
+ * * Point texture coordinate
  */
 #include "tgsi/tgsi_text.h"
 #include "tgsi/tgsi_iterate.h"
@@ -107,6 +113,7 @@ load_text_file(const char *file_name)
 #define ETNA_MAX_DEPTH (32)
 #define ETNA_MAX_LABELS (64)
 #define ETNA_MAX_INSTRUCTIONS (1024)
+#define ETNA_NUM_VARYINGS 16
 
 struct etna_native_reg
 {
@@ -126,6 +133,10 @@ struct etna_reg_desc
 
     struct etna_native_reg native; /* native register to map to */
     unsigned rgroup:3; /* INST_RGROUP */
+    unsigned usage_mask:4; /* usage, per channel */
+    bool has_semantic;
+    struct tgsi_declaration_semantic semantic;
+    struct tgsi_declaration_interp interp;
 };
 
 /* a label */
@@ -171,6 +182,12 @@ struct etna_compile_data
     /* code generation */
     int inst_ptr; /* current instruction pointer */
     uint32_t code[ETNA_MAX_INSTRUCTIONS*4];
+
+    /* PS only */
+    int num_varyings;
+    struct tgsi_declaration_semantic varying_semantic[ETNA_NUM_VARYINGS];
+    uint32_t varying_pa_attributes[ETNA_NUM_VARYINGS]; /* PA_SHADER_ATTRIBUTES */
+    int varying_num_components[ETNA_NUM_VARYINGS];
 
     /* device profile */
     uint32_t vertex_tex_base; /* base of vertex texture units */
@@ -402,7 +419,6 @@ static void etna_compile_pass_check_usage(struct etna_compile_data *cd, const st
     while(!tgsi_parse_end_of_tokens(&ctx))
     {
         tgsi_parse_token(&ctx);
-        /* declaration / immediate / instruction / property */
         /* find out max register #s used 
          * for every register mark first and last instruction id where it's used
          * this allows finding slots that can be used as input and output registers
@@ -416,9 +432,20 @@ static void etna_compile_pass_check_usage(struct etna_compile_data *cd, const st
          * The proper way would be to do full dominator / post-dominator analysis (especially with more complicated
          * control flow such as direct branch instructions) but not for now...
          */
+        const struct tgsi_full_declaration *decl = 0;
         const struct tgsi_full_instruction *inst = 0;
         switch(ctx.FullToken.Token.Type)
         {
+        case TGSI_TOKEN_TYPE_DECLARATION:
+            decl = &ctx.FullToken.FullDeclaration;
+            for(int idx=decl->Range.First; idx<=decl->Range.Last; ++idx)
+            {
+                cd->file[decl->Declaration.File][idx].usage_mask = decl->Declaration.UsageMask;
+                cd->file[decl->Declaration.File][idx].has_semantic = decl->Declaration.Semantic;
+                cd->file[decl->Declaration.File][idx].semantic = decl->Semantic;
+                cd->file[decl->Declaration.File][idx].interp = decl->Interp;
+            }
+            break;
         case TGSI_TOKEN_TYPE_INSTRUCTION:
             /* iterate over operands */
             inst = &ctx.FullToken.FullInstruction;
@@ -522,15 +549,9 @@ static void etna_compile_pass_optimize_outputs(struct etna_compile_data *cd, con
 /* emit instruction and append to program */
 static void emit_inst(struct etna_compile_data *cd, const struct etna_inst *inst)
 {
-    uint32_t buf[ETNA_INST_SIZE];
-    etna_assemble(buf, inst);
     assert(cd->inst_ptr <= ETNA_MAX_INSTRUCTIONS);
-    cd->code[cd->inst_ptr*4+0] = buf[0];
-    cd->code[cd->inst_ptr*4+1] = buf[1];
-    cd->code[cd->inst_ptr*4+2] = buf[2];
-    cd->code[cd->inst_ptr*4+3] = buf[3];
+    etna_assemble(&cd->code[cd->inst_ptr*4], inst);
     cd->inst_ptr ++;
-    printf("| %08x %08x %08x %08x\n", buf[0], buf[1], buf[2], buf[3]);
 }
 
 /* convert destination operand */
@@ -1034,16 +1055,40 @@ static void swap_native_registers(struct etna_compile_data *cd, const struct etn
 /* For PS we need to permute so that inputs are always in temporary 0..N-1.
  * XXX Semantic POS is always t0. If that semantic is not used, avoid t0.
  */
-static void permute_inputs(struct etna_compile_data *cd)
+static void permute_ps_inputs(struct etna_compile_data *cd)
 {
+    /* Special inputs:
+     * gl_FragCoord  VARYING_SLOT_POS   TGSI_SEMANTIC_POSITION
+     * (*) gl_PointCoord VARYING_SLOT_PNTC  TGSI_SEMANTIC_GENERIC / TGSI_SEMANTIC_PCOORD
+     *    *: if not PIPE_CAP_TGSI_TEXCOORD can replace any GENERIC, by setting a bit in rasterizer->sprite_coord_enable.
+     *       If PIPE_CAP_TGSI_TEXCOORD set, a specific semantic will be used.
+     * any other generic can be allocated to any input slot
+     */
+    uint native_idx = 1;
     for(int idx=0; idx<cd->file_size[TGSI_FILE_INPUT]; ++idx)
     {
+        struct etna_reg_desc *reg = &cd->file[TGSI_FILE_INPUT][idx];
+        uint input_id;
+        assert(reg->has_semantic);
+        if(reg->semantic.Name == TGSI_SEMANTIC_POSITION)
+        {
+            input_id = 0; 
+        } else {
+            input_id = native_idx++;
+            cd->varying_semantic[input_id-1] = reg->semantic;
+            if(reg->interp.Interpolate == TGSI_INTERPOLATE_LINEAR) /* XXX just a guess */
+                cd->varying_pa_attributes[input_id-1] = 0x2f1; 
+            else
+                cd->varying_pa_attributes[input_id-1] = 0x200;
+            cd->varying_num_components[input_id-1] = 4; /* XXX set based on used components mask */
+        }
         swap_native_registers(cd, (struct etna_native_reg) {
                 .valid = 1,
                 .rgroup = INST_RGROUP_TEMP,
-                .id = idx + 1
+                .id = input_id
             }, cd->file[TGSI_FILE_INPUT][idx].native); 
     }
+    cd->num_varyings = native_idx-1;
 }
 
 void etna_compile(struct etna_compile_data *cd, const struct tgsi_token *tokens)
@@ -1065,6 +1110,8 @@ void etna_compile(struct etna_compile_data *cd, const struct tgsi_token *tokens)
 
     /* optimize outputs */
     etna_compile_pass_optimize_outputs(cd, tokens);
+
+    /* XXX assign special inputs: gl_FrontFacing (VARYING_SLOT_FACE) */
 
     /* assign inputs: last usage of input should be <= first usage of temp */
     /*   potential optimization case:
@@ -1114,14 +1161,17 @@ void etna_compile(struct etna_compile_data *cd, const struct tgsi_token *tokens)
      */
     if(cd->processor == TGSI_PROCESSOR_FRAGMENT) 
     {
-        permute_inputs(cd);
+        permute_ps_inputs(cd);
     }
 
     /* list declarations */
     for(int x=0; x<cd->total_decls; ++x)
     {
-        printf("%i: %s,%d first_use=%i last_use=%i native=%i\n", x, tgsi_file_names[cd->decl[x].file], cd->decl[x].idx,
-                cd->decl[x].first_use, cd->decl[x].last_use, cd->decl[x].native.valid?cd->decl[x].native.id:-1);
+        printf("%i: %s,%d first_use=%i last_use=%i native=%i usage_mask=%x has_semantic=%i semantic_name=%i semantic_idx=%i\n", x, tgsi_file_names[cd->decl[x].file], cd->decl[x].idx,
+                cd->decl[x].first_use, cd->decl[x].last_use, cd->decl[x].native.valid?cd->decl[x].native.id:-1,
+                cd->decl[x].usage_mask, 
+                cd->decl[x].has_semantic,
+                cd->decl[x].semantic.Name, cd->decl[x].semantic.Index);
     }
 
     /* pass 3: compile instructions
@@ -1171,12 +1221,23 @@ int main(int argc, char **argv)
         cdata.vertex_tex_base = 8;
         etna_compile(&cdata, tokens);
 
+        for(int x=0; x<cdata.inst_ptr; ++x)
+        {
+            printf("| %08x %08x %08x %08x\n", cdata.code[x*4+0], cdata.code[x*4+1], cdata.code[x*4+2], cdata.code[x*4+3]);
+        }
         printf("immediates:\n");
         for(int idx=0; idx<cdata.imm_size; ++idx)
         {
             printf(" [%i].%s = %f (0x%08x)\n", (idx+cdata.imm_base)/4, tgsi_swizzle_names[idx%4], 
                     *((float*)&cdata.imm_data[idx]), cdata.imm_data[idx]);
         }
+        printf("varyings:\n");
+        for(int idx=0; idx<cdata.num_varyings; ++idx)
+        {
+            printf(" [%i] name=%i index=%i pa=%08x comps=%i\n", idx, cdata.varying_semantic[idx].Name, cdata.varying_semantic[idx].Index,
+                    cdata.varying_pa_attributes[idx], cdata.varying_num_components[idx]);
+        }
+
         int fd = creat("shader.bin", 0777);
         write(fd, cdata.code, cdata.inst_ptr*4*4);
         close(fd);

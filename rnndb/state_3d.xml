@@ -308,7 +308,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             These can be set either per group of bits, or all at once, by using masking flags.
             Each group of state flags has a masking flag that prevents overwriting the flags in that group.
             </doc>
-            <bitfield pos="2" name="POINT_SIZE_ENABLE" brief="Enable point size"/>
+            <bitfield pos="2" name="POINT_SIZE_ENABLE" brief="Enable point size">
+                <doc>Adds an extra output to VS (at the end).</doc>
+            </bitfield>
             <bitfield pos="3" name="POINT_SIZE_ENABLE_MASK"/>
             <bitfield pos="4" name="POINT_SPRITE_ENABLE" brief="Enable point sprite"/>
             <bitfield pos="5" name="POINT_SPRITE_ENABLE_MASK"/>
