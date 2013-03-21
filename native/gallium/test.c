@@ -41,6 +41,8 @@
  *
  * TODO
  * * Point texture coordinate
+ *   * Enable PIPE_CAP_TGSI_TEXCOORD (explicit semantic for PCOORD)
+ * * Allow loops   
  */
 #include "tgsi/tgsi_text.h"
 #include "tgsi/tgsi_iterate.h"
@@ -51,6 +53,7 @@
 #include "util/u_memory.h"
 #include "util/u_math.h"
 
+#include "etna.h"
 #include "etna_util.h"
 #include "etna_asm.h"
 #include "isa.xml.h"
@@ -113,6 +116,7 @@ load_text_file(const char *file_name)
 #define ETNA_MAX_DEPTH (32)
 #define ETNA_MAX_LABELS (64)
 #define ETNA_MAX_INSTRUCTIONS (1024)
+#define ETNA_NUM_INPUTS 16
 #define ETNA_NUM_VARYINGS 16
 
 struct etna_native_reg
@@ -157,6 +161,8 @@ struct etna_compile_frame
     struct etna_compile_label *lbl_endif;
 };
 
+
+
 /* scratch area for compiling shader */
 struct etna_compile_data
 {
@@ -183,15 +189,54 @@ struct etna_compile_data
     int inst_ptr; /* current instruction pointer */
     uint32_t code[ETNA_MAX_INSTRUCTIONS*4];
 
-    /* PS only */
+    /* i/o */
     int num_varyings;
-    struct tgsi_declaration_semantic varying_semantic[ETNA_NUM_VARYINGS];
-    uint32_t varying_pa_attributes[ETNA_NUM_VARYINGS]; /* PA_SHADER_ATTRIBUTES */
-    int varying_num_components[ETNA_NUM_VARYINGS];
 
     /* device profile */
     uint32_t vertex_tex_base; /* base of vertex texture units */
 };
+
+/* compiler output per input/output */
+struct etna_shader_inout
+{
+    int reg; /* native register */
+    struct tgsi_declaration_semantic semantic; /* tgsi semantic name and index */
+    int num_components;
+    /* varyings */
+    uint32_t pa_attributes; /* PA_SHADER_ATTRIBUTES */
+};
+
+/* shader object, for linking */
+struct etna_shader_object
+{
+    uint processor; /* TGSI_PROCESSOR_... */
+    uint32_t code_size; /* code size in uint32 words */
+    uint32_t *code;
+    unsigned num_temps;
+
+    uint32_t const_base; /* base of constants (in 32 bit units) */
+    uint32_t const_size; /* size of constants, also base of immediates (in 32 bit units) */
+    uint32_t imm_base; /* base of immediates (in 32 bit units) */
+    uint32_t imm_size; /* size of immediates (in 32 bit units) */
+    uint32_t *imm_data;
+  
+    /* inputs (for linking) 
+     *   for fs, the inputs must be in register 1..N */
+    unsigned num_inputs;
+    struct etna_shader_inout inputs[ETNA_NUM_INPUTS];
+    
+    /* outputs (for linking) */
+    unsigned num_outputs;
+    struct etna_shader_inout outputs[ETNA_NUM_INPUTS];
+
+    /* special outputs (vs only) */
+    unsigned vs_pos_out_reg; /* VS position output */
+    unsigned vs_pointsize_out_reg; /* VS point size output */
+
+    /* special outputs (ps only) */
+    unsigned ps_color_out_reg; /* color output register */
+};
+
 
 /** Register allocation **/
 enum reg_sort_order
@@ -1053,16 +1098,13 @@ static void swap_native_registers(struct etna_compile_data *cd, const struct etn
 }
 
 /* For PS we need to permute so that inputs are always in temporary 0..N-1.
- * XXX Semantic POS is always t0. If that semantic is not used, avoid t0.
+ * Semantic POS is always t0. If that semantic is not used, avoid t0.
  */
 static void permute_ps_inputs(struct etna_compile_data *cd)
 {
     /* Special inputs:
      * gl_FragCoord  VARYING_SLOT_POS   TGSI_SEMANTIC_POSITION
-     * (*) gl_PointCoord VARYING_SLOT_PNTC  TGSI_SEMANTIC_GENERIC / TGSI_SEMANTIC_PCOORD
-     *    *: if not PIPE_CAP_TGSI_TEXCOORD can replace any GENERIC, by setting a bit in rasterizer->sprite_coord_enable.
-     *       If PIPE_CAP_TGSI_TEXCOORD set, a specific semantic will be used.
-     * any other generic can be allocated to any input slot
+     * gl_PointCoord VARYING_SLOT_PNTC  TGSI_SEMANTIC_PCOORD
      */
     uint native_idx = 1;
     for(int idx=0; idx<cd->file_size[TGSI_FILE_INPUT]; ++idx)
@@ -1075,12 +1117,6 @@ static void permute_ps_inputs(struct etna_compile_data *cd)
             input_id = 0; 
         } else {
             input_id = native_idx++;
-            cd->varying_semantic[input_id-1] = reg->semantic;
-            if(reg->interp.Interpolate == TGSI_INTERPOLATE_LINEAR) /* XXX just a guess */
-                cd->varying_pa_attributes[input_id-1] = 0x2f1; 
-            else
-                cd->varying_pa_attributes[input_id-1] = 0x200;
-            cd->varying_num_components[input_id-1] = 4; /* XXX set based on used components mask */
         }
         swap_native_registers(cd, (struct etna_native_reg) {
                 .valid = 1,
@@ -1091,7 +1127,89 @@ static void permute_ps_inputs(struct etna_compile_data *cd)
     cd->num_varyings = native_idx-1;
 }
 
-void etna_compile(struct etna_compile_data *cd, const struct tgsi_token *tokens)
+/* fill in ps inputs into shader object */
+static void fill_in_ps_inputs(struct etna_shader_object *sobj, struct etna_compile_data *cd)
+{
+    sobj->num_inputs = cd->num_varyings;
+    assert(sobj->num_inputs < ETNA_NUM_INPUTS);
+    for(int idx=0; idx<cd->file_size[TGSI_FILE_INPUT]; ++idx)
+    {
+        struct etna_reg_desc *reg = &cd->file[TGSI_FILE_INPUT][idx];
+        if(reg->native.id > 0)
+        {
+            int input_id = reg->native.id - 1;
+            sobj->inputs[input_id].reg = reg->native.id;
+            sobj->inputs[input_id].semantic = reg->semantic;
+            if(reg->semantic.Name == TGSI_SEMANTIC_PCOORD ||
+               reg->semantic.Name == TGSI_SEMANTIC_TEXCOORD)
+                sobj->inputs[input_id].pa_attributes = 0x2f1; 
+            else
+                sobj->inputs[input_id].pa_attributes = 0x200;
+            sobj->inputs[input_id].num_components = 4; /* XXX this is wasteful, set based on used components mask */
+        }
+    }
+}
+
+/* fill in outputs for ps into shader object */
+static void fill_in_ps_outputs(struct etna_shader_object *sobj, struct etna_compile_data *cd)
+{
+    sobj->num_outputs = 0;
+    for(int idx=0; idx<cd->file_size[TGSI_FILE_OUTPUT]; ++idx)
+    {
+        struct etna_reg_desc *reg = &cd->file[TGSI_FILE_OUTPUT][idx];
+        switch(reg->semantic.Name)
+        {
+        case TGSI_SEMANTIC_COLOR:
+            sobj->ps_color_out_reg = reg->native.id;
+            break;
+        default:
+            assert(0); /* only output supported is COLOR at the moment */
+        }
+    }
+}
+
+/* fill in inputs for vs into shader object */
+static void fill_in_vs_inputs(struct etna_shader_object *sobj, struct etna_compile_data *cd)
+{
+    sobj->num_inputs = 0;
+    for(int idx=0; idx<cd->file_size[TGSI_FILE_INPUT]; ++idx)
+    {
+        struct etna_reg_desc *reg = &cd->file[TGSI_FILE_INPUT][idx];
+        assert(sobj->num_inputs < ETNA_NUM_INPUTS);
+        sobj->inputs[sobj->num_inputs].reg = reg->native.id;
+        sobj->inputs[sobj->num_inputs].semantic = reg->semantic;
+        sobj->inputs[sobj->num_inputs].num_components = 4; // XXX reg->num_components;
+        sobj->num_inputs++;
+    }
+}
+
+/* fill in outputs for vs into shader object */
+static void fill_in_vs_outputs(struct etna_shader_object *sobj, struct etna_compile_data *cd)
+{
+    sobj->num_outputs = 0;
+    for(int idx=0; idx<cd->file_size[TGSI_FILE_OUTPUT]; ++idx)
+    {
+        struct etna_reg_desc *reg = &cd->file[TGSI_FILE_OUTPUT][idx];
+        assert(sobj->num_inputs < ETNA_NUM_INPUTS);
+        switch(reg->semantic.Name)
+        {
+        case TGSI_SEMANTIC_POSITION:
+            sobj->vs_pos_out_reg = reg->native.id;
+            break;
+        case TGSI_SEMANTIC_PSIZE:
+            sobj->vs_pointsize_out_reg = reg->native.id;
+            break;
+        default:
+            sobj->outputs[sobj->num_outputs].reg = reg->native.id;
+            sobj->outputs[sobj->num_outputs].semantic = reg->semantic;
+            sobj->outputs[sobj->num_outputs].num_components = 4; // XXX reg->num_components;
+            sobj->num_outputs++;
+        }
+    }
+}
+
+int etna_compile(struct etna_compile_data *cd, const struct tgsi_token *tokens,
+        struct etna_shader_object **out)
 {
     /* Build a map from gallium register to native registers for files
      * CONST, SAMP, IMM, OUT, IN, TEMP. 
@@ -1179,6 +1297,28 @@ void etna_compile(struct etna_compile_data *cd, const struct tgsi_token *tokens)
     etna_compile_pass_generate_code(cd, tokens);
 
     etna_compile_fill_in_labels(cd);
+
+    /* fill in output structure */
+    struct etna_shader_object *sobj = ETNA_NEW(struct etna_shader_object);
+    sobj->processor = cd->processor;
+    sobj->code_size = cd->inst_ptr * 4;
+    sobj->code = copy32(cd->code, cd->inst_ptr * 4);
+    sobj->num_temps = cd->next_free_native;
+    sobj->const_base = 0;
+    sobj->const_size = cd->imm_base;
+    sobj->imm_base = cd->imm_base;
+    sobj->imm_size = cd->imm_size;
+    sobj->imm_data = copy32(cd->imm_data, cd->imm_size);
+    if(cd->processor == TGSI_PROCESSOR_VERTEX)
+    {
+        fill_in_vs_inputs(sobj, cd);
+        fill_in_vs_outputs(sobj, cd);
+    } else if(cd->processor == TGSI_PROCESSOR_FRAGMENT) {
+        fill_in_ps_inputs(sobj, cd);
+        fill_in_ps_outputs(sobj, cd);
+    }
+    *out = sobj;
+    return 0;
 }
 
 extern const char *tgsi_swizzle_names[];
@@ -1218,28 +1358,54 @@ int main(int argc, char **argv)
         printf("\n");
 #endif
         struct etna_compile_data cdata = {};
+        struct etna_shader_object *sobj = NULL;
         cdata.vertex_tex_base = 8;
-        etna_compile(&cdata, tokens);
+        etna_compile(&cdata, tokens, &sobj);
 
-        for(int x=0; x<cdata.inst_ptr; ++x)
+        if(sobj->processor == TGSI_PROCESSOR_VERTEX)
         {
-            printf("| %08x %08x %08x %08x\n", cdata.code[x*4+0], cdata.code[x*4+1], cdata.code[x*4+2], cdata.code[x*4+3]);
+            printf("VERT\n");
+        } else {
+            printf("FRAG\n");
         }
+        for(int x=0; x<sobj->code_size/4; ++x)
+        {
+            printf("| %08x %08x %08x %08x\n", sobj->code[x*4+0], sobj->code[x*4+1], sobj->code[x*4+2], sobj->code[x*4+3]);
+        }
+        printf("num temps: %i\n", sobj->num_temps);
+        printf("num const: %i\n", sobj->num_temps);
         printf("immediates:\n");
-        for(int idx=0; idx<cdata.imm_size; ++idx)
+        for(int idx=0; idx<sobj->imm_size; ++idx)
         {
-            printf(" [%i].%s = %f (0x%08x)\n", (idx+cdata.imm_base)/4, tgsi_swizzle_names[idx%4], 
-                    *((float*)&cdata.imm_data[idx]), cdata.imm_data[idx]);
+            printf(" [%i].%s = %f (0x%08x)\n", (idx+sobj->imm_base)/4, tgsi_swizzle_names[idx%4], 
+                    *((float*)&sobj->imm_data[idx]), sobj->imm_data[idx]);
         }
-        printf("varyings:\n");
-        for(int idx=0; idx<cdata.num_varyings; ++idx)
+        printf("inputs:\n");
+        for(int idx=0; idx<sobj->num_inputs; ++idx)
         {
-            printf(" [%i] name=%i index=%i pa=%08x comps=%i\n", idx, cdata.varying_semantic[idx].Name, cdata.varying_semantic[idx].Index,
-                    cdata.varying_pa_attributes[idx], cdata.varying_num_components[idx]);
+            printf(" [%i] name=%i index=%i pa=%08x comps=%i\n", 
+                    sobj->inputs[idx].reg, 
+                    sobj->inputs[idx].semantic.Name, sobj->inputs[idx].semantic.Index,
+                    sobj->inputs[idx].pa_attributes, sobj->inputs[idx].num_components);
         }
-
+        printf("outputs:\n");
+        for(int idx=0; idx<sobj->num_outputs; ++idx)
+        {
+            printf(" [%i] name=%i index=%i pa=%08x comps=%i\n", 
+                    sobj->outputs[idx].reg, 
+                    sobj->outputs[idx].semantic.Name, sobj->outputs[idx].semantic.Index,
+                    sobj->outputs[idx].pa_attributes, sobj->outputs[idx].num_components);
+        }
+        printf("special:\n");
+        if(sobj->processor == TGSI_PROCESSOR_VERTEX)
+        {
+            printf("  vs_pos_out_reg=%i\n", sobj->vs_pos_out_reg);
+            printf("  vs_pointsize_out_reg=%i\n", sobj->vs_pointsize_out_reg);
+        } else {
+            printf("  ps_color_out_reg=%i\n", sobj->ps_color_out_reg);
+        }
         int fd = creat("shader.bin", 0777);
-        write(fd, cdata.code, cdata.inst_ptr*4*4);
+        write(fd, sobj->code, sobj->code_size*4);
         close(fd);
 
     } else {

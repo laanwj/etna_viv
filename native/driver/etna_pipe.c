@@ -53,6 +53,7 @@
 #include "etna_mem.h"
 #include "etna_bswap.h"
 #include "etna_tex.h"
+#include "etna_util.h"
 
 #include "esTransform.h"
 #include "dds.h"
@@ -62,16 +63,6 @@
 #define SET_STATE(addr, value) cs->addr = (value)
 #define SET_STATE_FIXP(addr, value) cs->addr = (value)
 #define SET_STATE_F32(addr, value) cs->addr = etna_f32_to_u32(value)
-
-/* duplicate string of 32-bit words */
-static inline uint32_t *copy32(uint32_t *data, unsigned size)
-{
-    uint32_t *retval = malloc(size * 4);
-    if(retval)
-        memcpy(retval, data, size * 4);
-    return retval;
-}
-
 
 /*********************************************************************/
 /** Gallium state compilation */

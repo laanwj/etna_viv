@@ -36,6 +36,9 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#ifdef DEBUG
+#include <stdio.h>
+#endif
 
 /* Number of command buffers, to be used in a circular fashion.
  */
@@ -172,7 +175,7 @@ static inline int etna_reserve(etna_ctx *ctx, size_t n)
     {
         gcoCMDBUF cur_buf = &ctx->cmdbuf[ctx->cur_buf];
 #ifdef DEBUG
-        printf("etna_reserve: %i at offset %i\n", n, ctx->offset);
+        printf("etna_reserve: %i at offset %i\n", (int)n, (int)ctx->offset);
 #endif
         ETNA_ALIGN(ctx);
 

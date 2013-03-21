@@ -2,35 +2,35 @@ TOP=..
 
 include $(TOP)/Makefile.inc
 
-COMMON_FLAGS += -Iauxilary -Iinclude -DDEBUG
+COMMON_FLAGS += -Iauxiliary -Iinclude -DDEBUG
 CFLAGS += $(COMMON_FLAGS)
 CXXFLAGS += $(COMMON_FLAGS) 
 LDFLAGS +=
-GALLIUM_OBJS = auxilary/tgsi/tgsi_dump.o \
-	auxilary/tgsi/tgsi_iterate.o \
-	auxilary/tgsi/tgsi_strings.o \
-	auxilary/tgsi/tgsi_info.o \
-	auxilary/tgsi/tgsi_parse.o \
-	auxilary/tgsi/tgsi_text.o \
-	auxilary/tgsi/tgsi_build.o \
-	auxilary/tgsi/tgsi_sanity.o \
-	auxilary/util/u_debug.o \
-	auxilary/util/u_format.o \
-	auxilary/util/u_format_etc.o \
-	auxilary/util/u_format_latc.o \
-	auxilary/util/u_format_other.o \
-	auxilary/util/u_format_rgtc.o \
-	auxilary/util/u_format_s3tc.o \
-	auxilary/util/u_format_srgb.o \
-	auxilary/util/u_format_table.o \
-	auxilary/util/u_format_tests.o \
-	auxilary/util/u_format_yuv.o \
-	auxilary/util/u_format_zs.o \
-	auxilary/util/u_surface.o \
-	auxilary/util/u_tile.o \
-	auxilary/os/os_misc.o \
-	auxilary/cso_cache/cso_hash.o \
-	auxilary/cso_cache/cso_cache.o
+GALLIUM_OBJS = auxiliary/tgsi/tgsi_dump.o \
+	auxiliary/tgsi/tgsi_iterate.o \
+	auxiliary/tgsi/tgsi_strings.o \
+	auxiliary/tgsi/tgsi_info.o \
+	auxiliary/tgsi/tgsi_parse.o \
+	auxiliary/tgsi/tgsi_text.o \
+	auxiliary/tgsi/tgsi_build.o \
+	auxiliary/tgsi/tgsi_sanity.o \
+	auxiliary/util/u_debug.o \
+	auxiliary/util/u_format.o \
+	auxiliary/util/u_format_etc.o \
+	auxiliary/util/u_format_latc.o \
+	auxiliary/util/u_format_other.o \
+	auxiliary/util/u_format_rgtc.o \
+	auxiliary/util/u_format_s3tc.o \
+	auxiliary/util/u_format_srgb.o \
+	auxiliary/util/u_format_table.o \
+	auxiliary/util/u_format_tests.o \
+	auxiliary/util/u_format_yuv.o \
+	auxiliary/util/u_format_zs.o \
+	auxiliary/util/u_surface.o \
+	auxiliary/util/u_tile.o \
+	auxiliary/os/os_misc.o \
+	auxiliary/cso_cache/cso_hash.o \
+	auxiliary/cso_cache/cso_cache.o
 
 TARGETS = libminigallium.a test
 
