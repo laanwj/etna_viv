@@ -30,6 +30,7 @@
 #include "state_3d.xml.h"
 #include "cmdstream.xml.h"
 #include "etna_util.h"
+#include "etna_internal.h"
 
 #include <stdio.h>
 #include <math.h>

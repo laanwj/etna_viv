@@ -225,7 +225,8 @@ int main(int argc, char **argv)
             vtx_logical[dest_idx+comp+6] = vTexCoords[vert*2 + comp]; /* 2 */
     }
     assert((numIndices * 2) < VERTEX_BUFFER_SIZE);
-    memcpy(idx_resource->levels[0].logical, vIndices, numIndices*sizeof(GLushort));
+    float *idx_logical = etna_pipe_get_resource_ptr(pipe, idx_resource, 0, 0);
+    memcpy(idx_logical, vIndices, numIndices*sizeof(GLushort));
 
     /* compile gallium3d states */
     void *blend = pipe->create_blend_state(pipe, &(struct pipe_blend_state) {

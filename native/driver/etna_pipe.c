@@ -1053,11 +1053,11 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
     struct compiled_framebuffer_state *cs = &priv->framebuffer;
-    struct pipe_surface *cbuf = (sv->nr_cbufs > 0) ? sv->cbufs[0] : NULL;
-    struct pipe_surface *zsbuf = sv->zsbuf;
+    struct etna_surface *cbuf = (sv->nr_cbufs > 0) ? etna_surface(sv->cbufs[0]) : NULL;
+    struct etna_surface *zsbuf = etna_surface(sv->zsbuf);
     /* XXX rendering with only color or only depth should be possible */
     assert(cbuf != NULL && zsbuf != NULL);
-    uint32_t depth_format = translate_depth_format(zsbuf->format);
+    uint32_t depth_format = translate_depth_format(zsbuf->base.format);
     unsigned depth_bits = depth_format == VIVS_PE_DEPTH_CONFIG_DEPTH_FORMAT_D16 ? 16 : 24; 
     assert((cbuf->layout & 1) && (zsbuf->layout & 1)); /* color and depth buffer must be at least tiled */
     bool color_supertiled = (cbuf->layout & 2)!=0;
@@ -1071,7 +1071,7 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
             VIVS_GL_MULTI_SAMPLE_CONFIG_UNK16 */
             );  /* merged with sample_mask */
     SET_STATE(PE_COLOR_FORMAT, 
-            VIVS_PE_COLOR_FORMAT_FORMAT(translate_rt_format(cbuf->format)) |
+            VIVS_PE_COLOR_FORMAT_FORMAT(translate_rt_format(cbuf->base.format)) |
             (color_supertiled ? VIVS_PE_COLOR_FORMAT_SUPER_TILED : 0) /* XXX depends on layout */
             /* XXX VIVS_PE_COLOR_FORMAT_OVERWRITE and the rest comes from blend_state / depth_stencil_alpha */
             ); /* merged with depth_stencil_alpha */
@@ -1161,7 +1161,7 @@ static void etna_pipe_set_fragment_sampler_views(struct pipe_context *pipe,
     priv->dirty_bits |= ETNA_STATE_SAMPLER_VIEWS;
     priv->num_fragment_sampler_views = num_views;
     for(int idx=0; idx<num_views; ++idx)
-        priv->sampler_view[idx] = *info[idx]->internal;
+        priv->sampler_view[idx] = *etna_sampler_view(info[idx])->internal;
 }
 
 static void etna_pipe_set_vertex_sampler_views(struct pipe_context *pipe,
@@ -1172,7 +1172,7 @@ static void etna_pipe_set_vertex_sampler_views(struct pipe_context *pipe,
     priv->dirty_bits |= ETNA_STATE_SAMPLER_VIEWS;
     priv->num_vertex_sampler_views = num_views;
     for(int idx=0; idx<num_views; ++idx)
-        priv->sampler_view[priv->specs.vertex_sampler_offset + idx] = *info[idx]->internal;
+        priv->sampler_view[priv->specs.vertex_sampler_offset + idx] = *etna_sampler_view(info[idx])->internal;
 }
 
 static void etna_pipe_set_vertex_buffers( struct pipe_context *pipe,
@@ -1187,7 +1187,7 @@ static void etna_pipe_set_vertex_buffers( struct pipe_context *pipe,
     assert(vb[0].buffer); /* XXX user_buffer */
     SET_STATE(FE_VERTEX_STREAM_CONTROL, 
             VIVS_FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE(vb[0].stride));
-    SET_STATE(FE_VERTEX_STREAM_BASE_ADDR, vb[0].buffer->levels[0].address + vb[0].buffer_offset);
+    SET_STATE(FE_VERTEX_STREAM_BASE_ADDR, etna_resource(vb[0].buffer)->levels[0].address + vb[0].buffer_offset);
     
     priv->dirty_bits |= ETNA_STATE_VERTEX_BUFFERS;
 }
@@ -1206,7 +1206,7 @@ static void etna_pipe_set_index_buffer( struct pipe_context *pipe,
         assert(ib->buffer); /* XXX user_buffer */
         SET_STATE(FE_INDEX_STREAM_CONTROL, 
                 translate_index_size(ib->index_size));
-        SET_STATE(FE_INDEX_STREAM_BASE_ADDR, ib->buffer->levels[0].address + ib->offset);
+        SET_STATE(FE_INDEX_STREAM_BASE_ADDR, etna_resource(ib->buffer)->levels[0].address + ib->offset);
     }
     priv->dirty_bits |= ETNA_STATE_INDEX_BUFFER;
 }
@@ -1225,9 +1225,9 @@ static void etna_pipe_clear(struct pipe_context *pipe,
     {
         for(int idx=0; idx<priv->framebuffer_s.nr_cbufs; ++idx)
         {
-            struct pipe_surface *surf = priv->framebuffer_s.cbufs[idx];
+            struct etna_surface *surf = etna_surface(priv->framebuffer_s.cbufs[idx]);
 
-            surf->clear_value = translate_clear_color(surf->format, &color[idx]); 
+            surf->clear_value = translate_clear_color(surf->base.format, &color[idx]); 
             priv->framebuffer.TS_COLOR_CLEAR_VALUE = surf->clear_value;
             priv->dirty_bits |= ETNA_STATE_TS;
             etna_submit_rs_state(priv->ctx, &surf->clear_command);
@@ -1235,9 +1235,9 @@ static void etna_pipe_clear(struct pipe_context *pipe,
     }
     if((buffers & PIPE_CLEAR_DEPTHSTENCIL) && priv->framebuffer_s.zsbuf != NULL)
     {
-        struct pipe_surface *surf = priv->framebuffer_s.zsbuf;
+        struct etna_surface *surf = etna_surface(priv->framebuffer_s.zsbuf);
 
-        surf->clear_value = translate_clear_depth_stencil(surf->format, depth, stencil);
+        surf->clear_value = translate_clear_depth_stencil(surf->base.format, depth, stencil);
         priv->framebuffer.TS_DEPTH_CLEAR_VALUE = surf->clear_value;
         priv->dirty_bits |= ETNA_STATE_TS;
         etna_submit_rs_state(priv->ctx, &surf->clear_command);
@@ -1281,66 +1281,67 @@ static struct pipe_sampler_view *etna_pipe_create_sampler_view(struct pipe_conte
                                                  const struct pipe_sampler_view *templat)
 {
     //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
-    struct pipe_sampler_view *sv = ETNA_NEW(struct pipe_sampler_view);
-    *sv = *templat;
-    sv->context = pipe;
-    sv->texture = texture;
+    struct etna_sampler_view *sv = ETNA_NEW(struct etna_sampler_view);
+    sv->base = *templat;
+    sv->base.context = pipe;
+    sv->base.texture = texture;
+    assert(sv->base.texture);
 
     struct compiled_sampler_view *cs = ETNA_NEW(struct compiled_sampler_view);
-    assert(sv->texture);
-    struct pipe_resource *res = sv->texture;
+    struct etna_resource *res = etna_resource(sv->base.texture);
     assert(res != NULL);
 
     SET_STATE(TE_SAMPLER_CONFIG0, 
-                VIVS_TE_SAMPLER_CONFIG0_TYPE(translate_texture_target(res->target)) |
-                VIVS_TE_SAMPLER_CONFIG0_FORMAT(translate_texture_format(sv->format)) 
+                VIVS_TE_SAMPLER_CONFIG0_TYPE(translate_texture_target(res->base.target)) |
+                VIVS_TE_SAMPLER_CONFIG0_FORMAT(translate_texture_format(sv->base.format)) 
                 /* merged with sampler state */
             );
     /* XXX VIVS_TE_SAMPLER_CONFIG1 (swizzle, extended format), swizzle_(r|g|b|a) */
     SET_STATE(TE_SAMPLER_SIZE, 
-            VIVS_TE_SAMPLER_SIZE_WIDTH(res->width0)|
-            VIVS_TE_SAMPLER_SIZE_HEIGHT(res->height0));
+            VIVS_TE_SAMPLER_SIZE_WIDTH(res->base.width0)|
+            VIVS_TE_SAMPLER_SIZE_HEIGHT(res->base.height0));
     SET_STATE(TE_SAMPLER_LOG_SIZE, 
-            VIVS_TE_SAMPLER_LOG_SIZE_WIDTH(log2_fixp55(res->width0)) |
-            VIVS_TE_SAMPLER_LOG_SIZE_HEIGHT(log2_fixp55(res->height0)));
+            VIVS_TE_SAMPLER_LOG_SIZE_WIDTH(log2_fixp55(res->base.width0)) |
+            VIVS_TE_SAMPLER_LOG_SIZE_HEIGHT(log2_fixp55(res->base.height0)));
     /* XXX in principle we only have to define lods sv->first_level .. sv->last_level */
-    for(int lod=0; lod<=res->last_level; ++lod)
+    for(int lod=0; lod<=res->base.last_level; ++lod)
     {
         SET_STATE(TE_SAMPLER_LOD_ADDR[lod], res->levels[lod].address);
     }
-    cs->min_lod = sv->u.tex.first_level << 5;
-    cs->max_lod = etna_umin(sv->u.tex.last_level, res->last_level) << 5;
+    cs->min_lod = sv->base.u.tex.first_level << 5;
+    cs->max_lod = etna_umin(sv->base.u.tex.last_level, res->base.last_level) << 5;
 
     sv->internal = cs;
-    return sv;
+    return &sv->base;
 }
 
 static void etna_pipe_sampler_view_destroy(struct pipe_context *pipe,
                             struct pipe_sampler_view *view)
 {
     //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
-    free(view->internal);
+    free(etna_sampler_view(view)->internal);
     free(view);
 }
 
 static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
-                                      struct pipe_resource *resource,
+                                      struct pipe_resource *resource_,
                                       const struct pipe_surface *templat)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
-    struct pipe_surface *surf = ETNA_NEW(struct pipe_surface);
+    struct etna_surface *surf = ETNA_NEW(struct etna_surface);
+    struct etna_resource *resource = etna_resource(resource_);
     assert(templat->u.tex.first_layer == templat->u.tex.last_layer);
     unsigned layer = templat->u.tex.first_layer;
     unsigned level = templat->u.tex.level;
-    assert(layer < resource->array_size);
+    assert(layer < resource->base.array_size);
    
-    surf->context = pipe;
-    surf->texture = resource;
-    surf->format = resource->format;
-    surf->width = resource->levels[level].width;
-    surf->height = resource->levels[level].height;
-    surf->writable = templat->writable; // what is this for anyway
-    surf->u = templat->u;
+    surf->base.context = pipe;
+    surf->base.texture = &resource->base;
+    surf->base.format = resource->base.format;
+    surf->base.width = resource->levels[level].width;
+    surf->base.height = resource->levels[level].height;
+    surf->base.writable = templat->writable; // what is this for anyway
+    surf->base.u = templat->u;
 
     surf->layout = resource->layout;
     surf->surf = resource->levels[level];
@@ -1363,7 +1364,7 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
                 .clear_bits = 0xffff
             });
     }
-    return surf;
+    return &surf->base;
 }
 
 static void etna_pipe_surface_destroy(struct pipe_context *pipe, struct pipe_surface *surf)
@@ -1602,7 +1603,7 @@ struct pipe_resource *etna_pipe_create_2d(struct pipe_context *pipe, unsigned fl
     unsigned num_layers = 1;
     
     /* determine mipmap levels */
-    struct pipe_resource *resource = ETNA_NEW(struct pipe_resource);
+    struct etna_resource *resource = ETNA_NEW(struct etna_resource);
     if(flags & ETNA_IS_TEXTURE)
     {
         if(max_mip_level >= ETNA_NUM_LOD) /* max LOD supported by hw */
@@ -1643,7 +1644,7 @@ struct pipe_resource *etna_pipe_create_2d(struct pipe_context *pipe, unsigned fl
         y = (y+1)>>1;
         ix += 1;
     }
-    resource->last_level = ix; /* real last mipmap level */
+    resource->base.last_level = ix; /* real last mipmap level */
 
     /* Determine memory size, and whether to create a tile status */
     size_t rt_size = offset;
@@ -1676,16 +1677,16 @@ struct pipe_resource *etna_pipe_create_2d(struct pipe_context *pipe, unsigned fl
         return NULL;
     }
 
-    resource->target = (flags & ETNA_IS_CUBEMAP)?PIPE_TEXTURE_CUBE:PIPE_TEXTURE_2D;
-    resource->format = format;
-    resource->width0 = width;
-    resource->height0 = height;
-    resource->depth0 = 1;
-    resource->array_size = num_layers;
+    resource->base.target = (flags & ETNA_IS_CUBEMAP)?PIPE_TEXTURE_CUBE:PIPE_TEXTURE_2D;
+    resource->base.format = format;
+    resource->base.width0 = width;
+    resource->base.height0 = height;
+    resource->base.depth0 = 1;
+    resource->base.array_size = num_layers;
     resource->layout = layout;
     resource->surface = rt;
     resource->ts = rt_ts;
-    for(unsigned ix=0; ix<=resource->last_level; ++ix)
+    for(unsigned ix=0; ix<=resource->base.last_level; ++ix)
     {
         struct etna_resource_level *mip = &resource->levels[ix];
         mip->address = resource->surface->address + mip->offset;
@@ -1701,7 +1702,7 @@ struct pipe_resource *etna_pipe_create_2d(struct pipe_context *pipe, unsigned fl
         resource->levels[0].ts_size = resource->ts->size;
     }
 
-    return resource;
+    return &resource->base;
 }
 
 /* Allocate buffer resource 
@@ -1721,28 +1722,28 @@ struct pipe_resource *etna_pipe_create_buffer(struct pipe_context *pipe, unsigne
     printf("Allocate buffer surface of %i bytes (padded to %i), flags %08x\n",
             size, vtx->size, flags);
 
-    struct pipe_resource *resource = ETNA_NEW(struct pipe_resource);
-    resource->target = PIPE_BUFFER;
-    resource->format = PIPE_FORMAT_R8_UNORM; /* want TYPELESS or similar */
-    resource->width0 = vtx->size;
-    resource->height0 = 0;
-    resource->depth0 = 0;
-    resource->array_size = 1;
-    resource->last_level = 0;
+    struct etna_resource *resource = ETNA_NEW(struct etna_resource);
+    resource->base.target = PIPE_BUFFER;
+    resource->base.format = PIPE_FORMAT_R8_UNORM; /* want TYPELESS or similar */
+    resource->base.width0 = vtx->size;
+    resource->base.height0 = 0;
+    resource->base.depth0 = 0;
+    resource->base.array_size = 1;
+    resource->base.last_level = 0;
     resource->layout = ETNA_LAYOUT_LINEAR;
     resource->surface = vtx;
     resource->ts = 0;
-    resource->array_size = 1;
     resource->levels[0].address = resource->surface->address;
     resource->levels[0].logical = resource->surface->logical;
     resource->levels[0].ts_address = 0;
     resource->levels[0].stride = resource->levels[0].layer_stride = vtx->size;
 
-    return resource;
+    return &resource->base;
 }
 
-void etna_pipe_destroy_resource(struct pipe_context *pipe, struct pipe_resource *resource)
+void etna_pipe_destroy_resource(struct pipe_context *pipe, struct pipe_resource *resource_)
 {
+    struct etna_resource *resource = etna_resource(resource_);
     if(resource == NULL)
         return;
     etna_vidmem_free(resource->surface);
@@ -1750,20 +1751,22 @@ void etna_pipe_destroy_resource(struct pipe_context *pipe, struct pipe_resource 
     free(resource);
 }
 
-void *etna_pipe_get_resource_ptr(struct pipe_context *pipe, struct pipe_resource *resource, unsigned layer, unsigned level)
+void *etna_pipe_get_resource_ptr(struct pipe_context *pipe, struct pipe_resource *resource_, unsigned layer, unsigned level)
 {
-    if(layer >= resource->array_size || level > resource->last_level)
+    struct etna_resource *resource = etna_resource(resource_);
+    if(layer >= resource->base.array_size || level > resource->base.last_level)
         return NULL;
     /// XXX size of returned area is resource->levels[lod].layer_stride 
     return resource->levels[level].logical + resource->levels[level].layer_stride * layer;
 }
 
-void etna_pipe_inline_write(struct pipe_context *pipe, struct pipe_resource *resource, unsigned layer, unsigned level, void *data, size_t size)
+void etna_pipe_inline_write(struct pipe_context *pipe, struct pipe_resource *resource_, unsigned layer, unsigned level, void *data, size_t size)
 {
-    if(layer >= resource->array_size || level > resource->last_level)
+    struct etna_resource *resource = etna_resource(resource_);
+    if(layer >= resource->base.array_size || level > resource->base.last_level)
         return; /// XXX
     /// XXX size of returned area is resource->levels[lod].layer_stride 
-    void *ptr = etna_pipe_get_resource_ptr(pipe, resource, layer, level);
+    void *ptr = etna_pipe_get_resource_ptr(pipe, resource_, layer, level);
     if(resource->layout == ETNA_LAYOUT_LINEAR)
     {
         assert(size <= resource->levels[level].layer_stride);
@@ -1771,13 +1774,13 @@ void etna_pipe_inline_write(struct pipe_context *pipe, struct pipe_resource *res
     } else if(resource->layout == ETNA_LAYOUT_TILED)
     {
         unsigned divx=0, divy=0;
-        pipe_element_divsize(resource->format, &divx, &divy);
+        pipe_element_divsize(resource->base.format, &divx, &divy);
         assert(divx && divy);
         assert(size <= resource->levels[level].layer_stride);
         if(divx == 1 && divy == 1)
         {
             etna_texture_tile(ptr, data, resource->levels[level].width, resource->levels[level].height, 
-                    resource->levels[level].stride, pipe_element_size(resource->format));
+                    resource->levels[level].stride, pipe_element_size(resource->base.format));
         } else { /* compressed format */
             memcpy(ptr, data, size);
         }

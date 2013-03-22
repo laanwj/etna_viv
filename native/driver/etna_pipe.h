@@ -27,6 +27,9 @@
 
 #include <stdint.h>
 #include "etna.h"
+#include "etna_internal.h"
+#include "etna_mem.h"
+#include "etna_rs.h"
 #include "minigallium.h"
 
 /* etna gallium pipe resource creation flags */
@@ -39,8 +42,10 @@ enum etna_resource_flags
     ETNA_IS_CUBEMAP = 0x10 /* cubemap texture */
 };
 
-#define ETNA_NUM_INPUTS 16
-#define ETNA_NUM_VARYINGS 16
+#define ETNA_NUM_INPUTS (16)
+#define ETNA_NUM_VARYINGS (16)
+#define ETNA_NUM_LOD (14)
+#define ETNA_NUM_LAYERS (6)
 
 struct etna_shader_input
 {
@@ -85,6 +90,68 @@ struct etna_shader_program
     uint32_t *ps_uniforms; /* Initial values for VS uniforms */
 };
 
+struct etna_resource_level
+{
+   unsigned width, padded_width;
+   unsigned height, padded_height;
+   unsigned offset; /* offset into memory area */
+   unsigned size; /* size of memory area */
+
+   uint32_t address; /* cached GPU pointers to LODs */
+   void *logical; /* cached CPU pointer */
+   uint32_t ts_address;
+   uint32_t ts_size;
+   uint32_t stride; /* VIVS_PE_(COLOR|DEPTH)_STRIDE */
+   uint32_t layer_stride;
+};
+
+struct etna_resource
+{
+    struct pipe_resource base;
+
+    /* only lod 0 used for non-texture buffers */
+    enum etna_surface_layout layout;
+    etna_vidmem *surface; /* Surface video memory */
+    etna_vidmem *ts; /* Tile status video memory */
+
+    struct etna_resource_level levels[ETNA_NUM_LOD];
+    /* XXX uint32_t clear_value; */
+};
+
+struct etna_surface
+{
+    struct pipe_surface base;
+   
+    enum etna_surface_layout layout;
+    struct etna_resource_level surf;
+    uint32_t clear_value; // XXX remember depth/stencil clear value from ->clear
+    struct compiled_rs_state clear_command;
+};
+
+struct etna_sampler_view
+{
+    struct pipe_sampler_view base;
+
+    struct compiled_sampler_view *internal;
+};
+
+static INLINE struct etna_resource *
+etna_resource(struct pipe_resource *p)
+{
+    return (struct etna_resource *)p;
+}
+
+static INLINE struct etna_surface *
+etna_surface(struct pipe_surface *p)
+{
+    return (struct etna_surface *)p;
+}
+
+static INLINE struct etna_sampler_view *
+etna_sampler_view(struct pipe_sampler_view *p)
+{
+    return (struct etna_sampler_view *)p;
+}
 
 struct pipe_context *etna_new_pipe_context(etna_ctx *ctx);
 

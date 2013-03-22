@@ -22,6 +22,7 @@
  */
 #include "etna_fb.h"
 #include "etna_translate.h"
+#include "etna_pipe.h"
 #include "state.xml.h"
 #include "state_3d.xml.h"
 #include "minigallium.h"
@@ -171,8 +172,9 @@ static const struct etna_fb_format_desc etna_fb_formats[] = {
 };
 #define NUM_FB_FORMATS (sizeof(etna_fb_formats) / sizeof(etna_fb_formats[0]))
 
-int etna_fb_bind_resource(fb_info *fb, struct pipe_resource *rt_resource)
+int etna_fb_bind_resource(fb_info *fb, struct pipe_resource *rt_resource_)
 {
+    struct etna_resource *rt_resource = etna_resource(rt_resource_);
     int fmt_idx = 0;
     fb->resource = rt_resource;
     
@@ -204,7 +206,7 @@ int etna_fb_bind_resource(fb_info *fb, struct pipe_resource *rt_resource)
     for(int bi=0; bi<ETNA_FB_MAX_BUFFERS; ++bi)
     {
         etna_compile_rs_state(&fb->copy_to_screen[bi], &(struct rs_state){
-                    .source_format = translate_rt_format(rt_resource->format),
+                    .source_format = translate_rt_format(rt_resource->base.format),
                     .source_tiling = rt_resource->layout,
                     .source_addr = rt_resource->levels[0].address,
                     .source_stride = rt_resource->levels[0].stride,

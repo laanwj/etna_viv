@@ -70,6 +70,7 @@ struct pipe_viewport_state;
 struct pipe_compute_state;
 union pipe_color_union;
 union pipe_query_result;
+struct etna_shader_program;
 
 /**
  * Gallium rendering context.  Basically:
@@ -520,6 +521,12 @@ struct pipe_context {
                        const uint *block_layout, const uint *grid_layout,
                        uint32_t pc, const void *input);
    /*@}*/
+   
+   /* temp for testing until a real shader compiler */
+   void * (*create_etna_shader_state)(struct pipe_context *, const struct etna_shader_program *prog);
+   void   (*bind_etna_shader_state)(struct pipe_context *, void *);
+   void   (*delete_etna_shader_state)(struct pipe_context *, void*);
+   void   (*set_etna_uniforms)(struct pipe_context *pipe, void *sh_, unsigned type, unsigned offset, unsigned count, const uint32_t *values);
 };
 
 

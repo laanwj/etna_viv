@@ -20,49 +20,16 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-/* Low-level framebuffer query / access */
-#ifndef H_ETNA_FB
-#define H_ETNA_FB
+/* internal definitions */
+#ifndef H_ETNA_INTERNAL
+#define H_ETNA_INTERNAL
 
-#include "etna.h"
-#include "etna_rs.h"
-
-#include <stdint.h>
-#include <linux/fb.h>
-#include <unistd.h>
-
-#define ETNA_FB_MAX_BUFFERS (2) /* double buffering is enough */
-struct pipe_resource;
-typedef struct
+enum etna_surface_layout
 {
-    int fd;
-    int num_buffers;
-    size_t physical[ETNA_FB_MAX_BUFFERS];
-    void *logical[ETNA_FB_MAX_BUFFERS];
-    size_t stride;
-    size_t buffer_stride;
-    struct fb_var_screeninfo fb_var;
-    struct fb_fix_screeninfo fb_fix;
-    void *map;
-
-    struct etna_resource *resource;
-    struct compiled_rs_state copy_to_screen[ETNA_FB_MAX_BUFFERS];
-} fb_info;
-
-/* Open framebuffer and get information */
-int fb_open(int num, fb_info *out);
-
-/* Set currently visible buffer id */
-int fb_set_buffer(fb_info *fb, int buffer);
-
-/* Close framebuffer */
-int fb_close(fb_info *fb);
-
-/* Bind framebuffer to render target resource */
-int etna_fb_bind_resource(fb_info *fb, struct pipe_resource *rt_resource);
-
-/* Copy framebuffer from bound render target resource */
-int etna_fb_copy_buffer(fb_info *fb, etna_ctx *ctx, int buffer);
+    ETNA_LAYOUT_LINEAR = 0,
+    ETNA_LAYOUT_TILED = 1,
+    ETNA_LAYOUT_SUPERTILED = 3 /* 1|2, both tiling and supertiling bit enabled */
+};
 
 #endif
 
