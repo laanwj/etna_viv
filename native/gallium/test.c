@@ -34,14 +34,12 @@
  *  5) immediates base offset, immediate data
  *  6) used texture units (and possibly the TGSI_TEXTURE_* type); not needed to configure the hw, but useful
  *       for error checking
- *  7) enough information to add the z=(z+w)/2.0 necessary for older chips
+ *  7) enough information to add the z=(z+w)/2.0 necessary for older chips (output reg id is enough)
  *
  *  Empty shaders are not allowed, should always at least generate a NOP. Also if there is a label
  *  at the end of the shader, an extra NOP should be generated as jump target.
  *
  * TODO
- * * Point texture coordinate
- *   * Enable PIPE_CAP_TGSI_TEXCOORD (explicit semantic for PCOORD)
  * * Allow loops   
  */
 #include "tgsi/tgsi_text.h"
@@ -194,6 +192,7 @@ struct etna_compile_data
 
     /* device profile */
     uint32_t vertex_tex_base; /* base of vertex texture units */
+    bool need_z_div; /* needs z=(z+w)/2, for older GCxxx */
 };
 
 /* compiler output per input/output */
@@ -389,7 +388,7 @@ static struct etna_inst_src alloc_imm_u32(struct etna_compile_data *cd, uint32_t
     return imm_src;
 }
 
-static struct etna_inst_src alloc_imm_f32(struct etna_compile_data *cd, uint32_t value)
+static struct etna_inst_src alloc_imm_f32(struct etna_compile_data *cd, float value)
 {
     return alloc_imm_u32(cd, etna_f32_to_u32(value));
 }
@@ -1021,6 +1020,87 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
     tgsi_parse_free(&ctx);
 }
 
+/* Look up register by semantic */
+static struct etna_reg_desc *find_decl_by_semantic(struct etna_compile_data *cd, uint file, uint name, uint index)
+{
+    for(int idx=0; idx<cd->file_size[file]; ++idx)
+    {
+        struct etna_reg_desc *reg = &cd->file[file][idx];
+        if(reg->semantic.Name == name && reg->semantic.Index == index)
+        {
+            return reg;
+        }
+    }
+    return NULL; /* not found */
+}
+
+/** Add ADD and MUL instruction to bring Z/W to 0..1 if -1..1 if needed: 
+ * - this is a vertex shader
+ * - this is an old GPU
+ */
+static void etna_compile_add_z_div_if_needed(struct etna_compile_data *cd)
+{
+    if(cd->processor == TGSI_PROCESSOR_VERTEX && cd->need_z_div)
+    {
+        /* find position out */
+        struct etna_reg_desc *pos_reg = find_decl_by_semantic(cd, TGSI_FILE_OUTPUT, TGSI_SEMANTIC_POSITION, 0);
+        if(pos_reg != NULL)
+        {
+            /*
+             * ADD tX.__z_, tX.zzzz, void, tX.wwww
+             * MUL tX.__z_, tX.zzzz, 0.5, void
+            */
+            emit_inst(cd, &(struct etna_inst) {
+                    .opcode = INST_OPCODE_ADD,
+                    .dst.use = 1,
+                    .dst.reg = pos_reg->native.id,
+                    .dst.comps = INST_COMPS_Z,
+                    .src[0].use = 1,
+                    .src[0].reg = pos_reg->native.id,
+                    .src[0].swiz = INST_SWIZ_X(INST_SWIZ_COMP_Z) | INST_SWIZ_Y(INST_SWIZ_COMP_Z) |
+                                   INST_SWIZ_Z(INST_SWIZ_COMP_Z) | INST_SWIZ_W(INST_SWIZ_COMP_Z),
+                    .src[2].use = 1,
+                    .src[2].reg = pos_reg->native.id,
+                    .src[2].swiz = INST_SWIZ_X(INST_SWIZ_COMP_W) | INST_SWIZ_Y(INST_SWIZ_COMP_W) |
+                                   INST_SWIZ_Z(INST_SWIZ_COMP_W) | INST_SWIZ_W(INST_SWIZ_COMP_W),
+                    });
+            emit_inst(cd, &(struct etna_inst) {
+                    .opcode = INST_OPCODE_MUL,
+                    .dst.use = 1,
+                    .dst.reg = pos_reg->native.id,
+                    .dst.comps = INST_COMPS_Z,
+                    .src[0].use = 1,
+                    .src[0].reg = pos_reg->native.id,
+                    .src[0].swiz = INST_SWIZ_X(INST_SWIZ_COMP_Z) | INST_SWIZ_Y(INST_SWIZ_COMP_Z) |
+                                   INST_SWIZ_Z(INST_SWIZ_COMP_Z) | INST_SWIZ_W(INST_SWIZ_COMP_Z),
+                    .src[1] = alloc_imm_f32(cd, 0.5f),
+                    });
+        }
+    }
+}
+
+/** add a NOP to the shader if
+ * a) the shader is empty
+ * b) there is a label at the end if the shader
+ */
+static void etna_compile_add_nop_if_needed(struct etna_compile_data *cd)
+{
+    bool label_at_last_inst = false;
+    for(int idx=0; idx<cd->num_labels; ++idx)
+    {
+        if(cd->labels[idx].inst_idx == (cd->inst_ptr-1))
+        {
+            label_at_last_inst = true;
+        }
+    }
+    if(cd->inst_ptr == 0 || label_at_last_inst)
+    {
+        emit_inst(cd, &(struct etna_inst) {
+                .opcode = INST_OPCODE_NOP
+                });
+    }
+}
+
 /* Allocate CONST and IMM to native ETNA_RGROUP_UNIFORM(x).
  * CONST must be consecutive as const buffers are supposed to be consecutive, and before IMM, as this is
  * more convenient because is possible for the compilation process itself to generate extra 
@@ -1292,10 +1372,11 @@ int etna_compile(struct etna_compile_data *cd, const struct tgsi_token *tokens,
                 cd->decl[x].semantic.Name, cd->decl[x].semantic.Index);
     }
 
-    /* pass 3: compile instructions
+    /* pass 3: generate instructions
      */
     etna_compile_pass_generate_code(cd, tokens);
-
+    etna_compile_add_z_div_if_needed(cd);
+    etna_compile_add_nop_if_needed(cd);
     etna_compile_fill_in_labels(cd);
 
     /* fill in output structure */
@@ -1360,6 +1441,7 @@ int main(int argc, char **argv)
         struct etna_compile_data cdata = {};
         struct etna_shader_object *sobj = NULL;
         cdata.vertex_tex_base = 8;
+        cdata.need_z_div = true;
         etna_compile(&cdata, tokens, &sobj);
 
         if(sobj->processor == TGSI_PROCESSOR_VERTEX)
