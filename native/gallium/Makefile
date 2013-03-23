@@ -37,12 +37,12 @@ TARGETS = libminigallium.a test
 all: $(TARGETS)
 
 clean:
-	rm -f $(GALLIUM_OBJS)
+	rm -f $(GALLIUM_OBJS) ../driver/*.o
 	rm -f $(TARGETS) *.o
 
 libminigallium.a: $(GALLIUM_OBJS)
 	$(AR) rcs $@ $^
 
-test: test.o etna_asm.o libminigallium.a
+test: test.o ../driver/etna_asm.o ../driver/etna_shader.o libminigallium.a
 	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 

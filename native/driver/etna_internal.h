@@ -31,5 +31,16 @@ enum etna_surface_layout
     ETNA_LAYOUT_SUPERTILED = 3 /* 1|2, both tiling and supertiling bit enabled */
 };
 
+/* GPU chip specs */
+struct etna_pipe_specs
+{
+    bool can_supertile; /* supports SUPERTILE (64x64) tiling */
+    unsigned bits_per_tile; /* number of bits per TS tile */
+    uint32_t ts_clear_value; /* clear value for TS (dependent on bits_per_tile) */
+    unsigned vertex_sampler_offset; /* base of vertex texture units */
+    bool vs_need_z_div; /* needs z=(z+w)/2, for older GCxxx */
+};
+
+
 #endif
 

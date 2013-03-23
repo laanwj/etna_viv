@@ -330,15 +330,6 @@ struct etna_3d_state
     uint32_t /*03818*/ GL_MULTI_SAMPLE_CONFIG;
 };
 
-/* GPU chip specs */
-struct etna_pipe_specs
-{
-    bool can_supertile;
-    unsigned bits_per_tile;
-    uint32_t ts_clear_value;
-    unsigned vertex_sampler_offset;
-};
-
 /* private opaque context structure */
 struct etna_pipe_context_priv
 {
