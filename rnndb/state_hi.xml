@@ -179,15 +179,106 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00444" name="DEBUG_WRITE"/>
         <reg32 offset="0x00448" name="PROFILE_RA_READ"/> <!-- Rasterize -->
         <reg32 offset="0x0044C" name="PROFILE_TX_READ"/> <!-- Texture -->
+        <reg32 offset="0x00450" name="PROFILE_FE_READ"/> <!-- Front End -->
         <reg32 offset="0x00454" name="PROFILE_PE_READ"/> <!-- Pixel Engine -->
+        <reg32 offset="0x00458" name="PROFILE_DE_READ"/> <!-- Drawing Engine -->
         <reg32 offset="0x0045C" name="PROFILE_SH_READ"/> <!-- SHader -->
         <reg32 offset="0x00460" name="PROFILE_PA_READ"/> <!-- Primitive Assembly -->
         <reg32 offset="0x00464" name="PROFILE_SE_READ"/> <!-- Setup Engine -->
         <reg32 offset="0x00468" name="PROFILE_MC_READ"/> <!-- Memory Controller -->
         <reg32 offset="0x0046C" name="PROFILE_HI_READ"/> <!-- Host Interface -->
-        <reg32 offset="0x00470" name="PROFILE_CONFIG0" brief="Select profile counters"/>
-        <reg32 offset="0x00474" name="PROFILE_CONFIG1"/>
-        <reg32 offset="0x00478" name="PROFILE_CONFIG2"/>
+        <reg32 offset="0x00470" name="PROFILE_CONFIG0" brief="Select profile counters">
+            <doc>
+                The performance counter selected here can be read from one of the associated
+                PROFILE_xx_READ registers. Selecting counter 15 resets
+                all the counters of that unit.
+            </doc>
+            <bitfield high="3" low="0" name="FE">
+                <value value="15" name="RESET"/>
+            </bitfield>
+            <bitfield high="11" low="8" name="DE">
+                <value value="15" name="RESET"/>
+            </bitfield>
+            <bitfield high="19" low="16" name="PE">
+                <value value="0" name="PIXEL_COUNT_KILLED_BY_COLOR_PIPE"/>
+                <value value="1" name="PIXEL_COUNT_KILLED_BY_DEPTH_PIPE"/>
+                <value value="2" name="PIXEL_COUNT_DRAWN_BY_COLOR_PIPE"/>
+                <value value="3" name="PIXEL_COUNT_DRAWN_BY_DEPTH_PIPE"/>
+                <value value="15" name="RESET"/>
+            </bitfield>
+            <bitfield high="27" low="24" name="SH">
+                <value value="7" name="PS_INST_COUNTER"/>
+                <value value="8" name="RENDERED_PIXEL_COUNTER"/>
+                <value value="9" name="VS_INST_COUNTER"/>
+                <value value="10" name="RENDERED_VERTICE_COUNTER"/>
+                <value value="11" name="VTX_BRANCH_INST_COUNTER"/>
+                <value value="12" name="VTX_TEXLD_INST_COUNTER"/>
+                <value value="13" name="PXL_BRANCH_INST_COUNTER"/>
+                <value value="14" name="PXL_TEXLD_INST_COUNTER"/>
+                <value value="15" name="RESET"/>
+            </bitfield>
+        </reg32>
+        <reg32 offset="0x00474" name="PROFILE_CONFIG1">
+            <doc>
+                The performance counter selected here can be read from one of the associated
+                PROFILE_xx_READ registers. Selecting counter 15 resets
+                all the counters of that unit.
+            </doc>
+            <bitfield high="3" low="0" name="PA">
+                <value value="3" name="INPUT_VTX_COUNTER"/>
+                <value value="4" name="INPUT_PRIM_COUNTER"/>
+                <value value="5" name="OUTPUT_PRIM_COUNTER"/>
+                <value value="6" name="DEPTH_CLIPPED_COUNTER"/>
+                <value value="7" name="TRIVIAL_REJECTED_COUNTER"/>
+                <value value="8" name="CULLED_COUNTER"/>
+                <value value="15" name="RESET"/>
+            </bitfield>
+            <bitfield high="11" low="8" name="SE">
+                <value value="0" name="CULLED_TRIANGLE_COUNT"/>
+                <value value="1" name="CULLED_LINES_COUNT"/>
+                <value value="15" name="RESET"/>
+            </bitfield>
+            <bitfield high="19" low="16" name="RA">
+                <value value="0" name="VALID_PIXEL_COUNT"/>
+                <value value="1" name="TOTAL_QUAD_COUNT"/>
+                <value value="2" name="VALID_QUAD_COUNT_AFTER_EARLY_Z"/>
+                <value value="3" name="TOTAL_PRIMITIVE_COUNT"/>
+                <value value="9" name="PIPE_CACHE_MISS_COUNTER"/>
+                <value value="10" name="PREFETCH_CACHE_MISS_COUNTER"/>
+                <value value="15" name="RESET"/>
+            </bitfield>
+            <bitfield high="27" low="24" name="TX">
+                <value value="0" name="TOTAL_BILINEAR_REQUESTS"/>
+                <value value="1" name="TOTAL_TRILINEAR_REQUESTS"/>
+                <value value="2" name="TOTAL_DISCARDED_TEXTURE_REQUESTS"/>
+                <value value="3" name="TOTAL_TEXTURE_REQUESTS"/>
+                <value value="5" name="MEM_READ_COUNT"/>
+                <value value="6" name="MEM_READ_IN_8B_COUNT"/>
+                <value value="7" name="CACHE_MISS_COUNT"/>
+                <value value="8" name="CACHE_HIT_TEXEL_COUNT"/>
+                <value value="9" name="CACHE_MISS_TEXEL_COUNT"/>
+                <value value="15" name="RESET"/>
+            </bitfield>
+        </reg32>
+        <reg32 offset="0x00478" name="PROFILE_CONFIG2">
+            <doc>
+                The performance counter selected here can be read from one of the associated
+                PROFILE_xx_READ registers. Selecting counter 15 resets
+                all the counters of that unit.
+            </doc>
+            <bitfield high="3" low="0" name="MC">
+                <value value="1" name="TOTAL_READ_REQ_8B_FROM_PIPELINE"/>
+                <value value="2" name="TOTAL_READ_REQ_8B_FROM_IP"/>
+                <value value="3" name="TOTAL_WRITE_REQ_8B_FROM_PIPELINE"/>
+                <value value="15" name="RESET"/>
+            </bitfield>
+            <bitfield high="11" low="8" name="HI">
+                <value value="0" name="AXI_CYCLES_READ_REQUEST_STALLED"/>
+                <value value="1" name="AXI_CYCLES_WRITE_REQUEST_STALLED"/>
+                <value value="2" name="AXI_CYCLES_WRITE_DATA_STALLED"/>
+                <value value="15" name="RESET"/>
+            </bitfield>
+        </reg32>
         <reg32 offset="0x0047C" name="PROFILE_CONFIG3"/>
         <reg32 offset="0x00480" name="BUS_CONFIG"/>
         <reg32 offset="0x00554" name="START_COMPOSITION" brief="Kick off composition engine"/>

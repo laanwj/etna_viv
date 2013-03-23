@@ -1036,7 +1036,7 @@ static struct etna_reg_desc *find_decl_by_semantic(struct etna_compile_data *cd,
 
 /** Add ADD and MUL instruction to bring Z/W to 0..1 if -1..1 if needed: 
  * - this is a vertex shader
- * - this is an old GPU
+ * - and this is an older GPU
  */
 static void etna_compile_add_z_div_if_needed(struct etna_compile_data *cd)
 {
@@ -1081,6 +1081,7 @@ static void etna_compile_add_z_div_if_needed(struct etna_compile_data *cd)
 
 /** add a NOP to the shader if
  * a) the shader is empty
+ * or
  * b) there is a label at the end if the shader
  */
 static void etna_compile_add_nop_if_needed(struct etna_compile_data *cd)
