@@ -6,7 +6,8 @@ CXX = $(GCCPREFIX)g++
 LD = $(GCCPREFIX)ld
 AR = $(GCCPREFIX)ar
 
-COMMON_FLAGS =  -O2 -g -Wall -DGCABI_${GCABI} -I$(TOP)/lib -I$(TOP)/include_$(GCABI) -g -std=c99 -fPIC -I$(TOP)/driver -I$(TOP)/gallium/include
+COMMON_FLAGS =  -O2 -g -Wall -DGCABI_${GCABI} -I$(TOP)/lib -I$(TOP)/include_$(GCABI) -g -std=c99 -fPIC -I$(TOP)/driver \
+          -I$(TOP)/gallium/include -I$(TOP)/gallium/auxiliary
 
 CFLAGS += $(PLATFORM_CFLAGS) $(COMMON_FLAGS)
 CXXFLAGS += $(PLATFORM_CXXFLAGS) $(COMMON_FLAGS)

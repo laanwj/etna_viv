@@ -102,7 +102,7 @@ set_index_buffer index_buffer. ETNA_STATE_INDEX_BUFFER
     FE.INDEX_STREAM_CONTROL
     FE.INDEX_STREAM_BASE_ADDR
 
-shader_state shader_state-> ETNA_STATE_SHADER
+shader_state shader_state. ETNA_STATE_SHADER
     RA.CONTROL
     PA.ATTRIBUTE_ELEMENT_COUNT
     PA.SHADER_ATTRIBUTES

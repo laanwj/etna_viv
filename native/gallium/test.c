@@ -87,9 +87,6 @@ load_text_file(const char *file_name)
     return text;
 }
 
-
-extern const char *tgsi_swizzle_names[];
-
 int main(int argc, char **argv)
 {
     if(argc < 2)
@@ -131,52 +128,13 @@ int main(int argc, char **argv)
         };
         etna_compile_shader_object(&specs, tokens, &sobj);
 
-        if(sobj->processor == TGSI_PROCESSOR_VERTEX)
-        {
-            printf("VERT\n");
-        } else {
-            printf("FRAG\n");
-        }
-        for(int x=0; x<sobj->code_size/4; ++x)
-        {
-            printf("| %08x %08x %08x %08x\n", sobj->code[x*4+0], sobj->code[x*4+1], sobj->code[x*4+2], sobj->code[x*4+3]);
-        }
-        printf("num temps: %i\n", sobj->num_temps);
-        printf("num const: %i\n", sobj->num_temps);
-        printf("immediates:\n");
-        for(int idx=0; idx<sobj->imm_size; ++idx)
-        {
-            printf(" [%i].%s = %f (0x%08x)\n", (idx+sobj->imm_base)/4, tgsi_swizzle_names[idx%4], 
-                    *((float*)&sobj->imm_data[idx]), sobj->imm_data[idx]);
-        }
-        printf("inputs:\n");
-        for(int idx=0; idx<sobj->num_inputs; ++idx)
-        {
-            printf(" [%i] name=%i index=%i pa=%08x comps=%i\n", 
-                    sobj->inputs[idx].reg, 
-                    sobj->inputs[idx].semantic.Name, sobj->inputs[idx].semantic.Index,
-                    sobj->inputs[idx].pa_attributes, sobj->inputs[idx].num_components);
-        }
-        printf("outputs:\n");
-        for(int idx=0; idx<sobj->num_outputs; ++idx)
-        {
-            printf(" [%i] name=%i index=%i pa=%08x comps=%i\n", 
-                    sobj->outputs[idx].reg, 
-                    sobj->outputs[idx].semantic.Name, sobj->outputs[idx].semantic.Index,
-                    sobj->outputs[idx].pa_attributes, sobj->outputs[idx].num_components);
-        }
-        printf("special:\n");
-        if(sobj->processor == TGSI_PROCESSOR_VERTEX)
-        {
-            printf("  vs_pos_out_reg=%i\n", sobj->vs_pos_out_reg);
-            printf("  vs_pointsize_out_reg=%i\n", sobj->vs_pointsize_out_reg);
-        } else {
-            printf("  ps_color_out_reg=%i\n", sobj->ps_color_out_reg);
-            printf("  ps_depth_out_reg=%i\n", sobj->ps_depth_out_reg);
-        }
+        etna_dump_shader_object(sobj);
+
         int fd = creat("shader.bin", 0777);
         write(fd, sobj->code, sobj->code_size*4);
         close(fd);
+
+        etna_destroy_shader_object(sobj);
 
     } else {
         fprintf(stderr, "Unable to parse %s\n", argv[1]);

@@ -21,9 +21,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/* Beginnings of TGSI->Vivante conversion -- WIP */
+/* TGSI->Vivante shader ISA conversion -- WIP */
 
-/* What should the compiler return (see etna_shader_program)?
+/* What should the compiler return (see etna_shader_object)?
  *  1) instruction data
  *  2) input-to-temporary mapping (fixed for ps)
  *      *) in case of ps, semantic -> varying id mapping
@@ -42,10 +42,7 @@
  * * Allow loops   
  */
 #include "etna_shader.h"
-#include "tgsi/tgsi_text.h"
 #include "tgsi/tgsi_iterate.h"
-#include "tgsi/tgsi_dump.h"
-#include "tgsi/tgsi_parse.h"
 #include "tgsi/tgsi_strings.h"
 #include "pipe/p_shader_tokens.h"
 #include "util/u_memory.h"
@@ -61,6 +58,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+
+/* Broadcase swizzle to all four components */
+#define INST_SWIZ_BROADCAST(x) \
+        (INST_SWIZ_X(x) | INST_SWIZ_Y(x) | INST_SWIZ_Z(x) | INST_SWIZ_W(x))
 
 struct etna_native_reg
 {
@@ -95,6 +96,7 @@ struct etna_compile_label
 enum etna_compile_frame_type {
     ETNA_COMPILE_FRAME_IF, /* IF/ELSE/ENDIF */
 };
+
 /* nesting scope frame (LOOP, IF, ...) during compilation
  */
 struct etna_compile_frame
@@ -184,7 +186,7 @@ static int sort_registers(
             ptr++;
         }
     }
-
+    /* sort index by key */
     qsort(sorted, ptr, sizeof(struct sort_rec), (int (*) (const void *, const void *))sort_rec_compar);
     return ptr;
 }
@@ -281,8 +283,7 @@ static struct etna_inst_src alloc_imm_u32(struct etna_compile_data *cd, uint32_t
         .use = 1,
         .rgroup = INST_RGROUP_UNIFORM_0,
         .reg = idx/4,
-        .swiz = INST_SWIZ_X(idx & 3) | INST_SWIZ_Y(idx & 3) | 
-                INST_SWIZ_Z(idx & 3) | INST_SWIZ_W(idx & 3)
+        .swiz = INST_SWIZ_BROADCAST(idx & 3)
     };
     return imm_src;
 }
@@ -956,12 +957,10 @@ static void etna_compile_add_z_div_if_needed(struct etna_compile_data *cd)
                     .dst.comps = INST_COMPS_Z,
                     .src[0].use = 1,
                     .src[0].reg = pos_reg->native.id,
-                    .src[0].swiz = INST_SWIZ_X(INST_SWIZ_COMP_Z) | INST_SWIZ_Y(INST_SWIZ_COMP_Z) |
-                                   INST_SWIZ_Z(INST_SWIZ_COMP_Z) | INST_SWIZ_W(INST_SWIZ_COMP_Z),
+                    .src[0].swiz = INST_SWIZ_BROADCAST(INST_SWIZ_COMP_Z),
                     .src[2].use = 1,
                     .src[2].reg = pos_reg->native.id,
-                    .src[2].swiz = INST_SWIZ_X(INST_SWIZ_COMP_W) | INST_SWIZ_Y(INST_SWIZ_COMP_W) |
-                                   INST_SWIZ_Z(INST_SWIZ_COMP_W) | INST_SWIZ_W(INST_SWIZ_COMP_W),
+                    .src[2].swiz = INST_SWIZ_BROADCAST(INST_SWIZ_COMP_W),
                     });
             emit_inst(cd, &(struct etna_inst) {
                     .opcode = INST_OPCODE_MUL,
@@ -970,8 +969,7 @@ static void etna_compile_add_z_div_if_needed(struct etna_compile_data *cd)
                     .dst.comps = INST_COMPS_Z,
                     .src[0].use = 1,
                     .src[0].reg = pos_reg->native.id,
-                    .src[0].swiz = INST_SWIZ_X(INST_SWIZ_COMP_Z) | INST_SWIZ_Y(INST_SWIZ_COMP_Z) |
-                                   INST_SWIZ_Z(INST_SWIZ_COMP_Z) | INST_SWIZ_W(INST_SWIZ_COMP_Z),
+                    .src[0].swiz = INST_SWIZ_BROADCAST(INST_SWIZ_COMP_Z),
                     .src[1] = alloc_imm_f32(cd, 0.5f),
                     });
         }
@@ -1060,7 +1058,7 @@ static bool cmp_etna_native_reg(const struct etna_native_reg to, const struct et
            to.id == from.id;
 }
 
-/* go through all declarations and swap native registers to and from */
+/* go through all declarations and swap native registers *to* and *from* */
 static void swap_native_registers(struct etna_compile_data *cd, const struct etna_native_reg to, const struct etna_native_reg from)
 {
     if(cmp_etna_native_reg(from, to))
@@ -1106,6 +1104,18 @@ static void permute_ps_inputs(struct etna_compile_data *cd)
     }
     cd->num_varyings = native_idx-1;
 }
+
+/* compare two shader inouts by semantic for qsort / bsearch */
+static int compare_inout_semantic_asc(const void *a_, const void *b_)
+{ 
+    const struct etna_shader_inout *a = a_, *b = b_;
+    if(a->semantic.Name < b->semantic.Name) return -1;
+    if(a->semantic.Name > b->semantic.Name) return 1;
+    if(a->semantic.Index < b->semantic.Index) return -1;
+    if(a->semantic.Index > b->semantic.Index) return 1;
+    return 0;
+}
+
 
 /* fill in ps inputs into shader object */
 static void fill_in_ps_inputs(struct etna_shader_object *sobj, struct etna_compile_data *cd)
@@ -1189,6 +1199,8 @@ static void fill_in_vs_outputs(struct etna_shader_object *sobj, struct etna_comp
             sobj->num_outputs++;
         }
     }
+    /* sort vs outputs lexicographically by semantic, index, for efficient lookup with bsearch */
+    qsort(sobj->outputs, sobj->num_outputs, sizeof(struct etna_shader_inout), compare_inout_semantic_asc);
 }
 
 int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct tgsi_token *tokens,
@@ -1315,6 +1327,83 @@ int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct
     }
     *out = sobj;
     free(cd);
+    return 0;
+}
+
+extern const char *tgsi_swizzle_names[];
+void etna_dump_shader_object(const struct etna_shader_object *sobj)
+{
+    if(sobj->processor == TGSI_PROCESSOR_VERTEX)
+    {
+        printf("VERT\n");
+    } else {
+        printf("FRAG\n");
+    }
+    for(int x=0; x<sobj->code_size/4; ++x)
+    {
+        printf("| %08x %08x %08x %08x\n", sobj->code[x*4+0], sobj->code[x*4+1], sobj->code[x*4+2], sobj->code[x*4+3]);
+    }
+    printf("num temps: %i\n", sobj->num_temps);
+    printf("num const: %i\n", sobj->num_temps);
+    printf("immediates:\n");
+    for(int idx=0; idx<sobj->imm_size; ++idx)
+    {
+        printf(" [%i].%s = %f (0x%08x)\n", (idx+sobj->imm_base)/4, tgsi_swizzle_names[idx%4], 
+                *((float*)&sobj->imm_data[idx]), sobj->imm_data[idx]);
+    }
+    printf("inputs:\n");
+    for(int idx=0; idx<sobj->num_inputs; ++idx)
+    {
+        printf(" [%i] name=%i index=%i pa=%08x comps=%i\n", 
+                sobj->inputs[idx].reg, 
+                sobj->inputs[idx].semantic.Name, sobj->inputs[idx].semantic.Index,
+                sobj->inputs[idx].pa_attributes, sobj->inputs[idx].num_components);
+    }
+    printf("outputs:\n");
+    for(int idx=0; idx<sobj->num_outputs; ++idx)
+    {
+        printf(" [%i] name=%i index=%i pa=%08x comps=%i\n", 
+                sobj->outputs[idx].reg, 
+                sobj->outputs[idx].semantic.Name, sobj->outputs[idx].semantic.Index,
+                sobj->outputs[idx].pa_attributes, sobj->outputs[idx].num_components);
+    }
+    printf("special:\n");
+    if(sobj->processor == TGSI_PROCESSOR_VERTEX)
+    {
+        printf("  vs_pos_out_reg=%i\n", sobj->vs_pos_out_reg);
+        printf("  vs_pointsize_out_reg=%i\n", sobj->vs_pointsize_out_reg);
+    } else {
+        printf("  ps_color_out_reg=%i\n", sobj->ps_color_out_reg);
+        printf("  ps_depth_out_reg=%i\n", sobj->ps_depth_out_reg);
+    }
+}
+
+void etna_destroy_shader_object(struct etna_shader_object *obj)
+{
+    if(obj != NULL)
+    {
+        free(obj->code);
+        free(obj->imm_data);
+        free(obj);
+    }
+}
+
+int etna_link_shader_objects(struct etna_shader_link_info *info, const struct etna_shader_object *vs, const struct etna_shader_object *fs)
+{
+    /* For each fs input we need to find the associated ps input, which can be found by matching on
+     * semantic name and index.
+     * A binary search can be used because the vs outputs are sorted by semantic in fill_in_vs_outputs.
+     */
+    assert(fs->num_inputs < ETNA_NUM_INPUTS);
+    for(int idx=0; idx<fs->num_inputs; ++idx)
+    {
+        struct etna_shader_inout *match = bsearch(
+                &fs->inputs[idx], vs->outputs, vs->num_outputs, sizeof(struct etna_shader_inout),
+                compare_inout_semantic_asc);
+        if(match == NULL)
+            return 1; /* not found -- link error */
+        info->varyings_vs_reg[idx] = match->reg;
+    }
     return 0;
 }
 

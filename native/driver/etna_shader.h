@@ -37,8 +37,9 @@
 #define ETNA_MAX_DEPTH (32)
 #define ETNA_MAX_LABELS (64)
 #define ETNA_MAX_INSTRUCTIONS (1024)
-#define ETNA_NUM_INPUTS 16
-#define ETNA_NUM_VARYINGS 16
+#define ETNA_NUM_INPUTS (16)
+#define ETNA_NUM_VARYINGS (16)
+#define ETNA_MAX_UNIFORMS (256)
 
 struct etna_pipe_specs;
 
@@ -84,9 +85,28 @@ struct etna_shader_object
     unsigned ps_depth_out_reg; /* depth output register */
 };
 
-/* Entry point to compiler */
+struct etna_shader_link_info
+{
+    /* each PS input is annotated with the VS output reg */
+    unsigned varyings_vs_reg[ETNA_NUM_INPUTS];
+};
+
+/* Entry point to compiler.
+ * Returns non-zero if compilation fails.
+ */
 int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct tgsi_token *tokens,
         struct etna_shader_object **out);
+
+/* Debug dump of shader object */
+void etna_dump_shader_object(const struct etna_shader_object *sobj);
+
+/* Link two shader objects together, annotates each PS input with the VS
+ * output register. Returns non-zero if the linking fails. 
+ */
+int etna_link_shader_objects(struct etna_shader_link_info *info, const struct etna_shader_object *vs, const struct etna_shader_object *fs);
+
+/* Destroy a previously allocated shader object */
+void etna_destroy_shader_object(struct etna_shader_object *obj);
 
 #endif
 
