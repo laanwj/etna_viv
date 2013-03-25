@@ -77,12 +77,12 @@ struct etna_shader_object
     struct etna_shader_inout outputs[ETNA_NUM_INPUTS];
 
     /* special outputs (vs only) */
-    unsigned vs_pos_out_reg; /* VS position output */
-    unsigned vs_pointsize_out_reg; /* VS point size output */
+    int vs_pos_out_reg; /* VS position output */
+    int vs_pointsize_out_reg; /* VS point size output */
 
     /* special outputs (ps only) */
-    unsigned ps_color_out_reg; /* color output register */
-    unsigned ps_depth_out_reg; /* depth output register */
+    int ps_color_out_reg; /* color output register */
+    int ps_depth_out_reg; /* depth output register */
 };
 
 struct etna_shader_link_info

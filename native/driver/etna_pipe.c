@@ -419,14 +419,14 @@ static void etna_link_shaders(struct pipe_context *pipe,
 
     /* link vs outputs to fs inputs */
     struct etna_shader_link_info link = {};
-    if(!etna_link_shader_objects(&link, vs, fs))
+    if(etna_link_shader_objects(&link, vs, fs))
     {
         assert(0); /* linking failed: some fs inputs do not have corresponding vs outputs */
     }
     printf("link result:\n");
     for(int idx=0; idx<fs->num_inputs; ++idx)
     {
-        printf("%i -> %i", link.varyings_vs_reg[idx], idx+1);
+        printf("  %i -> %i\n", link.varyings_vs_reg[idx], idx+1);
     }
 
     /* vs outputs (varyings) */ 
@@ -451,7 +451,7 @@ static void etna_link_shaders(struct pipe_context *pipe,
     for(int idx=0; idx<4; ++idx)
         SET_STATE(VS_INPUT[idx], vs_input[idx]);
 
-    SET_STATE(VS_LOAD_BALANCING, 0xf3f0582);  /* XXX depends on number of inputs/outputs/varyings? */
+    SET_STATE(VS_LOAD_BALANCING, 0xf3f0542);  /* XXX depends on number of inputs/outputs/varyings? */
     SET_STATE(VS_START_PC, 0);
 
     SET_STATE(PS_END_PC, fs->code_size / 4);
@@ -492,18 +492,15 @@ static void etna_link_shaders(struct pipe_context *pipe,
     /* reference instruction memory */
     cs->vs_inst_mem_size = vs->code_size;
     cs->VS_INST_MEM = vs->code;
-
     cs->ps_inst_mem_size = fs->code_size;
     cs->PS_INST_MEM = fs->code;
 
     /* uniforms layout -- first constants, then immediates */
     cs->vs_uniforms_size = vs->const_size + vs->imm_size;
-    memset(cs->VS_UNIFORMS, 0, cs->vs_uniforms_size*4);
-    memcpy(&cs->VS_UNIFORMS[vs->imm_base], vs->imm_data, vs->imm_size);
+    memcpy(&cs->VS_UNIFORMS[vs->imm_base], vs->imm_data, vs->imm_size*4);
 
     cs->ps_uniforms_size = fs->const_size + fs->imm_size;
-    memset(cs->PS_UNIFORMS, 0, cs->ps_uniforms_size*4);
-    memcpy(&cs->PS_UNIFORMS[fs->imm_base], fs->imm_data, fs->imm_size);
+    memcpy(&cs->PS_UNIFORMS[fs->imm_base], fs->imm_data, fs->imm_size*4);
 }
     
 /* Weave state */
@@ -1616,15 +1613,14 @@ static void etna_delete_etna_shader_state(struct pipe_context *pipe, void *sh_)
 static void etna_shader_set_uniforms(struct pipe_context *pipe, void *sh_, unsigned type, unsigned offset, unsigned count, const uint32_t *values)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    assert((offset + count) <= ETNA_MAX_UNIFORMS*4);
     switch(type)
     {
     case PIPE_SHADER_VERTEX:
-        assert((offset + count) <= priv->shader_state.vs_uniforms_size);
         memcpy(&priv->shader_state.VS_UNIFORMS[offset], values, count*4);
         priv->dirty_bits |= ETNA_STATE_VS_UNIFORMS;
         break;
     case PIPE_SHADER_FRAGMENT:
-        assert((offset + count) <= priv->shader_state.ps_uniforms_size);
         memcpy(&priv->shader_state.PS_UNIFORMS[offset], values, count*4);
         priv->dirty_bits |= ETNA_STATE_PS_UNIFORMS;
         break;
@@ -1685,6 +1681,7 @@ struct pipe_context *etna_new_pipe_context(etna_ctx *ctx)
     priv->specs.bits_per_tile = VIV_FEATURE(chipMinorFeatures0,2BITPERTILE)?2:4;
     priv->specs.ts_clear_value = VIV_FEATURE(chipMinorFeatures0,2BITPERTILE)?0x55555555:0x11111111;
     priv->specs.vertex_sampler_offset = 8; /* vertex and fragment samplers live in one address space */
+    priv->specs.vs_need_z_div = true; /* XXX gc2000+ and gc880 don't need this */
 
     /* TODO set sensible defaults for the other state */
     priv->base_setup.PA_W_CLIP_LIMIT = 0x34000001;

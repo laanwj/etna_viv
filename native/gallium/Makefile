@@ -30,7 +30,8 @@ GALLIUM_OBJS = auxiliary/tgsi/tgsi_dump.o \
 	auxiliary/util/u_tile.o \
 	auxiliary/os/os_misc.o \
 	auxiliary/cso_cache/cso_hash.o \
-	auxiliary/cso_cache/cso_cache.o
+	auxiliary/cso_cache/cso_cache.o \
+        targets/graw-null/graw_util.o
 
 TARGETS = libminigallium.a test
 

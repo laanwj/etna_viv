@@ -73,14 +73,13 @@ struct etna_native_reg
 
 struct etna_reg_desc
 {
-    enum tgsi_file_type file;
-    int idx;
-    bool active;
+    enum tgsi_file_type file; /* IN, OUT, TEMP, ... */
+    int idx; /* index into file */
+    bool active; /* used in program */
     int first_use; /* instruction id of first use (scope begin) */
     int last_use;  /* instruction id of last use (scope end) */
 
     struct etna_native_reg native; /* native register to map to */
-    unsigned rgroup:3; /* INST_RGROUP */
     unsigned usage_mask:4; /* usage, per channel */
     bool has_semantic;
     struct tgsi_declaration_semantic semantic;
@@ -1103,6 +1102,8 @@ static void permute_ps_inputs(struct etna_compile_data *cd)
             }, cd->file[TGSI_FILE_INPUT][idx].native); 
     }
     cd->num_varyings = native_idx-1;
+    if(native_idx > cd->next_free_native)
+        cd->next_free_native = native_idx;
 }
 
 /* compare two shader inouts by semantic for qsort / bsearch */
@@ -1344,7 +1345,7 @@ void etna_dump_shader_object(const struct etna_shader_object *sobj)
         printf("| %08x %08x %08x %08x\n", sobj->code[x*4+0], sobj->code[x*4+1], sobj->code[x*4+2], sobj->code[x*4+3]);
     }
     printf("num temps: %i\n", sobj->num_temps);
-    printf("num const: %i\n", sobj->num_temps);
+    printf("num const: %i\n", sobj->const_size);
     printf("immediates:\n");
     for(int idx=0; idx<sobj->imm_size; ++idx)
     {

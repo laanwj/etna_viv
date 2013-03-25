@@ -7,7 +7,7 @@ CFLAGS += -DDUMP
 CXXFLAGS += 
 LDFLAGS += ../gallium/libminigallium.a
 
-TARGETS = mip_cube cubemap_sphere stencil_test alpha_blend cube_companion particle_system displacement etna_gears rotate_cube
+TARGETS = mip_cube cubemap_sphere stencil_test alpha_blend cube_companion particle_system displacement etna_gears rotate_cube rotate_cube_tgsi
 COMPANION_OBJS = ../resources/companion_array.o ../resources/companion_mesh.o ../resources/companion_texture.o
 ETNA_OBJS = ../driver/viv.o ../driver/etna.o ../driver/etna_rs.o ../driver/etna_fb.o ../driver/etna_mem.o \
             ../driver/etna_bswap.o ../driver/etna_tex.o  ../driver/etna_pipe.o \
@@ -45,5 +45,8 @@ displacement: displacement.o ../lib/write_bmp.o ../lib/esUtil.o ../lib/esTransfo
 	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 
 etna_gears: etna_gears.o ../lib/write_bmp.o ../lib/esUtil.o ../lib/esTransform.o ../lib/esShapes.o $(ETNA_OBJS)
+	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
+
+rotate_cube_tgsi: rotate_cube_tgsi.o ../lib/write_bmp.o $(ETNA_OBJS) ../lib/esTransform.o
 	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 

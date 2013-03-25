@@ -45,70 +45,55 @@
 #include "etna_fb.h"
 #include "etna_bswap.h"
 #include "etna_tex.h"
+#include "state_tracker/graw.h"
 
 #include "esTransform.h"
 
 /*********************************************************************/
 #define VERTEX_BUFFER_SIZE 0x60000
-uint32_t vs[] = {
-    0x01831009, 0x00000000, 0x00000000, 0x203fc048,
-    0x02031009, 0x00000000, 0x00000000, 0x203fc058,
-    0x07841003, 0x39000800, 0x00000050, 0x00000000,
-    0x07841002, 0x39001800, 0x00aa0050, 0x00390048,
-    0x07841002, 0x39002800, 0x01540050, 0x00390048,
-    0x07841002, 0x39003800, 0x01fe0050, 0x00390048,
-    0x03851003, 0x29004800, 0x000000d0, 0x00000000,
-    0x03851002, 0x29005800, 0x00aa00d0, 0x00290058,
-    0x03811002, 0x29006800, 0x015400d0, 0x00290058,
-    0x07851003, 0x39007800, 0x00000050, 0x00000000,
-    0x07851002, 0x39008800, 0x00aa0050, 0x00390058,
-    0x07851002, 0x39009800, 0x01540050, 0x00390058,
-    0x07801002, 0x3900a800, 0x01fe0050, 0x00390058,
-    0x0401100c, 0x00000000, 0x00000000, 0x003fc008,
-    0x03801002, 0x69000800, 0x01fe00c0, 0x00290038,
-    0x03831005, 0x29000800, 0x01480040, 0x00000000,
-    0x0383100d, 0x00000000, 0x00000000, 0x00000038,
-    0x03801003, 0x29000800, 0x014801c0, 0x00000000,
-    0x00801005, 0x29001800, 0x01480040, 0x00000000,
-    0x0080108f, 0x3fc06800, 0x00000050, 0x203fc068,
-    0x03801003, 0x00000800, 0x01480140, 0x00000000,
-    0x04001009, 0x00000000, 0x00000000, 0x200000b8,
-    0x02041001, 0x2a804800, 0x00000000, 0x003fc048,
-    0x02041003, 0x2a804800, 0x00aa05c0, 0x00000002,
-};
-uint32_t ps[] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000
-};
 
-const struct etna_shader_program shader = {
-    .num_inputs = 3,
-    .inputs = {{.vs_reg=0},{.vs_reg=1},{.vs_reg=2}},
-    .num_varyings = 1,
-    .varyings = {
-        {.num_components=4, .special=ETNA_VARYING_VSOUT, .pa_attributes=0x200, .vs_reg=0}, /* color */
-    }, 
-    .vs_code_size = sizeof(vs)/4,
-    .vs_code = (uint32_t*)vs,
-    .vs_pos_out_reg = 4, // t4 out
-    .vs_load_balancing = 0xf3f0542,  /* depends on number of inputs/outputs/varyings? XXX how exactly */
-    .vs_num_temps = 6,
-    .vs_uniforms_size = 12*4,
-    .vs_uniforms = (uint32_t*)(const float[12*4]){
-        [19] = 2.0f, /* u4.w */
-        [23] = 20.0f, /* u5.w */
-        [27] = 0.0f, /* u6.w */
-        [45] = 0.5f, /* u11.y */
-        [44] = 1.0f, /* u11.x */
-    },
-    .ps_code_size = sizeof(ps)/4,
-    .ps_code = (uint32_t*)ps,
-    .ps_color_out_reg = 1, // t1 out
-    .ps_num_temps = 3,
-    .ps_uniforms_size = 1*4,
-    .ps_uniforms = (uint32_t*)(const float[1*4]){
-        [0] = 1.0f,
-    },
-};
+static const char cube_vert[] = 
+"VERT\n"
+"DCL IN[0]\n"
+"DCL IN[1]\n"
+"DCL IN[2]\n"
+"DCL OUT[0], POSITION\n"
+"DCL OUT[1], GENERIC[0]\n"
+"DCL CONST[0..10]\n"
+"DCL TEMP[0..4], LOCAL\n"
+"IMM[0] FLT32 {    2.0000,    20.0000,     1.0000,     0.0000}\n"
+"  0: MUL TEMP[0], CONST[3], IN[0].xxxx\n"
+"  1: MAD TEMP[0], CONST[4], IN[0].yyyy, TEMP[0]\n"
+"  2: MAD TEMP[0], CONST[5], IN[0].zzzz, TEMP[0]\n"
+"  3: MAD TEMP[0], CONST[6], IN[0].wwww, TEMP[0]\n"
+"  4: MUL TEMP[1], CONST[7], IN[0].xxxx\n"
+"  5: MAD TEMP[1], CONST[8], IN[0].yyyy, TEMP[1]\n"
+"  6: MAD TEMP[1], CONST[9], IN[0].zzzz, TEMP[1]\n"
+"  7: MAD TEMP[1], CONST[10], IN[0].wwww, TEMP[1]\n"
+"  8: RCP TEMP[2].x, TEMP[1].wwww\n"
+"  9: MUL TEMP[1].xyz, TEMP[1].xyzz, TEMP[2].xxxx\n"
+" 10: ADD TEMP[1].xyz, IMM[0].xxyy, -TEMP[1].xyzz\n"
+" 11: MOV TEMP[2].w, IMM[0].zzzz\n"
+" 12: MUL TEMP[3].xyz, CONST[0].xyzz, IN[1].xxxx\n"
+" 13: MAD TEMP[3].xyz, CONST[1].xyzz, IN[1].yyyy, TEMP[3].xyzz\n"
+" 14: MAD TEMP[3].xyz, CONST[2].xyzz, IN[1].zzzz, TEMP[3].xyzz\n"
+" 15: DP3 TEMP[4].x, TEMP[1].xyzz, TEMP[1].xyzz\n"
+" 16: RSQ TEMP[4].x, TEMP[4].xxxx\n"
+" 17: MUL TEMP[1].xyz, TEMP[1].xyzz, TEMP[4].xxxx\n"
+" 18: DP3 TEMP[1].x, TEMP[3].xyzz, TEMP[1].xyzz\n"
+" 19: MAX TEMP[1].x, IMM[0].wwww, TEMP[1].xxxx\n"
+" 20: MUL TEMP[2].xyz, TEMP[1].xxxx, IN[2].xyzz\n"
+" 21: MOV OUT[1], TEMP[2]\n"
+" 22: MOV OUT[0], TEMP[0]\n"
+" 23: END\n";
+
+static const char cube_frag[] = 
+"FRAG\n"
+"PROPERTY FS_COLOR0_WRITES_ALL_CBUFS 1\n"
+"DCL IN[0], GENERIC[0], PERSPECTIVE\n"
+"DCL OUT[0], COLOR\n"
+"  0: MOV OUT[0], IN[0]\n"
+"  1: END\n";
 
 float vVertices[] = {
   // front
@@ -411,9 +396,11 @@ int main(int argc, char **argv)
             });
     pipe->set_vertex_buffers(pipe, 0, 1, &vertex_buffer_desc);
     pipe->set_index_buffer(pipe, NULL);
-    
-    void *shader_state = pipe->create_etna_shader_state(pipe, &shader);
-    pipe->bind_etna_shader_state(pipe, shader_state);
+   
+    void *vtx_shader = graw_parse_vertex_shader(pipe, cube_vert);
+    void *frag_shader = graw_parse_fragment_shader(pipe, cube_frag);
+    pipe->bind_vs_state(pipe, vtx_shader);
+    pipe->bind_fs_state(pipe, frag_shader);
 
     for(int frame=0; frame<1000; ++frame)
     {
@@ -440,11 +427,11 @@ int main(int argc, char **argv)
                 .f = {0.2, 0.2, 0.2, 1.0}
                 }, 1.0, 0xff);
         
-        pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 0, 16, (uint32_t*)&modelviewprojection.m[0][0]);
-        pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 16, 3, (uint32_t*)&normal.m[0][0]); /* u4.xyz */
-        pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 20, 3, (uint32_t*)&normal.m[1][0]); /* u5.xyz */
-        pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 24, 3, (uint32_t*)&normal.m[2][0]); /* u6.xyz */
-        pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 28, 16, (uint32_t*)&modelview.m[0][0]);
+        pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 0*4, 3, (uint32_t*)&normal.m[0][0]); /* CONST[0] */
+        pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 1*4, 3, (uint32_t*)&normal.m[1][0]); /* CONST[1] */
+        pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 2*4, 3, (uint32_t*)&normal.m[2][0]); /* CONST[2] */
+        pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 3*4, 16, (uint32_t*)&modelviewprojection.m[0][0]); /* CONST[3..6] */
+        pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 7*4, 16, (uint32_t*)&modelview.m[0][0]); /* CONST[7..10] */
 
         for(int prim=0; prim<6; ++prim)
         {
@@ -454,8 +441,11 @@ int main(int argc, char **argv)
                     .start = prim*4,
                     .count = 4
                     });
-        }        
-
+        }
+#if 0
+        etna_dump_cmd_buffer(ctx);
+        exit(1);
+#endif
         etna_swap_buffers(buffers);
     }
 #ifdef DUMP
