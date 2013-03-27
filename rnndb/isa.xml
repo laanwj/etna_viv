@@ -352,7 +352,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 </reg32>
 <reg32 offset="0x00004" name="WORD_1">
     <bitfield high="2" low="0" name="TEX_AMODE" type="INST_AMODE" brief="Texture addressing mode"/>
-    <bitfield high="10" low="3" name="TEX_SWIZ" type="INST_SWIZ" brief="Texture swizzle"/>
+    <bitfield high="10" low="3" name="TEX_SWIZ" type="INST_SWIZ" brief="Texture swizzle">
+        <doc>This swizzle is applied to the components of the value fetched from the texture.</doc>
+    </bitfield>
     <!-- operand 0 -->
     <bitfield high="11" low="11" name="SRC0_USE" brief="Source operand 0 used"/>
     <bitfield high="20" low="12" name="SRC0_REG" brief="Source operand 0 register"/>

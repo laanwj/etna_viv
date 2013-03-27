@@ -7,6 +7,8 @@ Directory contents
 
 - `fb`: attempts at rendering to framebuffer using `etna_pipe` (high level gallium-like interface)
 
+- `fb_rawshader`: same as `fb`, but without using manually assembled shaders
+
 - `fb_old`: attempts at rendering to framebuffer using raw state queueing (lower level interface)
 
 - `include_*`: different versions of Vivante GPL kernel headers

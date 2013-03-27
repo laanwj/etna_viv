@@ -412,8 +412,8 @@ static void etna_link_shaders(struct pipe_context *pipe,
 
     SET_STATE(VS_END_PC, vs->code_size / 4);
     SET_STATE(VS_OUTPUT_COUNT, fs->num_inputs + 1); /* position + varyings */
-    SET_STATE(VS_INPUT_COUNT, VIVS_VS_INPUT_COUNT_COUNT(vs->num_inputs) |
-                              VIVS_VS_INPUT_COUNT_UNK8(1)); /// XXX what is this
+    /* Number of vertex elements determines number of VS inputs. Otherwise, the GPU crashes */
+    SET_STATE(VS_INPUT_COUNT, VIVS_VS_INPUT_COUNT_UNK8(1));  // XXX what is this?
     SET_STATE(VS_TEMP_REGISTER_CONTROL,
                               VIVS_VS_TEMP_REGISTER_CONTROL_NUM_TEMPS(vs->num_temps));
 
@@ -490,6 +490,16 @@ static void etna_link_shaders(struct pipe_context *pipe,
     SET_STATE(GL_VARYING_COMPONENT_USE[1], component_use[1]);
     
     /* reference instruction memory */
+#if 0
+    {
+        int fd=creat("/mnt/sdcard/shader_vs.bin", 0777);
+        write(fd, vs->code, vs->code_size*4);
+        close(fd);
+        fd=creat("/mnt/sdcard/shader_ps.bin", 0777);
+        write(fd, fs->code, fs->code_size*4);
+        close(fd);
+    }
+#endif
     cs->vs_inst_mem_size = vs->code_size;
     cs->VS_INST_MEM = vs->code;
     cs->ps_inst_mem_size = fs->code_size;
@@ -567,9 +577,12 @@ static void sync_context(struct pipe_context *pipe)
     {
         /*00804*/ EMIT_STATE(VS_OUTPUT_COUNT, VS_OUTPUT_COUNT, e->shader_state.VS_OUTPUT_COUNT + e->rasterizer->VS_OUTPUT_COUNT);
     }
+    if(dirty & (ETNA_STATE_VERTEX_ELEMENTS | ETNA_STATE_SHADER))
+    {
+        /*00808*/ EMIT_STATE(VS_INPUT_COUNT, VS_INPUT_COUNT, VIVS_VS_INPUT_COUNT_COUNT(e->vertex_elements->num_elements) | e->shader_state.VS_INPUT_COUNT);
+    }
     if(dirty & (ETNA_STATE_SHADER))
     {
-        /*00808*/ EMIT_STATE(VS_INPUT_COUNT, VS_INPUT_COUNT, e->shader_state.VS_INPUT_COUNT);
         /*0080C*/ EMIT_STATE(VS_TEMP_REGISTER_CONTROL, VS_TEMP_REGISTER_CONTROL, e->shader_state.VS_TEMP_REGISTER_CONTROL);
         for(int x=0; x<4; ++x)
         {
@@ -1516,8 +1529,7 @@ static void *etna_create_etna_shader_state(struct pipe_context *pipe, const stru
 
     SET_STATE(VS_END_PC, rs->vs_code_size / 4);
     SET_STATE(VS_OUTPUT_COUNT, rs->num_varyings + 1); /* position + varyings */
-    SET_STATE(VS_INPUT_COUNT, VIVS_VS_INPUT_COUNT_COUNT(rs->num_inputs) |
-                              VIVS_VS_INPUT_COUNT_UNK8(1)); /// XXX what is this
+    SET_STATE(VS_INPUT_COUNT, VIVS_VS_INPUT_COUNT_UNK8(1)); /// XXX what is this
     SET_STATE(VS_TEMP_REGISTER_CONTROL,
                               VIVS_VS_TEMP_REGISTER_CONTROL_NUM_TEMPS(rs->vs_num_temps));
     

@@ -46,6 +46,7 @@
 #include "etna_fb.h"
 #include "etna_bswap.h"
 #include "etna_tex.h"
+#include "state_tracker/graw.h"
 
 #include "esTransform.h"
 #include "esUtil.h"
@@ -56,66 +57,52 @@
 #define NUM_PARTICLES	1000
 #define PARTICLE_SIZE   7
 
-/* particle_system_vs.asm */
-uint32_t vs[] = {
-0x00000056,0x00000800,0x00000050,0x00000280,
-0x03811002,0x00000800,0x01480150,0x00290018,
-0x03811001,0x29001800,0x00000000,0x203e4008,
-0x04011009,0x00000000,0x00000000,0x20000018,
-0x00000016,0x00000000,0x00000000,0x00000300,
-0x07811009,0x00000000,0x00000000,0x20294018,
-0x0080100c,0x00000000,0x00000000,0x00000008,
-0x07821009,0x00000000,0x00000000,0x20390008,
-0x00801002,0x40002800,0x00000040,0x20000018,
-0x00801809,0x00000000,0x00000000,0x00000008,
-0x01001003,0x00000800,0x00000040,0x00000000,
-0x00821003,0x15400800,0x01fe00c0,0x00000002,
-0x02011001,0x2a801800,0x00000000,0x003fc018,
-0x02011003,0x2a801800,0x00000140,0x00000002,
-};
-/* particle_system_ps.asm */
-uint32_t ps[] = {
-0x01011001,0x00001800,0x00000010,0x00554018,
-0x07811018,0x15001f20,0x00000000,0x00000000,
-0x07811003,0x39000800,0x01c800d0,0x00000000,
-0x04011003,0x3fc01800,0x00000140,0x00000000,
-};
+static const char particle_system_vert[] = 
+"VERT\n"
+"DCL IN[0]\n"
+"DCL IN[1]\n"
+"DCL IN[2]\n"
+"DCL OUT[0], POSITION\n"
+"DCL OUT[1], PSIZE\n"
+"DCL OUT[2], GENERIC[0]\n"
+"DCL CONST[0..1]\n"
+"DCL TEMP[0..2], LOCAL\n"
+"IMM[0] FLT32 {    1.0000, -1000.0000,     0.0000,    40.0000}\n"
+"  0: SGE TEMP[0].x, IN[0].xxxx, CONST[1].xxxx\n"
+"  1: IF TEMP[0].xxxx :0\n"
+"  2:   MAD TEMP[0].xyz, CONST[1].xxxx, IN[2].xyzz, IN[1].xyzz\n"
+"  3:   ADD TEMP[0].xyz, TEMP[0].xyzz, CONST[0].xyzz\n"
+"  4:   MOV TEMP[0].w, IMM[0].xxxx\n"
+"  5: ELSE :0\n"
+"  6:   MOV TEMP[0], IMM[0].yyzz\n"
+"  7: ENDIF\n"
+"  8: RCP TEMP[1].x, IN[0].xxxx\n"
+"  9: MUL TEMP[1].x, CONST[1].xxxx, TEMP[1].xxxx\n"
+" 10: ADD_SAT TEMP[1].x, IMM[0].xxxx, -TEMP[1].xxxx\n"
+" 11: MUL TEMP[2].x, TEMP[1].xxxx, TEMP[1].xxxx\n"
+" 12: MUL TEMP[2].x, TEMP[2].xxxx, IMM[0].wwww\n"
+" 13: MOV TEMP[1].x, TEMP[1].xxxx\n"
+" 14: MOV OUT[2], TEMP[1]\n"
+" 15: MOV OUT[1], TEMP[2].xxxx\n"
+" 16: MOV OUT[0], TEMP[0]\n"
+" 17: END\n";
 
-const struct etna_shader_program shader = {
-    .num_inputs = 3,
-    .inputs = {{.vs_reg=0},{.vs_reg=1},{.vs_reg=2}},
-    .num_varyings = 2,
-    .varyings = {
-        {.num_components=2, .special=ETNA_VARYING_POINTCOORD, .pa_attributes=0x2f1, .vs_reg=1}, /* pointcoord */
-        {.num_components=1, .special=ETNA_VARYING_VSOUT, .pa_attributes=0x200, .vs_reg=0}  /* v_lifetime */
-    }, 
-    .vs_code_size = sizeof(vs)/4,
-    .vs_code = (uint32_t*)vs,
-    .vs_pos_out_reg = 1, // t1
-    .vs_pointsize_out_reg = 2, // t2
-    .vs_load_balancing = 0xf3f0542,  /* depends on number of inputs/outputs/varyings? XXX how exactly */
-    .vs_num_temps = 3,
-    .vs_uniforms_size = 12,
-    .vs_uniforms = (uint32_t*)(const float[12]){
-        [4] = 1.0f, /* u1.x */
-        [5] = -1000.0f, /* u1.y */
-        [6] = 0.0f, /* u1.z */
-        [7] = 40.0f, /* u1.w */
-        [8] = 0.5f, /* u2.x */
-    },
-    .ps_code_size = sizeof(ps)/4,
-    .ps_code = (uint32_t*)ps,
-    .ps_color_out_reg = 1, // t1 out
-    .ps_num_temps = 3,
-    .ps_uniforms_size = 5,
-    .ps_uniforms = (uint32_t*)(const float[5]){
-        [0] = 0.0f, /* u0 u_color */
-        [1] = 0.0f,
-        [2] = 0.0f,
-        [3] = 0.0f,
-        [4] = 1.0f,
-    },
-};
+static const char particle_system_frag[] = 
+"FRAG\n"
+"PROPERTY FS_COLOR0_WRITES_ALL_CBUFS 1\n"
+"DCL IN[0], PCOORD, LINEAR\n"
+"DCL IN[1], GENERIC[0], PERSPECTIVE\n"
+"DCL OUT[0], COLOR\n"
+"DCL SAMP[0]\n"
+"DCL CONST[1]\n"
+"DCL TEMP[0..1], LOCAL\n"
+"  0: TEX TEMP[0], IN[0].xyyy, SAMP[0], 2D\n"
+"  1: MUL TEMP[0], CONST[1], TEMP[0]\n"
+"  2: MOV TEMP[1].xyz, TEMP[0].xyzx\n"
+"  3: MUL TEMP[0].x, TEMP[0].wwww, IN[1].xxxx\n"
+"  4: MOV TEMP[1].w, TEMP[0].xxxx\n"
+"  5: MOV OUT[0], TEMP[1]\n"
+"  6: END\n";
 
 int main(int argc, char **argv)
 {
@@ -351,8 +338,10 @@ int main(int argc, char **argv)
     pipe->set_vertex_buffers(pipe, 0, 1, &vertex_buffer_desc);
     pipe->set_index_buffer(pipe, NULL);
     
-    void *shader_state = pipe->create_etna_shader_state(pipe, &shader);
-    pipe->bind_etna_shader_state(pipe, shader_state);
+    void *vtx_shader = graw_parse_vertex_shader(pipe, particle_system_vert);
+    void *frag_shader = graw_parse_fragment_shader(pipe, particle_system_frag);
+    pipe->bind_vs_state(pipe, vtx_shader);
+    pipe->bind_fs_state(pipe, frag_shader);
     
     /* Fill in particle data array */
     float *vtx_logical = etna_pipe_get_resource_ptr(pipe, vtx_resource, 0, 0);
@@ -402,7 +391,7 @@ int main(int argc, char **argv)
             centerPos[1] = ( (float)(rand() % 10000) / 10000.0f ) - 0.5f;
             centerPos[2] = ( (float)(rand() % 10000) / 10000.0f ) - 0.5f;
           
-            pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 1, 3, (uint32_t*)&centerPos[0]);
+            pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 0, 3, (uint32_t*)&centerPos[0]);
 
             // Random color
             color[0] = ( (float)(rand() % 10000) / 20000.0f ) + 0.5f;
@@ -410,9 +399,9 @@ int main(int argc, char **argv)
             color[2] = ( (float)(rand() % 10000) / 20000.0f ) + 0.5f;
             color[3] = 0.5;
 
-            pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_FRAGMENT, 0, 4, (uint32_t*)&color[0]);
+            pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_FRAGMENT, 4, 4, (uint32_t*)&color[0]);
         }
-        pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 0, 1, (uint32_t*)&time);
+        pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 4, 1, (uint32_t*)&time);
 
         pipe->draw_vbo(pipe, &(struct pipe_draw_info){
                 .indexed = 0,

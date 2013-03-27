@@ -62,6 +62,8 @@
 /* Broadcase swizzle to all four components */
 #define INST_SWIZ_BROADCAST(x) \
         (INST_SWIZ_X(x) | INST_SWIZ_Y(x) | INST_SWIZ_Z(x) | INST_SWIZ_W(x))
+#define INST_SWIZ_IDENTITY \
+        (INST_SWIZ_X(0) | INST_SWIZ_Y(1) | INST_SWIZ_Z(2) | INST_SWIZ_W(3))
 
 struct etna_native_reg
 {
@@ -515,7 +517,8 @@ static struct etna_inst_dst convert_dst(struct etna_compile_data *cd, const stru
 static struct etna_inst_tex convert_tex(struct etna_compile_data *cd, const struct tgsi_full_src_register *in, const struct tgsi_instruction_texture *tex)
 {
     struct etna_inst_tex rv = {
-        // XXX .amode, .swiz
+        // XXX .amode
+        .swiz = INST_SWIZ_IDENTITY
     };
     struct etna_native_reg native_reg = cd->file[in->Register.File][in->Register.Index].native;
     assert(native_reg.is_tex);

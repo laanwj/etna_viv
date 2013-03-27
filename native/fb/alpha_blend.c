@@ -46,6 +46,7 @@
 #include "etna_fb.h"
 #include "etna_bswap.h"
 #include "etna_tex.h"
+#include "state_tracker/graw.h"
 
 #include "esTransform.h"
 #include "dds.h"
@@ -77,52 +78,31 @@ float vNormals[] = {
 #define COMPONENTS_PER_VERTEX (3)
 #define NUM_VERTICES (8)
 
-/* alpha_blend_vs.asm */
-uint32_t vs[] = {
-    0x07841003,0x39000800,0x00000050,0x00000000,
-    0x07841002,0x39001800,0x00aa0050,0x00390048,
-    0x07841002,0x39002800,0x01540050,0x00390048,
-    0x07841002,0x39003800,0x01fe0050,0x00390048,
-    0x07801009,0x00000000,0x00000000,0x00390028,
-    0x07801003,0x39000800,0x01c80640,0x00000002,
-    0x02041001,0x2a804800,0x00000000,0x003fc048,
-    0x02041003,0x2a804800,0x00aa05c0,0x00000002,
-};
-/* passthrough (nop) 
- * register 1 will contain color on input, and will be used as output */
-uint32_t ps[] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000
-};
+static const char alpha_blend_vert[] = 
+"VERT\n"
+"DCL IN[0]\n"
+"DCL IN[1]\n"
+"DCL IN[2]\n"
+"DCL OUT[0], POSITION\n"
+"DCL OUT[1], GENERIC[0]\n"
+"DCL CONST[0..4]\n"
+"DCL TEMP[0], LOCAL\n"
+"  0: MUL TEMP[0], CONST[0], IN[0].xxxx\n"
+"  1: MAD TEMP[0], CONST[1], IN[0].yyyy, TEMP[0]\n"
+"  2: MAD TEMP[0], CONST[2], IN[0].zzzz, TEMP[0]\n"
+"  3: MAD TEMP[0], CONST[3], IN[0].wwww, TEMP[0]\n"
+"  4: MUL OUT[1], IN[2], CONST[4]\n"
+"  6: MOV OUT[0], TEMP[0]\n"
+"  7: END\n";
 
-const struct etna_shader_program shader = {
-    .num_inputs = 3,
-    .inputs = {{.vs_reg=0},{.vs_reg=1},{.vs_reg=2}},
-    .num_varyings = 1,
-    .varyings = {
-        {.num_components=4, .special=ETNA_VARYING_VSOUT, .pa_attributes=0x200, .vs_reg=0}, /* color */
-    }, 
-    .vs_code_size = sizeof(vs)/4,
-    .vs_code = (uint32_t*)vs,
-    .vs_pos_out_reg = 4, // t4 out
-    .vs_load_balancing = 0xf3f0582,  /* depends on number of inputs/outputs/varyings? XXX how exactly */
-    .vs_num_temps = 6,
-    .vs_uniforms_size = 13*4,
-    .vs_uniforms = (uint32_t*)(const float[12*4]){
-        [19] = 2.0f, /* u4.w */
-        [23] = 20.0f, /* u5.w */
-        [27] = 0.0f, /* u6.w */
-        [45] = 0.5f, /* u11.y */
-        [44] = 1.0f, /* u11.x */
-    },
-    .ps_code_size = sizeof(ps)/4,
-    .ps_code = (uint32_t*)ps,
-    .ps_color_out_reg = 1, // t1 out
-    .ps_num_temps = 2,
-    .ps_uniforms_size = 1*4,
-    .ps_uniforms = (uint32_t*)(const float[1*4]){
-        [0] = 1.0f,
-    },
-};
+/* simple passthrough */
+static const char alpha_blend_frag[] = 
+"FRAG\n"
+"PROPERTY FS_COLOR0_WRITES_ALL_CBUFS 1\n"
+"DCL IN[0], GENERIC[0], PERSPECTIVE\n"
+"DCL OUT[0], COLOR\n"
+"  0: MOV OUT[0], IN[0]\n"
+"  1: END\n";
 
 int main(int argc, char **argv)
 {
@@ -342,8 +322,10 @@ int main(int argc, char **argv)
             .user_buffer = 0
             });*/ /* non-indexed rendering */
     
-    void *shader_state = pipe->create_etna_shader_state(pipe, &shader);
-    pipe->bind_etna_shader_state(pipe, shader_state);
+    void *vtx_shader = graw_parse_vertex_shader(pipe, alpha_blend_vert);
+    void *frag_shader = graw_parse_fragment_shader(pipe, alpha_blend_frag);
+    pipe->bind_vs_state(pipe, vtx_shader);
+    pipe->bind_fs_state(pipe, frag_shader);
 
     for(int frame=0; frame<1000; ++frame)
     {
@@ -375,9 +357,8 @@ int main(int argc, char **argv)
             esMatrixLoadIdentity(&modelviewprojection);
             esMatrixMultiply(&modelviewprojection, &modelview, &projection);
         
-            pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 0, 16, (uint32_t*)&modelviewprojection.m[0][0]);
-            pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 28, 16, (uint32_t*)&modelview.m[0][0]);
-            pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 48, 4, (uint32_t*)(float[]) /* material color */
+            pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 0, 16, (uint32_t*)&modelviewprojection.m[0][0]);
+            pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 16, 4, (uint32_t*)(float[]) /* material color */
                  {idx*0.25f, 0.3f, 1.0f - idx*0.25f, 0.5f});
         
             pipe->draw_vbo(pipe, &(struct pipe_draw_info){
