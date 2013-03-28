@@ -316,6 +316,7 @@ Programming pecularities
 
   Ways I've already made it crash:
 
+  - Wrong number of VS inputs (must be equal to number of vertex elements)
   - Wrong number of temporaries in PS
   - Sending 3D commands in the 2D pipe instead of 3D pipe (then using a signal waiting for them to complete)
   - Wrong length of shader

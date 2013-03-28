@@ -201,3 +201,7 @@ Misc notes
 
 - All GC chips (at least the ones I've encountered, which are up to gc2000) have the same basic shader ISA.
 
+- Register t0 in PS is hardwired to the position. Assigning to this register usually causes the fragment not to be rendered
+  (I suspect is this used for `gl_FragDepth` out).
+
+

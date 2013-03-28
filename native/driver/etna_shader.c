@@ -59,9 +59,10 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-/* Broadcase swizzle to all four components */
+/* Broadcast swizzle to all four components */
 #define INST_SWIZ_BROADCAST(x) \
         (INST_SWIZ_X(x) | INST_SWIZ_Y(x) | INST_SWIZ_Z(x) | INST_SWIZ_W(x))
+/* Identity (NOP) swizzle */
 #define INST_SWIZ_IDENTITY \
         (INST_SWIZ_X(0) | INST_SWIZ_Y(1) | INST_SWIZ_Z(2) | INST_SWIZ_W(3))
 
@@ -423,6 +424,27 @@ static void etna_compile_pass_check_usage(struct etna_compile_data *cd, const st
     tgsi_parse_free(&ctx);
 }
 
+/* assign inputs that need to be assigned to specific registers */
+static void assign_special_inputs(struct etna_compile_data *cd)
+{
+    if(cd->processor == TGSI_PROCESSOR_FRAGMENT)
+    {
+        /* never assign t0; writing to it causes fragment to be discarded? */
+        cd->next_free_native = 1; 
+        /* hardwire TGSI_SEMANTIC_POSITION (input and output) to t0 */
+        for(int idx=0; idx<cd->total_decls; ++idx)
+        {
+            struct etna_reg_desc *reg = &cd->decl[idx];
+            if(reg->active && reg->semantic.Name == TGSI_SEMANTIC_POSITION)
+            {
+                reg->native.valid = 1;
+                reg->native.rgroup = INST_RGROUP_TEMP;
+                reg->native.id = 0;
+            }
+        }
+    }
+}
+
 /* Pass -- optimize outputs 
  * Mesa tends to generate code like this at the end if their shaders
  *   MOV OUT[1], TEMP[2]
@@ -503,6 +525,7 @@ static void emit_inst(struct etna_compile_data *cd, const struct etna_inst *inst
 static struct etna_inst_dst convert_dst(struct etna_compile_data *cd, const struct tgsi_full_dst_register *in)
 {
     struct etna_inst_dst rv = {
+        /// XXX .amode
         .use = 1,
         .comps = in->Register.WriteMask,
     };
@@ -517,7 +540,7 @@ static struct etna_inst_dst convert_dst(struct etna_compile_data *cd, const stru
 static struct etna_inst_tex convert_tex(struct etna_compile_data *cd, const struct tgsi_full_src_register *in, const struct tgsi_instruction_texture *tex)
 {
     struct etna_inst_tex rv = {
-        // XXX .amode
+        // XXX .amode (to allow for an array of samplers?)
         .swiz = INST_SWIZ_IDENTITY
     };
     struct etna_native_reg native_reg = cd->file[in->Register.File][in->Register.Index].native;
@@ -596,9 +619,10 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
             }
             assert(inst->Instruction.Saturate != TGSI_SAT_MINUS_PLUS_ONE);
             int sat = (inst->Instruction.Saturate == TGSI_SAT_ZERO_ONE);
+            /* Use a naive switch statement to get up and running, later on when we have more experience with
+             * Vivante instructions generation, this may be shortened greatly by using lookup in a table with patterns. */
             switch(inst->Instruction.Opcode)
             {
-            case TGSI_OPCODE_ARL: assert(0); break;
             case TGSI_OPCODE_MOV: 
                 emit_inst(cd, &(struct etna_inst) {
                         .opcode = INST_OPCODE_MOV,
@@ -644,6 +668,7 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         .src[2] = convert_src(cd, &inst->Src[1]), 
                         });
                 break;
+            case TGSI_OPCODE_DP2: assert(0); break; /* Either MUL+MAD or DP3 with a zeroed channel, but we don't have a 'zero' swizzle */
             case TGSI_OPCODE_DP3: 
                 emit_inst(cd, &(struct etna_inst) {
                         .opcode = INST_OPCODE_DP3,
@@ -715,7 +740,7 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
             case TGSI_OPCODE_MAD: 
                 emit_inst(cd, &(struct etna_inst) {
                         .opcode = INST_OPCODE_MAD,
-                        .sat = (inst->Instruction.Saturate == TGSI_SAT_ZERO_ONE),
+                        .sat = sat,
                         .dst = convert_dst(cd, &inst->Dst[0]),
                         .src[0] = convert_src(cd, &inst->Src[0]),
                         .src[1] = convert_src(cd, &inst->Src[1]), 
@@ -723,26 +748,112 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         });
                 break;
             case TGSI_OPCODE_SFL: assert(0); break; /* SET to 0 */
-            case TGSI_OPCODE_SUB: assert(0); break; /* XXX INST_OPCODE_ADD + negate? */
+            case TGSI_OPCODE_SUB: { /* ADD with negated SRC1 */
+                struct etna_inst inst_out = {
+                    .opcode = INST_OPCODE_ADD,
+                    .sat = sat,
+                    .dst = convert_dst(cd, &inst->Dst[0]),
+                    .src[0] = convert_src(cd, &inst->Src[0]),
+                    .src[2] = convert_src(cd, &inst->Src[1]), 
+                };
+                inst_out.src[2].neg = !inst_out.src[2].neg;
+                emit_inst(cd, &inst_out);
+                } break;
             case TGSI_OPCODE_LRP: assert(0); break;
             case TGSI_OPCODE_CND: assert(0); break;
-            case TGSI_OPCODE_SQRT: assert(0); break; /* XXX INST_OPCODE_SQRT if HAS_SQRT_TRIG */
+            case TGSI_OPCODE_SQRT: /* XXX if HAS_SQRT_TRIG */
+                emit_inst(cd, &(struct etna_inst) {
+                        .opcode = INST_OPCODE_SQRT,
+                        .sat = sat,
+                        .dst = convert_dst(cd, &inst->Dst[0]),
+                        .src[2] = convert_src(cd, &inst->Src[0]), 
+                        });
+                break; 
             case TGSI_OPCODE_DP2A: assert(0); break;
-            case TGSI_OPCODE_FRC: assert(0); break;
-            case TGSI_OPCODE_CLAMP: assert(0); break;
-            case TGSI_OPCODE_FLR: assert(0); break;
+            case TGSI_OPCODE_FRC: 
+                emit_inst(cd, &(struct etna_inst) {
+                        .opcode = INST_OPCODE_FRC,
+                        .sat = sat,
+                        .dst = convert_dst(cd, &inst->Dst[0]),
+                        .src[2] = convert_src(cd, &inst->Src[0]), 
+                        });
+                break;
+            case TGSI_OPCODE_CLAMP: assert(0); break; /* XXX MIN(MAX(...)) */
+            case TGSI_OPCODE_FLR: /* XXX HAS_SIGN_FLOOR_CEIL */
+                emit_inst(cd, &(struct etna_inst) {
+                        .opcode = INST_OPCODE_FLOOR,
+                        .sat = sat,
+                        .dst = convert_dst(cd, &inst->Dst[0]),
+                        .src[2] = convert_src(cd, &inst->Src[0]), 
+                        });
+                break;
+            case TGSI_OPCODE_CEIL: /* XXX HAS_SIGN_FLOOR_CEIL */
+                emit_inst(cd, &(struct etna_inst) {
+                        .opcode = INST_OPCODE_CEIL,
+                        .sat = sat,
+                        .dst = convert_dst(cd, &inst->Dst[0]),
+                        .src[2] = convert_src(cd, &inst->Src[0]), 
+                        });
+                break;
+            case TGSI_OPCODE_SSG: /* XXX HAS_SIGN_FLOOR_CEIL */
+                emit_inst(cd, &(struct etna_inst) {
+                        .opcode = INST_OPCODE_SIGN,
+                        .sat = sat,
+                        .dst = convert_dst(cd, &inst->Dst[0]),
+                        .src[2] = convert_src(cd, &inst->Src[0]), 
+                        });
+                break;
             case TGSI_OPCODE_ROUND: assert(0); break;
-            case TGSI_OPCODE_EX2: assert(0); break;
-            case TGSI_OPCODE_LG2: assert(0); break;
+            case TGSI_OPCODE_EX2: /* XXX check that this is correct see also OPCODE_EXP */
+                emit_inst(cd, &(struct etna_inst) {
+                        .opcode = INST_OPCODE_EXP,
+                        .sat = sat,
+                        .dst = convert_dst(cd, &inst->Dst[0]),
+                        .src[2] = convert_src(cd, &inst->Src[0]), 
+                        });
+                break;
+            case TGSI_OPCODE_LG2: /* XXX check this is correct see also OPCODE_LOG */
+                emit_inst(cd, &(struct etna_inst) {
+                        .opcode = INST_OPCODE_LOG,
+                        .sat = sat,
+                        .dst = convert_dst(cd, &inst->Dst[0]),
+                        .src[2] = convert_src(cd, &inst->Src[0]), 
+                        });
+                break;
             case TGSI_OPCODE_POW: assert(0); break;
             case TGSI_OPCODE_XPD: assert(0); break;
-            case TGSI_OPCODE_ABS: assert(0); break;
+            case TGSI_OPCODE_ABS: /* XXX can be propagated into uses of destination operand */
+                emit_inst(cd, &(struct etna_inst) {
+                        .opcode = INST_OPCODE_MOV,
+                        .sat = sat,
+                        .dst = convert_dst(cd, &inst->Dst[0]),
+                        .src[2] = convert_src(cd, &inst->Src[0]), 
+                        .src[2].abs = 1
+                        });
+                break; 
             case TGSI_OPCODE_RCC: assert(0); break;
-            case TGSI_OPCODE_DPH: assert(0); break;
-            case TGSI_OPCODE_COS: assert(0); break; /* XXX INST_OPCODE_COS */
-            case TGSI_OPCODE_SIN: assert(0); break; /* XXX INST_OPCODE_SIN */
-            case TGSI_OPCODE_DDX: assert(0); break; /* XXX INST_OPCODE_DSX */
-            case TGSI_OPCODE_DDY: assert(0); break; /* XXX INST_OPCODE_DSY */
+            case TGSI_OPCODE_DPH: assert(0); break; /* src0.x * src1.x + src0.y * src1.y + src0.z * src1.z + src1.w */ 
+            case TGSI_OPCODE_COS: /* XXX HAS_SQRT_TRIG */
+            case TGSI_OPCODE_SIN: /* XXX HAS_SQRT_TRIG */
+                /* TODO divide by PI/2, re-use dest register */
+                emit_inst(cd, &(struct etna_inst) {
+                        .opcode = inst->Instruction.Opcode == TGSI_OPCODE_COS ? INST_OPCODE_COS : INST_OPCODE_SIN,
+                        .sat = sat,
+                        .dst = convert_dst(cd, &inst->Dst[0]),
+                        .src[2] = convert_src(cd, &inst->Src[0]), 
+                        });
+                break;
+            case TGSI_OPCODE_DDX:
+            case TGSI_OPCODE_DDY:
+                emit_inst(cd, &(struct etna_inst) {
+                        .opcode = inst->Instruction.Opcode == TGSI_OPCODE_DDX ? INST_OPCODE_DSX : INST_OPCODE_DSY,
+                        .sat = sat,
+                        .dst = convert_dst(cd, &inst->Dst[0]),
+                        .src[0] = convert_src(cd, &inst->Src[0]), 
+                        .src[2] = convert_src(cd, &inst->Src[0]), 
+                        });
+                break;
+            case TGSI_OPCODE_KIL: assert(0); break;/* XXX INST_OPCODE_TEXKILL */
             case TGSI_OPCODE_KILP: assert(0); break; /* XXX INST_OPCODE_TEXKILL */
             case TGSI_OPCODE_PK2H: assert(0); break;
             case TGSI_OPCODE_PK2US: assert(0); break;
@@ -765,18 +876,17 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
             case TGSI_OPCODE_UP4B: assert(0); break;
             case TGSI_OPCODE_UP4UB: assert(0); break;
             case TGSI_OPCODE_X2D: assert(0); break;
-            case TGSI_OPCODE_ARA: assert(0); break;
-            case TGSI_OPCODE_ARR: assert(0); break;
-            case TGSI_OPCODE_BRA: assert(0); break;
+            case TGSI_OPCODE_ARL: assert(0); break; /* floor */
+            case TGSI_OPCODE_ARR: assert(0); break; /* round */
+            case TGSI_OPCODE_ARA: assert(0); break; /* to be removed according to doc */
+            case TGSI_OPCODE_BRA: assert(0); break; /* to be removed according to doc */
             case TGSI_OPCODE_CAL: assert(0); break; /* CALL */
             case TGSI_OPCODE_RET: assert(0); break;
-            case TGSI_OPCODE_SSG: assert(0); break;
             case TGSI_OPCODE_CMP: assert(0); break;
             case TGSI_OPCODE_SCS: assert(0); break;
             case TGSI_OPCODE_TXB: assert(0); break;
             case TGSI_OPCODE_NRM: assert(0); break;
             case TGSI_OPCODE_DIV: assert(0); break;
-            case TGSI_OPCODE_DP2: assert(0); break;
             case TGSI_OPCODE_TXL: assert(0); break;
             case TGSI_OPCODE_BRK: assert(0); break; /* break from loop */
             case TGSI_OPCODE_IF:  {
@@ -824,7 +934,6 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                 } break;
             case TGSI_OPCODE_PUSHA: assert(0); break;
             case TGSI_OPCODE_POPA: assert(0); break;
-            case TGSI_OPCODE_CEIL: assert(0); break;
             case TGSI_OPCODE_I2F: assert(0); break;
             case TGSI_OPCODE_NOT: assert(0); break;
             case TGSI_OPCODE_TRUNC: assert(0); break;
@@ -844,12 +953,11 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
             case TGSI_OPCODE_ENDLOOP: assert(0); break;
             case TGSI_OPCODE_ENDSUB: assert(0); break;
             case TGSI_OPCODE_TXQ_LZ: assert(0); break;
-            case TGSI_OPCODE_NOP: assert(0); break;
+            case TGSI_OPCODE_NOP: break;
             case TGSI_OPCODE_NRM4: assert(0); break;
             case TGSI_OPCODE_CALLNZ: assert(0); break;
             case TGSI_OPCODE_IFC: assert(0); break;
             case TGSI_OPCODE_BREAKC: assert(0); break;
-            case TGSI_OPCODE_KIL: assert(0); break;
             case TGSI_OPCODE_END: /* Nothing to do */ break;
             case TGSI_OPCODE_F2I: assert(0); break;
             case TGSI_OPCODE_IDIV: assert(0); break;
@@ -1092,12 +1200,9 @@ static void permute_ps_inputs(struct etna_compile_data *cd)
         struct etna_reg_desc *reg = &cd->file[TGSI_FILE_INPUT][idx];
         uint input_id;
         assert(reg->has_semantic);
-        if(reg->semantic.Name == TGSI_SEMANTIC_POSITION)
-        {
-            input_id = 0; 
-        } else {
-            input_id = native_idx++;
-        }
+        if(!reg->active || reg->semantic.Name == TGSI_SEMANTIC_POSITION)
+            continue;
+        input_id = native_idx++;
         swap_native_registers(cd, (struct etna_native_reg) {
                 .valid = 1,
                 .rgroup = INST_RGROUP_TEMP,
@@ -1228,6 +1333,8 @@ int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct
     /* Pass two -- check usage of temporaries, inputs, outputs */
     etna_compile_pass_check_usage(cd, tokens);
 
+    assign_special_inputs(cd);
+
     /* Assign native temp register to TEMPs */
     assign_temporaries_to_native(cd, cd->file[TGSI_FILE_TEMPORARY], cd->file_size[TGSI_FILE_TEMPORARY]);
 
@@ -1280,6 +1387,16 @@ int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct
     assign_constants_and_immediates(cd);
     assign_texture_units(cd);
     
+    /* list declarations */
+    for(int x=0; x<cd->total_decls; ++x)
+    {
+        printf("%i: %s,%d active=%i first_use=%i last_use=%i native=%i usage_mask=%x has_semantic=%i semantic_name=%i semantic_idx=%i\n", x, tgsi_file_names[cd->decl[x].file], cd->decl[x].idx,
+                cd->decl[x].active,
+                cd->decl[x].first_use, cd->decl[x].last_use, cd->decl[x].native.valid?cd->decl[x].native.id:-1,
+                cd->decl[x].usage_mask, 
+                cd->decl[x].has_semantic,
+                cd->decl[x].semantic.Name, cd->decl[x].semantic.Index);
+    }
     /* XXX for PS we need to permute so that inputs are always in temporary 0..N-1.
      * There is no "switchboard" for varyings (AFAIK!). The output color, however, can be routed 
      * from an arbitrary temporary.
@@ -1292,7 +1409,8 @@ int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct
     /* list declarations */
     for(int x=0; x<cd->total_decls; ++x)
     {
-        printf("%i: %s,%d first_use=%i last_use=%i native=%i usage_mask=%x has_semantic=%i semantic_name=%i semantic_idx=%i\n", x, tgsi_file_names[cd->decl[x].file], cd->decl[x].idx,
+        printf("%i: %s,%d active=%i first_use=%i last_use=%i native=%i usage_mask=%x has_semantic=%i semantic_name=%i semantic_idx=%i\n", x, tgsi_file_names[cd->decl[x].file], cd->decl[x].idx,
+                cd->decl[x].active,
                 cd->decl[x].first_use, cd->decl[x].last_use, cd->decl[x].native.valid?cd->decl[x].native.id:-1,
                 cd->decl[x].usage_mask, 
                 cd->decl[x].has_semantic,
@@ -1401,6 +1519,11 @@ int etna_link_shader_objects(struct etna_shader_link_info *info, const struct et
     assert(fs->num_inputs < ETNA_NUM_INPUTS);
     for(int idx=0; idx<fs->num_inputs; ++idx)
     {
+        if(fs->inputs[idx].semantic.Name == TGSI_SEMANTIC_PCOORD)
+        {
+            info->varyings_vs_reg[idx] = 0; /* replaced by point coord -- doesn't matter */
+            continue;
+        }
         struct etna_shader_inout *match = bsearch(
                 &fs->inputs[idx], vs->outputs, vs->num_outputs, sizeof(struct etna_shader_inout),
                 compare_inout_semantic_asc);
