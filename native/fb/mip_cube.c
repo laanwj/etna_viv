@@ -20,22 +20,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-/* Animated rotating "weighted companion cube", using array or indexed rendering
- * Exercised in this demo:
- * - Array and indexed rendering of arbitrary mesh
- * - Video memory allocation
- * - Setting up render state
- * - Depth buffer
- * - Vertex / fragment shader
- * - Texturing
- * - Double-buffered rendering to framebuffer
- * - Anti-aliasing (MSAA)
- *
- * Still TODO:
- * - Mipmapping (hw generation, if possible)
+/* Mip cube, but in terms of minigallium pipe
  */
-#define INDEXED
-
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -64,14 +50,112 @@
 
 #include "esTransform.h"
 #include "dds.h"
-#include "companion.h"
 
 /*********************************************************************/
-#define INDEXED /* Used indexed rendering */
-#define INDEX_BUFFER_SIZE 0x8000
 #define VERTEX_BUFFER_SIZE 0x60000
 
-static const char cube_companion_vert[] = 
+float vVertices[] = {
+  // front
+  -1.0f, -1.0f, +1.0f, // point blue
+  +1.0f, -1.0f, +1.0f, // point magenta
+  -1.0f, +1.0f, +1.0f, // point cyan
+  +1.0f, +1.0f, +1.0f, // point white
+  // back
+  +1.0f, -1.0f, -1.0f, // point red
+  -1.0f, -1.0f, -1.0f, // point black
+  +1.0f, +1.0f, -1.0f, // point yellow
+  -1.0f, +1.0f, -1.0f, // point green
+  // right
+  +1.0f, -1.0f, +1.0f, // point magenta
+  +1.0f, -1.0f, -1.0f, // point red
+  +1.0f, +1.0f, +1.0f, // point white
+  +1.0f, +1.0f, -1.0f, // point yellow
+  // left
+  -1.0f, -1.0f, -1.0f, // point black
+  -1.0f, -1.0f, +1.0f, // point blue
+  -1.0f, +1.0f, -1.0f, // point green
+  -1.0f, +1.0f, +1.0f, // point cyan
+  // top
+  -1.0f, +1.0f, +1.0f, // point cyan
+  +1.0f, +1.0f, +1.0f, // point white
+  -1.0f, +1.0f, -1.0f, // point green
+  +1.0f, +1.0f, -1.0f, // point yellow
+  // bottom
+  -1.0f, -1.0f, -1.0f, // point black
+  +1.0f, -1.0f, -1.0f, // point red
+  -1.0f, -1.0f, +1.0f, // point blue
+  +1.0f, -1.0f, +1.0f  // point magenta
+};
+
+float vTexCoords[] = {
+  // front
+  0.0f, 0.0f,
+  1.0f, 0.0f,
+  0.0f, 1.0f,
+  1.0f, 1.0f,
+  // back
+  0.0f, 0.0f,
+  1.0f, 0.0f,
+  0.0f, 1.0f,
+  1.0f, 1.0f,
+  // right
+  0.0f, 0.0f,
+  1.0f, 0.0f,
+  0.0f, 1.0f,
+  1.0f, 1.0f,
+  // left
+  0.0f, 0.0f,
+  1.0f, 0.0f,
+  0.0f, 1.0f,
+  1.0f, 1.0f,
+  // top
+  0.0f, 0.0f,
+  1.0f, 0.0f,
+  0.0f, 1.0f,
+  1.0f, 1.0f,
+  // bottom
+  0.0f, 0.0f,
+  1.0f, 0.0f,
+  0.0f, 1.0f,
+  1.0f, 1.0f,
+};
+
+float vNormals[] = {
+  // front
+  +0.0f, +0.0f, +1.0f, // forward
+  +0.0f, +0.0f, +1.0f, // forward
+  +0.0f, +0.0f, +1.0f, // forward
+  +0.0f, +0.0f, +1.0f, // forward
+  // back
+  +0.0f, +0.0f, -1.0f, // backbard
+  +0.0f, +0.0f, -1.0f, // backbard
+  +0.0f, +0.0f, -1.0f, // backbard
+  +0.0f, +0.0f, -1.0f, // backbard
+  // right
+  +1.0f, +0.0f, +0.0f, // right
+  +1.0f, +0.0f, +0.0f, // right
+  +1.0f, +0.0f, +0.0f, // right
+  +1.0f, +0.0f, +0.0f, // right
+  // left
+  -1.0f, +0.0f, +0.0f, // left
+  -1.0f, +0.0f, +0.0f, // left
+  -1.0f, +0.0f, +0.0f, // left
+  -1.0f, +0.0f, +0.0f, // left
+  // top
+  +0.0f, +1.0f, +0.0f, // up
+  +0.0f, +1.0f, +0.0f, // up
+  +0.0f, +1.0f, +0.0f, // up
+  +0.0f, +1.0f, +0.0f, // up
+  // bottom
+  +0.0f, -1.0f, +0.0f, // down
+  +0.0f, -1.0f, +0.0f, // down
+  +0.0f, -1.0f, +0.0f, // down
+  +0.0f, -1.0f, +0.0f  // down
+};
+#define COMPONENTS_PER_VERTEX (3)
+#define NUM_VERTICES (6*4)
+
+static const char mip_cube_vert[] = 
 "VERT\n"
 "DCL IN[0]\n"
 "DCL IN[1]\n"
@@ -109,7 +193,7 @@ static const char cube_companion_vert[] =
 " 24: MOV OUT[2], TEMP[1]\n"
 " 25: END\n";
 
-static const char cube_companion_frag[] = 
+static const char mip_cube_frag[] = 
 "FRAG\n"
 "PROPERTY FS_COLOR0_WRITES_ALL_CBUFS 1\n"
 "DCL IN[0], GENERIC[0], PERSPECTIVE\n"
@@ -117,6 +201,7 @@ static const char cube_companion_frag[] =
 "DCL OUT[0], COLOR\n"
 "DCL SAMP[0]\n"
 "DCL TEMP[0..1], LOCAL\n"
+"IMM[0] FLT32 {    1.0000,     0.0000,     0.0000,     0.0000}\n"
 "  1: TEX TEMP[1], IN[1].xyyy, SAMP[0], 2D\n"
 "  2: MUL TEMP[0], IN[0], TEMP[1]\n"
 "  3: MOV OUT[0], TEMP[0]\n"
@@ -156,98 +241,67 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    /* Convert and upload embedded texture */
-    struct pipe_resource *tex_resource = etna_pipe_create_2d(pipe, ETNA_IS_TEXTURE, PIPE_FORMAT_B8G8R8X8_UNORM, 
-            COMPANION_TEXTURE_WIDTH, COMPANION_TEXTURE_HEIGHT, 0);
-    void *temp = malloc(COMPANION_TEXTURE_WIDTH * COMPANION_TEXTURE_HEIGHT * 4); 
-    etna_convert_r8g8b8_to_b8g8r8x8(temp, (const uint8_t*)companion_texture, COMPANION_TEXTURE_WIDTH * COMPANION_TEXTURE_HEIGHT);
-    etna_pipe_inline_write(pipe, tex_resource, 0, 0, temp, COMPANION_TEXTURE_WIDTH * COMPANION_TEXTURE_HEIGHT * 4);
-    free(temp);
+    dds_texture *dds = 0;
+    if(argc<2 || !dds_load(argv[1], &dds))
+    {
+        printf("Error loading texture\n");
+        exit(1);
+    }
+
+    uint32_t tex_format = 0;
+    uint32_t tex_base_width = dds->slices[0][0].width;
+    uint32_t tex_base_height = dds->slices[0][0].height;
+    switch(dds->fmt)
+    {
+    case FMT_A8R8G8B8: tex_format = PIPE_FORMAT_B8G8R8A8_UNORM; break;
+    case FMT_X8R8G8B8: tex_format = PIPE_FORMAT_B8G8R8X8_UNORM; break;
+    case FMT_DXT1: tex_format = PIPE_FORMAT_DXT1_RGB; break;
+    case FMT_DXT3: tex_format = PIPE_FORMAT_DXT3_RGBA; break;
+    case FMT_DXT5: tex_format = PIPE_FORMAT_DXT5_RGBA; break;
+    case FMT_ETC1: tex_format = PIPE_FORMAT_ETC1_RGB8; break;
+    default:
+        printf("Unknown texture format\n");
+        exit(1);
+    }
+    
+    struct pipe_resource *tex_resource = etna_pipe_create_2d(pipe, ETNA_IS_TEXTURE, tex_format, tex_base_width, tex_base_height, 
+            dds->num_mipmaps - 1);
+    
+    printf("Loading compressed texture (format %i, %ix%i)\n", dds->fmt, tex_base_width, tex_base_height);
+    
+    for(int ix=0; ix<dds->num_mipmaps; ++ix)
+    {
+        printf("%08x: Uploading mipmap %i (%ix%i)\n", dds->slices[0][ix].offset, ix, dds->slices[0][ix].width, dds->slices[0][ix].height);
+        etna_pipe_inline_write(pipe, tex_resource, 0, ix, dds->slices[0][ix].data, dds->slices[0][ix].size);
+    }
 
     /* resources */
     struct pipe_resource *rt_resource = etna_pipe_create_2d(pipe, ETNA_IS_RENDER_TARGET, PIPE_FORMAT_B8G8R8X8_UNORM, width, height, 0);
     struct pipe_resource *z_resource = etna_pipe_create_2d(pipe, ETNA_IS_RENDER_TARGET, PIPE_FORMAT_Z16_UNORM, width, height, 0);
+    struct pipe_resource *vtx_resource = etna_pipe_create_buffer(pipe, ETNA_IS_VERTEX, VERTEX_BUFFER_SIZE);
 
     /* bind render target to framebuffer */
     etna_fb_bind_resource(&fb, rt_resource);
 
-    /* geometry */
-    struct pipe_resource *vtx_resource = etna_pipe_create_buffer(pipe, ETNA_IS_VERTEX, VERTEX_BUFFER_SIZE);
-    struct pipe_resource *idx_resource = etna_pipe_create_buffer(pipe, ETNA_IS_INDEX, INDEX_BUFFER_SIZE);
-
+    /* Phew, now we got all the memory we need.
+     * Write interleaved attribute vertex stream.
+     * Unlike the GL example we only do this once, not every time glDrawArrays is called, the same would be accomplished
+     * from GL by using a vertex buffer object.
+     */
     float *vtx_logical = etna_pipe_get_resource_ptr(pipe, vtx_resource, 0, 0);
     assert(vtx_logical);
-    float *idx_logical = etna_pipe_get_resource_ptr(pipe, idx_resource, 0, 0);
-    assert(idx_logical);
-#ifndef INDEXED
-    printf("Interleaving vertices...\n");
-    float *vertices_array = companion_vertices_array();
-    float *texture_coordinates_array =
-            companion_texture_coordinates_array();
-    float *normals_array = companion_normals_array();
-    assert(COMPANION_ARRAY_COUNT*(3+3+2)*sizeof(float) < VERTEX_BUFFER_SIZE);
-    for(int vert=0; vert<COMPANION_ARRAY_COUNT; ++vert)
+    for(int vert=0; vert<NUM_VERTICES; ++vert)
     {
         int dest_idx = vert * (3 + 3 + 2);
         for(int comp=0; comp<3; ++comp)
-            ((float*)vtx_logical)[dest_idx+comp+0] = vertices_array[vert*3 + comp]; /* 0 */
+            vtx_logical[dest_idx+comp+0] = vVertices[vert*3 + comp]; /* 0 */
         for(int comp=0; comp<3; ++comp)
-            ((float*)vtx_logical)[dest_idx+comp+3] = normals_array[vert*3 + comp]; /* 1 */
+            vtx_logical[dest_idx+comp+3] = vNormals[vert*3 + comp]; /* 1 */
         for(int comp=0; comp<2; ++comp)
-            ((float*)vtx_logical)[dest_idx+comp+6] = texture_coordinates_array[vert*2 + comp]; /* 2 */
+            vtx_logical[dest_idx+comp+6] = vTexCoords[vert*2 + comp]; /* 2 */
     }
-#else
-    printf("Interleaving vertices and copying index buffer...\n");
-    assert(COMPANION_VERTEX_COUNT*(3+3+2)*sizeof(float) < VERTEX_BUFFER_SIZE);
-    for(int vert=0; vert<COMPANION_VERTEX_COUNT; ++vert)
-    {
-        int dest_idx = vert * (3 + 3 + 2);
-        for(int comp=0; comp<3; ++comp)
-            ((float*)vtx_logical)[dest_idx+comp+0] = companion_vertices[vert][comp]; /* 0 */
-        for(int comp=0; comp<3; ++comp)
-            ((float*)vtx_logical)[dest_idx+comp+3] = companion_normals[vert][comp]; /* 1 */
-        for(int comp=0; comp<2; ++comp)
-            ((float*)vtx_logical)[dest_idx+comp+6] = companion_texture_coordinates[vert][comp]; /* 2 */
-    }
-    assert(COMPANION_TRIANGLE_COUNT*3*sizeof(unsigned short) < INDEX_BUFFER_SIZE);
-    memcpy(idx_logical, &companion_triangles[0][0], COMPANION_TRIANGLE_COUNT*3*sizeof(unsigned short));
-#endif
-    struct pipe_vertex_buffer vertex_buffer_desc = {
-            .stride = (3 + 3 + 2)*4,
-            .buffer_offset = 0,
-            .buffer = vtx_resource,
-            .user_buffer = 0
-            };
-    struct pipe_index_buffer index_buffer_desc = {
-            .index_size = sizeof(unsigned short),
-            .offset = 0,
-            .buffer = idx_resource,
-            .user_buffer = 0
-            };
-    struct pipe_vertex_element pipe_vertex_elements[] = {
-        { /* positions */
-            .src_offset = 0,
-            .instance_divisor = 0,
-            .vertex_buffer_index = 0,
-            .src_format = PIPE_FORMAT_R32G32B32_FLOAT 
-        },
-        { /* normals */
-            .src_offset = 0xc,
-            .instance_divisor = 0,
-            .vertex_buffer_index = 0,
-            .src_format = PIPE_FORMAT_R32G32B32_FLOAT 
-        },
-        { /* texture coord */
-            .src_offset = 0x18,
-            .instance_divisor = 0,
-            .vertex_buffer_index = 0,
-            .src_format = PIPE_FORMAT_R32G32_FLOAT
-        }
-    };
-    void *vertex_elements = pipe->create_vertex_elements_state(pipe, 
-            sizeof(pipe_vertex_elements)/sizeof(pipe_vertex_elements[0]), pipe_vertex_elements);
 
-    /* compile other gallium3d states */
+    /* compile gallium3d states */
     void *blend = pipe->create_blend_state(pipe, &(struct pipe_blend_state) {
                 .rt[0] = {
                     .blend_enable = 0,
@@ -313,8 +367,8 @@ int main(int argc, char **argv)
 
     void *dsa = pipe->create_depth_stencil_alpha_state(pipe, &(struct pipe_depth_stencil_alpha_state){
             .depth = {
-                .enabled = 1,
-                .writemask = 1,
+                .enabled = 0,
+                .writemask = 0,
                 .func = PIPE_FUNC_LESS /* GL default */
             },
             .stencil[0] = {
@@ -328,10 +382,32 @@ int main(int argc, char **argv)
             }
             });
 
+    struct pipe_vertex_element pipe_vertex_elements[] = {
+        { /* positions */
+            .src_offset = 0,
+            .instance_divisor = 0,
+            .vertex_buffer_index = 0,
+            .src_format = PIPE_FORMAT_R32G32B32_FLOAT 
+        },
+        { /* normals */
+            .src_offset = 0xc,
+            .instance_divisor = 0,
+            .vertex_buffer_index = 0,
+            .src_format = PIPE_FORMAT_R32G32B32_FLOAT 
+        },
+        { /* texture coord */
+            .src_offset = 0x18,
+            .instance_divisor = 0,
+            .vertex_buffer_index = 0,
+            .src_format = PIPE_FORMAT_R32G32_FLOAT
+        }
+    };
+    void *vertex_elements = pipe->create_vertex_elements_state(pipe, 
+            sizeof(pipe_vertex_elements)/sizeof(pipe_vertex_elements[0]), pipe_vertex_elements);
     struct pipe_sampler_view *sampler_view = pipe->create_sampler_view(pipe, tex_resource, &(struct pipe_sampler_view){
-            .format = tex_resource->format,
+            .format = tex_format,
             .u.tex.first_level = 0,
-            .u.tex.last_level = 0,
+            .u.tex.last_level = dds->num_mipmaps - 1,
             .swizzle_r = PIPE_SWIZZLE_RED,
             .swizzle_g = PIPE_SWIZZLE_GREEN,
             .swizzle_b = PIPE_SWIZZLE_BLUE,
@@ -381,11 +457,21 @@ int main(int argc, char **argv)
             .translate = {width/2.0f, height/2.0f, 0.5f, 1.0f}
             });
     pipe->set_fragment_sampler_views(pipe, 1, &sampler_view);
-    pipe->set_vertex_buffers(pipe, 0, 1, &vertex_buffer_desc);
-    pipe->set_index_buffer(pipe, &index_buffer_desc);
+    pipe->set_vertex_buffers(pipe, 0, 1, &(struct pipe_vertex_buffer){
+            .stride = (3 + 3 + 2)*4,
+            .buffer_offset = 0,
+            .buffer = vtx_resource,
+            .user_buffer = 0
+            });
+    pipe->set_index_buffer(pipe, NULL);/*&(struct pipe_index_buffer){
+            .index_size = 0,
+            .offset = 0,
+            .buffer = 0,
+            .user_buffer = 0
+            });*/ /* non-indexed rendering */
     
-    void *vtx_shader = graw_parse_vertex_shader(pipe, cube_companion_vert);
-    void *frag_shader = graw_parse_fragment_shader(pipe, cube_companion_frag);
+    void *vtx_shader = graw_parse_vertex_shader(pipe, mip_cube_vert);
+    void *frag_shader = graw_parse_fragment_shader(pipe, mip_cube_frag);
     pipe->bind_vs_state(pipe, vtx_shader);
     pipe->bind_fs_state(pipe, frag_shader);
 
@@ -397,14 +483,13 @@ int main(int argc, char **argv)
         ESMatrix modelview, projection, modelviewprojection;
         ESMatrix inverse, normal; 
         esMatrixLoadIdentity(&modelview);
-        esTranslate(&modelview, 0.0f, 0.0f, -9.0f);
+        esTranslate(&modelview, 0.0f, 0.0f, -8.0f);
         esRotate(&modelview, 45.0f, 1.0f, 0.0f, 0.0f);
         esRotate(&modelview, 45.0f, 0.0f, 1.0f, 0.0f);
         esRotate(&modelview, frame*0.5f, 0.0f, 0.0f, 1.0f);
-	esScale(&modelview, 0.475f, 0.475f, 0.475f);
         GLfloat aspect = (GLfloat)(height) / (GLfloat)(width);
         esMatrixLoadIdentity(&projection);
-        esFrustum(&projection, -2.8f, +2.8f, -2.8f * aspect, +2.8f * aspect, 6.0f, 10.0f);
+        esFrustum(&projection, -2.4f, +2.4f, -2.4f * aspect, +2.4f * aspect, 6.0f, 10.0f);
         esMatrixLoadIdentity(&modelviewprojection);
         esMatrixMultiply(&modelviewprojection, &modelview, &projection);
         esMatrixInverse3x3(&inverse, &modelview);
@@ -421,16 +506,15 @@ int main(int argc, char **argv)
         pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 3*4, 16, (uint32_t*)&modelviewprojection.m[0][0]); /* CONST[3..6] */
         pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 7*4, 16, (uint32_t*)&modelview.m[0][0]); /* CONST[7..10] */
 
-        pipe->draw_vbo(pipe, &(struct pipe_draw_info){
-#ifdef INDEXED
-                .indexed = 1,
-#else
-                .indexed = 0,
-#endif
-                .mode = PIPE_PRIM_TRIANGLES,
-                .start = 0,
-                .count = COMPANION_TRIANGLE_COUNT * 3
-                });
+        for(int prim=0; prim<6; ++prim)
+        {
+            pipe->draw_vbo(pipe, &(struct pipe_draw_info){
+                    .indexed = 0,
+                    .mode = PIPE_PRIM_TRIANGLE_STRIP,
+                    .start = prim*4,
+                    .count = 4
+                    });
+        }
 
         etna_swap_buffers(buffers);
     }

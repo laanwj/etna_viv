@@ -20,22 +20,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-/* Animated rotating "weighted companion cube", using array or indexed rendering
- * Exercised in this demo:
- * - Array and indexed rendering of arbitrary mesh
- * - Video memory allocation
- * - Setting up render state
- * - Depth buffer
- * - Vertex / fragment shader
- * - Texturing
- * - Double-buffered rendering to framebuffer
- * - Anti-aliasing (MSAA)
- *
- * Still TODO:
- * - Mipmapping (hw generation, if possible)
+/* Displacement mapping using vertex texture.
  */
-#define INDEXED
-
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -60,67 +46,98 @@
 #include "etna_fb.h"
 #include "etna_bswap.h"
 #include "etna_tex.h"
+#include "etna_util.h"
 #include "state_tracker/graw.h"
 
 #include "esTransform.h"
+#include "esShapes.h"
 #include "dds.h"
-#include "companion.h"
 
 /*********************************************************************/
-#define INDEXED /* Used indexed rendering */
-#define INDEX_BUFFER_SIZE 0x8000
+#ifndef M_PI
+# define M_PI		3.14159265358979323846	/* pi */
+#endif
+
 #define VERTEX_BUFFER_SIZE 0x60000
 
-static const char cube_companion_vert[] = 
+static const char displacement_vert[] = 
 "VERT\n"
 "DCL IN[0]\n"
 "DCL IN[1]\n"
 "DCL IN[2]\n"
 "DCL OUT[0], POSITION\n"
 "DCL OUT[1], GENERIC[0]\n"
-"DCL OUT[2], GENERIC[1]\n"
-"DCL CONST[0..10]\n"
+"DCL SAMP[0]\n"
+"DCL CONST[0..11]\n"
 "DCL TEMP[0..4], LOCAL\n"
-"IMM[0] FLT32 {    2.0000,    20.0000,     1.0000,     0.0000}\n"
-"  0: MUL TEMP[0], CONST[3], IN[0].xxxx\n"
-"  1: MAD TEMP[0], CONST[4], IN[0].yyyy, TEMP[0]\n"
-"  2: MAD TEMP[0], CONST[5], IN[0].zzzz, TEMP[0]\n"
-"  3: MAD TEMP[0], CONST[6], IN[0].wwww, TEMP[0]\n"
-"  4: MUL TEMP[1], CONST[7], IN[0].xxxx\n"
-"  5: MAD TEMP[1], CONST[8], IN[0].yyyy, TEMP[1]\n"
-"  6: MAD TEMP[1], CONST[9], IN[0].zzzz, TEMP[1]\n"
-"  7: MAD TEMP[1], CONST[10], IN[0].wwww, TEMP[1]\n"
-"  8: RCP TEMP[2].x, TEMP[1].wwww\n"
-"  9: MUL TEMP[1].xyz, TEMP[1].xyzz, TEMP[2].xxxx\n"
-" 10: ADD TEMP[1].xyz, IMM[0].xxyy, -TEMP[1].xyzz\n"
-" 11: MOV TEMP[2].w, IMM[0].zzzz\n"
-" 12: MUL TEMP[3].xyz, CONST[0].xyzz, IN[1].xxxx\n"
-" 13: MAD TEMP[3].xyz, CONST[1].xyzz, IN[1].yyyy, TEMP[3].xyzz\n"
-" 14: MAD TEMP[3].xyz, CONST[2].xyzz, IN[1].zzzz, TEMP[3].xyzz\n"
-" 15: DP3 TEMP[4].x, TEMP[1].xyzz, TEMP[1].xyzz\n"
-" 16: RSQ TEMP[4].x, TEMP[4].xxxx\n"
-" 17: MUL TEMP[1].xyz, TEMP[1].xyzz, TEMP[4].xxxx\n"
-" 18: DP3 TEMP[1].x, TEMP[3].xyzz, TEMP[1].xyzz\n"
-" 19: MAX TEMP[1].x, IMM[0].wwww, TEMP[1].xxxx\n"
-" 20: MOV TEMP[2].xyz, TEMP[1].xxxx\n"
-" 21: MOV TEMP[1].xy, IN[2].xyxx\n"
-" 22: MOV OUT[1], TEMP[2]\n"
-" 23: MOV OUT[0], TEMP[0]\n"
-" 24: MOV OUT[2], TEMP[1]\n"
-" 25: END\n";
+"IMM[0] FLT32 {    0.0000,     0.2000,     2.0000,    20.0000}\n"
+"IMM[1] FLT32 {    0.0000,     1.0000,     0.0000,     0.0000}\n"
+"  0: MOV TEMP[0].w, IMM[0].xxxx\n"
+"  1: TEX TEMP[1].x, IN[2].xyyy, SAMP[0], 2D\n"
+"  2: MUL TEMP[1].x, CONST[0].xxxx, TEMP[1].xxxx\n"
+"  3: MUL TEMP[0].xyz, TEMP[1].xxxx, IN[1].xyzz\n"
+"  4: ADD TEMP[0], IN[0], TEMP[0]\n"
+"  5: MUL TEMP[1], CONST[4], TEMP[0].xxxx\n"
+"  6: MAD TEMP[1], CONST[5], TEMP[0].yyyy, TEMP[1]\n"
+"  7: MAD TEMP[1], CONST[6], TEMP[0].zzzz, TEMP[1]\n"
+"  8: MAD TEMP[0], CONST[7], TEMP[0].wwww, TEMP[1]\n"
+"  9: MUL TEMP[1], CONST[8], IN[0].xxxx\n"
+" 10: MAD TEMP[1], CONST[9], IN[0].yyyy, TEMP[1]\n"
+" 11: MAD TEMP[1], CONST[10], IN[0].zzzz, TEMP[1]\n"
+" 12: MAD TEMP[1], CONST[11], IN[0].wwww, TEMP[1]\n"
+" 13: RCP TEMP[2].x, TEMP[1].wwww\n"
+" 14: MUL TEMP[1].xyz, TEMP[1].xyzz, TEMP[2].xxxx\n"
+" 15: ADD TEMP[1].xyz, IMM[0].zzww, -TEMP[1].xyzz\n"
+" 16: MOV TEMP[2].yzw, IMM[1].xxxy\n"
+" 17: MUL TEMP[3].xyz, CONST[1].xyzz, IN[1].xxxx\n"
+" 18: MAD TEMP[3].xyz, CONST[2].xyzz, IN[1].yyyy, TEMP[3].xyzz\n"
+" 19: MAD TEMP[3].xyz, CONST[3].xyzz, IN[1].zzzz, TEMP[3].xyzz\n"
+" 20: DP3 TEMP[4].x, TEMP[1].xyzz, TEMP[1].xyzz\n"
+" 21: RSQ TEMP[4].x, TEMP[4].xxxx\n"
+" 22: MUL TEMP[1].xyz, TEMP[1].xyzz, TEMP[4].xxxx\n"
+" 23: DP3 TEMP[1].x, TEMP[3].xyzz, TEMP[1].xyzz\n"
+" 24: MAX TEMP[2].x, IMM[0].xxxx, TEMP[1].xxxx\n"
+" 25: MOV OUT[1], TEMP[2]\n"
+" 26: MOV OUT[0], TEMP[0]\n"
+" 27: END\n";
 
-static const char cube_companion_frag[] = 
+static const char displacement_frag[] = 
 "FRAG\n"
 "PROPERTY FS_COLOR0_WRITES_ALL_CBUFS 1\n"
 "DCL IN[0], GENERIC[0], PERSPECTIVE\n"
-"DCL IN[1], GENERIC[1], PERSPECTIVE\n"
 "DCL OUT[0], COLOR\n"
-"DCL SAMP[0]\n"
-"DCL TEMP[0..1], LOCAL\n"
-"  1: TEX TEMP[1], IN[1].xyyy, SAMP[0], 2D\n"
-"  2: MUL TEMP[0], IN[0], TEMP[1]\n"
-"  3: MOV OUT[0], TEMP[0]\n"
-"  4: END\n";
+"  0: MOV OUT[0], IN[0]\n"
+"  1: END\n";
+
+#define TEX_WIDTH (32)
+#define TEX_HEIGHT (32)
+struct pipe_resource *createSimpleTexture(struct pipe_context *pipe)
+{
+    struct pipe_resource *tex_resource = etna_pipe_create_2d(pipe, ETNA_IS_TEXTURE, PIPE_FORMAT_L8_UNORM, TEX_WIDTH, TEX_HEIGHT, 0);
+    uint8_t pixels[TEX_HEIGHT][TEX_WIDTH];
+
+    for(int y=0; y<TEX_HEIGHT; ++y)
+    {
+        for(int x=0; x<TEX_WIDTH; ++x)
+        {
+            float xx = (float)x / (float)(TEX_WIDTH-1) * 2.0f - 1.0f;
+            float yy = (float)y / (float)(TEX_HEIGHT-1) * 2.0f - 1.0f;
+            //float vv = (0.25*xx*xx*yy*yy);
+            //float vv = (sin(xx*2.0*M_PI*2.0)*sin(yy*2.0*M_PI*2.0) + 1.0f) / 2.0f;
+            float vv = sin(xx*2.0*M_PI*2.0)*sin(yy*2.0*M_PI*2.0);
+            vv = vv * (1.0 - yy * yy); /* flatten over poles */
+            pixels[y][x] = etna_cfloat_to_uint8(vv);
+            printf("%3i ", pixels[y][x]);
+        }
+        printf("\n");
+    }
+
+    etna_pipe_inline_write(pipe, tex_resource, 0, 0, &pixels[0][0], TEX_WIDTH*TEX_HEIGHT);
+
+    return tex_resource;
+}
+#undef TEX_WIDTH
+#undef TEX_HEIGHT
 
 int main(int argc, char **argv)
 {
@@ -155,99 +172,47 @@ int main(int argc, char **argv)
         printf("Unable to create etna context\n");
         exit(1);
     }
-
-    /* Convert and upload embedded texture */
-    struct pipe_resource *tex_resource = etna_pipe_create_2d(pipe, ETNA_IS_TEXTURE, PIPE_FORMAT_B8G8R8X8_UNORM, 
-            COMPANION_TEXTURE_WIDTH, COMPANION_TEXTURE_HEIGHT, 0);
-    void *temp = malloc(COMPANION_TEXTURE_WIDTH * COMPANION_TEXTURE_HEIGHT * 4); 
-    etna_convert_r8g8b8_to_b8g8r8x8(temp, (const uint8_t*)companion_texture, COMPANION_TEXTURE_WIDTH * COMPANION_TEXTURE_HEIGHT);
-    etna_pipe_inline_write(pipe, tex_resource, 0, 0, temp, COMPANION_TEXTURE_WIDTH * COMPANION_TEXTURE_HEIGHT * 4);
-    free(temp);
-
+    
     /* resources */
     struct pipe_resource *rt_resource = etna_pipe_create_2d(pipe, ETNA_IS_RENDER_TARGET, PIPE_FORMAT_B8G8R8X8_UNORM, width, height, 0);
     struct pipe_resource *z_resource = etna_pipe_create_2d(pipe, ETNA_IS_RENDER_TARGET, PIPE_FORMAT_Z16_UNORM, width, height, 0);
-
+    struct pipe_resource *vtx_resource = etna_pipe_create_buffer(pipe, ETNA_IS_VERTEX, VERTEX_BUFFER_SIZE);
+    struct pipe_resource *idx_resource = etna_pipe_create_buffer(pipe, ETNA_IS_INDEX, VERTEX_BUFFER_SIZE);
+    
     /* bind render target to framebuffer */
     etna_fb_bind_resource(&fb, rt_resource);
 
-    /* geometry */
-    struct pipe_resource *vtx_resource = etna_pipe_create_buffer(pipe, ETNA_IS_VERTEX, VERTEX_BUFFER_SIZE);
-    struct pipe_resource *idx_resource = etna_pipe_create_buffer(pipe, ETNA_IS_INDEX, INDEX_BUFFER_SIZE);
+    /* Phew, now we got all the memory we need.
+     * Write interleaved attribute vertex stream.
+     * Unlike the GL example we only do this once, not every time glDrawArrays is called, the same would be accomplished
+     * from GL by using a vertex buffer object.
+     */
+    GLfloat *vVertices;
+    GLfloat *vNormals;
+    GLfloat *vTexCoords;
+    GLushort *vIndices;
+    int numVertices = 0;
+    int numIndices = esGenSphere(80, 1.0f, &vVertices, &vNormals,
+                                        &vTexCoords, &vIndices, &numVertices);
 
+    unsigned vtxStride = 3+3+2;
+    assert((numVertices * vtxStride*4) < VERTEX_BUFFER_SIZE);
     float *vtx_logical = etna_pipe_get_resource_ptr(pipe, vtx_resource, 0, 0);
-    assert(vtx_logical);
+    for(int vert=0; vert<numVertices; ++vert)
+    {
+        int dest_idx = vert * vtxStride;
+        for(int comp=0; comp<3; ++comp)
+            vtx_logical[dest_idx+comp+0] = vVertices[vert*3 + comp]; /* 0 */
+        for(int comp=0; comp<3; ++comp)
+            vtx_logical[dest_idx+comp+3] = vNormals[vert*3 + comp]; /* 1 */
+        for(int comp=0; comp<2; ++comp)
+            vtx_logical[dest_idx+comp+6] = vTexCoords[vert*2 + comp]; /* 2 */
+    }
+    assert((numIndices * 2) < VERTEX_BUFFER_SIZE);
     float *idx_logical = etna_pipe_get_resource_ptr(pipe, idx_resource, 0, 0);
-    assert(idx_logical);
-#ifndef INDEXED
-    printf("Interleaving vertices...\n");
-    float *vertices_array = companion_vertices_array();
-    float *texture_coordinates_array =
-            companion_texture_coordinates_array();
-    float *normals_array = companion_normals_array();
-    assert(COMPANION_ARRAY_COUNT*(3+3+2)*sizeof(float) < VERTEX_BUFFER_SIZE);
-    for(int vert=0; vert<COMPANION_ARRAY_COUNT; ++vert)
-    {
-        int dest_idx = vert * (3 + 3 + 2);
-        for(int comp=0; comp<3; ++comp)
-            ((float*)vtx_logical)[dest_idx+comp+0] = vertices_array[vert*3 + comp]; /* 0 */
-        for(int comp=0; comp<3; ++comp)
-            ((float*)vtx_logical)[dest_idx+comp+3] = normals_array[vert*3 + comp]; /* 1 */
-        for(int comp=0; comp<2; ++comp)
-            ((float*)vtx_logical)[dest_idx+comp+6] = texture_coordinates_array[vert*2 + comp]; /* 2 */
-    }
-#else
-    printf("Interleaving vertices and copying index buffer...\n");
-    assert(COMPANION_VERTEX_COUNT*(3+3+2)*sizeof(float) < VERTEX_BUFFER_SIZE);
-    for(int vert=0; vert<COMPANION_VERTEX_COUNT; ++vert)
-    {
-        int dest_idx = vert * (3 + 3 + 2);
-        for(int comp=0; comp<3; ++comp)
-            ((float*)vtx_logical)[dest_idx+comp+0] = companion_vertices[vert][comp]; /* 0 */
-        for(int comp=0; comp<3; ++comp)
-            ((float*)vtx_logical)[dest_idx+comp+3] = companion_normals[vert][comp]; /* 1 */
-        for(int comp=0; comp<2; ++comp)
-            ((float*)vtx_logical)[dest_idx+comp+6] = companion_texture_coordinates[vert][comp]; /* 2 */
-    }
-    assert(COMPANION_TRIANGLE_COUNT*3*sizeof(unsigned short) < INDEX_BUFFER_SIZE);
-    memcpy(idx_logical, &companion_triangles[0][0], COMPANION_TRIANGLE_COUNT*3*sizeof(unsigned short));
-#endif
-    struct pipe_vertex_buffer vertex_buffer_desc = {
-            .stride = (3 + 3 + 2)*4,
-            .buffer_offset = 0,
-            .buffer = vtx_resource,
-            .user_buffer = 0
-            };
-    struct pipe_index_buffer index_buffer_desc = {
-            .index_size = sizeof(unsigned short),
-            .offset = 0,
-            .buffer = idx_resource,
-            .user_buffer = 0
-            };
-    struct pipe_vertex_element pipe_vertex_elements[] = {
-        { /* positions */
-            .src_offset = 0,
-            .instance_divisor = 0,
-            .vertex_buffer_index = 0,
-            .src_format = PIPE_FORMAT_R32G32B32_FLOAT 
-        },
-        { /* normals */
-            .src_offset = 0xc,
-            .instance_divisor = 0,
-            .vertex_buffer_index = 0,
-            .src_format = PIPE_FORMAT_R32G32B32_FLOAT 
-        },
-        { /* texture coord */
-            .src_offset = 0x18,
-            .instance_divisor = 0,
-            .vertex_buffer_index = 0,
-            .src_format = PIPE_FORMAT_R32G32_FLOAT
-        }
-    };
-    void *vertex_elements = pipe->create_vertex_elements_state(pipe, 
-            sizeof(pipe_vertex_elements)/sizeof(pipe_vertex_elements[0]), pipe_vertex_elements);
+    memcpy(idx_logical, vIndices, numIndices*sizeof(GLushort));
 
-    /* compile other gallium3d states */
+    /* compile gallium3d states */
     void *blend = pipe->create_blend_state(pipe, &(struct pipe_blend_state) {
                 .rt[0] = {
                     .blend_enable = 0,
@@ -259,18 +224,6 @@ int main(int argc, char **argv)
                     .alpha_dst_factor = PIPE_BLENDFACTOR_ZERO,
                     .colormask = 0xf
                 }
-            });
-
-    void *sampler = pipe->create_sampler_state(pipe, &(struct pipe_sampler_state) {
-                .wrap_s = PIPE_TEX_WRAP_CLAMP_TO_EDGE,
-                .wrap_t = PIPE_TEX_WRAP_CLAMP_TO_EDGE,
-                .wrap_r = PIPE_TEX_WRAP_CLAMP_TO_EDGE,
-                .min_img_filter = PIPE_TEX_FILTER_LINEAR,
-                .min_mip_filter = PIPE_TEX_MIPFILTER_LINEAR,
-                .mag_img_filter = PIPE_TEX_FILTER_LINEAR,
-                .normalized_coords = 1,
-                .lod_bias = 0.0f,
-                .min_lod = 0.0f, .max_lod=1000.0f
             });
 
     void *rasterizer = pipe->create_rasterizer_state(pipe, &(struct pipe_rasterizer_state){
@@ -328,6 +281,31 @@ int main(int argc, char **argv)
             }
             });
 
+    struct pipe_vertex_element pipe_vertex_elements[] = {
+        { /* positions */
+            .src_offset = 0,
+            .instance_divisor = 0,
+            .vertex_buffer_index = 0,
+            .src_format = PIPE_FORMAT_R32G32B32_FLOAT 
+        },
+        { /* normals */
+            .src_offset = 0xc,
+            .instance_divisor = 0,
+            .vertex_buffer_index = 0,
+            .src_format = PIPE_FORMAT_R32G32B32_FLOAT 
+        },
+        { /* texture coord */
+            .src_offset = 0x18,
+            .instance_divisor = 0,
+            .vertex_buffer_index = 0,
+            .src_format = PIPE_FORMAT_R32G32_FLOAT
+        }
+    };
+    void *vertex_elements = pipe->create_vertex_elements_state(pipe, 
+            sizeof(pipe_vertex_elements)/sizeof(pipe_vertex_elements[0]), pipe_vertex_elements);
+
+    /* texture... */
+    struct pipe_resource *tex_resource = createSimpleTexture(pipe);
     struct pipe_sampler_view *sampler_view = pipe->create_sampler_view(pipe, tex_resource, &(struct pipe_sampler_view){
             .format = tex_resource->format,
             .u.tex.first_level = 0,
@@ -337,6 +315,18 @@ int main(int argc, char **argv)
             .swizzle_b = PIPE_SWIZZLE_BLUE,
             .swizzle_a = PIPE_SWIZZLE_ALPHA,
             });
+    void *sampler = pipe->create_sampler_state(pipe, &(struct pipe_sampler_state) {
+                .wrap_s = PIPE_TEX_WRAP_REPEAT,
+                .wrap_t = PIPE_TEX_WRAP_REPEAT,
+                .wrap_r = PIPE_TEX_WRAP_REPEAT,
+                .min_img_filter = PIPE_TEX_FILTER_LINEAR,
+                .min_mip_filter = PIPE_TEX_MIPFILTER_NONE,
+                .mag_img_filter = PIPE_TEX_FILTER_LINEAR,
+                .normalized_coords = 1,
+                .lod_bias = 0.0f,
+                .min_lod = 0.0f, .max_lod=1000.0f
+            });
+
     struct pipe_surface *cbuf = pipe->create_surface(pipe, rt_resource, &(struct pipe_surface){
         .texture = rt_resource,
         .format = rt_resource->format,
@@ -350,7 +340,6 @@ int main(int argc, char **argv)
     
     /* bind */
     pipe->bind_blend_state(pipe, blend);
-    pipe->bind_fragment_sampler_states(pipe, 1, &sampler);
     pipe->bind_rasterizer_state(pipe, rasterizer);
     pipe->bind_depth_stencil_alpha_state(pipe, dsa);
     pipe->bind_vertex_elements_state(pipe, vertex_elements);
@@ -380,31 +369,45 @@ int main(int argc, char **argv)
             .scale = {width/2.0f, height/2.0f, 0.5f, 1.0f},
             .translate = {width/2.0f, height/2.0f, 0.5f, 1.0f}
             });
-    pipe->set_fragment_sampler_views(pipe, 1, &sampler_view);
-    pipe->set_vertex_buffers(pipe, 0, 1, &vertex_buffer_desc);
-    pipe->set_index_buffer(pipe, &index_buffer_desc);
-    
-    void *vtx_shader = graw_parse_vertex_shader(pipe, cube_companion_vert);
-    void *frag_shader = graw_parse_fragment_shader(pipe, cube_companion_frag);
+    pipe->set_vertex_buffers(pipe, 0, 1, &(struct pipe_vertex_buffer){
+            .stride = vtxStride*4,
+            .buffer_offset = 0,
+            .buffer = vtx_resource,
+            .user_buffer = 0
+            });
+    pipe->set_index_buffer(pipe, &(struct pipe_index_buffer){
+            .index_size = 2,
+            .offset = 0,
+            .buffer = idx_resource,
+            .user_buffer = 0
+            }); /* non-indexed rendering */
+   
+    /* vertex samplers */
+    pipe->bind_vertex_sampler_states(pipe, 1, &sampler);
+    pipe->set_vertex_sampler_views(pipe, 1, &sampler_view);
+   
+    void *vtx_shader = graw_parse_vertex_shader(pipe, displacement_vert);
+    void *frag_shader = graw_parse_fragment_shader(pipe, displacement_frag);
     pipe->bind_vs_state(pipe, vtx_shader);
     pipe->bind_fs_state(pipe, frag_shader);
+
+    ESMatrix projection;
+    GLfloat aspect = (GLfloat)(height) / (GLfloat)(width);
+    esMatrixLoadIdentity(&projection);
+    esFrustum(&projection, -1.8f, +1.8f, -1.8f * aspect, +1.8f * aspect, 6.0f, 10.0f);
 
     for(int frame=0; frame<1000; ++frame)
     {
         if(frame%50 == 0)
             printf("*** FRAME %i ****\n", frame);
         /*   Compute transform matrices in the same way as cube egl demo */ 
-        ESMatrix modelview, projection, modelviewprojection;
+        ESMatrix modelview, modelviewprojection;
         ESMatrix inverse, normal; 
         esMatrixLoadIdentity(&modelview);
-        esTranslate(&modelview, 0.0f, 0.0f, -9.0f);
+        esTranslate(&modelview, 0.0f, 0.0f, -8.0f);
         esRotate(&modelview, 45.0f, 1.0f, 0.0f, 0.0f);
         esRotate(&modelview, 45.0f, 0.0f, 1.0f, 0.0f);
         esRotate(&modelview, frame*0.5f, 0.0f, 0.0f, 1.0f);
-	esScale(&modelview, 0.475f, 0.475f, 0.475f);
-        GLfloat aspect = (GLfloat)(height) / (GLfloat)(width);
-        esMatrixLoadIdentity(&projection);
-        esFrustum(&projection, -2.8f, +2.8f, -2.8f * aspect, +2.8f * aspect, 6.0f, 10.0f);
         esMatrixLoadIdentity(&modelviewprojection);
         esMatrixMultiply(&modelviewprojection, &modelview, &projection);
         esMatrixInverse3x3(&inverse, &modelview);
@@ -415,23 +418,28 @@ int main(int argc, char **argv)
                 .f = {0.2, 0.2, 0.2, 1.0}
                 }, 1.0, 0xff);
         
-        pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 0*4, 3, (uint32_t*)&normal.m[0][0]); /* CONST[0] */
-        pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 1*4, 3, (uint32_t*)&normal.m[1][0]); /* CONST[1] */
-        pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 2*4, 3, (uint32_t*)&normal.m[2][0]); /* CONST[2] */
-        pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 3*4, 16, (uint32_t*)&modelviewprojection.m[0][0]); /* CONST[3..6] */
-        pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 7*4, 16, (uint32_t*)&modelview.m[0][0]); /* CONST[7..10] */
+        pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 4*4, 16, (uint32_t*)&modelviewprojection.m[0][0]);
+        pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 1*4, 3, (uint32_t*)&normal.m[0][0]); /* u4.xyz */
+        pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 2*4, 3, (uint32_t*)&normal.m[1][0]); /* u5.xyz */
+        pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 3*4, 3, (uint32_t*)&normal.m[2][0]); /* u6.xyz */
+        pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 8*4, 16, (uint32_t*)&modelview.m[0][0]);
+
+        float scaling = fmodf(frame* 0.025f, 2.0f);
+        if(scaling > 1.0f)
+            scaling = 2.0f - scaling;  // sawtooth
+        pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 0*4, 1, (uint32_t*)&scaling);
 
         pipe->draw_vbo(pipe, &(struct pipe_draw_info){
-#ifdef INDEXED
                 .indexed = 1,
-#else
-                .indexed = 0,
-#endif
                 .mode = PIPE_PRIM_TRIANGLES,
                 .start = 0,
-                .count = COMPANION_TRIANGLE_COUNT * 3
+                .count = numIndices
                 });
 
+#if 0
+        etna_dump_cmd_buffer(ctx);
+        exit(0);
+#endif    
         etna_swap_buffers(buffers);
     }
 #ifdef DUMP
