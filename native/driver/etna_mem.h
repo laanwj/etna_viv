@@ -28,29 +28,29 @@
 #include <stdbool.h>
 
 /* Structure describing a block of video memory */
-typedef struct _etna_vidmem {
+struct etna_vidmem {
     size_t size;
     gceSURF_TYPE type;
     gcuVIDMEM_NODE_PTR node;
     viv_addr_t address;
     void *logical;
-} etna_vidmem;
+};
 
 /* Structure describing a block of mapped user memory */
-typedef struct _etna_usermem {
+struct etna_usermem {
     void *memory;
     size_t size;
     gctPOINTER info;
     viv_addr_t address;
-} etna_usermem;
+};
 
-int etna_vidmem_alloc_linear(etna_vidmem **mem_out, size_t bytes, gceSURF_TYPE type, gcePOOL pool, bool lock);
-int etna_vidmem_lock(etna_vidmem *mem);
-int etna_vidmem_unlock(etna_vidmem *mem);
-int etna_vidmem_free(etna_vidmem *mem);
+int etna_vidmem_alloc_linear(struct viv_conn *conn, struct etna_vidmem **mem_out, size_t bytes, gceSURF_TYPE type, gcePOOL pool, bool lock);
+int etna_vidmem_lock(struct viv_conn *conn, struct etna_vidmem *mem);
+int etna_vidmem_unlock(struct viv_conn *conn, struct etna_vidmem *mem);
+int etna_vidmem_free(struct viv_conn *conn, struct etna_vidmem *mem);
 
-int etna_usermem_map(etna_usermem **mem_out, void *memory, size_t size);
-int etna_usermem_unmap(etna_usermem *mem);
+int etna_usermem_map(struct viv_conn *conn, struct etna_usermem **mem_out, void *memory, size_t size);
+int etna_usermem_unmap(struct viv_conn *conn, struct etna_usermem *mem);
 
 #endif
 

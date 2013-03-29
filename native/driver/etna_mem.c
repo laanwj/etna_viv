@@ -30,15 +30,15 @@
 //#define DEBUG
 #define ETNA_VIDMEM_ALIGNMENT (0x40) 
 
-int etna_vidmem_alloc_linear(etna_vidmem **mem_out, size_t bytes, gceSURF_TYPE type, gcePOOL pool, bool lock)
+int etna_vidmem_alloc_linear(struct viv_conn *conn, struct etna_vidmem **mem_out, size_t bytes, gceSURF_TYPE type, gcePOOL pool, bool lock)
 {
     if(mem_out == NULL) return ETNA_INVALID_ADDR;
-    etna_vidmem *mem = ETNA_NEW(etna_vidmem);
+    struct etna_vidmem *mem = ETNA_NEW(struct etna_vidmem);
     if(mem == NULL) return ETNA_OUT_OF_MEMORY;
 
     mem->type = type;
 
-    if(viv_alloc_linear_vidmem(bytes, ETNA_VIDMEM_ALIGNMENT, type, pool, &mem->node, &mem->size)!=0)
+    if(viv_alloc_linear_vidmem(conn, bytes, ETNA_VIDMEM_ALIGNMENT, type, pool, &mem->node, &mem->size)!=0)
     {
 #ifdef DEBUG
         fprintf(stderr, "Error allocating render target tile status memory\n");
@@ -50,10 +50,10 @@ int etna_vidmem_alloc_linear(etna_vidmem **mem_out, size_t bytes, gceSURF_TYPE t
 #endif
     if(lock)
     {
-        int status = etna_vidmem_lock(mem);
+        int status = etna_vidmem_lock(conn, mem);
         if(status != ETNA_OK)
         {
-            etna_vidmem_free(mem);
+            etna_vidmem_free(conn, mem);
             return status;
         }
     }
@@ -61,12 +61,12 @@ int etna_vidmem_alloc_linear(etna_vidmem **mem_out, size_t bytes, gceSURF_TYPE t
     return ETNA_OK;
 }
 
-int etna_vidmem_lock(etna_vidmem *mem)
+int etna_vidmem_lock(struct viv_conn *conn, struct etna_vidmem *mem)
 {
     if(mem == NULL) return ETNA_INVALID_ADDR;
     if(mem->logical != NULL) return ETNA_ALREADY_LOCKED;
 
-    if(viv_lock_vidmem(mem->node, &mem->address, &mem->logical)!=0)
+    if(viv_lock_vidmem(conn, mem->node, &mem->address, &mem->logical)!=0)
     {
 #ifdef DEBUG
         fprintf(stderr, "Error locking render target memory\n");
@@ -80,11 +80,11 @@ int etna_vidmem_lock(etna_vidmem *mem)
     return ETNA_OK;
 }
 
-int etna_vidmem_unlock(etna_vidmem *mem)
+int etna_vidmem_unlock(struct viv_conn *conn, struct etna_vidmem *mem)
 {
     if(mem == NULL) return ETNA_INVALID_ADDR;
 
-    if(viv_unlock_vidmem(mem->node, mem->type, 1) != ETNA_OK)
+    if(viv_unlock_vidmem(conn, mem->node, mem->type, 1) != ETNA_OK)
     {
         return ETNA_INTERNAL_ERROR;
     }
@@ -92,23 +92,23 @@ int etna_vidmem_unlock(etna_vidmem *mem)
     return ETNA_OK;
 }
 
-int etna_vidmem_free(etna_vidmem *mem)
+int etna_vidmem_free(struct viv_conn *conn, struct etna_vidmem *mem)
 {
     if(mem == NULL) return ETNA_INVALID_ADDR;
-    viv_free_vidmem(mem->node);
+    viv_free_vidmem(conn, mem->node);
     free(mem);
     return ETNA_OK;
 }
 
-int etna_usermem_map(etna_usermem **mem_out, void *memory, size_t size)
+int etna_usermem_map(struct viv_conn *conn, struct etna_usermem **mem_out, void *memory, size_t size)
 {
     if(mem_out == NULL) return ETNA_INVALID_ADDR;
-    etna_usermem *mem = ETNA_NEW(etna_usermem);
+    struct etna_usermem *mem = ETNA_NEW(struct etna_usermem);
 
     mem->memory = memory;
     mem->size = size;
 
-    if(viv_map_user_memory(memory, size, &mem->info, &mem->address)!=0)
+    if(viv_map_user_memory(conn, memory, size, &mem->info, &mem->address)!=0)
     {
         return ETNA_INTERNAL_ERROR;
     }
@@ -117,10 +117,10 @@ int etna_usermem_map(etna_usermem **mem_out, void *memory, size_t size)
     return ETNA_OK;
 }
 
-int etna_usermem_unmap(etna_usermem *mem)
+int etna_usermem_unmap(struct viv_conn *conn, struct etna_usermem *mem)
 {
     if(mem == NULL) return ETNA_INVALID_ADDR;
-    viv_unmap_user_memory(mem->memory, mem->size, mem->info, mem->address);
+    viv_unmap_user_memory(conn, mem->memory, mem->size, mem->info, mem->address);
     free(mem);
     return ETNA_OK;
 }

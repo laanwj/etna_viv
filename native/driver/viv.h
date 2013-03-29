@@ -36,6 +36,7 @@
 
 #define SIG_WAIT_INDEFINITE (0xffffffff)
 
+/* one of the features words */
 enum viv_features_word
 {
     viv_chipFeatures,
@@ -45,95 +46,111 @@ enum viv_features_word
     viv_chipMinorFeatures3
 };
 
+/* hardware type */
+enum viv_hw_type
+{
+    VIV_HW_3D = 1,
+    VIV_HW_2D = 2,
+    VIV_HW_VG = 4,
+
+    VIV_HW_2D3D = VIV_HW_3D | VIV_HW_2D
+};
+
+/* connection to driver */
+struct viv_conn {
+    int fd;
+    enum viv_hw_type hw_type;
+};
+
 /* Type for GPU physical address */
 typedef uint32_t viv_addr_t;
 
 /* Open connection to GPU driver.
  */
-int viv_open(void);
+int viv_open(enum viv_hw_type hw_type, struct viv_conn **out);
 
 /* Call ioctl interface with structure cmd as input and output.
  * @returns status (gcvSTATUS_xxx)
  */
-int viv_invoke(gcsHAL_INTERFACE *cmd);
+int viv_invoke(struct viv_conn *conn, gcsHAL_INTERFACE *cmd);
 
 /* Close connection to GPU driver.
  */
-int viv_close(void);
+int viv_close(struct viv_conn *conn);
 
 /** Allocate contiguous GPU-mapped memory */
-int viv_alloc_contiguous(size_t bytes, viv_addr_t *physical, void **logical, size_t *bytes_out);
+int viv_alloc_contiguous(struct viv_conn *conn, size_t bytes, viv_addr_t *physical, void **logical, size_t *bytes_out);
 
 /** Allocate linear video memory.
   @returns a handle. To get the GPU and CPU address of the memory, use lock_vidmem
  */
-int viv_alloc_linear_vidmem(size_t bytes, size_t alignment, gceSURF_TYPE type, gcePOOL pool, gcuVIDMEM_NODE_PTR *node, size_t *bytes_out);
+int viv_alloc_linear_vidmem(struct viv_conn *conn, size_t bytes, size_t alignment, gceSURF_TYPE type, gcePOOL pool, gcuVIDMEM_NODE_PTR *node, size_t *bytes_out);
 
 /** Lock (map) video memory node to GPU and CPU memory.
  */
-int viv_lock_vidmem(gcuVIDMEM_NODE_PTR node, viv_addr_t *physical, void **logical);
+int viv_lock_vidmem(struct viv_conn *conn, gcuVIDMEM_NODE_PTR node, viv_addr_t *physical, void **logical);
 
 /** Commit GPU command buffer and context.
  */
-int viv_commit(gcoCMDBUF commandBuffer, gcoCONTEXT contextBuffer);
+int viv_commit(struct viv_conn *conn, gcoCMDBUF commandBuffer, gcoCONTEXT contextBuffer);
 
 /**  Unlock (unmap) video memory node from GPU and CPU memory.
  */
-int viv_unlock_vidmem(gcuVIDMEM_NODE_PTR node, gceSURF_TYPE type, int async);
+int viv_unlock_vidmem(struct viv_conn *conn, gcuVIDMEM_NODE_PTR node, gceSURF_TYPE type, int async);
 
 /**  Free block of video memory previously allocated with viv_alloc_linear_vidmem.
  */
-int viv_free_vidmem(gcuVIDMEM_NODE_PTR node);
+int viv_free_vidmem(struct viv_conn *conn, gcuVIDMEM_NODE_PTR node);
 
 /**  Map user memory to GPU memory.
  */
-int viv_map_user_memory(void *memory, size_t size, gctPOINTER *info, viv_addr_t *address);
+int viv_map_user_memory(struct viv_conn *conn, void *memory, size_t size, gctPOINTER *info, viv_addr_t *address);
 
 /**  Unmap user memory from GPU memory.
  */
-int viv_unmap_user_memory(void *memory, size_t size, gctPOINTER info, viv_addr_t address);
+int viv_unmap_user_memory(struct viv_conn *conn, void *memory, size_t size, gctPOINTER info, viv_addr_t address);
 
 /** Commit event queue.
  */
-int viv_event_commit(gcsQUEUE *queue);
+int viv_event_commit(struct viv_conn *conn, gcsQUEUE *queue);
 
 /** Create a new user signal.
  *  if manualReset=0 automatic reset on WAIT
  *     manualReset=1 need to manually reset state to 0 using SIGNAL
  */
-int viv_user_signal_create(int manualReset, int *id_out);
+int viv_user_signal_create(struct viv_conn *conn, int manualReset, int *id_out);
 
 /** Set user signal state.
  */
-int viv_user_signal_signal(int sig_id, int state);
+int viv_user_signal_signal(struct viv_conn *conn, int sig_id, int state);
 
 /** Wait for signal. Provide time to wait in milliseconds, or SIG_WAIT_INDEFINITE.
  */
-int viv_user_signal_wait(int sig_id, int wait);
+int viv_user_signal_wait(struct viv_conn *conn, int sig_id, int wait);
 
 /** Destroy signal created with viv_user_signal_create.
  */
-int viv_user_signal_destroy(int sig_id);
+int viv_user_signal_destroy(struct viv_conn *conn, int sig_id);
 
 /** Queue synchronization signal from GPU.
  */
-int viv_event_queue_signal(int sig_id, gceKERNEL_WHERE fromWhere);
+int viv_event_queue_signal(struct viv_conn *conn, int sig_id, gceKERNEL_WHERE fromWhere);
 
-void viv_show_chip_info(void);
+void viv_show_chip_info(struct viv_conn *conn);
 
 /** Send reset command to GPU.
  */
-int viv_reset(void);
+int viv_reset(struct viv_conn *conn);
 
 /** Query for a GPU feature.
  */
-bool viv_query_feature(enum viv_features_word, uint32_t bits);
+bool viv_query_feature(struct viv_conn *conn, enum viv_features_word, uint32_t bits);
 
 /** Convenience macro to probe features from state.xml.h: 
  * VIV_FEATURE(chipFeatures, FAST_CLEAR) 
  * VIV_FEATURE(chipMinorFeatures1, AUTO_DISABLE) 
  */
-#define VIV_FEATURE(word, feature) viv_query_feature(viv_ ## word, word ## _ ## feature)
+#define VIV_FEATURE(conn, word, feature) viv_query_feature(conn, viv_ ## word, word ## _ ## feature)
 
 #endif
 

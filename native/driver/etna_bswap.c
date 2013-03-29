@@ -31,13 +31,12 @@
 #include <stdio.h>
 #include <assert.h>
 
-static int etna_bswap_init_buffer(etna_bswap_buffer *buf)
+static int etna_bswap_init_buffer(struct viv_conn *conn, etna_bswap_buffer *buf)
 {
     pthread_mutex_init(&buf->available_mutex, NULL);
     pthread_cond_init(&buf->available_cond, NULL);
-
     buf->is_available = 1;
-    if(viv_user_signal_create(0, &buf->sig_id_ready) != 0)
+    if(viv_user_signal_create(conn, 0, &buf->sig_id_ready) != 0)
     {
 #ifdef DEBUG
         fprintf(stderr, "Cannot create user signal for framebuffer sync\n");
@@ -47,11 +46,11 @@ static int etna_bswap_init_buffer(etna_bswap_buffer *buf)
     return ETNA_OK;
 }
 
-static void etna_bswap_destroy_buffer(etna_bswap_buffer *buf)
+static void etna_bswap_destroy_buffer(struct viv_conn *conn, etna_bswap_buffer *buf)
 {
     (void)pthread_mutex_destroy(&buf->available_mutex);
     (void)pthread_cond_destroy(&buf->available_cond);
-    (void)viv_user_signal_destroy(buf->sig_id_ready);
+    (void)viv_user_signal_destroy(conn, buf->sig_id_ready);
 }
 
 static void etna_bswap_thread(etna_bswap_buffers *bufs)
@@ -60,7 +59,7 @@ static void etna_bswap_thread(etna_bswap_buffers *bufs)
     while(!bufs->terminate)
     {
         /* wait for "buffer ready" signal for buffer X (and clear it) */
-        if(viv_user_signal_wait(bufs->buf[cur].sig_id_ready, SIG_WAIT_INDEFINITE) != 0)
+        if(viv_user_signal_wait(bufs->conn, bufs->buf[cur].sig_id_ready, SIG_WAIT_INDEFINITE) != 0)
         {
 #ifdef DEBUG
             fprintf(stderr, "Error waiting for framebuffer sync signal\n");
@@ -80,7 +79,7 @@ static void etna_bswap_thread(etna_bswap_buffers *bufs)
     }
 }
 
-int etna_bswap_create(etna_ctx *ctx, etna_bswap_buffers **bufs_out, 
+int etna_bswap_create(struct etna_ctx *ctx, etna_bswap_buffers **bufs_out, 
         etna_set_buffer_cb_t set_buffer, 
         etna_copy_buffer_cb_t copy_buffer,
         void *userptr)
@@ -90,6 +89,7 @@ int etna_bswap_create(etna_ctx *ctx, etna_bswap_buffers **bufs_out,
     etna_bswap_buffers *bufs = ETNA_NEW(etna_bswap_buffers);
     if(bufs == NULL)
         return ETNA_INTERNAL_ERROR;
+    bufs->conn = ctx->conn;
     bufs->ctx = ctx;
     bufs->set_buffer = set_buffer;
     bufs->copy_buffer = copy_buffer;
@@ -100,7 +100,7 @@ int etna_bswap_create(etna_ctx *ctx, etna_bswap_buffers **bufs_out,
     bufs->set_buffer(bufs->userptr, bufs->frontbuffer);
 
     for(int idx=0; idx<ETNA_BSWAP_NUM_BUFFERS; ++idx)
-        etna_bswap_init_buffer(&bufs->buf[idx]);
+        etna_bswap_init_buffer(bufs->conn, &bufs->buf[idx]);
     pthread_create(&bufs->thread, NULL, (void * (*)(void *))&etna_bswap_thread, bufs);
 
     *bufs_out = bufs;
@@ -112,10 +112,10 @@ int etna_bswap_free(etna_bswap_buffers *bufs)
     bufs->terminate = true;
     /* signal ready signals, to prevent thread from waiting forever for buffer to become ready */
     for(int idx=0; idx<ETNA_BSWAP_NUM_BUFFERS; ++idx)
-        (void)viv_user_signal_signal(bufs->buf[idx].sig_id_ready, 1); 
+        (void)viv_user_signal_signal(bufs->conn, bufs->buf[idx].sig_id_ready, 1); 
     (void)pthread_join(bufs->thread, NULL);
     for(int idx=0; idx<ETNA_BSWAP_NUM_BUFFERS; ++idx)
-        etna_bswap_destroy_buffer(&bufs->buf[idx]);
+        etna_bswap_destroy_buffer(bufs->conn, &bufs->buf[idx]);
     ETNA_FREE(bufs);
     return ETNA_OK;
 }
@@ -143,7 +143,7 @@ int etna_bswap_wait_available(etna_bswap_buffers *bufs)
 int etna_bswap_queue_swap(etna_bswap_buffers *bufs)
 {
     etna_flush(bufs->ctx); /* must flush before swap to make sure signal happens after all current commands processed */
-    if(viv_event_queue_signal(bufs->buf[bufs->backbuffer].sig_id_ready, gcvKERNEL_PIXEL) != 0)
+    if(viv_event_queue_signal(bufs->conn, bufs->buf[bufs->backbuffer].sig_id_ready, gcvKERNEL_PIXEL) != 0)
     {
 #ifdef DEBUG
         fprintf(stderr, "Unable to queue framebuffer sync signal\n");

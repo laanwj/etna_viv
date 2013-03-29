@@ -40,10 +40,11 @@ typedef struct _etna_bswap_buffer {
 } etna_bswap_buffer;
 
 typedef int (*etna_set_buffer_cb_t)(void *, int);
-typedef int (*etna_copy_buffer_cb_t)(void *, etna_ctx *, int);
+typedef int (*etna_copy_buffer_cb_t)(void *, struct etna_ctx *, int);
 
 typedef struct _etna_bswap_buffers {
-    etna_ctx *ctx;
+    struct viv_conn *conn;
+    struct etna_ctx *ctx;
     pthread_t thread;
     int backbuffer, frontbuffer;
     bool terminate;
@@ -54,7 +55,7 @@ typedef struct _etna_bswap_buffers {
     etna_bswap_buffer buf[ETNA_BSWAP_NUM_BUFFERS];
 } etna_bswap_buffers;
 
-int etna_bswap_create(etna_ctx *ctx, etna_bswap_buffers **bufs_out, 
+int etna_bswap_create(struct etna_ctx *ctx, etna_bswap_buffers **bufs_out, 
         etna_set_buffer_cb_t set_buffer, 
         etna_copy_buffer_cb_t copy_buffer,
         void *userptr);

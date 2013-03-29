@@ -20,49 +20,49 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-/* Low-level framebuffer query / access */
-#ifndef H_ETNA_FB
-#define H_ETNA_FB
+#include "fbdemos.h"
 
-#include "etna.h"
-#include "etna_rs.h"
+#include "etna_pipe.h"
 
-#include <stdint.h>
-#include <linux/fb.h>
-#include <unistd.h>
+#include <stdio.h>
 
-#define ETNA_FB_MAX_BUFFERS (2) /* double buffering is enough */
-struct pipe_resource;
-struct fb_info
+void fbdemo_init(struct fbdemos_scaffold **out)
 {
-    int fd;
-    int num_buffers;
-    size_t physical[ETNA_FB_MAX_BUFFERS];
-    void *logical[ETNA_FB_MAX_BUFFERS];
-    size_t stride;
-    size_t buffer_stride;
-    struct fb_var_screeninfo fb_var;
-    struct fb_fix_screeninfo fb_fix;
-    void *map;
+    struct fbdemos_scaffold *fbs = ETNA_NEW(struct fbdemos_scaffold);
+    int rv;
+    
+    rv = fb_open(0, &fbs->fb);
+    if(rv!=0)
+    {
+        exit(1);
+    }
+    fbs->width = fbs->fb.fb_var.xres;
+    fbs->height = fbs->fb.fb_var.yres;
 
-    struct etna_resource *resource;
-    struct compiled_rs_state copy_to_screen[ETNA_FB_MAX_BUFFERS];
-};
+    rv = viv_open(VIV_HW_3D, &fbs->conn);
+    if(rv!=0)
+    {
+        fprintf(stderr, "Error opening device\n");
+        exit(1);
+    }
+    printf("Succesfully opened device\n");
 
-/* Open framebuffer and get information */
-int fb_open(int num, struct fb_info *out);
+    if(etna_create(fbs->conn, &fbs->ctx) != ETNA_OK ||
+        etna_bswap_create(fbs->ctx, &fbs->buffers, (etna_set_buffer_cb_t)&fb_set_buffer, (etna_copy_buffer_cb_t)&etna_fb_copy_buffer, &fbs->fb) != ETNA_OK ||
+        (fbs->pipe = etna_new_pipe_context(fbs->ctx)) == NULL)
+    {
+        printf("Unable to create etna context\n");
+        exit(1);
+    }
 
-/* Set currently visible buffer id */
-int fb_set_buffer(struct fb_info *fb, int buffer);
+    *out = fbs;
+}
 
-/* Close framebuffer */
-int fb_close(struct fb_info *fb);
-
-/* Bind framebuffer to render target resource */
-int etna_fb_bind_resource(struct fb_info *fb, struct pipe_resource *rt_resource);
-
-/* Copy framebuffer from bound render target resource */
-int etna_fb_copy_buffer(struct fb_info *fb, struct etna_ctx *ctx, int buffer);
-
-#endif
+void fbdemo_free(struct fbdemos_scaffold *fbs)
+{
+    etna_bswap_free(fbs->buffers);
+    etna_free(fbs->ctx);
+    viv_close(fbs->conn);
+    free(fbs);
+}
 

@@ -47,7 +47,7 @@
 /* Number of bytes in one command buffer */
 #define COMMAND_BUFFER_SIZE (0x8000)
 
-/* Constraints:
+/* Constraints to command buffer layout:
  *
  * - Keep 8 words (32 bytes) at beginning of commit (for kernel to add optional PIPE switch)
  * - Keep 6 words (24 bytes) between end of one commit and beginning of next, or at the end of a buffer (for kernel to add LINK)
@@ -56,7 +56,7 @@
  * Synchronization:
  *
  * - Create N command buffers, with a signal for each buffer
- * - Before starting to write to a buffer, wait for buffer's sync signal
+ * - Before starting to write to a buffer, make sure it is free by waiting for buffer's sync signal
  * - After a buffer is full, queue the buffer's sync signal and switch to next buffer
  *
  */
@@ -67,6 +67,8 @@
 #define ETNA_FREE(ptr) free(ptr)
 
 /** Structure definitions */
+
+/* Etna error (return) codes */
 typedef enum _etna_status {
     ETNA_OK,
     ETNA_INVALID_ADDR,
@@ -76,13 +78,17 @@ typedef enum _etna_status {
     ETNA_ALREADY_LOCKED
 } etna_status;
 
+/* HW pipes.
+ * Used by GPU to tell front-end what back-end modules to synchronize operations with. 
+ */
 typedef enum _etna_pipe {
     ETNA_PIPE_3D = 0,
     ETNA_PIPE_2D = 1
 } etna_pipe;
 
-typedef struct _etna_ctx {
-    // XXX file descriptor, map, merge in stuff from viv.h?
+struct etna_ctx {
+    /* Driver connection */
+    struct viv_conn *conn;
     /* Keep track of current command buffer and writing location.
      * The offset is kept here instead of in cmdbuf[cur_buf].offset to save an level of indirection
      * when building the buffer. It is only copied to the command buffer before submission to the kernel
@@ -102,9 +108,9 @@ typedef struct _etna_ctx {
     struct _gcoCMDBUF cmdbuf[NUM_COMMAND_BUFFERS];
     int cmdbuf_sig[NUM_COMMAND_BUFFERS]; /* sync signals for command buffers */
     struct _gcoCONTEXT ctx;
-} etna_ctx;
+};
 
-/** Convenience macros for command buffer building, remember to reserve space first before using them */
+/** Convenience macros for command buffer building, remember to reserve enough space before using them */
 /* Queue load state command header (queues one word) */
 #define ETNA_EMIT_LOAD_STATE(ctx, ofs, count, fixp) \
     (ctx)->buf[(ctx)->offset++] = \
@@ -144,22 +150,20 @@ typedef struct _etna_ctx {
 /* for boolean bits */
 #define ETNA_MASKED_BIT(NAME, VALUE) (~(NAME ## _MASK | NAME) | ((VALUE) ? NAME : 0))
 /* for inline enum bit fields
- * XXX in principle headergen could simply generate these fields prepackaged
  */
 #define ETNA_MASKED_INL(NAME, VALUE) (~(NAME ## _MASK | NAME ## __MASK) | (NAME ## _ ## VALUE))
-
 
 /* Create new etna context.
  * Return error when creation fails.
  */
-int etna_create(etna_ctx **ctx);
+int etna_create(struct viv_conn *conn, struct etna_ctx **ctx);
 
 /* Free an etna context. */
-int etna_free(etna_ctx *ctx);
+int etna_free(struct etna_ctx *ctx);
 
 /* internal (non-inline) part of etna_reserve.
    only to be used from etna_reserve. */
-int _etna_reserve_internal(etna_ctx *ctx, size_t n);
+int _etna_reserve_internal(struct etna_ctx *ctx, size_t n);
 
 /* Reserve space for writing N 32-bit command words. It is allowed to reserve
  * more than is written, but not less, as this will result in a buffer overflow.
@@ -167,7 +171,7 @@ int _etna_reserve_internal(etna_ctx *ctx, size_t n);
  * It will always be 64-bit aligned so that a new command can be started.
  * @return OK on success, error code otherwise
  */
-static inline int etna_reserve(etna_ctx *ctx, size_t n)
+static inline int etna_reserve(struct etna_ctx *ctx, size_t n)
 {
     if(ctx == NULL)
         return ETNA_INVALID_ADDR;
@@ -189,31 +193,31 @@ static inline int etna_reserve(etna_ctx *ctx, size_t n)
 
 /* Set GPU pipe (ETNA_PIPE_2D, ETNA_PIPE_3D).
  */
-int etna_set_pipe(etna_ctx *ctx, etna_pipe pipe);
+int etna_set_pipe(struct etna_ctx *ctx, etna_pipe pipe);
 
 /* Send currently queued commands to kernel.
  * @return OK on success, error code otherwise
  */
-int etna_flush(etna_ctx *ctx);
+int etna_flush(struct etna_ctx *ctx);
 
 /* Send currently queued commands to kernel, then block for them to finish.
  * @return OK on success, error code otherwise
  */
-int etna_finish(etna_ctx *ctx);
+int etna_finish(struct etna_ctx *ctx);
 
 /* Queue a semaphore (but don't stall).
  * from, to are values from SYNC_RECIPIENT_*.
  * @return OK on success, error code otherwise
  */
-int etna_semaphore(etna_ctx *ctx, uint32_t from, uint32_t to);
+int etna_semaphore(struct etna_ctx *ctx, uint32_t from, uint32_t to);
 
 /* Queue a semaphore and stall.
  * from, to are values from SYNC_RECIPIENT_*.
  * @return OK on success, error code otherwise
  */
-int etna_stall(etna_ctx *ctx, uint32_t from, uint32_t to);
+int etna_stall(struct etna_ctx *ctx, uint32_t from, uint32_t to);
 
 /* print command buffer for debugging */
-void etna_dump_cmd_buffer(etna_ctx *ctx);
+void etna_dump_cmd_buffer(struct etna_ctx *ctx);
 
 #endif

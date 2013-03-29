@@ -20,6 +20,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+/* Utilities for generating low-level ISA instructions */
 #ifndef H_ETNA_ASM
 #define H_ETNA_ASM
 #include <stdint.h>
@@ -27,7 +28,9 @@
 #define ETNA_INST_SIZE (4)
 #define ETNA_NUM_SRC (3)
 
-/* operands */
+/*** operands ***/
+
+/* destination operand */
 struct etna_inst_dst
 {
     unsigned use:1;
@@ -36,6 +39,7 @@ struct etna_inst_dst
     unsigned comps:4; /* INST_COMPS_* */
 };
 
+/* texture operand */
 struct etna_inst_tex
 {
     unsigned id:5;
@@ -43,6 +47,7 @@ struct etna_inst_tex
     unsigned swiz:8; /* INST_SWIZ */
 };
 
+/* source operand */
 struct etna_inst_src
 {
     unsigned use:1;
@@ -54,7 +59,7 @@ struct etna_inst_src
     unsigned rgroup:3; /* INST_RGROUP_* */
 };
 
-/* instruction */
+/*** instruction ***/
 struct etna_inst 
 {
     uint8_t opcode; /* INST_OPCODE_* */
@@ -78,7 +83,10 @@ struct etna_inst
  */
 int etna_assemble(uint32_t *out, const struct etna_inst *inst);
 
-/* set imm of already-assembled instruction */
+/**
+ * Set field imm of already-assembled instruction.
+ * This is used for filling in jump destinations in a separate pass.
+ */
 int etna_assemble_set_imm(uint32_t *out, uint32_t imm);
 
 #endif

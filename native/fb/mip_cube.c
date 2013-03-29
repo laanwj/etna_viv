@@ -37,16 +37,9 @@
 #include <errno.h>
 
 #include "etna_pipe.h"
-
 #include "write_bmp.h"
-#include "viv.h"
-#include "etna.h"
-#include "etna_state.h"
-#include "etna_rs.h"
-#include "etna_fb.h"
-#include "etna_bswap.h"
-#include "etna_tex.h"
 #include "state_tracker/graw.h"
+#include "fbdemos.h"
 
 #include "esTransform.h"
 #include "dds.h"
@@ -201,7 +194,6 @@ static const char mip_cube_frag[] =
 "DCL OUT[0], COLOR\n"
 "DCL SAMP[0]\n"
 "DCL TEMP[0..1], LOCAL\n"
-"IMM[0] FLT32 {    1.0000,     0.0000,     0.0000,     0.0000}\n"
 "  1: TEX TEMP[1], IN[1].xyyy, SAMP[0], 2D\n"
 "  2: MUL TEMP[0], IN[0], TEMP[1]\n"
 "  3: MOV OUT[0], TEMP[0]\n"
@@ -209,37 +201,11 @@ static const char mip_cube_frag[] =
 
 int main(int argc, char **argv)
 {
-    int rv;
-    int width = 256;
-    int height = 256;
-    
-    fb_info fb;
-    rv = fb_open(0, &fb);
-    if(rv!=0)
-    {
-        exit(1);
-    }
-    width = fb.fb_var.xres;
-    height = fb.fb_var.yres;
-
-    rv = viv_open();
-    if(rv!=0)
-    {
-        fprintf(stderr, "Error opening device\n");
-        exit(1);
-    }
-    printf("Succesfully opened device\n");
-
-    etna_ctx *ctx = 0;
-    struct pipe_context *pipe = 0;
-    etna_bswap_buffers *buffers = 0;
-    if(etna_create(&ctx) != ETNA_OK ||
-        etna_bswap_create(ctx, &buffers, (etna_set_buffer_cb_t)&fb_set_buffer, (etna_copy_buffer_cb_t)&etna_fb_copy_buffer, &fb) != ETNA_OK ||
-        (pipe = etna_new_pipe_context(ctx)) == NULL)
-    {
-        printf("Unable to create etna context\n");
-        exit(1);
-    }
+    struct fbdemos_scaffold *fbs = 0;
+    fbdemo_init(&fbs);
+    int width = fbs->width;
+    int height = fbs->height;
+    struct pipe_context *pipe = fbs->pipe;
 
     dds_texture *dds = 0;
     if(argc<2 || !dds_load(argv[1], &dds))
@@ -281,7 +247,7 @@ int main(int argc, char **argv)
     struct pipe_resource *vtx_resource = etna_pipe_create_buffer(pipe, ETNA_IS_VERTEX, VERTEX_BUFFER_SIZE);
 
     /* bind render target to framebuffer */
-    etna_fb_bind_resource(&fb, rt_resource);
+    etna_fb_bind_resource(&fbs->fb, rt_resource);
 
     /* Phew, now we got all the memory we need.
      * Write interleaved attribute vertex stream.
@@ -516,14 +482,12 @@ int main(int argc, char **argv)
                     });
         }
 
-        etna_swap_buffers(buffers);
+        etna_swap_buffers(fbs->buffers);
     }
 #ifdef DUMP
-    bmp_dump32(fb.logical[1-buffers->backbuffer], width, height, false, "/mnt/sdcard/fb.bmp");
+    bmp_dump32(fbs->fb.logical[1-fbs->buffers->backbuffer], width, height, false, "/mnt/sdcard/fb.bmp");
     printf("Dump complete\n");
 #endif
-    etna_bswap_free(buffers);
-    etna_free(ctx);
-    viv_close();
+    fbdemo_free(fbs);
     return 0;
 }

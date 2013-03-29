@@ -111,8 +111,8 @@ struct etna_resource
 
     /* only lod 0 used for non-texture buffers */
     enum etna_surface_layout layout;
-    etna_vidmem *surface; /* Surface video memory */
-    etna_vidmem *ts; /* Tile status video memory */
+    struct etna_vidmem *surface; /* Surface video memory */
+    struct etna_vidmem *ts; /* Tile status video memory */
 
     struct etna_resource_level levels[ETNA_NUM_LOD];
     /* XXX uint32_t clear_value; */
@@ -153,7 +153,7 @@ etna_sampler_view(struct pipe_sampler_view *p)
     return (struct etna_sampler_view *)p;
 }
 
-struct pipe_context *etna_new_pipe_context(etna_ctx *ctx);
+struct pipe_context *etna_new_pipe_context(struct etna_ctx *ctx);
 
 /* Allocate 2D texture or render target resource 
  */

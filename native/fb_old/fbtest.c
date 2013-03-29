@@ -143,14 +143,15 @@ float vNormals[] = {
 int main(int argc, char **argv)
 {
     int rv;
-    fb_info fb;
+    struct fb_info fb;
     rv = fb_open(0, &fb);
     if(rv!=0)
     {
         exit(1);
     }
     fb_set_buffer(&fb, 0);
-    rv = viv_open();
+    struct viv_conn *conn = 0;
+    rv = viv_open(VIV_HW_3D, &conn);
     if(rv!=0)
     {
         fprintf(stderr, "Error opening device\n");
@@ -161,7 +162,7 @@ int main(int argc, char **argv)
     /* allocate command buffer (blob uses four command buffers, but we don't even fill one) */
     viv_addr_t buf0_physical = 0;
     void *buf0_logical = 0;
-    if(viv_alloc_contiguous(0x8000, &buf0_physical, &buf0_logical, NULL)!=0)
+    if(viv_alloc_contiguous(conn, 0x8000, &buf0_physical, &buf0_logical, NULL)!=0)
     {
         fprintf(stderr, "Error allocating host memory\n");
         exit(1);
@@ -170,7 +171,7 @@ int main(int argc, char **argv)
 
     /* allocate main render target */
     gcuVIDMEM_NODE_PTR rt_node = 0;
-    if(viv_alloc_linear_vidmem(0x70000, 0x40, gcvSURF_RENDER_TARGET, gcvPOOL_DEFAULT, &rt_node, NULL)!=0)
+    if(viv_alloc_linear_vidmem(conn, 0x70000, 0x40, gcvSURF_RENDER_TARGET, gcvPOOL_DEFAULT, &rt_node, NULL)!=0)
     {
         fprintf(stderr, "Error allocating render target buffer memory\n");
         exit(1);
@@ -179,7 +180,7 @@ int main(int argc, char **argv)
     
     viv_addr_t rt_physical = 0;
     void *rt_logical = 0;
-    if(viv_lock_vidmem(rt_node, &rt_physical, &rt_logical)!=0)
+    if(viv_lock_vidmem(conn, rt_node, &rt_physical, &rt_logical)!=0)
     {
         fprintf(stderr, "Error locking render target memory\n");
         exit(1);
@@ -189,7 +190,7 @@ int main(int argc, char **argv)
 
     /* allocate tile status for main render target */
     gcuVIDMEM_NODE_PTR rt_ts_node = 0;
-    if(viv_alloc_linear_vidmem(0x700, 0x40, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, &rt_ts_node, NULL)!=0)
+    if(viv_alloc_linear_vidmem(conn, 0x700, 0x40, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, &rt_ts_node, NULL)!=0)
     {
         fprintf(stderr, "Error allocating render target tile status memory\n");
         exit(1);
@@ -198,7 +199,7 @@ int main(int argc, char **argv)
     
     viv_addr_t rt_ts_physical = 0;
     void *rt_ts_logical = 0;
-    if(viv_lock_vidmem(rt_ts_node, &rt_ts_physical, &rt_ts_logical)!=0)
+    if(viv_lock_vidmem(conn, rt_ts_node, &rt_ts_physical, &rt_ts_logical)!=0)
     {
         fprintf(stderr, "Error locking render target memory\n");
         exit(1);
@@ -207,7 +208,7 @@ int main(int argc, char **argv)
 
     /* allocate depth for main render target */
     gcuVIDMEM_NODE_PTR z_node = 0;
-    if(viv_alloc_linear_vidmem(0x38000, 0x40, gcvSURF_DEPTH, gcvPOOL_DEFAULT, &z_node, NULL)!=0)
+    if(viv_alloc_linear_vidmem(conn, 0x38000, 0x40, gcvSURF_DEPTH, gcvPOOL_DEFAULT, &z_node, NULL)!=0)
     {
         fprintf(stderr, "Error allocating depth memory\n");
         exit(1);
@@ -216,7 +217,7 @@ int main(int argc, char **argv)
     
     viv_addr_t z_physical = 0;
     void *z_logical = 0;
-    if(viv_lock_vidmem(z_node, &z_physical, &z_logical)!=0)
+    if(viv_lock_vidmem(conn, z_node, &z_physical, &z_logical)!=0)
     {
         fprintf(stderr, "Error locking depth target memory\n");
         exit(1);
@@ -225,7 +226,7 @@ int main(int argc, char **argv)
 
     /* allocate depth ts for main render target */
     gcuVIDMEM_NODE_PTR z_ts_node = 0;
-    if(viv_alloc_linear_vidmem(0x400, 0x40, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, &z_ts_node, NULL)!=0)
+    if(viv_alloc_linear_vidmem(conn, 0x400, 0x40, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, &z_ts_node, NULL)!=0)
     {
         fprintf(stderr, "Error allocating depth memory\n");
         exit(1);
@@ -234,7 +235,7 @@ int main(int argc, char **argv)
     
     viv_addr_t z_ts_physical = 0;
     void *z_ts_logical = 0;
-    if(viv_lock_vidmem(z_ts_node, &z_ts_physical, &z_ts_logical)!=0)
+    if(viv_lock_vidmem(conn, z_ts_node, &z_ts_physical, &z_ts_logical)!=0)
     {
         fprintf(stderr, "Error locking depth target ts memory\n");
         exit(1);
@@ -243,7 +244,7 @@ int main(int argc, char **argv)
 
     /* allocate vertex buffer */
     gcuVIDMEM_NODE_PTR vtx_node = 0;
-    if(viv_alloc_linear_vidmem(0x60000, 0x40, gcvSURF_VERTEX, gcvPOOL_DEFAULT, &vtx_node, NULL)!=0)
+    if(viv_alloc_linear_vidmem(conn, 0x60000, 0x40, gcvSURF_VERTEX, gcvPOOL_DEFAULT, &vtx_node, NULL)!=0)
     {
         fprintf(stderr, "Error allocating vertex memory\n");
         exit(1);
@@ -252,7 +253,7 @@ int main(int argc, char **argv)
     
     viv_addr_t vtx_physical = 0;
     void *vtx_logical = 0;
-    if(viv_lock_vidmem(vtx_node, &vtx_physical, &vtx_logical)!=0)
+    if(viv_lock_vidmem(conn, vtx_node, &vtx_physical, &vtx_logical)!=0)
     {
         fprintf(stderr, "Error locking vertex memory\n");
         exit(1);
@@ -261,7 +262,7 @@ int main(int argc, char **argv)
 
     /* allocate aux render target */
     gcuVIDMEM_NODE_PTR aux_rt_node = 0;
-    if(viv_alloc_linear_vidmem(0x4000, 0x40, gcvSURF_RENDER_TARGET, gcvPOOL_SYSTEM /*why?*/, &aux_rt_node, NULL)!=0)
+    if(viv_alloc_linear_vidmem(conn, 0x4000, 0x40, gcvSURF_RENDER_TARGET, gcvPOOL_SYSTEM /*why?*/, &aux_rt_node, NULL)!=0)
     {
         fprintf(stderr, "Error allocating aux render target buffer memory\n");
         exit(1);
@@ -270,7 +271,7 @@ int main(int argc, char **argv)
     
     viv_addr_t aux_rt_physical = 0;
     void *aux_rt_logical = 0;
-    if(viv_lock_vidmem(aux_rt_node, &aux_rt_physical, &aux_rt_logical)!=0)
+    if(viv_lock_vidmem(conn, aux_rt_node, &aux_rt_physical, &aux_rt_logical)!=0)
     {
         fprintf(stderr, "Error locking aux render target memory\n");
         exit(1);
@@ -279,7 +280,7 @@ int main(int argc, char **argv)
 
     /* allocate tile status for aux render target */
     gcuVIDMEM_NODE_PTR aux_rt_ts_node = 0;
-    if(viv_alloc_linear_vidmem(0x100, 0x40, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, &aux_rt_ts_node, NULL)!=0)
+    if(viv_alloc_linear_vidmem(conn, 0x100, 0x40, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, &aux_rt_ts_node, NULL)!=0)
     {
         fprintf(stderr, "Error allocating aux render target tile status memory\n");
         exit(1);
@@ -288,7 +289,7 @@ int main(int argc, char **argv)
     
     viv_addr_t aux_rt_ts_physical = 0;
     void *aux_rt_ts_logical = 0;
-    if(viv_lock_vidmem(aux_rt_ts_node, &aux_rt_ts_physical, &aux_rt_ts_logical)!=0)
+    if(viv_lock_vidmem(conn, aux_rt_ts_node, &aux_rt_ts_physical, &aux_rt_ts_logical)!=0)
     {
         fprintf(stderr, "Error locking aux ts render target memory\n");
         exit(1);
@@ -396,7 +397,7 @@ int main(int argc, char **argv)
     commandBuffer.offset = commandBuffer.startOffset + sizeof(cmdbuf1);
     commandBuffer.free -= sizeof(cmdbuf1) + 0x18;
     printf("[1] startOffset=%08x, offset=%08x, free=%08x\n", (uint32_t)commandBuffer.startOffset, (uint32_t)commandBuffer.offset, (uint32_t)commandBuffer.free);
-    if(viv_commit(&commandBuffer, &contextBuffer) != 0)
+    if(viv_commit(conn, &commandBuffer, &contextBuffer) != 0)
     {
         fprintf(stderr, "Error committing first command buffer\n");
         exit(1);
@@ -408,7 +409,7 @@ int main(int argc, char **argv)
     viv_addr_t cbuf0_physical = 0;
     void *cbuf0_logical = 0;
     size_t cbuf0_bytes = 0;
-    if(viv_alloc_contiguous(contextBuffer.bufferSize, &cbuf0_physical, &cbuf0_logical, &cbuf0_bytes)!=0)
+    if(viv_alloc_contiguous(conn, contextBuffer.bufferSize, &cbuf0_physical, &cbuf0_logical, &cbuf0_bytes)!=0)
     {
         fprintf(stderr, "Error allocating contiguous host memory for context\n");
         exit(1);
@@ -430,7 +431,7 @@ int main(int argc, char **argv)
     commandBuffer.offset = commandBuffer.startOffset + sizeof(cmdbuf2);
     commandBuffer.free -= sizeof(cmdbuf2) + 0x18;
     printf("[2] startOffset=%08x, offset=%08x, free=%08x\n", (uint32_t)commandBuffer.startOffset, (uint32_t)commandBuffer.offset, (uint32_t)commandBuffer.free);
-    if(viv_commit(&commandBuffer, &contextBuffer) != 0)
+    if(viv_commit(conn, &commandBuffer, &contextBuffer) != 0)
     {
         fprintf(stderr, "Error committing second command buffer\n");
         exit(1);
@@ -449,7 +450,7 @@ int main(int argc, char **argv)
     commandBuffer.offset = commandBuffer.startOffset + sizeof(cmdbuf3);
     commandBuffer.free -= sizeof(cmdbuf3) + 0x18;
     printf("[3] startOffset=%08x, offset=%08x, free=%08x\n", (uint32_t)commandBuffer.startOffset, (uint32_t)commandBuffer.offset, (uint32_t)commandBuffer.free);
-    if(viv_commit(&commandBuffer, &contextBuffer) != 0)
+    if(viv_commit(conn, &commandBuffer, &contextBuffer) != 0)
     {
         fprintf(stderr, "Error committing third command buffer\n");
         exit(1);
@@ -457,20 +458,20 @@ int main(int argc, char **argv)
 
     /* Submit event queue with SIGNAL, fromWhere=gcvKERNEL_PIXEL (wait for pixel engine to finish) */
     int sig_id = 0;
-    if(viv_user_signal_create(0, &sig_id) != 0) /* automatic resetting signal */
+    if(viv_user_signal_create(conn, 0, &sig_id) != 0) /* automatic resetting signal */
     {
         fprintf(stderr, "Cannot create user signal\n");
         exit(1);
     }
     printf("Created user signal %i\n", sig_id);
-    if(viv_event_queue_signal(sig_id, gcvKERNEL_PIXEL) != 0)
+    if(viv_event_queue_signal(conn, sig_id, gcvKERNEL_PIXEL) != 0)
     {
         fprintf(stderr, "Cannot queue GPU signal\n");
         exit(1);
     }
 
     /* Wait for signal */
-    if(viv_user_signal_wait(sig_id, SIG_WAIT_INDEFINITE) != 0)
+    if(viv_user_signal_wait(conn, sig_id, SIG_WAIT_INDEFINITE) != 0)
     {
         fprintf(stderr, "Cannot wait for signal\n");
         exit(1);
@@ -478,7 +479,7 @@ int main(int argc, char **argv)
 
     /* Allocate video memory for BITMAP, lock */
     gcuVIDMEM_NODE_PTR bmp_node = 0;
-    if(viv_alloc_linear_vidmem(0x5dc00, 0x40, gcvSURF_BITMAP, gcvPOOL_DEFAULT, &bmp_node, NULL)!=0)
+    if(viv_alloc_linear_vidmem(conn, 0x5dc00, 0x40, gcvSURF_BITMAP, gcvPOOL_DEFAULT, &bmp_node, NULL)!=0)
     {
         fprintf(stderr, "Error allocating bitmap status memory\n");
         exit(1);
@@ -487,7 +488,7 @@ int main(int argc, char **argv)
     
     viv_addr_t bmp_physical = 0;
     void *bmp_logical = 0;
-    if(viv_lock_vidmem(bmp_node, &bmp_physical, &bmp_logical)!=0)
+    if(viv_lock_vidmem(conn, bmp_node, &bmp_physical, &bmp_logical)!=0)
     {
         fprintf(stderr, "Error locking bmp memory\n");
         exit(1);
@@ -508,28 +509,28 @@ int main(int argc, char **argv)
     commandBuffer.offset = commandBuffer.startOffset + sizeof(cmdbuf4);
     commandBuffer.free -= sizeof(cmdbuf4) + 0x18;
     printf("[4] startOffset=%08x, offset=%08x, free=%08x\n", (uint32_t)commandBuffer.startOffset, (uint32_t)commandBuffer.offset, (uint32_t)commandBuffer.free);
-    if(viv_commit(&commandBuffer, &contextBuffer) != 0)
+    if(viv_commit(conn, &commandBuffer, &contextBuffer) != 0)
     {
         fprintf(stderr, "Error committing fourth command buffer\n");
         exit(1);
     }
 
     /* Submit event queue with SIGNAL, fromWhere=gcvKERNEL_PIXEL */
-    if(viv_event_queue_signal(sig_id, gcvKERNEL_PIXEL) != 0)
+    if(viv_event_queue_signal(conn, sig_id, gcvKERNEL_PIXEL) != 0)
     {
         fprintf(stderr, "Cannot queue GPU signal\n");
         exit(1);
     }
 
     /* Wait for signal */
-    if(viv_user_signal_wait(sig_id, SIG_WAIT_INDEFINITE) != 0)
+    if(viv_user_signal_wait(conn, sig_id, SIG_WAIT_INDEFINITE) != 0)
     {
         fprintf(stderr, "Cannot wait for signal\n");
         exit(1);
     }
     bmp_dump32(bmp_logical, 400, 240, false, "/mnt/sdcard/replay.bmp");
     /* Unlock video memory */
-    if(viv_unlock_vidmem(bmp_node, gcvSURF_BITMAP, 1) != 0)
+    if(viv_unlock_vidmem(conn, bmp_node, gcvSURF_BITMAP, 1) != 0)
     {
         fprintf(stderr, "Cannot unlock vidmem\n");
         exit(1);
@@ -542,7 +543,7 @@ int main(int argc, char **argv)
     }*/
     printf("Contextbuffer used %i\n", *contextBuffer.inUse);
 
-    viv_close();
+    viv_close(conn);
     return 0;
 }
 

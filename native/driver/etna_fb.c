@@ -55,10 +55,10 @@
  */
 
 /* Open framebuffer and get information */
-int fb_open(int num, fb_info *out)
+int fb_open(int num, struct fb_info *out)
 {
     char devname[256];
-    memset(out, 0, sizeof(fb_info));
+    memset(out, 0, sizeof(struct fb_info));
 
     snprintf(devname, 256, FBDEV_DEV, num);
 	
@@ -128,7 +128,7 @@ int fb_open(int num, fb_info *out)
 }
 
 /* Set currently visible buffer id */
-int fb_set_buffer(fb_info *fb, int buffer)
+int fb_set_buffer(struct fb_info *fb, int buffer)
 {
     fb->fb_var.yoffset = buffer * fb->fb_var.yres;
     if (ioctl(fb->fd, FBIOPAN_DISPLAY, &fb->fb_var))
@@ -139,7 +139,7 @@ int fb_set_buffer(fb_info *fb, int buffer)
     return 0;
 }
 
-int fb_close(fb_info *fb)
+int fb_close(struct fb_info *fb)
 {
     close(fb->fd);
     return 0;
@@ -172,7 +172,7 @@ static const struct etna_fb_format_desc etna_fb_formats[] = {
 };
 #define NUM_FB_FORMATS (sizeof(etna_fb_formats) / sizeof(etna_fb_formats[0]))
 
-int etna_fb_bind_resource(fb_info *fb, struct pipe_resource *rt_resource_)
+int etna_fb_bind_resource(struct fb_info *fb, struct pipe_resource *rt_resource_)
 {
     struct etna_resource *rt_resource = etna_resource(rt_resource_);
     int fmt_idx = 0;
@@ -224,7 +224,7 @@ int etna_fb_bind_resource(fb_info *fb, struct pipe_resource *rt_resource_)
     return 0;
 }
 
-int etna_fb_copy_buffer(fb_info *fb, etna_ctx *ctx, int buffer)
+int etna_fb_copy_buffer(struct fb_info *fb, struct etna_ctx *ctx, int buffer)
 {
     assert(fb->resource);
     /*  XXX assumes TS is still set up correctly */

@@ -332,7 +332,8 @@ struct etna_3d_state
 /* private opaque context structure */
 struct etna_pipe_context_priv
 {
-    etna_ctx *ctx;
+    struct viv_conn *conn;
+    struct etna_ctx *ctx;
     unsigned dirty_bits;
     struct pipe_framebuffer_state framebuffer_s;
     struct etna_pipe_specs specs;
@@ -517,7 +518,7 @@ static void etna_link_shaders(struct pipe_context *pipe,
 static void sync_context(struct pipe_context *pipe)
 {
     struct etna_pipe_context_priv *restrict e = ETNA_PIPE(pipe);
-    etna_ctx *restrict ctx = e->ctx;
+    struct etna_ctx *restrict ctx = e->ctx;
     uint32_t active_samplers = active_samplers_bits(pipe);
 
     uint32_t dirty = e->dirty_bits;
@@ -1671,7 +1672,7 @@ static void etna_pipe_bind_vs_state(struct pipe_context *pipe, void *vss_)
     priv->vs = vss;
 }
 
-struct pipe_context *etna_new_pipe_context(etna_ctx *ctx)
+struct pipe_context *etna_new_pipe_context(struct etna_ctx *ctx)
 {
     struct pipe_context *pc = ETNA_NEW(struct pipe_context);
     if(pc == NULL)
@@ -1688,10 +1689,11 @@ struct pipe_context *etna_new_pipe_context(etna_ctx *ctx)
     /* context private setup */
     priv->ctx = ctx;
     priv->dirty_bits = 0xffffffff;
+    priv->conn = ctx->conn;
 
-    priv->specs.can_supertile = VIV_FEATURE(chipMinorFeatures0,SUPER_TILED);
-    priv->specs.bits_per_tile = VIV_FEATURE(chipMinorFeatures0,2BITPERTILE)?2:4;
-    priv->specs.ts_clear_value = VIV_FEATURE(chipMinorFeatures0,2BITPERTILE)?0x55555555:0x11111111;
+    priv->specs.can_supertile = VIV_FEATURE(ctx->conn, chipMinorFeatures0,SUPER_TILED);
+    priv->specs.bits_per_tile = VIV_FEATURE(ctx->conn, chipMinorFeatures0,2BITPERTILE)?2:4;
+    priv->specs.ts_clear_value = VIV_FEATURE(ctx->conn, chipMinorFeatures0,2BITPERTILE)?0x55555555:0x11111111;
     priv->specs.vertex_sampler_offset = 8; /* vertex and fragment samplers live in one address space */
     priv->specs.vs_need_z_div = true; /* XXX gc2000+ and gc880 don't need this */
 
@@ -1827,16 +1829,16 @@ struct pipe_resource *etna_pipe_create_2d(struct pipe_context *pipe, unsigned fl
     printf("Allocate 2D surface of %ix%i (padded to %ix%i) of format %i (%i bpe), size %08x ts_size %08x, flags %08x\n",
             width, height, resource->levels[0].padded_width, resource->levels[0].padded_height, format, element_size, rt_size, rt_ts_size, flags);
 
-    etna_vidmem *rt = 0;
-    if(etna_vidmem_alloc_linear(&rt, rt_size, memtype, gcvPOOL_DEFAULT, true) != ETNA_OK)
+    struct etna_vidmem *rt = 0;
+    if(etna_vidmem_alloc_linear(priv->conn, &rt, rt_size, memtype, gcvPOOL_DEFAULT, true) != ETNA_OK)
     {
         printf("Problem allocating video memory for 2d resource\n");
         return NULL;
     }
    
     /* XXX allocate TS for rendertextures? if so, for each level or only the top? */
-    etna_vidmem *rt_ts = 0;
-    if(rt_ts_size && etna_vidmem_alloc_linear(&rt_ts, rt_ts_size, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, true)!=ETNA_OK)
+    struct etna_vidmem *rt_ts = 0;
+    if(rt_ts_size && etna_vidmem_alloc_linear(priv->conn, &rt_ts, rt_ts_size, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, true)!=ETNA_OK)
     {
         printf("Problem allocating tile status for 2d resource\n");
         return NULL;
@@ -1875,10 +1877,10 @@ struct pipe_resource *etna_pipe_create_2d(struct pipe_context *pipe, unsigned fl
  */
 struct pipe_resource *etna_pipe_create_buffer(struct pipe_context *pipe, unsigned flags, unsigned size)
 {
-    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
-    etna_vidmem *vtx = 0;
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_vidmem *vtx = 0;
 
-    if(etna_vidmem_alloc_linear(&vtx, size, 
+    if(etna_vidmem_alloc_linear(priv->conn, &vtx, size, 
            (flags & ETNA_IS_INDEX) ? gcvSURF_INDEX : gcvSURF_VERTEX, gcvPOOL_DEFAULT, true)!=ETNA_OK)
     {
         printf("Problem allocating video memory for buffer resource\n");
@@ -1908,11 +1910,12 @@ struct pipe_resource *etna_pipe_create_buffer(struct pipe_context *pipe, unsigne
 
 void etna_pipe_destroy_resource(struct pipe_context *pipe, struct pipe_resource *resource_)
 {
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
     struct etna_resource *resource = etna_resource(resource_);
     if(resource == NULL)
         return;
-    etna_vidmem_free(resource->surface);
-    etna_vidmem_free(resource->ts);
+    etna_vidmem_free(priv->conn, resource->surface);
+    etna_vidmem_free(priv->conn, resource->ts);
     free(resource);
 }
 

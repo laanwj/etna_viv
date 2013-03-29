@@ -78,7 +78,7 @@ int main(int argc, char **argv)
     int padded_width, padded_height;
     int backbuffer = 0;
     
-    fb_info fb;
+    struct fb_info fb;
     rv = fb_open(0, &fb);
     if(rv!=0)
     {
@@ -90,7 +90,8 @@ int main(int argc, char **argv)
     padded_height = etna_align_up(height, 64);
 
     printf("padded_width %i padded_height %i\n", padded_width, padded_height);
-    rv = viv_open();
+    struct viv_conn *conn = 0;
+    rv = viv_open(VIV_HW_3D, &conn);
     if(rv!=0)
     {
         fprintf(stderr, "Error opening device\n");
@@ -98,14 +99,14 @@ int main(int argc, char **argv)
     }
     printf("Succesfully opened device\n");
 
-    etna_vidmem *rt = 0; /* main render target */
-    etna_vidmem *rt_ts = 0; /* tile status for main render target */
-    etna_vidmem *z = 0; /* depth for main render target */
-    etna_vidmem *z_ts = 0; /* depth ts for main render target */
-    etna_vidmem *vtx = 0; /* vertex buffer */
-    etna_vidmem *aux_rt = 0; /* auxilary render target */
-    etna_vidmem *aux_rt_ts = 0; /* tile status for auxilary render target */
-    etna_vidmem *bmp = 0; /* bitmap */
+    struct etna_vidmem *rt = 0; /* main render target */
+    struct etna_vidmem *rt_ts = 0; /* tile status for main render target */
+    struct etna_vidmem *z = 0; /* depth for main render target */
+    struct etna_vidmem *z_ts = 0; /* depth ts for main render target */
+    struct etna_vidmem *vtx = 0; /* vertex buffer */
+    struct etna_vidmem *aux_rt = 0; /* auxilary render target */
+    struct etna_vidmem *aux_rt_ts = 0; /* tile status for auxilary render target */
+    struct etna_vidmem *bmp = 0; /* bitmap */
 
     size_t rt_size = padded_width * padded_height * 4;
     size_t rt_ts_size = etna_align_up((padded_width * padded_height * 4)/0x100, 0x100);
@@ -113,14 +114,14 @@ int main(int argc, char **argv)
     size_t z_ts_size = etna_align_up((padded_width * padded_height * 2)/0x100, 0x100);
     size_t bmp_size = width * height * 4;
 
-    if(etna_vidmem_alloc_linear(&rt, rt_size, gcvSURF_RENDER_TARGET, gcvPOOL_DEFAULT, true)!=ETNA_OK ||
-       etna_vidmem_alloc_linear(&rt_ts, rt_ts_size, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, true)!=ETNA_OK ||
-       etna_vidmem_alloc_linear(&z, z_size, gcvSURF_DEPTH, gcvPOOL_DEFAULT, true)!=ETNA_OK ||
-       etna_vidmem_alloc_linear(&z_ts, z_ts_size, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, true)!=ETNA_OK ||
-       etna_vidmem_alloc_linear(&vtx, VERTEX_BUFFER_SIZE, gcvSURF_VERTEX, gcvPOOL_DEFAULT, true)!=ETNA_OK ||
-       etna_vidmem_alloc_linear(&aux_rt, 0x4000, gcvSURF_RENDER_TARGET, gcvPOOL_SYSTEM, true)!=ETNA_OK ||
-       etna_vidmem_alloc_linear(&aux_rt_ts, 0x100, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, true)!=ETNA_OK ||
-       etna_vidmem_alloc_linear(&bmp, bmp_size, gcvSURF_BITMAP, gcvPOOL_DEFAULT, true)!=ETNA_OK
+    if(etna_vidmem_alloc_linear(conn, &rt, rt_size, gcvSURF_RENDER_TARGET, gcvPOOL_DEFAULT, true)!=ETNA_OK ||
+       etna_vidmem_alloc_linear(conn, &rt_ts, rt_ts_size, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, true)!=ETNA_OK ||
+       etna_vidmem_alloc_linear(conn, &z, z_size, gcvSURF_DEPTH, gcvPOOL_DEFAULT, true)!=ETNA_OK ||
+       etna_vidmem_alloc_linear(conn, &z_ts, z_ts_size, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, true)!=ETNA_OK ||
+       etna_vidmem_alloc_linear(conn, &vtx, VERTEX_BUFFER_SIZE, gcvSURF_VERTEX, gcvPOOL_DEFAULT, true)!=ETNA_OK ||
+       etna_vidmem_alloc_linear(conn, &aux_rt, 0x4000, gcvSURF_RENDER_TARGET, gcvPOOL_SYSTEM, true)!=ETNA_OK ||
+       etna_vidmem_alloc_linear(conn, &aux_rt_ts, 0x100, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, true)!=ETNA_OK ||
+       etna_vidmem_alloc_linear(conn, &bmp, bmp_size, gcvSURF_BITMAP, gcvPOOL_DEFAULT, true)!=ETNA_OK
        )
     {
         fprintf(stderr, "Error allocating video memory\n");
@@ -140,8 +141,8 @@ int main(int argc, char **argv)
         for(int comp=0; comp<2; ++comp)
             ((float*)vtx->logical)[dest_idx+comp+3] = vTexCoords[vert*2 + comp]; /* 1 */
     }
-    etna_ctx *ctx = 0;
-    if(etna_create(&ctx) != ETNA_OK)
+    struct etna_ctx *ctx = 0;
+    if(etna_create(conn, &ctx) != ETNA_OK)
     {
         printf("Unable to create context\n");
         exit(1);
@@ -501,13 +502,13 @@ int main(int argc, char **argv)
     }
     
     /* Unlock video memory */
-    if(etna_vidmem_unlock(bmp) != 0)
+    if(etna_vidmem_unlock(conn, bmp) != 0)
     {
         fprintf(stderr, "Cannot unlock vidmem\n");
         exit(1);
     }
 
     etna_free(ctx);
-    viv_close();
+    viv_close(conn);
     return 0;
 }

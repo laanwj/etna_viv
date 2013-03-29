@@ -14,15 +14,16 @@
 int main(int argc, char **argv)
 {
     int rv;
-    rv = viv_open();
+    struct viv_conn *conn = 0;
+    rv = viv_open(VIV_HW_3D, &conn);
     if(rv!=0)
     {
         fprintf(stderr, "Error opening device\n");
         exit(1);
     }
     printf("Succesfully opened device, resetting\n");
-    viv_reset();
-    viv_close();
+    viv_reset(conn);
+    viv_close(conn);
     return 0;
 }
 

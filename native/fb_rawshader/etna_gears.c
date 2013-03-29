@@ -59,6 +59,7 @@
 #include "etna_fb.h"
 #include "etna_bswap.h"
 #include "etna_tex.h"
+#include "fbdemos.h"
 
 #include "esTransform.h"
 #include "esShapes.h"
@@ -510,35 +511,11 @@ const struct etna_shader_program shader = {
 int
 main(int argc, char *argv[])
 {
-    int rv;
-    
-    fb_info fb;
-    rv = fb_open(0, &fb);
-    if(rv!=0)
-    {
-        exit(1);
-    }
-    int width = fb.fb_var.xres;
-    int height = fb.fb_var.yres;
-
-    rv = viv_open();
-    if(rv!=0)
-    {
-        fprintf(stderr, "Error opening device\n");
-        exit(1);
-    }
-    printf("Succesfully opened device\n");
-
-    etna_ctx *ctx = 0;
-    struct pipe_context *pipe = 0;
-    etna_bswap_buffers *buffers = 0;
-    if(etna_create(&ctx) != ETNA_OK ||
-        etna_bswap_create(ctx, &buffers, (etna_set_buffer_cb_t)&fb_set_buffer, (etna_copy_buffer_cb_t)&etna_fb_copy_buffer, &fb) != ETNA_OK ||
-        (pipe = etna_new_pipe_context(ctx)) == NULL)
-    {
-        printf("Unable to create etna context\n");
-        exit(1);
-    }
+    struct fbdemos_scaffold *fbs = 0;
+    fbdemo_init(&fbs);
+    int width = fbs->width;
+    int height = fbs->height;
+    struct pipe_context *pipe = fbs->pipe;
 
     /* resources */
     struct pipe_resource *rt_resource = etna_pipe_create_2d(pipe, ETNA_IS_RENDER_TARGET, PIPE_FORMAT_B8G8R8X8_UNORM, width, height, 0);
@@ -556,7 +533,7 @@ main(int argc, char *argv[])
         });
     
     /* bind render target to framebuffer */
-    etna_fb_bind_resource(&fb, rt_resource);
+    etna_fb_bind_resource(&fbs->fb, rt_resource);
 
     /* compile gallium3d states */
     void *blend = pipe->create_blend_state(pipe, &(struct pipe_blend_state) {
@@ -676,9 +653,10 @@ main(int argc, char *argv[])
         etna_dump_cmd_buffer(ctx);
         exit(0);
 #endif    
-        gears_idle(buffers);
+        gears_idle(fbs->buffers);
         frame++;
     }
+    fbdemo_free(fbs);
 
     return 0;
 }

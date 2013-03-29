@@ -28,7 +28,7 @@
 #include "state.xml.h"
 #include "state_3d.xml.h"
 
-void etna_warm_up_rs(etna_ctx *cmdbuf, viv_addr_t aux_rt_physical, viv_addr_t aux_rt_ts_physical)
+void etna_warm_up_rs(struct etna_ctx *cmdbuf, viv_addr_t aux_rt_physical, viv_addr_t aux_rt_ts_physical)
 {
     etna_set_state(cmdbuf, VIVS_TS_COLOR_STATUS_BASE, aux_rt_ts_physical); /* ADDR_G */
     etna_set_state(cmdbuf, VIVS_TS_COLOR_SURFACE_BASE, aux_rt_physical); /* ADDR_F */
@@ -84,7 +84,7 @@ void etna_compile_rs_state(struct compiled_rs_state *cs, const struct rs_state *
 
 /* submit RS state, without any processing and no dependence on context 
  * except TS if this is a source-to-destination blit. */
-void etna_submit_rs_state(etna_ctx *restrict ctx, const struct compiled_rs_state *cs)
+void etna_submit_rs_state(struct etna_ctx *restrict ctx, const struct compiled_rs_state *cs)
 {
     etna_reserve(ctx, 22);
     /*0 */ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_CONFIG>>2, 5, 0);
