@@ -339,7 +339,7 @@ draw_gear(struct pipe_context *pipe, struct gear *gear, void *shader_state, ESMa
     /* Translate and rotate the gear */
     model_view = *transform;
     esTranslate(&model_view, x, y, 0);
-    esRotate(&model_view, angle, 0, 0, 1);
+    esRotate(&model_view, -angle, 0, 0, 1);
     
     /* Create and set the ModelViewProjectionMatrix */
     esMatrixMultiply(&model_view_projection, &model_view, &ProjectionMatrix);
@@ -394,9 +394,9 @@ gears_draw(struct pipe_context *pipe, void *shader_state)
 
     /* Translate and rotate the view */
     esTranslate(&transform, 0, 0, -15);
-    esRotate(&transform, view_rot[0], 1, 0, 0);
-    esRotate(&transform, view_rot[1], 0, 1, 0);
-    esRotate(&transform, view_rot[2], 0, 0, 1);
+    esRotate(&transform, -view_rot[0], 1, 0, 0);
+    esRotate(&transform, -view_rot[1], 0, 1, 0);
+    esRotate(&transform, -view_rot[2], 0, 0, 1);
 
     /* Draw the gears */
     draw_gear(pipe, gear1, shader_state, &transform, -3.0, -2.0, angle, red);
