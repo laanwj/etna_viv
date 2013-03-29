@@ -39,13 +39,6 @@
 #define GALCORE_DEVICE "/dev/galcore"
 #define INTERFACE_SIZE (sizeof(gcsHAL_INTERFACE))
 
-int viv_fd = -1;
-viv_addr_t viv_base_address = 0;
-void *viv_mem = NULL;
-viv_addr_t viv_mem_base = 0;
-gctHANDLE viv_process;
-static struct _gcsHAL_QUERY_CHIP_IDENTITY viv_chip;
-
 /* IOCTL structure for IOCTL_GCHAL_INTERFACE */
 typedef struct 
 {
@@ -63,7 +56,7 @@ int viv_invoke(struct viv_conn *conn, gcsHAL_INTERFACE *cmd)
         .out_buf = cmd,
         .out_buf_size = INTERFACE_SIZE
     };
-    if(ioctl(viv_fd, IOCTL_GCHAL_INTERFACE, &ic) < 0)
+    if(ioctl(conn->fd, IOCTL_GCHAL_INTERFACE, &ic) < 0)
         return -1;
 #ifdef DEBUG
     if(cmd->status != 0)
@@ -76,39 +69,42 @@ int viv_invoke(struct viv_conn *conn, gcsHAL_INTERFACE *cmd)
 
 int viv_close(struct viv_conn *conn)
 {
-    if(viv_fd < 0)
+    if(conn->fd < 0)
         return -1;
-    return close(viv_fd);
+    close(conn->fd);
+    free(conn);
+    return 0;
 }
 
 int viv_open(enum viv_hw_type hw_type, struct viv_conn **out)
 {
     struct viv_conn *conn = malloc(sizeof(struct viv_conn));
+    int err = 0;
     if(conn == NULL)
         return -1;
     conn->hw_type = hw_type;
     gcsHAL_INTERFACE id = {};
-    viv_fd = open(GALCORE_DEVICE, O_RDWR);
-    if(viv_fd < 0)
-        return viv_fd;
+    conn->fd = open(GALCORE_DEVICE, O_RDWR);
+    if((err=conn->fd) < 0)
+        goto error;
     
     /* Determine base address */
     id.command = gcvHAL_GET_BASE_ADDRESS;
-    if(viv_invoke(conn, &id) != gcvSTATUS_OK)
-        return -1;
-    viv_base_address = id.u.GetBaseAddress.baseAddress;
-    printf("Physical address of internal memory: %08x\n", viv_base_address);
+    if((err=viv_invoke(conn, &id)) != gcvSTATUS_OK)
+        goto error;
+    conn->base_address = id.u.GetBaseAddress.baseAddress;
+    printf("Physical address of internal memory: %08x\n", conn->base_address);
 
     /* Get chip identity */
     id.command = gcvHAL_QUERY_CHIP_IDENTITY;
-    if(viv_invoke(conn, &id) != gcvSTATUS_OK)
-        return -1;
-    viv_chip = id.u.QueryChipIdentity;
+    if((err=viv_invoke(conn, &id)) != gcvSTATUS_OK)
+        goto error;
+    conn->chip = id.u.QueryChipIdentity;
 
     /* Map contiguous memory */
     id.command = gcvHAL_QUERY_VIDEO_MEMORY;
-    if(viv_invoke(conn, &id) != gcvSTATUS_OK)
-        return -1;
+    if((err=viv_invoke(conn, &id)) != gcvSTATUS_OK)
+        goto error;
     printf("* Video memory:\n");
     printf("  Internal physical: 0x%08x\n", (uint32_t)id.u.QueryVideoMemory.internalPhysical);
     printf("  Internal size: 0x%08x\n", (uint32_t)id.u.QueryVideoMemory.internalSize);
@@ -117,16 +113,23 @@ int viv_open(enum viv_hw_type hw_type, struct viv_conn **out)
     printf("  Contiguous physical: 0x%08x\n", (uint32_t)id.u.QueryVideoMemory.contiguousPhysical);
     printf("  Contiguous size: 0x%08x\n", (uint32_t)id.u.QueryVideoMemory.contiguousSize);
 
-    viv_mem_base = (viv_addr_t)id.u.QueryVideoMemory.contiguousPhysical;
-    viv_mem = mmap(NULL, id.u.QueryVideoMemory.contiguousSize, PROT_READ|PROT_WRITE, MAP_SHARED, viv_fd, viv_mem_base);
-    if(viv_mem == NULL)
-        return -1;
+    conn->mem_base = (viv_addr_t)id.u.QueryVideoMemory.contiguousPhysical;
+    conn->mem = mmap(NULL, id.u.QueryVideoMemory.contiguousSize, PROT_READ|PROT_WRITE, MAP_SHARED, conn->fd, conn->mem_base);
+    if(conn->mem == NULL)
+    {
+        err = -1;
+        goto error;
+    }
 
-    viv_process = (gctHANDLE)getpid(); /* value passed as .process to commands */
+    conn->process = (gctHANDLE)getpid(); /* value passed as .process to commands */
 
     *out = conn;
-
     return gcvSTATUS_OK;
+error:
+    if(conn->fd >= 0)
+        close(conn->fd);
+    free(conn);
+    return err;
 }
 
 int viv_alloc_contiguous(struct viv_conn *conn, size_t bytes, viv_addr_t *physical, void **logical, size_t *bytes_out)
@@ -229,7 +232,7 @@ int viv_commit(struct viv_conn *conn, gcoCMDBUF commandBuffer, gcoCONTEXT contex
             .Commit = {
                 .commandBuffer = commandBuffer,
                 .contextBuffer = contextBuffer,
-                .process = viv_process
+                .process = conn->process
             }
         }
     };
@@ -327,7 +330,7 @@ int viv_event_queue_signal(struct viv_conn *conn, int sig_id, gceKERNEL_WHERE fr
                 .Signal = {
                     .signal = (void*)sig_id,
                     .auxSignal = (void*)0x0,
-                    .process = viv_process,
+                    .process = conn->process,
                     .fromWhere = fromWhere
                 }
             }
@@ -339,20 +342,20 @@ int viv_event_queue_signal(struct viv_conn *conn, int sig_id, gceKERNEL_WHERE fr
 void viv_show_chip_info(struct viv_conn *conn)
 {
     printf("* Chip identity:\n");
-    printf("  Chip model: %08x\n", viv_chip.chipModel);
-    printf("  Chip revision: %08x\n", viv_chip.chipRevision);
-    printf("  Chip features: 0x%08x\n", viv_chip.chipFeatures);
-    printf("  Chip minor features 0: 0x%08x\n", viv_chip.chipMinorFeatures);
-    printf("  Chip minor features 1: 0x%08x\n", viv_chip.chipMinorFeatures1);
+    printf("  Chip model: %08x\n", conn->chip.chipModel);
+    printf("  Chip revision: %08x\n", conn->chip.chipRevision);
+    printf("  Chip features: 0x%08x\n", conn->chip.chipFeatures);
+    printf("  Chip minor features 0: 0x%08x\n", conn->chip.chipMinorFeatures);
+    printf("  Chip minor features 1: 0x%08x\n", conn->chip.chipMinorFeatures1);
 #ifdef GCABI_HAS_MINOR_FEATURES_2
-    printf("  Chip minor features 2: 0x%08x\n", viv_chip.chipMinorFeatures2);
+    printf("  Chip minor features 2: 0x%08x\n", conn->chip.chipMinorFeatures2);
 #endif
-    printf("  Stream count: 0x%08x\n", viv_chip.streamCount);
-    printf("  Register max: 0x%08x\n", viv_chip.registerMax);
-    printf("  Thread count: 0x%08x\n", viv_chip.threadCount);
-    printf("  Shader core count: 0x%08x\n", viv_chip.shaderCoreCount);
-    printf("  Vertex cache size: 0x%08x\n", viv_chip.vertexCacheSize);
-    printf("  Vertex output buffer size: 0x%08x\n", viv_chip.vertexOutputBufferSize);
+    printf("  Stream count: 0x%08x\n", conn->chip.streamCount);
+    printf("  Register max: 0x%08x\n", conn->chip.registerMax);
+    printf("  Thread count: 0x%08x\n", conn->chip.threadCount);
+    printf("  Shader core count: 0x%08x\n", conn->chip.shaderCoreCount);
+    printf("  Vertex cache size: 0x%08x\n", conn->chip.vertexCacheSize);
+    printf("  Vertex output buffer size: 0x%08x\n", conn->chip.vertexOutputBufferSize);
 }
 
 int viv_reset(struct viv_conn *conn)
@@ -414,14 +417,14 @@ bool viv_query_feature(struct viv_conn *conn, enum viv_features_word word, uint3
     uint32_t val = 0;
     switch(word) /* extract requested features word */
     {
-    case viv_chipFeatures: val = viv_chip.chipFeatures; break;
-    case viv_chipMinorFeatures0: val = viv_chip.chipMinorFeatures; break;
-    case viv_chipMinorFeatures1: val = viv_chip.chipMinorFeatures1; break;
+    case viv_chipFeatures: val = conn->chip.chipFeatures; break;
+    case viv_chipMinorFeatures0: val = conn->chip.chipMinorFeatures; break;
+    case viv_chipMinorFeatures1: val = conn->chip.chipMinorFeatures1; break;
 #ifdef GCABI_HAS_MINOR_FEATURES_2
-    case viv_chipMinorFeatures2: val = viv_chip.chipMinorFeatures2; break;
+    case viv_chipMinorFeatures2: val = conn->chip.chipMinorFeatures2; break;
 #endif
 #ifdef GCABI_HAS_MINOR_FEATURES_3
-    case viv_chipMinorFeatures3: val = viv_chip.chipMinorFeatures3; break;
+    case viv_chipMinorFeatures3: val = conn->chip.chipMinorFeatures3; break;
 #endif
     default: ;
     }

@@ -56,14 +56,20 @@ enum viv_hw_type
     VIV_HW_2D3D = VIV_HW_3D | VIV_HW_2D
 };
 
+/* Type for GPU physical address */
+typedef uint32_t viv_addr_t;
+
 /* connection to driver */
 struct viv_conn {
     int fd;
     enum viv_hw_type hw_type;
+    
+    viv_addr_t base_address;
+    void *mem;
+    viv_addr_t mem_base;
+    gctHANDLE process;
+    struct _gcsHAL_QUERY_CHIP_IDENTITY chip;
 };
-
-/* Type for GPU physical address */
-typedef uint32_t viv_addr_t;
 
 /* Open connection to GPU driver.
  */
