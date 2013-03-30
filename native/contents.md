@@ -7,7 +7,7 @@ Directory contents
 
 - `fb`: attempts at rendering to framebuffer using `etna_pipe` (high level gallium-like interface)
 
-- `fb_rawshader`: same as `fb`, but without using manually assembled shaders
+- `fb_rawshader`: same as `fb`, but using manually assembled shaders. &lt;GC1000 only.
 
 - `fb_old`: attempts at rendering to framebuffer using raw state queueing (lower level interface)
 

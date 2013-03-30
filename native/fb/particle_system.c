@@ -359,7 +359,7 @@ int main(int argc, char **argv)
             centerPos[1] = ( (float)(rand() % 10000) / 10000.0f ) - 0.5f;
             centerPos[2] = ( (float)(rand() % 10000) / 10000.0f ) - 0.5f;
           
-            pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 0, 3, (uint32_t*)&centerPos[0]);
+            etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 0, 3, (uint32_t*)&centerPos[0]);
 
             // Random color
             color[0] = ( (float)(rand() % 10000) / 20000.0f ) + 0.5f;
@@ -367,9 +367,9 @@ int main(int argc, char **argv)
             color[2] = ( (float)(rand() % 10000) / 20000.0f ) + 0.5f;
             color[3] = 0.5;
 
-            pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_FRAGMENT, 4, 4, (uint32_t*)&color[0]);
+            etna_set_uniforms(pipe, PIPE_SHADER_FRAGMENT, 4, 4, (uint32_t*)&color[0]);
         }
-        pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 4, 1, (uint32_t*)&time);
+        etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 4, 1, (uint32_t*)&time);
 
         pipe->draw_vbo(pipe, &(struct pipe_draw_info){
                 .indexed = 0,

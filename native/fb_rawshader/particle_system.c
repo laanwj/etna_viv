@@ -326,8 +326,8 @@ int main(int argc, char **argv)
     pipe->set_vertex_buffers(pipe, 0, 1, &vertex_buffer_desc);
     pipe->set_index_buffer(pipe, NULL);
     
-    void *shader_state = pipe->create_etna_shader_state(pipe, &shader);
-    pipe->bind_etna_shader_state(pipe, shader_state);
+    void *shader_state = etna_create_shader_state(pipe, &shader);
+    etna_bind_shader_state(pipe, shader_state);
     
     /* Fill in particle data array */
     float *vtx_logical = etna_pipe_get_resource_ptr(pipe, vtx_resource, 0, 0);
@@ -377,7 +377,7 @@ int main(int argc, char **argv)
             centerPos[1] = ( (float)(rand() % 10000) / 10000.0f ) - 0.5f;
             centerPos[2] = ( (float)(rand() % 10000) / 10000.0f ) - 0.5f;
           
-            pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 1, 3, (uint32_t*)&centerPos[0]);
+            etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 1, 3, (uint32_t*)&centerPos[0]);
 
             // Random color
             color[0] = ( (float)(rand() % 10000) / 20000.0f ) + 0.5f;
@@ -385,9 +385,9 @@ int main(int argc, char **argv)
             color[2] = ( (float)(rand() % 10000) / 20000.0f ) + 0.5f;
             color[3] = 0.5;
 
-            pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_FRAGMENT, 0, 4, (uint32_t*)&color[0]);
+            etna_set_uniforms(pipe, PIPE_SHADER_FRAGMENT, 0, 4, (uint32_t*)&color[0]);
         }
-        pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 0, 1, (uint32_t*)&time);
+        etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 0, 1, (uint32_t*)&time);
 
         pipe->draw_vbo(pipe, &(struct pipe_draw_info){
                 .indexed = 0,

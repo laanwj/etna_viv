@@ -337,7 +337,7 @@ draw_gear(struct pipe_context *pipe, struct gear *gear, void *shader_state, ESMa
     /* Create and set the ModelViewProjectionMatrix */
     esMatrixMultiply(&model_view_projection, &model_view, &ProjectionMatrix);
 
-    pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 6*4, 16, (uint32_t*)&model_view_projection.m[0][0]);
+    etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 6*4, 16, (uint32_t*)&model_view_projection.m[0][0]);
 
     /* 
      * Create and set the NormalMatrix. It's the inverse transpose of the
@@ -346,10 +346,10 @@ draw_gear(struct pipe_context *pipe, struct gear *gear, void *shader_state, ESMa
     ESMatrix inverse_model_view;
     esMatrixInverse3x3(&inverse_model_view, &model_view);
     esMatrixTranspose(&normal_matrix, &inverse_model_view);
-    pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 2*4, 16, (uint32_t*)&normal_matrix.m[0][0]);
+    etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 2*4, 16, (uint32_t*)&normal_matrix.m[0][0]);
 
     /* Set the gear color */
-    pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 0*4, 4, (uint32_t*)color);
+    etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 0*4, 4, (uint32_t*)color);
 
     /* Set up the position of the attributes in the vertex buffer object */
     pipe->bind_vertex_elements_state(pipe, gear->vertex_elements);
@@ -615,7 +615,7 @@ main(int argc, char *argv[])
     pipe->bind_fs_state(pipe, frag_shader);
     
     /* Set the LightSourcePosition uniform which is constant throught the program */
-    pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 1*4, 4, (uint32_t*)LightSourcePosition);
+    etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 1*4, 4, (uint32_t*)LightSourcePosition);
 
     /* make the gears */
     gear1 = create_gear(pipe, 1.0, 4.0, 1.0, 20, 0.7);

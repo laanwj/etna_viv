@@ -349,8 +349,8 @@ int main(int argc, char **argv)
             .user_buffer = 0
             }); /* non-indexed rendering */
     
-    void *shader_state = pipe->create_etna_shader_state(pipe, &shader);
-    pipe->bind_etna_shader_state(pipe, shader_state);
+    void *shader_state = etna_create_shader_state(pipe, &shader);
+    etna_bind_shader_state(pipe, shader_state);
 
     for(int frame=0; frame<1000; ++frame)
     {
@@ -377,11 +377,11 @@ int main(int argc, char **argv)
                 .f = {0.2, 0.2, 0.2, 1.0}
                 }, 1.0, 0xff);
         
-        pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 0, 16, (uint32_t*)&modelviewprojection.m[0][0]);
-        pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 16, 3, (uint32_t*)&normal.m[0][0]); /* u4.xyz */
-        pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 20, 3, (uint32_t*)&normal.m[1][0]); /* u5.xyz */
-        pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 24, 3, (uint32_t*)&normal.m[2][0]); /* u6.xyz */
-        pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 28, 16, (uint32_t*)&modelview.m[0][0]);
+        etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 0, 16, (uint32_t*)&modelviewprojection.m[0][0]);
+        etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 16, 3, (uint32_t*)&normal.m[0][0]); /* u4.xyz */
+        etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 20, 3, (uint32_t*)&normal.m[1][0]); /* u5.xyz */
+        etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 24, 3, (uint32_t*)&normal.m[2][0]); /* u6.xyz */
+        etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 28, 16, (uint32_t*)&modelview.m[0][0]);
 
         pipe->draw_vbo(pipe, &(struct pipe_draw_info){
                 .indexed = 1,

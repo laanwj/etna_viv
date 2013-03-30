@@ -303,8 +303,8 @@ int main(int argc, char **argv)
     pipe->set_vertex_buffers(pipe, 0, 1, &vertex_buf_desc);
     pipe->set_index_buffer(pipe, &index_buf_desc);    
 
-    void *shader_state = pipe->create_etna_shader_state(pipe, &shader);
-    pipe->bind_etna_shader_state(pipe, shader_state);
+    void *shader_state = etna_create_shader_state(pipe, &shader);
+    etna_bind_shader_state(pipe, shader_state);
    
     /* create depth stencil alpha states for the different test phases.
      * except the stencil_ref, which is set separately 
@@ -509,7 +509,7 @@ int main(int argc, char **argv)
         for(int idx=0; idx<NumTests; ++idx)
         {
             /* material color */
-            pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_FRAGMENT, 0, 4, 
+            etna_set_uniforms(pipe, PIPE_SHADER_FRAGMENT, 0, 4, 
                     (uint32_t*)colors[idx]);
             pipe->set_stencil_ref(pipe, &(struct pipe_stencil_ref){
                     .ref_value[0] = stencilValues[idx],

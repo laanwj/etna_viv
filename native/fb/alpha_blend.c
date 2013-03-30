@@ -324,8 +324,8 @@ int main(int argc, char **argv)
             esMatrixLoadIdentity(&modelviewprojection);
             esMatrixMultiply(&modelviewprojection, &modelview, &projection);
         
-            pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 0, 16, (uint32_t*)&modelviewprojection.m[0][0]);
-            pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 16, 4, (uint32_t*)(float[]) /* material color */
+            etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 0, 16, (uint32_t*)&modelviewprojection.m[0][0]);
+            etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 16, 4, (uint32_t*)(float[]) /* material color */
                  {idx*0.25f, 0.3f, 1.0f - idx*0.25f, 0.5f});
         
             pipe->draw_vbo(pipe, &(struct pipe_draw_info){

@@ -1513,7 +1513,7 @@ static void etna_pipe_texture_barrier(struct pipe_context *pipe)
 }
    
 /* XXX to be removed: test entry point */
-static void *etna_create_etna_shader_state(struct pipe_context *pipe, const struct etna_shader_program *rs)
+void *etna_create_shader_state(struct pipe_context *pipe, const struct etna_shader_program *rs)
 {
     struct compiled_shader_state *cs = ETNA_NEW(struct compiled_shader_state);
     /* set last_varying_2x flag if the last varying has 1 or 2 components */
@@ -1606,7 +1606,7 @@ static void *etna_create_etna_shader_state(struct pipe_context *pipe, const stru
 }
 
 /* XXX to be removed: test entry point */
-static void etna_bind_etna_shader_state(struct pipe_context *pipe, void *sh)
+void etna_bind_shader_state(struct pipe_context *pipe, void *sh)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
     priv->dirty_bits |= ETNA_STATE_SHADER | ETNA_STATE_PS_UNIFORMS | ETNA_STATE_VS_UNIFORMS;
@@ -1614,7 +1614,7 @@ static void etna_bind_etna_shader_state(struct pipe_context *pipe, void *sh)
 }
 
 /* XXX to be removed: test entry point */
-static void etna_delete_etna_shader_state(struct pipe_context *pipe, void *sh_)
+void etna_delete_shader_state(struct pipe_context *pipe, void *sh_)
 {
     struct compiled_shader_state *sh = (struct compiled_shader_state*)sh_;
     free(sh->VS_INST_MEM);
@@ -1623,7 +1623,7 @@ static void etna_delete_etna_shader_state(struct pipe_context *pipe, void *sh_)
 }
 
 /* XXX to be removed: test entry point, replace with proper const buf handling */
-static void etna_shader_set_uniforms(struct pipe_context *pipe, void *sh_, unsigned type, unsigned offset, unsigned count, const uint32_t *values)
+void etna_set_uniforms(struct pipe_context *pipe, unsigned type, unsigned offset, unsigned count, const uint32_t *values)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
     assert((offset + count) <= ETNA_MAX_UNIFORMS*4);
@@ -1748,11 +1748,6 @@ struct pipe_context *etna_new_pipe_context(struct etna_ctx *ctx)
     pc->create_surface = etna_pipe_create_surface;
     pc->surface_destroy = etna_pipe_surface_destroy;
     pc->texture_barrier = etna_pipe_texture_barrier;
-    /* temp until a real shader compiler */
-    pc->create_etna_shader_state = etna_create_etna_shader_state;
-    pc->bind_etna_shader_state = etna_bind_etna_shader_state;
-    pc->delete_etna_shader_state = etna_delete_etna_shader_state;
-    pc->set_etna_uniforms = etna_shader_set_uniforms;
 
     return pc;
 }

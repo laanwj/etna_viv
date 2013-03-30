@@ -182,5 +182,11 @@ void *etna_pipe_get_resource_ptr(struct pipe_context *pipe, struct pipe_resource
  */
 void etna_pipe_inline_write(struct pipe_context *pipe, struct pipe_resource *resource, unsigned layer, unsigned level, void *data, size_t size);
 
+/* raw shader methods -- used by fb_rawshader demos */
+void *etna_create_shader_state(struct pipe_context *pipe, const struct etna_shader_program *rs);
+void etna_bind_shader_state(struct pipe_context *pipe, void *sh);
+void etna_delete_shader_state(struct pipe_context *pipe, void *sh_);
+void etna_set_uniforms(struct pipe_context *pipe, unsigned type, unsigned offset, unsigned count, const uint32_t *values);
+
 #endif
 

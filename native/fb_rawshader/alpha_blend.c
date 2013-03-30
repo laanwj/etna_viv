@@ -317,8 +317,8 @@ int main(int argc, char **argv)
             .user_buffer = 0
             });*/ /* non-indexed rendering */
     
-    void *shader_state = pipe->create_etna_shader_state(pipe, &shader);
-    pipe->bind_etna_shader_state(pipe, shader_state);
+    void *shader_state = etna_create_shader_state(pipe, &shader);
+    etna_bind_shader_state(pipe, shader_state);
 
     for(int frame=0; frame<1000; ++frame)
     {
@@ -350,9 +350,9 @@ int main(int argc, char **argv)
             esMatrixLoadIdentity(&modelviewprojection);
             esMatrixMultiply(&modelviewprojection, &modelview, &projection);
         
-            pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 0, 16, (uint32_t*)&modelviewprojection.m[0][0]);
-            pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 28, 16, (uint32_t*)&modelview.m[0][0]);
-            pipe->set_etna_uniforms(pipe, shader_state, PIPE_SHADER_VERTEX, 48, 4, (uint32_t*)(float[]) /* material color */
+            etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 0, 16, (uint32_t*)&modelviewprojection.m[0][0]);
+            etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 28, 16, (uint32_t*)&modelview.m[0][0]);
+            etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 48, 4, (uint32_t*)(float[]) /* material color */
                  {idx*0.25f, 0.3f, 1.0f - idx*0.25f, 0.5f});
         
             pipe->draw_vbo(pipe, &(struct pipe_draw_info){

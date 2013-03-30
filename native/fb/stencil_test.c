@@ -481,7 +481,7 @@ int main(int argc, char **argv)
         for(int idx=0; idx<NumTests; ++idx)
         {
             /* material color */
-            pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_FRAGMENT, 0, 4, 
+            etna_set_uniforms(pipe, PIPE_SHADER_FRAGMENT, 0, 4, 
                     (uint32_t*)colors[idx]);
             pipe->set_stencil_ref(pipe, &(struct pipe_stencil_ref){
                     .ref_value[0] = stencilValues[idx],

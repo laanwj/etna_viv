@@ -1264,7 +1264,7 @@ static void fill_in_ps_outputs(struct etna_shader_object *sobj, struct etna_comp
             sobj->ps_color_out_reg = reg->native.id;
             break;
         case TGSI_SEMANTIC_POSITION: /* FRAG_RESULT_DEPTH */
-            sobj->ps_depth_out_reg = reg->native.id;
+            sobj->ps_depth_out_reg = reg->native.id; /* =always 0, only z component should be assigned */
             break;
         default:
             assert(0); /* only output supported is COLOR at the moment */

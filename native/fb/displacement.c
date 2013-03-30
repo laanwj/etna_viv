@@ -385,16 +385,16 @@ int main(int argc, char **argv)
                 .f = {0.2, 0.2, 0.2, 1.0}
                 }, 1.0, 0xff);
         
-        pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 4*4, 16, (uint32_t*)&modelviewprojection.m[0][0]);
-        pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 1*4, 3, (uint32_t*)&normal.m[0][0]); /* u4.xyz */
-        pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 2*4, 3, (uint32_t*)&normal.m[1][0]); /* u5.xyz */
-        pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 3*4, 3, (uint32_t*)&normal.m[2][0]); /* u6.xyz */
-        pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 8*4, 16, (uint32_t*)&modelview.m[0][0]);
+        etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 4*4, 16, (uint32_t*)&modelviewprojection.m[0][0]);
+        etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 1*4, 3, (uint32_t*)&normal.m[0][0]); /* u4.xyz */
+        etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 2*4, 3, (uint32_t*)&normal.m[1][0]); /* u5.xyz */
+        etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 3*4, 3, (uint32_t*)&normal.m[2][0]); /* u6.xyz */
+        etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 8*4, 16, (uint32_t*)&modelview.m[0][0]);
 
         float scaling = fmodf(frame* 0.025f, 2.0f);
         if(scaling > 1.0f)
             scaling = 2.0f - scaling;  // sawtooth
-        pipe->set_etna_uniforms(pipe, NULL, PIPE_SHADER_VERTEX, 0*4, 1, (uint32_t*)&scaling);
+        etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 0*4, 1, (uint32_t*)&scaling);
 
         pipe->draw_vbo(pipe, &(struct pipe_draw_info){
                 .indexed = 1,
