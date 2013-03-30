@@ -20,7 +20,8 @@ ARM-based:
 - OLPC (also Marvell Armada something with GC1000)
 - CuBox, including pro variant (Marvell Armada 510, GC600)
 - Many older tablets and such based on Rockchip 2918 SoC (GC800)
-- Devices based on Freescale i.MX6 Series (GC2000 + GC320 + GC355)
+- Freescale i.MX6 Series (GC2000 + GC320 + GC355)
+- Actions Semiconductor ATM7029 (GC1000?)
 
 MIPS-based:
 - Devices based on Ingenic JZ4770 MIPS SoC (GC860), such as the GCW zero, and JZ4760 (GC200, 2D only).
@@ -341,9 +342,10 @@ allows for a ton of slightly different chips. When porting it, look for:
 Miscellaneous
 =============
 There is currently no mailing list for this project, and looking at other GPU reverse engineering projects the mailing lists
-usually see very little traffic, so I won't bother.
+usually see very little traffic, so I won't bother (but you're free to create one).
 
-We usually hang out in `#etnaviv` and `#lima` on `irc.freenode.net`.
+We usually hang out in `#etnaviv` and `#lima` on `irc.freenode.net`. A related community, focused
+on Freescale i.MX6 sw/hw is in `#imx6-dongle`.
 
 Authors
 ========

@@ -34,11 +34,22 @@ enum etna_surface_layout
 /* GPU chip specs */
 struct etna_pipe_specs
 {
-    bool can_supertile; /* supports SUPERTILE (64x64) tiling */
-    unsigned bits_per_tile; /* number of bits per TS tile */
-    uint32_t ts_clear_value; /* clear value for TS (dependent on bits_per_tile) */
-    unsigned vertex_sampler_offset; /* base of vertex texture units */
-    bool vs_need_z_div; /* needs z=(z+w)/2, for older GCxxx */
+    /* supports SUPERTILE (64x64) tiling? */
+    bool can_supertile;
+    /* number of bits per TS tile */
+    unsigned bits_per_tile;
+    /* clear value for TS (dependent on bits_per_tile) */
+    uint32_t ts_clear_value;
+    /* base of vertex texture units */
+    unsigned vertex_sampler_offset;
+    /* needs z=(z+w)/2, for older GCxxx */
+    bool vs_need_z_div;
+    /* size of vertex shader output buffer */
+    unsigned vertex_output_buffer_size;
+    /* size of a cached vertex (?) */
+    unsigned vertex_cache_size;
+    /* number of shader cores */
+    unsigned shader_core_count;
 };
 
 

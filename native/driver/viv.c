@@ -76,6 +76,43 @@ int viv_close(struct viv_conn *conn)
     return 0;
 }
 
+/* convert specs to kernel-independent format */
+static void convert_chip_specs(struct viv_specs *out, const struct _gcsHAL_QUERY_CHIP_IDENTITY *in)
+{
+    out->chip_model = in->chipModel;
+    out->chip_revision = in->chipRevision;
+    out->chip_features[0] = in->chipFeatures;
+    out->chip_features[1] = in->chipMinorFeatures;
+    out->chip_features[2] = in->chipMinorFeatures1;
+#ifdef GCABI_HAS_MINOR_FEATURES_2
+    out->chip_features[3] = in->chipMinorFeatures2;
+#else
+    out->chip_features[3] = 0;
+#endif
+#ifdef GCABI_HAS_MINOR_FEATURES_3
+    out->chip_features[4] = in->chipMinorFeatures3;
+#else
+    out->chip_features[4] = 0;
+#endif
+    out->stream_count = in->streamCount;
+    out->register_max = in->registerMax;
+    out->thread_count = in->threadCount;
+    out->shader_core_count = in->shaderCoreCount;
+    out->vertex_cache_size = in->vertexCacheSize;
+    out->vertex_output_buffer_size = in->vertexOutputBufferSize;
+#ifdef GCABI_CHIPIDENTITY_EXT
+    out->pixel_pipes = in->pixelPipe;
+    out->instruction_count = in->instructionCount;
+    out->num_constants = in->numConstants;
+    out->buffer_size = in->bufferSize;
+#else
+    out->pixel_pipes = 1;
+    out->instruction_count = 256;
+    out->num_constants = 0; /* =default (depends on hw) */
+    out->buffer_size = 0; /* =default (depends on hw) */
+#endif
+}
+
 int viv_open(enum viv_hw_type hw_type, struct viv_conn **out)
 {
     struct viv_conn *conn = malloc(sizeof(struct viv_conn));
@@ -99,7 +136,7 @@ int viv_open(enum viv_hw_type hw_type, struct viv_conn **out)
     id.command = gcvHAL_QUERY_CHIP_IDENTITY;
     if((err=viv_invoke(conn, &id)) != gcvSTATUS_OK)
         goto error;
-    conn->chip = id.u.QueryChipIdentity;
+    convert_chip_specs(&conn->chip, &id.u.QueryChipIdentity);
 
     /* Map contiguous memory */
     id.command = gcvHAL_QUERY_VIDEO_MEMORY;
@@ -342,20 +379,23 @@ int viv_event_queue_signal(struct viv_conn *conn, int sig_id, gceKERNEL_WHERE fr
 void viv_show_chip_info(struct viv_conn *conn)
 {
     printf("* Chip identity:\n");
-    printf("  Chip model: %08x\n", conn->chip.chipModel);
-    printf("  Chip revision: %08x\n", conn->chip.chipRevision);
-    printf("  Chip features: 0x%08x\n", conn->chip.chipFeatures);
-    printf("  Chip minor features 0: 0x%08x\n", conn->chip.chipMinorFeatures);
-    printf("  Chip minor features 1: 0x%08x\n", conn->chip.chipMinorFeatures1);
-#ifdef GCABI_HAS_MINOR_FEATURES_2
-    printf("  Chip minor features 2: 0x%08x\n", conn->chip.chipMinorFeatures2);
-#endif
-    printf("  Stream count: 0x%08x\n", conn->chip.streamCount);
-    printf("  Register max: 0x%08x\n", conn->chip.registerMax);
-    printf("  Thread count: 0x%08x\n", conn->chip.threadCount);
-    printf("  Shader core count: 0x%08x\n", conn->chip.shaderCoreCount);
-    printf("  Vertex cache size: 0x%08x\n", conn->chip.vertexCacheSize);
-    printf("  Vertex output buffer size: 0x%08x\n", conn->chip.vertexOutputBufferSize);
+    printf("  Chip model: %08x\n", conn->chip.chip_model);
+    printf("  Chip revision: %08x\n", conn->chip.chip_revision);
+    printf("  Chip features: 0x%08x\n", conn->chip.chip_features[0]);
+    printf("  Chip minor features 0: 0x%08x\n", conn->chip.chip_features[1]);
+    printf("  Chip minor features 1: 0x%08x\n", conn->chip.chip_features[2]);
+    printf("  Chip minor features 2: 0x%08x\n", conn->chip.chip_features[3]);
+    printf("  Chip minor features 3: 0x%08x\n", conn->chip.chip_features[4]);
+    printf("  Stream count: 0x%08x\n", conn->chip.stream_count);
+    printf("  Register max: 0x%08x\n", conn->chip.register_max);
+    printf("  Thread count: 0x%08x\n", conn->chip.thread_count);
+    printf("  Shader core count: 0x%08x\n", conn->chip.shader_core_count);
+    printf("  Vertex cache size: 0x%08x\n", conn->chip.vertex_cache_size);
+    printf("  Vertex output buffer size: 0x%08x\n", conn->chip.vertex_output_buffer_size);
+    printf("  Pixel pipes: 0x%08x\n", conn->chip.pixel_pipes);
+    printf("  Instruction count: 0x%08x\n", conn->chip.instruction_count);
+    printf("  Num constants: 0x%08x\n", conn->chip.num_constants);
+    printf("  Buffer size: 0x%08x\n", conn->chip.buffer_size);
 }
 
 int viv_reset(struct viv_conn *conn)
@@ -410,24 +450,5 @@ int viv_unmap_user_memory(struct viv_conn *conn, void *memory, size_t size, gctP
         }
     };
     return viv_invoke(conn, &id);
-}
-
-bool viv_query_feature(struct viv_conn *conn, enum viv_features_word word, uint32_t bits)
-{
-    uint32_t val = 0;
-    switch(word) /* extract requested features word */
-    {
-    case viv_chipFeatures: val = conn->chip.chipFeatures; break;
-    case viv_chipMinorFeatures0: val = conn->chip.chipMinorFeatures; break;
-    case viv_chipMinorFeatures1: val = conn->chip.chipMinorFeatures1; break;
-#ifdef GCABI_HAS_MINOR_FEATURES_2
-    case viv_chipMinorFeatures2: val = conn->chip.chipMinorFeatures2; break;
-#endif
-#ifdef GCABI_HAS_MINOR_FEATURES_3
-    case viv_chipMinorFeatures3: val = conn->chip.chipMinorFeatures3; break;
-#endif
-    default: ;
-    }
-    return (val & bits) != 0;
 }
 

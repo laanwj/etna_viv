@@ -39,11 +39,12 @@
 /* one of the features words */
 enum viv_features_word
 {
-    viv_chipFeatures,
-    viv_chipMinorFeatures0,
-    viv_chipMinorFeatures1,
-    viv_chipMinorFeatures2,
-    viv_chipMinorFeatures3
+    viv_chipFeatures = 0,
+    viv_chipMinorFeatures0 = 1,
+    viv_chipMinorFeatures1 = 2,
+    viv_chipMinorFeatures2 = 3,
+    viv_chipMinorFeatures3 = 4,
+    VIV_FEATURES_WORD_COUNT /* Must be last */
 };
 
 /* hardware type */
@@ -59,6 +60,25 @@ enum viv_hw_type
 /* Type for GPU physical address */
 typedef uint32_t viv_addr_t;
 
+/* kernel-interface independent chip specs structure, this is much easier to use
+ * than checking GCABI defines all the time. 
+ */
+struct viv_specs {
+    uint32_t chip_model;
+    uint32_t chip_revision;
+    uint32_t chip_features[VIV_FEATURES_WORD_COUNT];
+    uint32_t stream_count;
+    uint32_t register_max;
+    uint32_t thread_count;
+    uint32_t shader_core_count;
+    uint32_t vertex_cache_size;
+    uint32_t vertex_output_buffer_size;
+    uint32_t pixel_pipes;
+    uint32_t instruction_count;
+    uint32_t num_constants;
+    uint32_t buffer_size;
+};
+
 /* connection to driver */
 struct viv_conn {
     int fd;
@@ -68,7 +88,7 @@ struct viv_conn {
     void *mem;
     viv_addr_t mem_base;
     gctHANDLE process;
-    struct _gcsHAL_QUERY_CHIP_IDENTITY chip;
+    struct viv_specs chip;
 };
 
 /* Open connection to GPU driver.
@@ -148,15 +168,11 @@ void viv_show_chip_info(struct viv_conn *conn);
  */
 int viv_reset(struct viv_conn *conn);
 
-/** Query for a GPU feature.
- */
-bool viv_query_feature(struct viv_conn *conn, enum viv_features_word, uint32_t bits);
-
 /** Convenience macro to probe features from state.xml.h: 
  * VIV_FEATURE(chipFeatures, FAST_CLEAR) 
  * VIV_FEATURE(chipMinorFeatures1, AUTO_DISABLE) 
  */
-#define VIV_FEATURE(conn, word, feature) viv_query_feature(conn, viv_ ## word, word ## _ ## feature)
+#define VIV_FEATURE(conn, word, feature) ((conn->chip.chip_features[viv_ ## word] & (word ## _ ## feature))!=0)
 
 #endif
 

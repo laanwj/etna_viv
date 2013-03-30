@@ -53,6 +53,7 @@
 #include "etna_asm.h"
 #include "etna_internal.h"
 #include "isa.xml.h"
+#include "state_3d.xml.h"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -1247,6 +1248,7 @@ static void fill_in_ps_inputs(struct etna_shader_object *sobj, struct etna_compi
             sobj->inputs[input_id].num_components = 4; /* XXX this is wasteful, set based on used components mask */
         }
     }
+    sobj->input_count_unk8 = 31; /* XXX what is this */
 }
 
 /* fill in outputs for ps into shader object */
@@ -1278,11 +1280,13 @@ static void fill_in_vs_inputs(struct etna_shader_object *sobj, struct etna_compi
     {
         struct etna_reg_desc *reg = &cd->file[TGSI_FILE_INPUT][idx];
         assert(sobj->num_inputs < ETNA_NUM_INPUTS);
+        /* XXX exclude inputs with special semantics such as gl_frontFacing */
         sobj->inputs[sobj->num_inputs].reg = reg->native.id;
         sobj->inputs[sobj->num_inputs].semantic = reg->semantic;
         sobj->inputs[sobj->num_inputs].num_components = 4; // XXX reg->num_components;
         sobj->num_inputs++;
     }
+    sobj->input_count_unk8 = (sobj->num_inputs + 19)/16; /* XXX what is this */
 }
 
 /* fill in outputs for vs into shader object */
@@ -1310,6 +1314,22 @@ static void fill_in_vs_outputs(struct etna_shader_object *sobj, struct etna_comp
     }
     /* sort vs outputs lexicographically by semantic, index, for efficient lookup with bsearch */
     qsort(sobj->outputs, sobj->num_outputs, sizeof(struct etna_shader_inout), compare_inout_semantic_asc);
+    /* fill in "mystery meat" load balancing value. This value determines how work is scheduled between VS and PS
+     * in the unified shader architecture. More precisely, it is determined from the number of VS outputs, as well as chip-specific
+     * vertex output buffer size, vertex cache size, and the number of shader cores.
+     *
+     * XXX this is a conservative estimate, the "optimal" value is only known for sure at link time because some 
+     * outputs may be unused and thus unmapped. Then again, in the general use case with GLSL the vertex and fragment
+     * shaders are linked already before submitting to Gallium, thus all outputs are used.
+     */
+    int half_out = (cd->file_size[TGSI_FILE_OUTPUT] + 1) / 2;
+    assert(half_out);
+    uint32_t b = ((20480/(cd->specs->vertex_output_buffer_size-2*half_out*cd->specs->vertex_cache_size))+9)/10;
+    uint32_t a = (b+256/(cd->specs->shader_core_count*half_out))/2;
+    sobj->vs_load_balancing = VIVS_VS_LOAD_BALANCING_A(etna_umin(a,255)) |
+                              VIVS_VS_LOAD_BALANCING_B(etna_umin(b,255)) |
+                              VIVS_VS_LOAD_BALANCING_C(0x3f) |
+                              VIVS_VS_LOAD_BALANCING_D(0x0f);
 }
 
 int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct tgsi_token *tokens,
@@ -1494,10 +1514,12 @@ void etna_dump_shader_object(const struct etna_shader_object *sobj)
     {
         printf("  vs_pos_out_reg=%i\n", sobj->vs_pos_out_reg);
         printf("  vs_pointsize_out_reg=%i\n", sobj->vs_pointsize_out_reg);
+        printf("  vs_load_balancing=0x%08x\n", sobj->vs_load_balancing);
     } else {
         printf("  ps_color_out_reg=%i\n", sobj->ps_color_out_reg);
         printf("  ps_depth_out_reg=%i\n", sobj->ps_depth_out_reg);
     }
+    printf("  input_count_unk8=0x%08x\n", sobj->input_count_unk8);
 }
 
 void etna_destroy_shader_object(struct etna_shader_object *obj)

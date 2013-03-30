@@ -21,7 +21,8 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/* Low-level command buffer building and submission */
+/* Low-level command buffer building and submission, abstracts away specific kernel interface 
+ * as much as practically possible. */
 #ifndef H_ETNA
 #define H_ETNA
 

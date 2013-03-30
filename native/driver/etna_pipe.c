@@ -414,7 +414,7 @@ static void etna_link_shaders(struct pipe_context *pipe,
     SET_STATE(VS_END_PC, vs->code_size / 4);
     SET_STATE(VS_OUTPUT_COUNT, fs->num_inputs + 1); /* position + varyings */
     /* Number of vertex elements determines number of VS inputs. Otherwise, the GPU crashes */
-    SET_STATE(VS_INPUT_COUNT, VIVS_VS_INPUT_COUNT_UNK8(1));  // XXX what is this?
+    SET_STATE(VS_INPUT_COUNT, VIVS_VS_INPUT_COUNT_UNK8(vs->input_count_unk8));
     SET_STATE(VS_TEMP_REGISTER_CONTROL,
                               VIVS_VS_TEMP_REGISTER_CONTROL_NUM_TEMPS(vs->num_temps));
 
@@ -452,13 +452,13 @@ static void etna_link_shaders(struct pipe_context *pipe,
     for(int idx=0; idx<4; ++idx)
         SET_STATE(VS_INPUT[idx], vs_input[idx]);
 
-    SET_STATE(VS_LOAD_BALANCING, 0xf3f0542);  /* XXX depends on number of inputs/outputs/varyings? */
+    SET_STATE(VS_LOAD_BALANCING, vs->vs_load_balancing);
     SET_STATE(VS_START_PC, 0);
 
     SET_STATE(PS_END_PC, fs->code_size / 4);
     SET_STATE(PS_OUTPUT_REG, fs->ps_color_out_reg);
     SET_STATE(PS_INPUT_COUNT, VIVS_PS_INPUT_COUNT_COUNT(fs->num_inputs + 1) |  /* XXX MSAA adds another input */
-                              VIVS_PS_INPUT_COUNT_UNK8(31));
+                              VIVS_PS_INPUT_COUNT_UNK8(fs->input_count_unk8));
     SET_STATE(PS_TEMP_REGISTER_CONTROL,
                               VIVS_PS_TEMP_REGISTER_CONTROL_NUM_TEMPS(fs->num_temps));
     SET_STATE(PS_CONTROL, VIVS_PS_CONTROL_UNK1);
@@ -1695,7 +1695,10 @@ struct pipe_context *etna_new_pipe_context(struct etna_ctx *ctx)
     priv->specs.bits_per_tile = VIV_FEATURE(ctx->conn, chipMinorFeatures0,2BITPERTILE)?2:4;
     priv->specs.ts_clear_value = VIV_FEATURE(ctx->conn, chipMinorFeatures0,2BITPERTILE)?0x55555555:0x11111111;
     priv->specs.vertex_sampler_offset = 8; /* vertex and fragment samplers live in one address space */
-    priv->specs.vs_need_z_div = true; /* XXX gc2000+ and gc880 don't need this */
+    priv->specs.vs_need_z_div = priv->conn->chip.chip_model < 0x1000 && priv->conn->chip.chip_model != 0x880;
+    priv->specs.vertex_output_buffer_size = priv->conn->chip.vertex_output_buffer_size;
+    priv->specs.vertex_cache_size = priv->conn->chip.vertex_cache_size;
+    priv->specs.shader_core_count = priv->conn->chip.shader_core_count;
 
     /* TODO set sensible defaults for the other state */
     priv->base_setup.PA_W_CLIP_LIMIT = 0x34000001;
