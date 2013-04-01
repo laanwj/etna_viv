@@ -32,6 +32,8 @@
 #include "etna_util.h"
 #include "etna_internal.h"
 
+#include "util/u_format.h"
+
 #include <stdio.h>
 #include <math.h>
 
@@ -267,10 +269,6 @@ static inline uint32_t translate_texture_target(enum pipe_texture_target tgt)
     }
 }
 
-/* IMPORTANT when adding a vertex element format be sure to add the format to
- * all four of translate_vertex_format_type, translate_vertex_format_num,
- *   translate_vertex_format_normalize and pipe_element_size
- */
 /* Return type flags for vertex element format */
 static inline uint32_t translate_vertex_format_type(enum pipe_format fmt)
 {
@@ -358,354 +356,13 @@ static inline uint32_t translate_vertex_format_type(enum pipe_format fmt)
 /* Return normalization flag for vertex element format */
 static inline uint32_t translate_vertex_format_normalize(enum pipe_format fmt)
 {
-    switch(fmt)
-    {
-    case PIPE_FORMAT_R8_UNORM:
-    case PIPE_FORMAT_R8G8_UNORM:
-    case PIPE_FORMAT_R8G8B8_UNORM:
-    case PIPE_FORMAT_R8G8B8A8_UNORM:
-    case PIPE_FORMAT_R8_SNORM:
-    case PIPE_FORMAT_R8G8_SNORM:
-    case PIPE_FORMAT_R8G8B8_SNORM:
-    case PIPE_FORMAT_R8G8B8A8_SNORM:
-    case PIPE_FORMAT_R16_UNORM:
-    case PIPE_FORMAT_R16G16_UNORM:
-    case PIPE_FORMAT_R16G16B16_UNORM:
-    case PIPE_FORMAT_R16G16B16A16_UNORM:
-    case PIPE_FORMAT_R16_SNORM:
-    case PIPE_FORMAT_R16G16_SNORM:
-    case PIPE_FORMAT_R16G16B16_SNORM:
-    case PIPE_FORMAT_R16G16B16A16_SNORM:
-    case PIPE_FORMAT_R32_UNORM:
-    case PIPE_FORMAT_R32G32_UNORM:
-    case PIPE_FORMAT_R32G32B32_UNORM:
-    case PIPE_FORMAT_R32G32B32A32_UNORM:
-    case PIPE_FORMAT_R32_SNORM:
-    case PIPE_FORMAT_R32G32_SNORM:
-    case PIPE_FORMAT_R32G32B32_SNORM:
-    case PIPE_FORMAT_R32G32B32A32_SNORM:
-    case PIPE_FORMAT_R10G10B10A2_UNORM:
-    case PIPE_FORMAT_R10G10B10A2_SNORM:
-        return VIVS_FE_VERTEX_ELEMENT_CONFIG_NORMALIZE_ON;
-    case PIPE_FORMAT_R8_UINT:
-    case PIPE_FORMAT_R8G8_UINT:
-    case PIPE_FORMAT_R8G8B8_UINT:
-    case PIPE_FORMAT_R8G8B8A8_UINT:
-    case PIPE_FORMAT_R8_SINT:
-    case PIPE_FORMAT_R8G8_SINT:
-    case PIPE_FORMAT_R8G8B8_SINT:
-    case PIPE_FORMAT_R8G8B8A8_SINT:
-    case PIPE_FORMAT_R16_UINT:
-    case PIPE_FORMAT_R16G16_UINT:
-    case PIPE_FORMAT_R16G16B16_UINT:
-    case PIPE_FORMAT_R16G16B16A16_UINT:
-    case PIPE_FORMAT_R16_SINT:
-    case PIPE_FORMAT_R16G16_SINT:
-    case PIPE_FORMAT_R16G16B16_SINT:
-    case PIPE_FORMAT_R16G16B16A16_SINT:
-    case PIPE_FORMAT_R32_UINT:
-    case PIPE_FORMAT_R32G32_UINT:
-    case PIPE_FORMAT_R32G32B32_UINT:
-    case PIPE_FORMAT_R32G32B32A32_UINT:
-    case PIPE_FORMAT_R32_SINT:
-    case PIPE_FORMAT_R32G32_SINT:
-    case PIPE_FORMAT_R32G32B32_SINT:
-    case PIPE_FORMAT_R32G32B32A32_SINT:
-    case PIPE_FORMAT_R16_FLOAT:
-    case PIPE_FORMAT_R16G16_FLOAT:
-    case PIPE_FORMAT_R16G16B16_FLOAT:
-    case PIPE_FORMAT_R16G16B16A16_FLOAT:
-    case PIPE_FORMAT_R32_FLOAT:
-    case PIPE_FORMAT_R32G32_FLOAT:
-    case PIPE_FORMAT_R32G32B32_FLOAT:
-    case PIPE_FORMAT_R32G32B32A32_FLOAT:
-    case PIPE_FORMAT_R32_FIXED:
-    case PIPE_FORMAT_R32G32_FIXED:
-    case PIPE_FORMAT_R32G32B32_FIXED:
-    case PIPE_FORMAT_R32G32B32A32_FIXED:
-    case PIPE_FORMAT_R10G10B10A2_USCALED:
-    case PIPE_FORMAT_R10G10B10A2_SSCALED:
+    const struct util_format_description *desc = util_format_description(fmt);
+    if(!desc) 
         return VIVS_FE_VERTEX_ELEMENT_CONFIG_NORMALIZE_OFF;
-    default: printf("Unhandled vertex format: %i", fmt); return 0;
-    }
-}
-
-/* Return number of components for vertex element format */
-static inline uint32_t vertex_format_num(enum pipe_format fmt)
-{
-    switch(fmt)
-    {
-    case PIPE_FORMAT_R8_UNORM:
-    case PIPE_FORMAT_R8_UINT:
-    case PIPE_FORMAT_R8_SNORM:
-    case PIPE_FORMAT_R8_SINT:
-    case PIPE_FORMAT_R16_UNORM:
-    case PIPE_FORMAT_R16_UINT:
-    case PIPE_FORMAT_R16_SNORM:
-    case PIPE_FORMAT_R16_SINT:
-    case PIPE_FORMAT_R32_UNORM:
-    case PIPE_FORMAT_R32_UINT:
-    case PIPE_FORMAT_R32_SNORM:
-    case PIPE_FORMAT_R32_SINT:
-    case PIPE_FORMAT_R16_FLOAT:
-    case PIPE_FORMAT_R32_FLOAT:
-    case PIPE_FORMAT_R32_FIXED:
-        return 1;
-    case PIPE_FORMAT_R8G8_UNORM:
-    case PIPE_FORMAT_R8G8_UINT:
-    case PIPE_FORMAT_R8G8_SNORM:
-    case PIPE_FORMAT_R8G8_SINT:
-    case PIPE_FORMAT_R16G16_UNORM:
-    case PIPE_FORMAT_R16G16_UINT:
-    case PIPE_FORMAT_R16G16_SNORM:
-    case PIPE_FORMAT_R16G16_SINT:
-    case PIPE_FORMAT_R32G32_UNORM:
-    case PIPE_FORMAT_R32G32_UINT:
-    case PIPE_FORMAT_R32G32_SNORM:
-    case PIPE_FORMAT_R32G32_SINT:
-    case PIPE_FORMAT_R16G16_FLOAT:
-    case PIPE_FORMAT_R32G32_FLOAT:
-    case PIPE_FORMAT_R32G32_FIXED:
-        return 2;
-    case PIPE_FORMAT_R8G8B8_UNORM:
-    case PIPE_FORMAT_R8G8B8_UINT:
-    case PIPE_FORMAT_R8G8B8_SNORM:
-    case PIPE_FORMAT_R8G8B8_SINT:
-    case PIPE_FORMAT_R16G16B16_UNORM:
-    case PIPE_FORMAT_R16G16B16_UINT:
-    case PIPE_FORMAT_R16G16B16_SNORM:
-    case PIPE_FORMAT_R16G16B16_SINT:
-    case PIPE_FORMAT_R32G32B32_UNORM:
-    case PIPE_FORMAT_R32G32B32_UINT:
-    case PIPE_FORMAT_R32G32B32_SNORM:
-    case PIPE_FORMAT_R32G32B32_SINT:
-    case PIPE_FORMAT_R16G16B16_FLOAT:
-    case PIPE_FORMAT_R32G32B32_FLOAT:
-    case PIPE_FORMAT_R32G32B32_FIXED:
-        return 3;
-    case PIPE_FORMAT_R8G8B8A8_UNORM:
-    case PIPE_FORMAT_R8G8B8A8_UINT:
-    case PIPE_FORMAT_R8G8B8A8_SNORM:
-    case PIPE_FORMAT_R8G8B8A8_SINT:
-    case PIPE_FORMAT_R16G16B16A16_UNORM:
-    case PIPE_FORMAT_R16G16B16A16_UINT:
-    case PIPE_FORMAT_R16G16B16A16_SNORM:
-    case PIPE_FORMAT_R16G16B16A16_SINT:
-    case PIPE_FORMAT_R32G32B32A32_UNORM:
-    case PIPE_FORMAT_R32G32B32A32_UINT:
-    case PIPE_FORMAT_R32G32B32A32_SNORM:
-    case PIPE_FORMAT_R32G32B32A32_SINT:
-    case PIPE_FORMAT_R16G16B16A16_FLOAT:
-    case PIPE_FORMAT_R32G32B32A32_FLOAT:
-    case PIPE_FORMAT_R32G32B32A32_FIXED:
-    case PIPE_FORMAT_R10G10B10A2_UNORM:
-    case PIPE_FORMAT_R10G10B10A2_USCALED:
-    case PIPE_FORMAT_R10G10B10A2_SNORM:
-    case PIPE_FORMAT_R10G10B10A2_SSCALED:
-        return 4;
-    default: printf("Unhandled vertex format: %i", fmt); return 0;
-    }
-}
-
-/* Return size in bytes for one element */
-static inline uint32_t pipe_element_size(enum pipe_format fmt)
-{
-    switch(fmt)
-    {
-    case PIPE_FORMAT_A8_UNORM:
-    case PIPE_FORMAT_L8_UNORM:
-    case PIPE_FORMAT_I8_UNORM:
-    case PIPE_FORMAT_R8_UNORM:
-    case PIPE_FORMAT_R8_UINT:
-    case PIPE_FORMAT_R8_SNORM:
-    case PIPE_FORMAT_R8_SINT:
-        return 1;
-    case PIPE_FORMAT_R8G8_UNORM:
-    case PIPE_FORMAT_R8G8_UINT:
-    case PIPE_FORMAT_R8G8_SNORM:
-    case PIPE_FORMAT_R8G8_SINT:
-    case PIPE_FORMAT_R16_UNORM:
-    case PIPE_FORMAT_R16_UINT:
-    case PIPE_FORMAT_R16_SNORM:
-    case PIPE_FORMAT_R16_SINT:
-    case PIPE_FORMAT_R16_FLOAT:
-    case PIPE_FORMAT_L8A8_UNORM:
-    case PIPE_FORMAT_B4G4R4A4_UNORM:
-    case PIPE_FORMAT_B4G4R4X4_UNORM:
-    case PIPE_FORMAT_B5G6R5_UNORM:
-    case PIPE_FORMAT_B5G5R5A1_UNORM:
-    case PIPE_FORMAT_B5G5R5X1_UNORM:
-    case PIPE_FORMAT_Z16_UNORM:
-        return 2;
-    case PIPE_FORMAT_R8G8B8_UNORM:
-    case PIPE_FORMAT_R8G8B8_UINT:
-    case PIPE_FORMAT_R8G8B8_SNORM:
-    case PIPE_FORMAT_R8G8B8_SINT:
-        return 3;
-    case PIPE_FORMAT_R8G8B8A8_UNORM:
-    case PIPE_FORMAT_R8G8B8A8_UINT:
-    case PIPE_FORMAT_R8G8B8A8_SNORM:
-    case PIPE_FORMAT_R8G8B8A8_SINT:
-    case PIPE_FORMAT_R16G16_UNORM:
-    case PIPE_FORMAT_R16G16_UINT:
-    case PIPE_FORMAT_R16G16_SNORM:
-    case PIPE_FORMAT_R16G16_SINT:
-    case PIPE_FORMAT_R32_UNORM:
-    case PIPE_FORMAT_R32_UINT:
-    case PIPE_FORMAT_R32_SNORM:
-    case PIPE_FORMAT_R32_SINT:
-    case PIPE_FORMAT_R16G16_FLOAT:
-    case PIPE_FORMAT_R32_FLOAT:
-    case PIPE_FORMAT_R32_FIXED:
-    case PIPE_FORMAT_R10G10B10A2_UNORM:
-    case PIPE_FORMAT_R10G10B10A2_USCALED:
-    case PIPE_FORMAT_R10G10B10A2_SNORM:
-    case PIPE_FORMAT_R10G10B10A2_SSCALED:
-    case PIPE_FORMAT_B8G8R8A8_UNORM:
-    case PIPE_FORMAT_B8G8R8X8_UNORM:
-    case PIPE_FORMAT_R8G8B8X8_UNORM:
-    case PIPE_FORMAT_X8Z24_UNORM:
-    case PIPE_FORMAT_S8_UINT_Z24_UNORM:
-        return 4;
-    case PIPE_FORMAT_R16G16B16_UNORM:
-    case PIPE_FORMAT_R16G16B16_UINT:
-    case PIPE_FORMAT_R16G16B16_SNORM:
-    case PIPE_FORMAT_R16G16B16_SINT:
-    case PIPE_FORMAT_R16G16B16_FLOAT:
-        return 6;
-    case PIPE_FORMAT_R16G16B16A16_UNORM:
-    case PIPE_FORMAT_R16G16B16A16_UINT:
-    case PIPE_FORMAT_R16G16B16A16_SNORM:
-    case PIPE_FORMAT_R16G16B16A16_SINT:
-    case PIPE_FORMAT_R32G32_UNORM:
-    case PIPE_FORMAT_R32G32_UINT:
-    case PIPE_FORMAT_R32G32_SNORM:
-    case PIPE_FORMAT_R32G32_SINT:
-    case PIPE_FORMAT_R16G16B16A16_FLOAT:
-    case PIPE_FORMAT_R32G32_FLOAT:
-    case PIPE_FORMAT_R32G32_FIXED:
-    case PIPE_FORMAT_DXT1_RGB:
-    case PIPE_FORMAT_DXT1_RGBA:
-    case PIPE_FORMAT_ETC1_RGB8:
-        return 8;
-    case PIPE_FORMAT_R32G32B32_UNORM:
-    case PIPE_FORMAT_R32G32B32_UINT:
-    case PIPE_FORMAT_R32G32B32_SNORM:
-    case PIPE_FORMAT_R32G32B32_SINT:
-    case PIPE_FORMAT_R32G32B32_FLOAT:
-    case PIPE_FORMAT_R32G32B32_FIXED:
-        return 12;
-    case PIPE_FORMAT_R32G32B32A32_UNORM:
-    case PIPE_FORMAT_R32G32B32A32_UINT:
-    case PIPE_FORMAT_R32G32B32A32_SNORM:
-    case PIPE_FORMAT_R32G32B32A32_SINT:
-    case PIPE_FORMAT_R32G32B32A32_FLOAT:
-    case PIPE_FORMAT_R32G32B32A32_FIXED:
-    case PIPE_FORMAT_DXT3_RGBA:
-    case PIPE_FORMAT_DXT5_RGBA:
-        return 16;
-    default: printf("Unhandled pipe format: %i\n", fmt); return 0;
-    }
-    /// XXX YUYV, UYVY elements
-}
-
-/* return pixel size of one block */
-static inline void pipe_element_divsize(enum pipe_format fmt, unsigned *divSizeX, unsigned *divSizeY)
-{
-    switch(fmt)
-    {
-    case PIPE_FORMAT_A8_UNORM:
-    case PIPE_FORMAT_L8_UNORM:
-    case PIPE_FORMAT_I8_UNORM:
-    case PIPE_FORMAT_R8_UNORM:
-    case PIPE_FORMAT_R8_UINT:
-    case PIPE_FORMAT_R8_SNORM:
-    case PIPE_FORMAT_R8_SINT:
-    case PIPE_FORMAT_R8G8_UNORM:
-    case PIPE_FORMAT_R8G8_UINT:
-    case PIPE_FORMAT_R8G8_SNORM:
-    case PIPE_FORMAT_R8G8_SINT:
-    case PIPE_FORMAT_R16_UNORM:
-    case PIPE_FORMAT_R16_UINT:
-    case PIPE_FORMAT_R16_SNORM:
-    case PIPE_FORMAT_R16_SINT:
-    case PIPE_FORMAT_R16_FLOAT:
-    case PIPE_FORMAT_L8A8_UNORM:
-    case PIPE_FORMAT_B4G4R4A4_UNORM:
-    case PIPE_FORMAT_B4G4R4X4_UNORM:
-    case PIPE_FORMAT_B5G6R5_UNORM:
-    case PIPE_FORMAT_B5G5R5A1_UNORM:
-    case PIPE_FORMAT_B5G5R5X1_UNORM:
-    case PIPE_FORMAT_Z16_UNORM:
-    case PIPE_FORMAT_R8G8B8_UNORM:
-    case PIPE_FORMAT_R8G8B8_UINT:
-    case PIPE_FORMAT_R8G8B8_SNORM:
-    case PIPE_FORMAT_R8G8B8_SINT:
-    case PIPE_FORMAT_R8G8B8A8_UNORM:
-    case PIPE_FORMAT_R8G8B8A8_UINT:
-    case PIPE_FORMAT_R8G8B8A8_SNORM:
-    case PIPE_FORMAT_R8G8B8A8_SINT:
-    case PIPE_FORMAT_R16G16_UNORM:
-    case PIPE_FORMAT_R16G16_UINT:
-    case PIPE_FORMAT_R16G16_SNORM:
-    case PIPE_FORMAT_R16G16_SINT:
-    case PIPE_FORMAT_R32_UNORM:
-    case PIPE_FORMAT_R32_UINT:
-    case PIPE_FORMAT_R32_SNORM:
-    case PIPE_FORMAT_R32_SINT:
-    case PIPE_FORMAT_R16G16_FLOAT:
-    case PIPE_FORMAT_R32_FLOAT:
-    case PIPE_FORMAT_R32_FIXED:
-    case PIPE_FORMAT_R10G10B10A2_UNORM:
-    case PIPE_FORMAT_R10G10B10A2_USCALED:
-    case PIPE_FORMAT_R10G10B10A2_SNORM:
-    case PIPE_FORMAT_R10G10B10A2_SSCALED:
-    case PIPE_FORMAT_B8G8R8A8_UNORM:
-    case PIPE_FORMAT_B8G8R8X8_UNORM:
-    case PIPE_FORMAT_R8G8B8X8_UNORM:
-    case PIPE_FORMAT_X8Z24_UNORM:
-    case PIPE_FORMAT_S8_UINT_Z24_UNORM:
-    case PIPE_FORMAT_R16G16B16_UNORM:
-    case PIPE_FORMAT_R16G16B16_UINT:
-    case PIPE_FORMAT_R16G16B16_SNORM:
-    case PIPE_FORMAT_R16G16B16_SINT:
-    case PIPE_FORMAT_R16G16B16_FLOAT:
-    case PIPE_FORMAT_R16G16B16A16_UNORM:
-    case PIPE_FORMAT_R16G16B16A16_UINT:
-    case PIPE_FORMAT_R16G16B16A16_SNORM:
-    case PIPE_FORMAT_R16G16B16A16_SINT:
-    case PIPE_FORMAT_R32G32_UNORM:
-    case PIPE_FORMAT_R32G32_UINT:
-    case PIPE_FORMAT_R32G32_SNORM:
-    case PIPE_FORMAT_R32G32_SINT:
-    case PIPE_FORMAT_R16G16B16A16_FLOAT:
-    case PIPE_FORMAT_R32G32_FLOAT:
-    case PIPE_FORMAT_R32G32_FIXED:
-    case PIPE_FORMAT_R32G32B32_UNORM:
-    case PIPE_FORMAT_R32G32B32_UINT:
-    case PIPE_FORMAT_R32G32B32_SNORM:
-    case PIPE_FORMAT_R32G32B32_SINT:
-    case PIPE_FORMAT_R32G32B32_FLOAT:
-    case PIPE_FORMAT_R32G32B32_FIXED:
-    case PIPE_FORMAT_R32G32B32A32_UNORM:
-    case PIPE_FORMAT_R32G32B32A32_UINT:
-    case PIPE_FORMAT_R32G32B32A32_SNORM:
-    case PIPE_FORMAT_R32G32B32A32_SINT:
-    case PIPE_FORMAT_R32G32B32A32_FLOAT:
-    case PIPE_FORMAT_R32G32B32A32_FIXED:
-        *divSizeX = 1; *divSizeY = 1;
-        return;
-    case PIPE_FORMAT_DXT1_RGB:
-    case PIPE_FORMAT_DXT1_RGBA:
-    case PIPE_FORMAT_DXT3_RGBA:
-    case PIPE_FORMAT_DXT5_RGBA:
-    case PIPE_FORMAT_ETC1_RGB8:
-        *divSizeX = 4; *divSizeY = 4;
-        return;
-    default: printf("Unhandled pipe format: %i", fmt);
-        *divSizeX = 0; *divSizeY = 0;
-    }
-    /// XXX YUYV, UYVY elements
+    /* assumes that normalization of channel 0 holds for all channels; 
+     * this holds for all vertex formats that we support */
+    return desc->channel[0].normalized ? VIVS_FE_VERTEX_ELEMENT_CONFIG_NORMALIZE_ON :
+                                         VIVS_FE_VERTEX_ELEMENT_CONFIG_NORMALIZE_OFF;
 }
 
 static inline uint32_t translate_index_size(unsigned index_size)
@@ -738,6 +395,7 @@ static inline uint32_t translate_draw_mode(unsigned mode)
 /* translate vertex count to primitive count */
 static inline int translate_vertex_count(unsigned mode, int vertex_count)
 {
+    /* almost equal to u_gs_prims_for_vertices but cannot replace it due to PIPE_PRIM_QUADS */
     switch(mode)
     {
     case PIPE_PRIM_POINTS: return vertex_count;
@@ -762,11 +420,6 @@ static inline unsigned etna_layout_multiple(unsigned layout)
     case ETNA_LAYOUT_SUPERTILED: return 64;
     default: printf("Unhandled layout %i\n", layout); return 0;
     }
-}
-
-static inline bool pipe_format_is_depth(enum pipe_format fmt)
-{
-    return (fmt == PIPE_FORMAT_Z16_UNORM) || (fmt == PIPE_FORMAT_X8Z24_UNORM) || (fmt == PIPE_FORMAT_S8_UINT_Z24_UNORM);
 }
 
 /* return 32-bit clear pattern for color */

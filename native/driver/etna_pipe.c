@@ -57,6 +57,7 @@
 #include "etna_shader.h"
 
 #include "minigallium.h"
+#include "util/u_format.h"
 
 /* Define state */
 #define SET_STATE(addr, value) cs->addr = (value)
@@ -1106,7 +1107,7 @@ static void *etna_pipe_create_vertex_elements_state(struct pipe_context *pipe,
     cs->num_elements = num_elements;
     for(unsigned idx=0; idx<num_elements; ++idx)
     {
-        unsigned element_size = pipe_element_size(elements[idx].src_format);
+        unsigned element_size = util_format_get_blocksize(elements[idx].src_format);
         unsigned end_offset = elements[idx].src_offset + element_size;
         assert(element_size != 0 && end_offset <= 256);
         /* check whether next element is consecutive to this one */
@@ -1116,7 +1117,7 @@ static void *etna_pipe_create_vertex_elements_state(struct pipe_context *pipe,
         SET_STATE(FE_VERTEX_ELEMENT_CONFIG[idx], 
                 (nonconsecutive ? VIVS_FE_VERTEX_ELEMENT_CONFIG_NONCONSECUTIVE : 0) |
                 translate_vertex_format_type(elements[idx].src_format) |
-                VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM(vertex_format_num(elements[idx].src_format)) |
+                VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM(util_format_get_nr_components(elements[idx].src_format)) |
                 translate_vertex_format_normalize(elements[idx].src_format) |
                 VIVS_FE_VERTEX_ELEMENT_CONFIG_ENDIAN(ENDIAN_MODE_NO_SWAP) |
                 VIVS_FE_VERTEX_ELEMENT_CONFIG_STREAM(elements[idx].vertex_buffer_index) |
@@ -1757,7 +1758,7 @@ struct pipe_context *etna_new_pipe_context(struct etna_ctx *ctx)
 struct pipe_resource *etna_pipe_create_2d(struct pipe_context *pipe, unsigned flags, unsigned format, unsigned width, unsigned height, unsigned max_mip_level)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
-    unsigned element_size = pipe_element_size(format);
+    unsigned element_size = util_format_get_blocksize(format);
     if(!element_size)
         return NULL;
     
@@ -1784,12 +1785,11 @@ struct pipe_resource *etna_pipe_create_2d(struct pipe_context *pipe, unsigned fl
      * also: lower mipmaps are still 4x4 due to tiling. In as sense, compressed formats are already tiled.
      * XXX UYVY formats?
      */
-    unsigned divSizeX = 0, divSizeY = 0;
+    unsigned divSizeX = util_format_get_blockwidth(format);
+    unsigned divSizeY = util_format_get_blockheight(format);
     unsigned ix = 0;
     unsigned x = width, y = height;
     unsigned offset = 0;
-    pipe_element_divsize(format, &divSizeX, &divSizeY);
-    assert(divSizeX && divSizeY);
     while(true)
     {
         struct etna_resource_level *mip = &resource->levels[ix];
@@ -1821,11 +1821,12 @@ struct pipe_resource *etna_pipe_create_2d(struct pipe_context *pipe, unsigned fl
     gceSURF_TYPE memtype = gcvSURF_RENDER_TARGET;
     if(flags & ETNA_IS_TEXTURE)
         memtype = gcvSURF_TEXTURE;
-    else if(pipe_format_is_depth(format)) /* if not a texture, and has a depth format */
+    else if(util_format_is_depth_or_stencil(format)) /* if not a texture, and has a depth or stencil format */
         memtype = gcvSURF_DEPTH;
 
-    printf("Allocate 2D surface of %ix%i (padded to %ix%i) of format %i (%i bpe), size %08x ts_size %08x, flags %08x\n",
-            width, height, resource->levels[0].padded_width, resource->levels[0].padded_height, format, element_size, rt_size, rt_ts_size, flags);
+    printf("Allocate 2D surface of %ix%i (padded to %ix%i) of format %i (%i bpe %ix%i), size %08x ts_size %08x, flags %08x\n",
+            width, height, resource->levels[0].padded_width, resource->levels[0].padded_height, format, 
+            element_size, divSizeX, divSizeY, rt_size, rt_ts_size, flags);
 
     struct etna_vidmem *rt = 0;
     if(etna_vidmem_alloc_linear(priv->conn, &rt, rt_size, memtype, gcvPOOL_DEFAULT, true) != ETNA_OK)
@@ -1939,14 +1940,11 @@ void etna_pipe_inline_write(struct pipe_context *pipe, struct pipe_resource *res
         memcpy(ptr, data, size);
     } else if(resource->layout == ETNA_LAYOUT_TILED)
     {
-        unsigned divx=0, divy=0;
-        pipe_element_divsize(resource->base.format, &divx, &divy);
-        assert(divx && divy);
         assert(size <= resource->levels[level].layer_stride);
-        if(divx == 1 && divy == 1)
+        if(!util_format_is_compressed(resource->base.format))
         {
             etna_texture_tile(ptr, data, resource->levels[level].width, resource->levels[level].height, 
-                    resource->levels[level].stride, pipe_element_size(resource->base.format));
+                    resource->levels[level].stride, util_format_get_blocksize(resource->base.format));
         } else { /* compressed format */
             memcpy(ptr, data, size);
         }
