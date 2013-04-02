@@ -30,7 +30,11 @@
 #include "etna_internal.h"
 #include "etna_mem.h"
 #include "etna_rs.h"
-#include "minigallium.h"
+#include "pipe/p_defines.h"
+#include "pipe/p_format.h"
+#include "pipe/p_shader_tokens.h"
+#include "pipe/p_state.h"
+#include "pipe/p_context.h"
 
 /* etna gallium pipe resource creation flags */
 enum etna_resource_flags 

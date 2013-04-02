@@ -56,7 +56,11 @@
 #include "etna_util.h"
 #include "etna_shader.h"
 
-#include "minigallium.h"
+#include "pipe/p_defines.h"
+#include "pipe/p_format.h"
+#include "pipe/p_shader_tokens.h"
+#include "pipe/p_state.h"
+#include "pipe/p_context.h"
 #include "util/u_format.h"
 
 /* Define state */

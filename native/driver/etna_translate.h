@@ -24,7 +24,10 @@
 #ifndef H_TRANSLATE
 #define H_TRANSLATE
 
-#include "minigallium.h"
+#include "pipe/p_defines.h"
+#include "pipe/p_format.h"
+#include "pipe/p_state.h"
+
 #include "common.xml.h"
 #include "state.xml.h"
 #include "state_3d.xml.h"

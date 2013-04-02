@@ -25,7 +25,6 @@
 #include "etna_pipe.h"
 #include "state.xml.h"
 #include "state_3d.xml.h"
-#include "minigallium.h"
 
 #include <stdio.h>
 #include <unistd.h>

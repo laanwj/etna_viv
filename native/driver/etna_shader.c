@@ -862,6 +862,7 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
             case TGSI_OPCODE_PK4UB: assert(0); break;
             case TGSI_OPCODE_RFL: assert(0); break;
             case TGSI_OPCODE_TEX: 
+            case TGSI_OPCODE_TXP: /* XXX divide src.xyz by src.w */
                 emit_inst(cd, &(struct etna_inst) {
                         .opcode = INST_OPCODE_TEXLD,
                         .sat = (inst->Instruction.Saturate == TGSI_SAT_ZERO_ONE),
@@ -870,8 +871,8 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         .src[0] = convert_src(cd, &inst->Src[0]),
                         });
                 break;
-            case TGSI_OPCODE_TXD: assert(0); break;
-            case TGSI_OPCODE_TXP: assert(0); break;
+            case TGSI_OPCODE_TXB: assert(0); break; /* TEXLDB */
+            case TGSI_OPCODE_TXL: assert(0); break; /* TEXLDL */
             case TGSI_OPCODE_UP2H: assert(0); break;
             case TGSI_OPCODE_UP2US: assert(0); break;
             case TGSI_OPCODE_UP4B: assert(0); break;
@@ -885,10 +886,8 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
             case TGSI_OPCODE_RET: assert(0); break;
             case TGSI_OPCODE_CMP: assert(0); break;
             case TGSI_OPCODE_SCS: assert(0); break;
-            case TGSI_OPCODE_TXB: assert(0); break;
             case TGSI_OPCODE_NRM: assert(0); break;
             case TGSI_OPCODE_DIV: assert(0); break;
-            case TGSI_OPCODE_TXL: assert(0); break;
             case TGSI_OPCODE_BRK: assert(0); break; /* break from loop */
             case TGSI_OPCODE_IF:  {
                 struct etna_compile_frame *f = &cd->frame_stack[cd->frame_sp++];

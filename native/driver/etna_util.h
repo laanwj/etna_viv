@@ -27,6 +27,15 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include "util/u_debug.h"
+
+#define ETNA_DBG_MSGS   0x1
+extern int etna_mesa_debug;
+
+#define DBG(fmt, ...) \
+		do { if (etna_mesa_debug & ETNA_DBG_MSGS) \
+			debug_printf("%s:%d: "fmt "\n", \
+				__FUNCTION__, __LINE__, ##__VA_ARGS__); } while (0)
 
 static inline uint32_t etna_align_up(uint32_t value, uint32_t granularity)
 {
