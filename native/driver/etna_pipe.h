@@ -157,7 +157,7 @@ etna_sampler_view(struct pipe_sampler_view *p)
     return (struct etna_sampler_view *)p;
 }
 
-struct pipe_context *etna_new_pipe_context(struct etna_ctx *ctx);
+struct pipe_context *etna_new_pipe_context(struct etna_ctx *dev);
 
 /* Allocate 2D texture or render target resource 
  */

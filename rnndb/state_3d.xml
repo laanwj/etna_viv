@@ -773,6 +773,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield high="10" low="9" name="MIP" type="TEXTURE_FILTER"/>
         <bitfield high="12" low="11" name="MAG" type="TEXTURE_FILTER"/>
         <bitfield high="17" low="13" name="FORMAT" type="TEXTURE_FORMAT"/>
+        <bitfield high="19" low="19" name="ROUND_UV"/>
+        <bitfield high="23" low="22" name="ENDIAN" type="ENDIAN_MODE"/>
+        <bitfield high="31" low="24" name="ANISOTROPY" type="fixedp">
+            <doc>Logarithm of size of anisotropic filter, in 3.5 format.</doc>
+        </bitfield>
     </bitset>
     <bitset name="TE_SAMPLER_SIZE" inline="yes">
         <bitfield high="15" low="0" name="WIDTH" type="uint"/>

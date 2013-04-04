@@ -858,6 +858,7 @@ static void sync_context(struct pipe_context *pipe)
 static void etna_pipe_destroy(struct pipe_context *pipe)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    etna_free(priv->ctx);
     free(priv);
     free(pipe);
 }
@@ -1690,20 +1691,21 @@ struct pipe_context *etna_new_pipe_context(struct etna_ctx *ctx)
         return NULL;
     }
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pc);
+    struct viv_conn *dev = ctx->conn;
 
     /* context private setup */
     priv->ctx = ctx;
     priv->dirty_bits = 0xffffffff;
-    priv->conn = ctx->conn;
+    priv->conn = dev;
 
-    priv->specs.can_supertile = VIV_FEATURE(ctx->conn, chipMinorFeatures0,SUPER_TILED);
-    priv->specs.bits_per_tile = VIV_FEATURE(ctx->conn, chipMinorFeatures0,2BITPERTILE)?2:4;
-    priv->specs.ts_clear_value = VIV_FEATURE(ctx->conn, chipMinorFeatures0,2BITPERTILE)?0x55555555:0x11111111;
+    priv->specs.can_supertile = VIV_FEATURE(dev, chipMinorFeatures0,SUPER_TILED);
+    priv->specs.bits_per_tile = VIV_FEATURE(dev, chipMinorFeatures0,2BITPERTILE)?2:4;
+    priv->specs.ts_clear_value = VIV_FEATURE(dev, chipMinorFeatures0,2BITPERTILE)?0x55555555:0x11111111;
     priv->specs.vertex_sampler_offset = 8; /* vertex and fragment samplers live in one address space */
-    priv->specs.vs_need_z_div = priv->conn->chip.chip_model < 0x1000 && priv->conn->chip.chip_model != 0x880;
-    priv->specs.vertex_output_buffer_size = priv->conn->chip.vertex_output_buffer_size;
-    priv->specs.vertex_cache_size = priv->conn->chip.vertex_cache_size;
-    priv->specs.shader_core_count = priv->conn->chip.shader_core_count;
+    priv->specs.vs_need_z_div = dev->chip.chip_model < 0x1000 && dev->chip.chip_model != 0x880;
+    priv->specs.vertex_output_buffer_size = dev->chip.vertex_output_buffer_size;
+    priv->specs.vertex_cache_size = dev->chip.vertex_cache_size;
+    priv->specs.shader_core_count = dev->chip.shader_core_count;
 
     /* TODO set sensible defaults for the other state */
     priv->base_setup.PA_W_CLIP_LIMIT = 0x34000001;

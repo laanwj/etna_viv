@@ -30,6 +30,7 @@ struct viv_conn;
 struct etna_screen {
     struct pipe_screen base;
     struct viv_conn *dev;
+    struct etna_ctx *ctx;
 
 };
 
