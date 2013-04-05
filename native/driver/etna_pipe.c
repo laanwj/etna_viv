@@ -1678,7 +1678,7 @@ static void etna_pipe_bind_vs_state(struct pipe_context *pipe, void *vss_)
     priv->vs = vss;
 }
 
-struct pipe_context *etna_new_pipe_context(struct etna_ctx *ctx)
+struct pipe_context *etna_new_pipe_context(struct viv_conn *dev)
 {
     struct pipe_context *pc = ETNA_NEW(struct pipe_context);
     if(pc == NULL)
@@ -1687,14 +1687,19 @@ struct pipe_context *etna_new_pipe_context(struct etna_ctx *ctx)
     pc->priv = ETNA_NEW(struct etna_pipe_context_priv);
     if(pc->priv == NULL)
     {
-        free(pc->priv);
+        free(pc);
         return NULL;
     }
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pc);
-    struct viv_conn *dev = ctx->conn;
+
+    if(etna_create(dev, &priv->ctx) < 0)
+    {
+        free(pc->priv);
+        free(pc);
+        return NULL;
+    }
 
     /* context private setup */
-    priv->ctx = ctx;
     priv->dirty_bits = 0xffffffff;
     priv->conn = dev;
 
@@ -1959,4 +1964,11 @@ void etna_pipe_inline_write(struct pipe_context *pipe, struct pipe_resource *res
         printf("etna_pipe_inline_write: unsupported tiling %i\n", resource->layout);
     }
 }
+
+struct etna_ctx *etna_pipe_get_etna_context(struct pipe_context *pipe)
+{
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    return priv->ctx;
+}
+
 

@@ -256,7 +256,7 @@ static struct pipe_context * etna_screen_context_create( struct pipe_screen *scr
                                         void *priv )
 {
     struct etna_screen *es = etna_screen(screen);
-    return etna_new_pipe_context(es->ctx);
+    return etna_new_pipe_context(es->dev);
 }
 
 static boolean etna_screen_is_format_supported( struct pipe_screen *screen,

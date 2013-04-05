@@ -47,11 +47,16 @@ void fbdemo_init(struct fbdemos_scaffold **out)
     }
     printf("Succesfully opened device\n");
 
-    if(etna_create(fbs->conn, &fbs->ctx) != ETNA_OK ||
-        etna_bswap_create(fbs->ctx, &fbs->buffers, (etna_set_buffer_cb_t)&fb_set_buffer, (etna_copy_buffer_cb_t)&etna_fb_copy_buffer, &fbs->fb) != ETNA_OK ||
-        (fbs->pipe = etna_new_pipe_context(fbs->ctx)) == NULL)
+    if((fbs->pipe = etna_new_pipe_context(fbs->conn)) == NULL)
     {
         printf("Unable to create etna context\n");
+        exit(1);
+    }
+    fbs->ctx = etna_pipe_get_etna_context(fbs->pipe);
+    
+    if(etna_bswap_create(fbs->ctx, &fbs->buffers, (etna_set_buffer_cb_t)&fb_set_buffer, (etna_copy_buffer_cb_t)&etna_fb_copy_buffer, &fbs->fb) != ETNA_OK)
+    {
+        printf("Unable to create buffer swapper\n");
         exit(1);
     }
 

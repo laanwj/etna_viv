@@ -157,7 +157,7 @@ etna_sampler_view(struct pipe_sampler_view *p)
     return (struct etna_sampler_view *)p;
 }
 
-struct pipe_context *etna_new_pipe_context(struct etna_ctx *dev);
+struct pipe_context *etna_new_pipe_context(struct viv_conn *dev);
 
 /* Allocate 2D texture or render target resource 
  */
@@ -191,6 +191,8 @@ void *etna_create_shader_state(struct pipe_context *pipe, const struct etna_shad
 void etna_bind_shader_state(struct pipe_context *pipe, void *sh);
 void etna_delete_shader_state(struct pipe_context *pipe, void *sh_);
 void etna_set_uniforms(struct pipe_context *pipe, unsigned type, unsigned offset, unsigned count, const uint32_t *values);
+
+struct etna_ctx *etna_pipe_get_etna_context(struct pipe_context *pipe);
 
 #endif
 
