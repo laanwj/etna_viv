@@ -32,17 +32,17 @@
 
 #define ETNA_BSWAP_NUM_BUFFERS 2
 
-typedef struct _etna_bswap_buffer {
+struct etna_bswap_buffer {
     pthread_mutex_t available_mutex;
     pthread_cond_t available_cond;
     bool is_available;
     int sig_id_ready;
-} etna_bswap_buffer;
+};
 
 typedef int (*etna_set_buffer_cb_t)(void *, int);
 typedef int (*etna_copy_buffer_cb_t)(void *, struct etna_ctx *, int);
 
-typedef struct _etna_bswap_buffers {
+struct etna_bswap_buffers {
     struct viv_conn *conn;
     struct etna_ctx *ctx;
     pthread_t thread;
@@ -52,22 +52,22 @@ typedef struct _etna_bswap_buffers {
     etna_set_buffer_cb_t set_buffer;
     etna_copy_buffer_cb_t copy_buffer;
     void *userptr;
-    etna_bswap_buffer buf[ETNA_BSWAP_NUM_BUFFERS];
-} etna_bswap_buffers;
+    struct etna_bswap_buffer buf[ETNA_BSWAP_NUM_BUFFERS];
+};
 
-int etna_bswap_create(struct etna_ctx *ctx, etna_bswap_buffers **bufs_out, 
+int etna_bswap_create(struct etna_ctx *ctx, struct etna_bswap_buffers **bufs_out, 
         etna_set_buffer_cb_t set_buffer, 
         etna_copy_buffer_cb_t copy_buffer,
         void *userptr);
 
-int etna_bswap_free(etna_bswap_buffers *bufs);
+int etna_bswap_free(struct etna_bswap_buffers *bufs);
 
-int etna_bswap_wait_available(etna_bswap_buffers *bufs);
+int etna_bswap_wait_available(struct etna_bswap_buffers *bufs);
 
-int etna_bswap_queue_swap(etna_bswap_buffers *bufs);
+int etna_bswap_queue_swap(struct etna_bswap_buffers *bufs);
 
 /* analogous to eglSwapBuffers */
-int etna_swap_buffers(etna_bswap_buffers *bufs);
+int etna_swap_buffers(struct etna_bswap_buffers *bufs);
 
 #endif
 

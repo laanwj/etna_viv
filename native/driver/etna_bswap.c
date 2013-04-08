@@ -28,10 +28,12 @@
 #include "state.xml.h"
 #include "state_3d.xml.h"
 
+#include "util/u_memory.h"
+
 #include <stdio.h>
 #include <assert.h>
 
-static int etna_bswap_init_buffer(struct viv_conn *conn, etna_bswap_buffer *buf)
+static int etna_bswap_init_buffer(struct viv_conn *conn, struct etna_bswap_buffer *buf)
 {
     pthread_mutex_init(&buf->available_mutex, NULL);
     pthread_cond_init(&buf->available_cond, NULL);
@@ -46,14 +48,14 @@ static int etna_bswap_init_buffer(struct viv_conn *conn, etna_bswap_buffer *buf)
     return ETNA_OK;
 }
 
-static void etna_bswap_destroy_buffer(struct viv_conn *conn, etna_bswap_buffer *buf)
+static void etna_bswap_destroy_buffer(struct viv_conn *conn, struct etna_bswap_buffer *buf)
 {
     (void)pthread_mutex_destroy(&buf->available_mutex);
     (void)pthread_cond_destroy(&buf->available_cond);
     (void)viv_user_signal_destroy(conn, buf->sig_id_ready);
 }
 
-static void etna_bswap_thread(etna_bswap_buffers *bufs)
+static void etna_bswap_thread(struct etna_bswap_buffers *bufs)
 {
     int cur = 0;
     while(!bufs->terminate)
@@ -79,14 +81,14 @@ static void etna_bswap_thread(etna_bswap_buffers *bufs)
     }
 }
 
-int etna_bswap_create(struct etna_ctx *ctx, etna_bswap_buffers **bufs_out, 
+int etna_bswap_create(struct etna_ctx *ctx, struct etna_bswap_buffers **bufs_out, 
         etna_set_buffer_cb_t set_buffer, 
         etna_copy_buffer_cb_t copy_buffer,
         void *userptr)
 {
     if(ctx == NULL || bufs_out == NULL)
         return ETNA_INVALID_ADDR;
-    etna_bswap_buffers *bufs = ETNA_NEW(etna_bswap_buffers);
+    struct etna_bswap_buffers *bufs = CALLOC_STRUCT(etna_bswap_buffers);
     if(bufs == NULL)
         return ETNA_INTERNAL_ERROR;
     bufs->conn = ctx->conn;
@@ -107,7 +109,7 @@ int etna_bswap_create(struct etna_ctx *ctx, etna_bswap_buffers **bufs_out,
     return ETNA_OK;
 }
 
-int etna_bswap_free(etna_bswap_buffers *bufs)
+int etna_bswap_free(struct etna_bswap_buffers *bufs)
 {
     bufs->terminate = true;
     /* signal ready signals, to prevent thread from waiting forever for buffer to become ready */
@@ -116,14 +118,14 @@ int etna_bswap_free(etna_bswap_buffers *bufs)
     (void)pthread_join(bufs->thread, NULL);
     for(int idx=0; idx<ETNA_BSWAP_NUM_BUFFERS; ++idx)
         etna_bswap_destroy_buffer(bufs->conn, &bufs->buf[idx]);
-    ETNA_FREE(bufs);
+    FREE(bufs);
     return ETNA_OK;
 }
 
 /* wait until current backbuffer is available to render to */
-int etna_bswap_wait_available(etna_bswap_buffers *bufs)
+int etna_bswap_wait_available(struct etna_bswap_buffers *bufs)
 {
-    etna_bswap_buffer *buf = &bufs->buf[bufs->backbuffer];
+    struct etna_bswap_buffer *buf = &bufs->buf[bufs->backbuffer];
     /* Wait until buffer buf is available */
     pthread_mutex_lock(&buf->available_mutex);
     if(!buf->is_available) /* if we're going to wait anyway, flush so that GPU is not idle */
@@ -140,7 +142,7 @@ int etna_bswap_wait_available(etna_bswap_buffers *bufs)
 }
 
 /* queue buffer swap when GPU ready with rendering to buf */
-int etna_bswap_queue_swap(etna_bswap_buffers *bufs)
+int etna_bswap_queue_swap(struct etna_bswap_buffers *bufs)
 {
     etna_flush(bufs->ctx); /* must flush before swap to make sure signal happens after all current commands processed */
     if(viv_event_queue_signal(bufs->conn, bufs->buf[bufs->backbuffer].sig_id_ready, gcvKERNEL_PIXEL) != 0)
@@ -154,7 +156,7 @@ int etna_bswap_queue_swap(etna_bswap_buffers *bufs)
     return ETNA_OK;
 }
 
-int etna_swap_buffers(etna_bswap_buffers *bufs)
+int etna_swap_buffers(struct etna_bswap_buffers *bufs)
 {
     assert(bufs->copy_buffer);
     /* copy to screen */

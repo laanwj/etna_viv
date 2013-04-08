@@ -418,7 +418,7 @@ gears_reshape(struct pipe_context *pipe, int width, int height)
 }
 
 static void
-gears_idle(etna_bswap_buffers *buffers)
+gears_idle(struct etna_bswap_buffers *buffers)
 {
     static int frames = 0;
     static double tRot0 = -1.0, tRate0 = -1.0;

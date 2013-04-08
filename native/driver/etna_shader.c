@@ -1337,7 +1337,7 @@ int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct
     /* Create scratch space that may be too large to fit on stack
      * XXX don't forget to free this on all exit paths.
      */
-    struct etna_compile_data *cd = ETNA_NEW(struct etna_compile_data);
+    struct etna_compile_data *cd = CALLOC_STRUCT(etna_compile_data);
     cd->specs = specs;
 
     /* Build a map from gallium register to native registers for files
@@ -1444,7 +1444,7 @@ int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct
     etna_compile_fill_in_labels(cd);
 
     /* fill in output structure */
-    struct etna_shader_object *sobj = ETNA_NEW(struct etna_shader_object);
+    struct etna_shader_object *sobj = CALLOC_STRUCT(etna_shader_object);
     sobj->processor = cd->processor;
     sobj->code_size = cd->inst_ptr * 4;
     sobj->code = copy32(cd->code, cd->inst_ptr * 4);
@@ -1467,7 +1467,7 @@ int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct
         fill_in_ps_outputs(sobj, cd);
     }
     *out = sobj;
-    free(cd);
+    FREE(cd);
     return 0;
 }
 
@@ -1525,9 +1525,9 @@ void etna_destroy_shader_object(struct etna_shader_object *obj)
 {
     if(obj != NULL)
     {
-        free(obj->code);
-        free(obj->imm_data);
-        free(obj);
+        FREE(obj->code);
+        FREE(obj->imm_data);
+        FREE(obj);
     }
 }
 

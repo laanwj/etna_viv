@@ -23,12 +23,13 @@
 #include "fbdemos.h"
 
 #include "etna_pipe.h"
+#include "util/u_memory.h"
 
 #include <stdio.h>
 
 void fbdemo_init(struct fbdemos_scaffold **out)
 {
-    struct fbdemos_scaffold *fbs = ETNA_NEW(struct fbdemos_scaffold);
+    struct fbdemos_scaffold *fbs = CALLOC_STRUCT(fbdemos_scaffold);
     int rv;
     
     rv = fb_open(0, &fbs->fb);

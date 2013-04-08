@@ -36,7 +36,7 @@ struct fbdemos_scaffold
     struct viv_conn *conn;
     struct etna_ctx *ctx;
     struct pipe_context *pipe;
-    etna_bswap_buffers *buffers;
+    struct etna_bswap_buffers *buffers;
 };
 
 void fbdemo_init(struct fbdemos_scaffold **out);

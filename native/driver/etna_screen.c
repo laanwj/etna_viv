@@ -24,13 +24,16 @@
 #include "etna.h"
 #include "etna_util.h"
 #include "etna_pipe.h"
+#include "etna_shader.h"
 #include "viv.h"
+
+#include "util/u_memory.h"
 
 int etna_mesa_debug = ETNA_DBG_MSGS;  /* XXX */
 
 static void etna_screen_destroy( struct pipe_screen *screen )
 {
-    DBG("unimplemented etna_screen_destroy");
+    FREE(screen);
 }
 
 static const char *etna_screen_get_name( struct pipe_screen *screen )
@@ -55,16 +58,15 @@ static int etna_screen_get_param( struct pipe_screen *screen, enum pipe_cap para
     case PIPE_CAP_TGSI_FS_COORD_ORIGIN_UPPER_LEFT:
     case PIPE_CAP_TGSI_FS_COORD_PIXEL_CENTER_HALF_INTEGER:
     case PIPE_CAP_SM3:
-    case PIPE_CAP_SEAMLESS_CUBE_MAP:
+    case PIPE_CAP_SEAMLESS_CUBE_MAP: /* ??? */
     case PIPE_CAP_TEXTURE_BARRIER:
     case PIPE_CAP_QUADS_FOLLOW_PROVOKING_VERTEX_CONVENTION:
     case PIPE_CAP_VERTEX_BUFFER_OFFSET_4BYTE_ALIGNED_ONLY:
     case PIPE_CAP_VERTEX_BUFFER_STRIDE_4BYTE_ALIGNED_ONLY:
     case PIPE_CAP_VERTEX_ELEMENT_SRC_OFFSET_4BYTE_ALIGNED_ONLY:
     case PIPE_CAP_USER_CONSTANT_BUFFERS: /* constant buffers can be user buffers; they end up in command stream anyway */
+    case PIPE_CAP_TGSI_TEXCOORD: /* explicit TEXCOORD and POINTCOORD semantics */
             return 1;
-    case PIPE_CAP_TGSI_TEXCOORD:
-            return 0;
 
     case PIPE_CAP_CONSTANT_BUFFER_OFFSET_ALIGNMENT:
             return 256;
@@ -186,11 +188,11 @@ static int etna_screen_get_shader_param( struct pipe_screen *screen, unsigned sh
     case PIPE_SHADER_CAP_MAX_ALU_INSTRUCTIONS:
     case PIPE_SHADER_CAP_MAX_TEX_INSTRUCTIONS:
     case PIPE_SHADER_CAP_MAX_TEX_INDIRECTIONS:
-            return 16384;
+            return ETNA_MAX_TOKENS;
     case PIPE_SHADER_CAP_MAX_CONTROL_FLOW_DEPTH:
-            return 8; /* XXX */
+            return ETNA_MAX_DEPTH; /* XXX */
     case PIPE_SHADER_CAP_MAX_INPUTS:
-            return 32;
+            return 16; /* XXX this amount is reserved */
     case PIPE_SHADER_CAP_MAX_TEMPS:
             return 256; /* Max native temporaries. */
     case PIPE_SHADER_CAP_MAX_ADDRS:
@@ -346,7 +348,7 @@ static boolean etna_screen_fence_finish( struct pipe_screen *screen,
 struct pipe_screen *
 fd_screen_create(struct viv_conn *dev)
 {
-    struct etna_screen *screen = ETNA_NEW(struct etna_screen);
+    struct etna_screen *screen = CALLOC_STRUCT(etna_screen);
     struct pipe_screen *pscreen = &screen->base;
     screen->dev = dev;
 

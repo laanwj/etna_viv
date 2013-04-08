@@ -229,7 +229,7 @@ int main(int argc, char **argv)
     }
 
     /* Initialize buffers synchronization structure */
-    etna_bswap_buffers *buffers = 0;
+    struct etna_bswap_buffers *buffers = 0;
     if(etna_bswap_create(ctx, &buffers, (int (*)(void *, int))&fb_set_buffer, NULL, &fb) < 0)
     {
         fprintf(stderr, "Error creating buffer swapper\n");

@@ -64,9 +64,6 @@
 #define BEGIN_COMMIT_CLEARANCE 32
 #define END_COMMIT_CLEARANCE 24
 
-#define ETNA_NEW(type) calloc(1, sizeof(type))
-#define ETNA_FREE(ptr) free(ptr)
-
 /** Structure definitions */
 
 /* Etna error (return) codes */
