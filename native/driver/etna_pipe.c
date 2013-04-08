@@ -1604,8 +1604,8 @@ void *etna_create_shader_state(struct pipe_context *pipe, const struct etna_shad
     cs->vs_uniforms_size = rs->vs_uniforms_size;
     cs->ps_inst_mem_size = rs->ps_code_size;
     cs->ps_uniforms_size = rs->ps_uniforms_size;
-    cs->VS_INST_MEM = copy32(rs->vs_code, rs->vs_code_size);
-    cs->PS_INST_MEM = copy32(rs->ps_code, rs->ps_code_size);
+    cs->VS_INST_MEM = mem_dup(rs->vs_code, rs->vs_code_size * 4);
+    cs->PS_INST_MEM = mem_dup(rs->ps_code, rs->ps_code_size * 4);
     memcpy(cs->VS_UNIFORMS, rs->vs_uniforms, rs->vs_uniforms_size*4);
     memcpy(cs->PS_UNIFORMS, rs->ps_uniforms, rs->ps_uniforms_size*4);
 

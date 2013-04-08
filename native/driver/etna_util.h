@@ -73,14 +73,5 @@ static inline uint32_t etna_f32_to_u32(float value)
     return x.u32;
 }
 
-/* duplicate string of 32-bit words */
-static inline uint32_t *copy32(uint32_t *data, unsigned size)
-{
-    uint32_t *retval = malloc(size * 4);
-    if(retval)
-        memcpy(retval, data, size * 4);
-    return retval;
-}
-
 #endif
 

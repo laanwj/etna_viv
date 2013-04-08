@@ -1447,13 +1447,13 @@ int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct
     struct etna_shader_object *sobj = CALLOC_STRUCT(etna_shader_object);
     sobj->processor = cd->processor;
     sobj->code_size = cd->inst_ptr * 4;
-    sobj->code = copy32(cd->code, cd->inst_ptr * 4);
+    sobj->code = mem_dup(cd->code, cd->inst_ptr * 16);
     sobj->num_temps = cd->next_free_native;
     sobj->const_base = 0;
     sobj->const_size = cd->imm_base;
     sobj->imm_base = cd->imm_base;
     sobj->imm_size = cd->imm_size;
-    sobj->imm_data = copy32(cd->imm_data, cd->imm_size);
+    sobj->imm_data = mem_dup(cd->imm_data, cd->imm_size * 4);
     sobj->vs_pos_out_reg = -1;
     sobj->vs_pointsize_out_reg = -1;
     sobj->ps_color_out_reg = -1;
