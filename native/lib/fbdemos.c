@@ -23,6 +23,7 @@
 #include "fbdemos.h"
 
 #include "etna_pipe.h"
+#include "etna_screen.h"
 #include "util/u_memory.h"
 
 #include <stdio.h>
@@ -48,7 +49,14 @@ void fbdemo_init(struct fbdemos_scaffold **out)
     }
     printf("Succesfully opened device\n");
 
-    if((fbs->pipe = etna_new_pipe_context(fbs->conn)) == NULL)
+    /* Create screen */
+    if((fbs->screen = etna_screen_create(fbs->conn)) == NULL)
+    {
+        printf("Unable to create screen context\n");
+        exit(1);
+    }
+
+    if((fbs->pipe = fbs->screen->context_create(fbs->screen, NULL)) == NULL)
     {
         printf("Unable to create etna context\n");
         exit(1);
@@ -71,4 +79,39 @@ void fbdemo_free(struct fbdemos_scaffold *fbs)
     viv_close(fbs->conn);
     free(fbs);
 }
+
+struct pipe_resource *fbdemo_create_2d(struct pipe_screen *screen, unsigned bind, unsigned format, unsigned width, unsigned height, unsigned max_mip_level)
+{
+    return screen->resource_create(screen, &(struct pipe_resource){
+            .target = PIPE_TEXTURE_2D,
+            .format = format,
+            .width0 = width,
+            .height0 = height,
+            .depth0 = 1,
+            .array_size = 1,
+            .last_level = max_mip_level,
+            .nr_samples = 1,
+            .usage = PIPE_USAGE_IMMUTABLE,
+            .bind = bind,
+            .flags = 0,
+            });
+}
+
+struct pipe_resource *fbdemo_create_cube(struct pipe_screen *screen, unsigned bind, unsigned format, unsigned width, unsigned height, unsigned max_mip_level)
+{
+    return screen->resource_create(screen, &(struct pipe_resource){
+            .target = PIPE_TEXTURE_CUBE,
+            .format = format,
+            .width0 = width,
+            .height0 = height,
+            .depth0 = 1,
+            .array_size = 6,
+            .last_level = max_mip_level,
+            .nr_samples = 1,
+            .usage = PIPE_USAGE_IMMUTABLE,
+            .bind = bind,
+            .flags = 0,
+            });
+}
+
 

@@ -10,6 +10,6 @@ COMMON_FLAGS =  -O2 -g -Wall -DGCABI_${GCABI} -I$(TOP)/lib -I$(TOP)/include_$(GC
           -I$(TOP)/gallium/include -I$(TOP)/gallium/auxiliary
 
 CFLAGS += $(PLATFORM_CFLAGS) $(COMMON_FLAGS) -std=c99
-CXXFLAGS += $(PLATFORM_CXXFLAGS) $(COMMON_FLAGS) -std=c++98
+CXXFLAGS += $(PLATFORM_CXXFLAGS) $(COMMON_FLAGS)
 LDFLAGS += $(PLATFORM_LDFLAGS) $(COMMON_FLAGS) -lm
 

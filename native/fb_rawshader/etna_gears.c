@@ -50,6 +50,7 @@
 #include <unistd.h>
 
 #include "etna_pipe.h"
+#include "util/u_inlines.h"
 
 #include "write_bmp.h"
 #include "viv.h"
@@ -157,7 +158,7 @@ static void sincos_(double x, double *s, double *c)
  *  @return pointer to the constructed struct gear
  */
 static struct gear *
-create_gear(struct pipe_context *pipe, GLfloat inner_radius, GLfloat outer_radius, GLfloat width,
+create_gear(struct pipe_screen *screen, struct pipe_context *pipe, GLfloat inner_radius, GLfloat outer_radius, GLfloat width,
       GLint teeth, GLfloat tooth_depth)
 {
    GLfloat r0, r1, r2;
@@ -307,7 +308,7 @@ create_gear(struct pipe_context *pipe, GLfloat inner_radius, GLfloat outer_radiu
             sizeof(pipe_vertex_elements)/sizeof(pipe_vertex_elements[0]), pipe_vertex_elements);
 
     /* Store the vertices in a vertex buffer object (VBO) */
-    gear->vtx_resource = etna_pipe_create_buffer(pipe, ETNA_IS_VERTEX, gear->nvertices * sizeof(GearVertex));
+    gear->vtx_resource = pipe_buffer_create(screen, PIPE_BIND_VERTEX_BUFFER, PIPE_USAGE_IMMUTABLE, gear->nvertices * sizeof(GearVertex));
     etna_pipe_inline_write(pipe, gear->vtx_resource, 0, 0, gear->vertices, gear->nvertices * sizeof(GearVertex));
 
     gear->vertex_buffer.stride = sizeof(GearVertex);
@@ -425,7 +426,7 @@ gears_reshape(struct pipe_context *pipe, int width, int height)
 }
 
 static void
-gears_idle(etna_bswap_buffers *buffers)
+gears_idle(struct etna_bswap_buffers *buffers)
 {
     static int frames = 0;
     static double tRot0 = -1.0, tRate0 = -1.0;
@@ -518,8 +519,8 @@ main(int argc, char *argv[])
     struct pipe_context *pipe = fbs->pipe;
 
     /* resources */
-    struct pipe_resource *rt_resource = etna_pipe_create_2d(pipe, ETNA_IS_RENDER_TARGET, PIPE_FORMAT_B8G8R8X8_UNORM, width, height, 0);
-    struct pipe_resource *z_resource = etna_pipe_create_2d(pipe, ETNA_IS_RENDER_TARGET, PIPE_FORMAT_Z16_UNORM, width, height, 0);
+    struct pipe_resource *rt_resource = fbdemo_create_2d(fbs->screen, PIPE_BIND_RENDER_TARGET, PIPE_FORMAT_B8G8R8X8_UNORM, width, height, 0);
+    struct pipe_resource *z_resource = fbdemo_create_2d(fbs->screen, PIPE_BIND_RENDER_TARGET, PIPE_FORMAT_Z16_UNORM, width, height, 0);
     
     struct pipe_surface *cbuf = pipe->create_surface(pipe, rt_resource, &(struct pipe_surface){
         .texture = rt_resource,
@@ -637,9 +638,9 @@ main(int argc, char *argv[])
     etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 4*4, 4, (uint32_t*)LightSourcePosition);
 
     /* make the gears */
-    gear1 = create_gear(pipe, 1.0, 4.0, 1.0, 20, 0.7);
-    gear2 = create_gear(pipe, 0.5, 2.0, 2.0, 10, 0.7);
-    gear3 = create_gear(pipe, 1.3, 2.0, 0.5, 10, 0.7);
+    gear1 = create_gear(fbs->screen, pipe, 1.0, 4.0, 1.0, 20, 0.7);
+    gear2 = create_gear(fbs->screen, pipe, 0.5, 2.0, 2.0, 10, 0.7);
+    gear3 = create_gear(fbs->screen, pipe, 1.3, 2.0, 0.5, 10, 0.7);
 
     gears_reshape(pipe, width, height);
 

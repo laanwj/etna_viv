@@ -24,6 +24,7 @@
 #define ETNA_SCREEN_H_
 
 #include "pipe/p_screen.h"
+#include "etna_internal.h"
 
 struct viv_conn;
 
@@ -31,7 +32,7 @@ struct etna_screen {
     struct pipe_screen base;
     struct viv_conn *dev;
     struct etna_ctx *ctx;
-
+    struct etna_pipe_specs specs;
 };
 
 static INLINE struct etna_screen *
@@ -41,7 +42,7 @@ etna_screen(struct pipe_screen *pscreen)
 }
 
 struct pipe_screen *
-fd_screen_create(struct viv_conn *dev);
+etna_screen_create(struct viv_conn *dev);
 
 #endif
 

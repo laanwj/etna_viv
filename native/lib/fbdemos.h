@@ -37,10 +37,13 @@ struct fbdemos_scaffold
     struct etna_ctx *ctx;
     struct pipe_context *pipe;
     struct etna_bswap_buffers *buffers;
+    struct pipe_screen *screen;
 };
 
 void fbdemo_init(struct fbdemos_scaffold **out);
 void fbdemo_free(struct fbdemos_scaffold *fbs);
+struct pipe_resource *fbdemo_create_2d(struct pipe_screen *screen, unsigned flags, unsigned format, unsigned width, unsigned height, unsigned max_mip_level);
+struct pipe_resource *fbdemo_create_cube(struct pipe_screen *screen, unsigned flags, unsigned format, unsigned width, unsigned height, unsigned max_mip_level);
 
 #endif
 

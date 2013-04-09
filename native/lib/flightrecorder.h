@@ -118,7 +118,7 @@ RTYPE_COMMENT:
   comment      uint8[size]   Comment data
 
 */
-#include <pthread.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {

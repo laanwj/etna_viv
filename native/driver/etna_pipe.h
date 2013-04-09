@@ -36,16 +36,6 @@
 #include "pipe/p_state.h"
 #include "pipe/p_context.h"
 
-/* etna gallium pipe resource creation flags */
-enum etna_resource_flags 
-{
-    ETNA_IS_TEXTURE = 0x1, /* is to be used as texture */
-    ETNA_IS_RENDER_TARGET = 0x2,     /* has tile status (fast clear), use if rendertarget */
-    ETNA_IS_VERTEX = 0x4,  /* vertex buffer */
-    ETNA_IS_INDEX = 0x8,   /* index buffer */
-    ETNA_IS_CUBEMAP = 0x10 /* cubemap texture */
-};
-
 #define ETNA_NUM_INPUTS (16)
 #define ETNA_NUM_VARYINGS (16)
 #define ETNA_NUM_LOD (14)
@@ -157,20 +147,7 @@ etna_sampler_view(struct pipe_sampler_view *p)
     return (struct etna_sampler_view *)p;
 }
 
-struct pipe_context *etna_new_pipe_context(struct viv_conn *dev);
-
-/* Allocate 2D texture or render target resource 
- */
-struct pipe_resource *etna_pipe_create_2d(struct pipe_context *pipe, unsigned flags, unsigned format, unsigned width, unsigned height, unsigned max_mip_level);
-
-/* Allocate buffer resource.
- * Like with gallium, a buffer is essentially an 1D texture of width size, and format PIPE_FORMAT_R8_UNORM, and target
- * PIPE_BUFFER (see u_inlines.h in mesa tree).
- */
-struct pipe_resource *etna_pipe_create_buffer(struct pipe_context *pipe, unsigned flags, unsigned size);
-
-/* Free previously allocated resource */
-void etna_pipe_destroy_resource(struct pipe_context *pipe, struct pipe_resource *resource);
+struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct etna_pipe_specs *specs);
 
 /* Temporary entry point to get access to the memory behind a resource.
  * Eventually we should use pipe transfers and lock/unlock like gallium,

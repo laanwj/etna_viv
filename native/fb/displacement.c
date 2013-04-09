@@ -37,6 +37,7 @@
 #include <errno.h>
 
 #include "etna_pipe.h"
+#include "util/u_inlines.h"
 #include "etna_util.h"
 #include "write_bmp.h"
 #include "state_tracker/graw.h"
@@ -104,9 +105,9 @@ static const char displacement_frag[] =
 
 #define TEX_WIDTH (32)
 #define TEX_HEIGHT (32)
-struct pipe_resource *createSimpleTexture(struct pipe_context *pipe)
+struct pipe_resource *createSimpleTexture(struct pipe_screen *screen, struct pipe_context *pipe)
 {
-    struct pipe_resource *tex_resource = etna_pipe_create_2d(pipe, ETNA_IS_TEXTURE, PIPE_FORMAT_L8_UNORM, TEX_WIDTH, TEX_HEIGHT, 0);
+    struct pipe_resource *tex_resource = fbdemo_create_2d(screen, PIPE_BIND_SAMPLER_VIEW, PIPE_FORMAT_L8_UNORM, TEX_WIDTH, TEX_HEIGHT, 0);
     uint8_t pixels[TEX_HEIGHT][TEX_WIDTH];
 
     for(int y=0; y<TEX_HEIGHT; ++y)
@@ -141,10 +142,10 @@ int main(int argc, char **argv)
     struct pipe_context *pipe = fbs->pipe;
     
     /* resources */
-    struct pipe_resource *rt_resource = etna_pipe_create_2d(pipe, ETNA_IS_RENDER_TARGET, PIPE_FORMAT_B8G8R8X8_UNORM, width, height, 0);
-    struct pipe_resource *z_resource = etna_pipe_create_2d(pipe, ETNA_IS_RENDER_TARGET, PIPE_FORMAT_Z16_UNORM, width, height, 0);
-    struct pipe_resource *vtx_resource = etna_pipe_create_buffer(pipe, ETNA_IS_VERTEX, VERTEX_BUFFER_SIZE);
-    struct pipe_resource *idx_resource = etna_pipe_create_buffer(pipe, ETNA_IS_INDEX, VERTEX_BUFFER_SIZE);
+    struct pipe_resource *rt_resource = fbdemo_create_2d(fbs->screen, PIPE_BIND_RENDER_TARGET, PIPE_FORMAT_B8G8R8X8_UNORM, width, height, 0);
+    struct pipe_resource *z_resource = fbdemo_create_2d(fbs->screen, PIPE_BIND_RENDER_TARGET, PIPE_FORMAT_Z16_UNORM, width, height, 0);
+    struct pipe_resource *vtx_resource = pipe_buffer_create(fbs->screen, PIPE_BIND_VERTEX_BUFFER, PIPE_USAGE_IMMUTABLE, VERTEX_BUFFER_SIZE);
+    struct pipe_resource *idx_resource = pipe_buffer_create(fbs->screen, PIPE_BIND_INDEX_BUFFER, PIPE_USAGE_IMMUTABLE, VERTEX_BUFFER_SIZE);
     
     /* bind render target to framebuffer */
     etna_fb_bind_resource(&fbs->fb, rt_resource);
@@ -272,7 +273,7 @@ int main(int argc, char **argv)
             sizeof(pipe_vertex_elements)/sizeof(pipe_vertex_elements[0]), pipe_vertex_elements);
 
     /* texture... */
-    struct pipe_resource *tex_resource = createSimpleTexture(pipe);
+    struct pipe_resource *tex_resource = createSimpleTexture(fbs->screen, pipe);
     struct pipe_sampler_view *sampler_view = pipe->create_sampler_view(pipe, tex_resource, &(struct pipe_sampler_view){
             .format = tex_resource->format,
             .u.tex.first_level = 0,

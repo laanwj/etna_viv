@@ -48,6 +48,7 @@
 #include <errno.h>
 
 #include "etna_pipe.h"
+#include "util/u_inlines.h"
 
 #include "write_bmp.h"
 #include "viv.h"
@@ -139,7 +140,7 @@ int main(int argc, char **argv)
     struct pipe_context *pipe = fbs->pipe;
 
     /* Convert and upload embedded texture */
-    struct pipe_resource *tex_resource = etna_pipe_create_2d(pipe, ETNA_IS_TEXTURE, PIPE_FORMAT_B8G8R8X8_UNORM, 
+    struct pipe_resource *tex_resource = fbdemo_create_2d(fbs->screen, PIPE_BIND_SAMPLER_VIEW, PIPE_FORMAT_B8G8R8X8_UNORM, 
             COMPANION_TEXTURE_WIDTH, COMPANION_TEXTURE_HEIGHT, 0);
     void *temp = malloc(COMPANION_TEXTURE_WIDTH * COMPANION_TEXTURE_HEIGHT * 4); 
     etna_convert_r8g8b8_to_b8g8r8x8(temp, (const uint8_t*)companion_texture, COMPANION_TEXTURE_WIDTH * COMPANION_TEXTURE_HEIGHT);
@@ -147,15 +148,15 @@ int main(int argc, char **argv)
     free(temp);
 
     /* resources */
-    struct pipe_resource *rt_resource = etna_pipe_create_2d(pipe, ETNA_IS_RENDER_TARGET, PIPE_FORMAT_B8G8R8X8_UNORM, width, height, 0);
-    struct pipe_resource *z_resource = etna_pipe_create_2d(pipe, ETNA_IS_RENDER_TARGET, PIPE_FORMAT_Z16_UNORM, width, height, 0);
+    struct pipe_resource *rt_resource = fbdemo_create_2d(fbs->screen, PIPE_BIND_RENDER_TARGET, PIPE_FORMAT_B8G8R8X8_UNORM, width, height, 0);
+    struct pipe_resource *z_resource = fbdemo_create_2d(fbs->screen, PIPE_BIND_RENDER_TARGET, PIPE_FORMAT_Z16_UNORM, width, height, 0);
 
     /* bind render target to framebuffer */
     etna_fb_bind_resource(&fbs->fb, rt_resource);
 
     /* geometry */
-    struct pipe_resource *vtx_resource = etna_pipe_create_buffer(pipe, ETNA_IS_VERTEX, VERTEX_BUFFER_SIZE);
-    struct pipe_resource *idx_resource = etna_pipe_create_buffer(pipe, ETNA_IS_INDEX, INDEX_BUFFER_SIZE);
+    struct pipe_resource *vtx_resource = pipe_buffer_create(fbs->screen, PIPE_BIND_VERTEX_BUFFER, PIPE_USAGE_IMMUTABLE, VERTEX_BUFFER_SIZE);
+    struct pipe_resource *idx_resource = pipe_buffer_create(fbs->screen, PIPE_BIND_INDEX_BUFFER, PIPE_USAGE_IMMUTABLE, INDEX_BUFFER_SIZE);
 
     float *vtx_logical = etna_pipe_get_resource_ptr(pipe, vtx_resource, 0, 0);
     assert(vtx_logical);

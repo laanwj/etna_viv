@@ -37,6 +37,7 @@
 #include <errno.h>
 
 #include "etna_pipe.h"
+#include "util/u_inlines.h"
 #include "etna_tex.h"
 #include "write_bmp.h"
 #include "state_tracker/graw.h"
@@ -120,7 +121,7 @@ int main(int argc, char **argv)
         printf("Could not load texture\n");
         exit(1);
     }
-    struct pipe_resource *tex_resource = etna_pipe_create_2d(pipe, ETNA_IS_TEXTURE, PIPE_FORMAT_B8G8R8X8_UNORM, 
+    struct pipe_resource *tex_resource = fbdemo_create_2d(fbs->screen, PIPE_BIND_SAMPLER_VIEW, PIPE_FORMAT_B8G8R8X8_UNORM, 
             tex_base_width, tex_base_height, 0);
     printf("Uploading texture (%ix%i)\n", tex_base_width, tex_base_height);
     uint32_t *temp = malloc(tex_base_width * tex_base_height * 4);
@@ -129,8 +130,8 @@ int main(int argc, char **argv)
     free(temp);
 
     /* render target resources and surfaces */
-    struct pipe_resource *rt_resource = etna_pipe_create_2d(pipe, ETNA_IS_RENDER_TARGET, PIPE_FORMAT_B8G8R8X8_UNORM, width, height, 0);
-    struct pipe_resource *z_resource = etna_pipe_create_2d(pipe, ETNA_IS_RENDER_TARGET, PIPE_FORMAT_Z16_UNORM, width, height, 0);
+    struct pipe_resource *rt_resource = fbdemo_create_2d(fbs->screen, PIPE_BIND_RENDER_TARGET, PIPE_FORMAT_B8G8R8X8_UNORM, width, height, 0);
+    struct pipe_resource *z_resource = fbdemo_create_2d(fbs->screen, PIPE_BIND_RENDER_TARGET, PIPE_FORMAT_Z16_UNORM, width, height, 0);
 
     /* bind render target to framebuffer */
     etna_fb_bind_resource(&fbs->fb, rt_resource);
@@ -229,7 +230,7 @@ int main(int argc, char **argv)
             });
 
     /* particles */
-    struct pipe_resource *vtx_resource = etna_pipe_create_buffer(pipe, ETNA_IS_VERTEX, VERTEX_BUFFER_SIZE);
+    struct pipe_resource *vtx_resource = pipe_buffer_create(fbs->screen, PIPE_BIND_VERTEX_BUFFER, PIPE_USAGE_IMMUTABLE, VERTEX_BUFFER_SIZE);
     struct pipe_vertex_buffer vertex_buffer_desc = {
             .stride = PARTICLE_SIZE*4,
             .buffer_offset = 0,

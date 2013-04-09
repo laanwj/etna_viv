@@ -1679,7 +1679,7 @@ static void etna_pipe_bind_vs_state(struct pipe_context *pipe, void *vss_)
     priv->vs = vss;
 }
 
-struct pipe_context *etna_new_pipe_context(struct viv_conn *dev)
+struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct etna_pipe_specs *specs)
 {
     struct pipe_context *pc = CALLOC_STRUCT(pipe_context);
     if(pc == NULL)
@@ -1703,15 +1703,7 @@ struct pipe_context *etna_new_pipe_context(struct viv_conn *dev)
     /* context private setup */
     priv->dirty_bits = 0xffffffff;
     priv->conn = dev;
-
-    priv->specs.can_supertile = VIV_FEATURE(dev, chipMinorFeatures0,SUPER_TILED);
-    priv->specs.bits_per_tile = VIV_FEATURE(dev, chipMinorFeatures0,2BITPERTILE)?2:4;
-    priv->specs.ts_clear_value = VIV_FEATURE(dev, chipMinorFeatures0,2BITPERTILE)?0x55555555:0x11111111;
-    priv->specs.vertex_sampler_offset = 8; /* vertex and fragment samplers live in one address space */
-    priv->specs.vs_need_z_div = dev->chip.chip_model < 0x1000 && dev->chip.chip_model != 0x880;
-    priv->specs.vertex_output_buffer_size = dev->chip.vertex_output_buffer_size;
-    priv->specs.vertex_cache_size = dev->chip.vertex_cache_size;
-    priv->specs.shader_core_count = dev->chip.shader_core_count;
+    priv->specs = *specs;
 
     /* TODO set sensible defaults for the other state */
     priv->base_setup.PA_W_CLIP_LIMIT = 0x34000001;
@@ -1763,171 +1755,6 @@ struct pipe_context *etna_new_pipe_context(struct viv_conn *dev)
     pc->texture_barrier = etna_pipe_texture_barrier;
 
     return pc;
-}
-
-/* Allocate 2D texture or render target resource 
- */
-struct pipe_resource *etna_pipe_create_2d(struct pipe_context *pipe, unsigned flags, unsigned format, unsigned width, unsigned height, unsigned max_mip_level)
-{
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
-    unsigned element_size = util_format_get_blocksize(format);
-    if(!element_size)
-        return NULL;
-    
-    /* Figure out what tiling to use -- for now, assume that textures cannot be supertiled, and cannot be linear.
-     * There is a feature flag SUPERTILED_TEXTURE that may allow this, as well as TEXTURE_LINEAR, but not sure how it works. */
-    unsigned layout = (!(flags & ETNA_IS_TEXTURE) && priv->specs.can_supertile) ? ETNA_LAYOUT_SUPERTILED : ETNA_LAYOUT_TILED;
-    unsigned padding = etna_layout_multiple(layout);
-    unsigned num_layers = 1;
-    
-    /* determine mipmap levels */
-    struct etna_resource *resource = CALLOC_STRUCT(etna_resource);
-    if(flags & ETNA_IS_TEXTURE)
-    {
-        if(max_mip_level >= ETNA_NUM_LOD) /* max LOD supported by hw */
-            max_mip_level = ETNA_NUM_LOD - 1;
-        if(flags & ETNA_IS_CUBEMAP)
-            num_layers = 6;
-    } else
-    {
-        max_mip_level = 0;
-    }
-
-    /* take care about DXTx formats, which have a divSize of non-1x1
-     * also: lower mipmaps are still 4x4 due to tiling. In as sense, compressed formats are already tiled.
-     * XXX UYVY formats?
-     */
-    unsigned divSizeX = util_format_get_blockwidth(format);
-    unsigned divSizeY = util_format_get_blockheight(format);
-    unsigned ix = 0;
-    unsigned x = width, y = height;
-    unsigned offset = 0;
-    while(true)
-    {
-        struct etna_resource_level *mip = &resource->levels[ix];
-        mip->width = x;
-        mip->height = y;
-        mip->padded_width = etna_align_up(x, padding);
-        mip->padded_height = etna_align_up(y, padding);
-        mip->stride = etna_align_up(resource->levels[ix].padded_width, divSizeX)/divSizeX * element_size;
-        mip->offset = offset;
-        mip->layer_stride = etna_align_up(mip->padded_width, divSizeX)/divSizeX * 
-                      etna_align_up(mip->padded_height, divSizeY)/divSizeY * element_size;
-        mip->size = num_layers * mip->layer_stride;
-        offset += mip->size;
-        if(ix == max_mip_level || (x == 1 && y == 1))
-            break; // stop at last level
-        x = (x+1)>>1;
-        y = (y+1)>>1;
-        ix += 1;
-    }
-    resource->base.last_level = ix; /* real last mipmap level */
-
-    /* Determine memory size, and whether to create a tile status */
-    size_t rt_size = offset;
-    size_t rt_ts_size = 0;
-    if(flags & ETNA_IS_RENDER_TARGET) /* TS only for level 0 -- XXX is this formula correct? */
-        rt_ts_size = etna_align_up(resource->levels[0].size*priv->specs.bits_per_tile/0x80, 0x100);
-    
-    /* determine memory type */
-    gceSURF_TYPE memtype = gcvSURF_RENDER_TARGET;
-    if(flags & ETNA_IS_TEXTURE)
-        memtype = gcvSURF_TEXTURE;
-    else if(util_format_is_depth_or_stencil(format)) /* if not a texture, and has a depth or stencil format */
-        memtype = gcvSURF_DEPTH;
-
-    printf("Allocate 2D surface of %ix%i (padded to %ix%i) of format %i (%i bpe %ix%i), size %08x ts_size %08x, flags %08x\n",
-            width, height, resource->levels[0].padded_width, resource->levels[0].padded_height, format, 
-            element_size, divSizeX, divSizeY, rt_size, rt_ts_size, flags);
-
-    struct etna_vidmem *rt = 0;
-    if(etna_vidmem_alloc_linear(priv->conn, &rt, rt_size, memtype, gcvPOOL_DEFAULT, true) != ETNA_OK)
-    {
-        printf("Problem allocating video memory for 2d resource\n");
-        return NULL;
-    }
-   
-    /* XXX allocate TS for rendertextures? if so, for each level or only the top? */
-    struct etna_vidmem *rt_ts = 0;
-    if(rt_ts_size && etna_vidmem_alloc_linear(priv->conn, &rt_ts, rt_ts_size, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, true)!=ETNA_OK)
-    {
-        printf("Problem allocating tile status for 2d resource\n");
-        return NULL;
-    }
-
-    resource->base.target = (flags & ETNA_IS_CUBEMAP)?PIPE_TEXTURE_CUBE:PIPE_TEXTURE_2D;
-    resource->base.format = format;
-    resource->base.width0 = width;
-    resource->base.height0 = height;
-    resource->base.depth0 = 1;
-    resource->base.array_size = num_layers;
-    resource->layout = layout;
-    resource->surface = rt;
-    resource->ts = rt_ts;
-    for(unsigned ix=0; ix<=resource->base.last_level; ++ix)
-    {
-        struct etna_resource_level *mip = &resource->levels[ix];
-        mip->address = resource->surface->address + mip->offset;
-        mip->logical = resource->surface->logical + mip->offset;
-        printf("  %08x level %i: %ix%i (%i) stride=%i layer_stride=%i\n", 
-                (int)mip->address, ix, (int)mip->width, (int)mip->height, (int)mip->size,
-                (int)mip->stride, (int)mip->layer_stride);
-        memset(mip->logical, 0, mip->size);
-    }
-    if(resource->ts) /* TS, if requested, only for level 0 */
-    {
-        resource->levels[0].ts_address = resource->ts->address;
-        resource->levels[0].ts_size = resource->ts->size;
-    }
-
-    return &resource->base;
-}
-
-/* Allocate buffer resource 
- * Analogous to pipe_buffer_create in gallium tree
- */
-struct pipe_resource *etna_pipe_create_buffer(struct pipe_context *pipe, unsigned flags, unsigned size)
-{
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
-    struct etna_vidmem *vtx = 0;
-
-    if(etna_vidmem_alloc_linear(priv->conn, &vtx, size, 
-           (flags & ETNA_IS_INDEX) ? gcvSURF_INDEX : gcvSURF_VERTEX, gcvPOOL_DEFAULT, true)!=ETNA_OK)
-    {
-        printf("Problem allocating video memory for buffer resource\n");
-        return NULL;
-    }
-    printf("Allocate buffer surface of %i bytes (padded to %i), flags %08x\n",
-            size, vtx->size, flags);
-
-    struct etna_resource *resource = CALLOC_STRUCT(etna_resource);
-    resource->base.target = PIPE_BUFFER;
-    resource->base.format = PIPE_FORMAT_R8_UNORM; /* want TYPELESS or similar */
-    resource->base.width0 = vtx->size;
-    resource->base.height0 = 0;
-    resource->base.depth0 = 0;
-    resource->base.array_size = 1;
-    resource->base.last_level = 0;
-    resource->layout = ETNA_LAYOUT_LINEAR;
-    resource->surface = vtx;
-    resource->ts = 0;
-    resource->levels[0].address = resource->surface->address;
-    resource->levels[0].logical = resource->surface->logical;
-    resource->levels[0].ts_address = 0;
-    resource->levels[0].stride = resource->levels[0].layer_stride = vtx->size;
-
-    return &resource->base;
-}
-
-void etna_pipe_destroy_resource(struct pipe_context *pipe, struct pipe_resource *resource_)
-{
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
-    struct etna_resource *resource = etna_resource(resource_);
-    if(resource == NULL)
-        return;
-    etna_vidmem_free(priv->conn, resource->surface);
-    etna_vidmem_free(priv->conn, resource->ts);
-    FREE(resource);
 }
 
 void *etna_pipe_get_resource_ptr(struct pipe_context *pipe, struct pipe_resource *resource_, unsigned layer, unsigned level)

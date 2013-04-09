@@ -37,6 +37,7 @@
 #include <errno.h>
 
 #include "etna_pipe.h"
+#include "util/u_inlines.h"
 #include "write_bmp.h"
 #include "state_tracker/graw.h"
 #include "fbdemos.h"
@@ -230,7 +231,7 @@ int main(int argc, char **argv)
         exit(1);
     }
     
-    struct pipe_resource *tex_resource = etna_pipe_create_2d(pipe, ETNA_IS_TEXTURE, tex_format, tex_base_width, tex_base_height, 
+    struct pipe_resource *tex_resource = fbdemo_create_2d(fbs->screen, PIPE_BIND_SAMPLER_VIEW, tex_format, tex_base_width, tex_base_height, 
             dds->num_mipmaps - 1);
     
     printf("Loading compressed texture (format %i, %ix%i)\n", dds->fmt, tex_base_width, tex_base_height);
@@ -242,9 +243,9 @@ int main(int argc, char **argv)
     }
 
     /* resources */
-    struct pipe_resource *rt_resource = etna_pipe_create_2d(pipe, ETNA_IS_RENDER_TARGET, PIPE_FORMAT_B8G8R8X8_UNORM, width, height, 0);
-    struct pipe_resource *z_resource = etna_pipe_create_2d(pipe, ETNA_IS_RENDER_TARGET, PIPE_FORMAT_Z16_UNORM, width, height, 0);
-    struct pipe_resource *vtx_resource = etna_pipe_create_buffer(pipe, ETNA_IS_VERTEX, VERTEX_BUFFER_SIZE);
+    struct pipe_resource *rt_resource = fbdemo_create_2d(fbs->screen, PIPE_BIND_RENDER_TARGET, PIPE_FORMAT_B8G8R8X8_UNORM, width, height, 0);
+    struct pipe_resource *z_resource = fbdemo_create_2d(fbs->screen, PIPE_BIND_RENDER_TARGET, PIPE_FORMAT_Z16_UNORM, width, height, 0);
+    struct pipe_resource *vtx_resource = pipe_buffer_create(fbs->screen, PIPE_BIND_VERTEX_BUFFER, PIPE_USAGE_IMMUTABLE, VERTEX_BUFFER_SIZE);
 
     /* bind render target to framebuffer */
     etna_fb_bind_resource(&fbs->fb, rt_resource);
