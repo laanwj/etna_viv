@@ -30,6 +30,7 @@
 
 #include "util/u_memory.h"
 #include "util/u_format.h"
+#include "util/u_transfer.h"
 
 #include <stdio.h>
 
@@ -59,8 +60,8 @@ static int etna_screen_get_param( struct pipe_screen *screen, enum pipe_cap para
     case PIPE_CAP_POINT_SPRITE:
     case PIPE_CAP_TEXTURE_SHADOW_MAP:
     case PIPE_CAP_BLEND_EQUATION_SEPARATE:
-    case PIPE_CAP_TGSI_FS_COORD_ORIGIN_UPPER_LEFT:
-    case PIPE_CAP_TGSI_FS_COORD_PIXEL_CENTER_HALF_INTEGER:
+    case PIPE_CAP_TGSI_FS_COORD_ORIGIN_UPPER_LEFT: /* FS coordinates start in upper left */
+    case PIPE_CAP_TGSI_FS_COORD_PIXEL_CENTER_HALF_INTEGER: /* Pixel center on 0.5 */
     case PIPE_CAP_SM3:
     case PIPE_CAP_SEAMLESS_CUBE_MAP: /* ??? */
     case PIPE_CAP_TEXTURE_BARRIER:
@@ -298,14 +299,6 @@ static struct pipe_resource * etna_screen_resource_from_handle(struct pipe_scree
     return NULL;
 }
 
-static boolean etna_screen_resource_get_handle(struct pipe_screen *screen,
-                              struct pipe_resource *tex,
-                              struct winsys_handle *handle)
-{
-    DBG("unimplemented etna_screen_resource_get_handle");
-    return false;
-}
-
 static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
                           struct pipe_resource *resource,
                           unsigned level, unsigned layer,
@@ -525,7 +518,7 @@ etna_screen_create(struct viv_conn *dev)
     pscreen->can_create_resource = etna_screen_can_create_resource;
     pscreen->resource_create = etna_screen_resource_create;
     pscreen->resource_from_handle = etna_screen_resource_from_handle;
-    pscreen->resource_get_handle = etna_screen_resource_get_handle;
+    pscreen->resource_get_handle = u_default_resource_get_handle;
     pscreen->resource_destroy = etna_screen_resource_destroy;
     pscreen->flush_frontbuffer = etna_screen_flush_frontbuffer;
     pscreen->fence_reference = etna_screen_fence_reference;

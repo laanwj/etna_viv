@@ -45,5 +45,12 @@ void fbdemo_free(struct fbdemos_scaffold *fbs);
 struct pipe_resource *fbdemo_create_2d(struct pipe_screen *screen, unsigned flags, unsigned format, unsigned width, unsigned height, unsigned max_mip_level);
 struct pipe_resource *fbdemo_create_cube(struct pipe_screen *screen, unsigned flags, unsigned format, unsigned width, unsigned height, unsigned max_mip_level);
 
+/** 
+ * One-shot write to texture or buffer, similar to gallium transfer_inline_write but somewhat more limited right now.
+ * Does tiling if needed.
+ * XXX no stride parameter, assumes that data is tightly packed.
+ */
+void etna_pipe_inline_write(struct pipe_context *pipe, struct pipe_resource *resource, unsigned layer, unsigned level, void *data, size_t size);
+
 #endif
 

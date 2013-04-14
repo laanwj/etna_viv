@@ -63,6 +63,9 @@
 #include "pipe/p_context.h"
 #include "util/u_format.h"
 #include "util/u_memory.h"
+#include "util/u_transfer.h"
+#include "util/u_slab.h"
+#include "util/u_surface.h"
 
 /* Define state */
 #define SET_STATE(addr, value) cs->addr = (value)
@@ -343,6 +346,7 @@ struct etna_pipe_context_priv
     unsigned dirty_bits;
     struct pipe_framebuffer_state framebuffer_s;
     struct etna_pipe_specs specs;
+    struct util_slab_mempool transfer_pool;
 
     /* constant */
     struct compiled_base_setup_state base_setup;
@@ -1115,7 +1119,7 @@ static void *etna_pipe_create_vertex_elements_state(struct pipe_context *pipe,
     {
         unsigned element_size = util_format_get_blocksize(elements[idx].src_format);
         unsigned end_offset = elements[idx].src_offset + element_size;
-        assert(element_size != 0 && end_offset <= 256);
+        assert(element_size != 0 && end_offset <= 256); /* maximum vertex size is 256 bytes */
         /* check whether next element is consecutive to this one */
         bool nonconsecutive = (idx == (num_elements-1)) || 
                     elements[idx+1].vertex_buffer_index != elements[idx].vertex_buffer_index ||
@@ -1679,6 +1683,121 @@ static void etna_pipe_bind_vs_state(struct pipe_context *pipe, void *vss_)
     priv->vs = vss;
 }
 
+void etna_pipe_set_clip_state(struct pipe_context *pipe, const struct pipe_clip_state *pcs)
+{
+    /* NOOP */
+}
+
+void etna_pipe_resource_copy_region(struct pipe_context *pipe,
+                            struct pipe_resource *dst,
+                            unsigned dst_level,
+                            unsigned dstx, unsigned dsty, unsigned dstz,
+                            struct pipe_resource *src,
+                            unsigned src_level,
+                            const struct pipe_box *src_box)
+{
+    /* The resource must be of the same format. */
+    assert(src->format == dst->format);
+    /* Resources with nr_samples > 1 are not allowed. */
+    assert(src->nr_samples == 1 && dst->nr_samples == 1);
+    /* XXX we can use the RS as a literal copy engine here */
+}
+
+void etna_pipe_blit(struct pipe_context *pipe, const struct pipe_blit_info *info)
+{
+    /* This is a more extended version of resource_copy_region */
+    /* TODO Some cases can be handled by RS; if not, fall back to rendering */
+    /* copy block of pixels from info->src to info->dst (resource, level, box, format);
+     * function is used for scaling, flipping in x and y direction (negative width/height), format conversion, mask and filter
+     * and even a scissor rectangle
+     *
+     * What can the RS do for us:
+     *   convert between tiling formats (layouts)
+     *   downsample 2x in x and y
+     *   convert between a limited number of pixel formats
+     */
+}
+   
+void *etna_pipe_transfer_map(struct pipe_context *pipe,
+                         struct pipe_resource *resource,
+                         unsigned level,
+                         unsigned usage,  /* a combination of PIPE_TRANSFER_x */
+                         const struct pipe_box *box,
+                         struct pipe_transfer **out_transfer)
+{
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_transfer *ptrans = util_slab_alloc(&priv->transfer_pool);
+    enum pipe_format format = resource->format;
+    if (!ptrans)
+        return NULL;
+    assert(level <= resource->last_level);
+
+    unsigned divSizeX = util_format_get_blockwidth(format);
+    unsigned divSizeY = util_format_get_blockheight(format);
+
+    ptrans->base.resource = resource;
+    ptrans->base.level = level;
+    ptrans->base.usage = usage;
+    ptrans->base.box = *box;
+    ptrans->base.stride = etna_align_up(box->width, divSizeX) * util_format_get_blocksize(format); /* row stride in bytes */
+    ptrans->base.layer_stride = etna_align_up(box->height, divSizeY) * ptrans->base.stride;
+    ptrans->size = ptrans->base.layer_stride * box->depth;
+    /* XXX currently always allocates a buffer for copying; if the resource is not in use,
+     * and no tiling is needed, can just return a direct pointer. 
+     */
+    ptrans->buffer = MALLOC(ptrans->size);
+
+    *out_transfer = &ptrans->base;
+    return ptrans->buffer;
+}
+
+void etna_pipe_transfer_unmap(struct pipe_context *pipe,
+                      struct pipe_transfer *transfer_)
+{
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_transfer *ptrans = etna_transfer(transfer_);
+
+    /* XXX 
+     * When writing to a resource that is already in use, replace the resource with a completely new buffer
+     * and free the old one using a fenced free.
+     * The most tricky case to implement will be: tiled or supertiled surface, partial write, target not aligned to 4/64
+     */
+    struct etna_resource *resource = etna_resource(ptrans->base.resource);
+    assert(ptrans->base.level <= resource->base.last_level);
+    struct etna_resource_level *level = &resource->levels[ptrans->base.level];
+
+    if(resource->layout == ETNA_LAYOUT_LINEAR || resource->layout == ETNA_LAYOUT_TILED)
+    {
+        if(resource->layout == ETNA_LAYOUT_TILED && !util_format_is_compressed(resource->base.format))
+        {
+            uint bpe = util_format_get_blocksize(resource->base.format);
+            /* XXX currently only handles multiples of the tile size */
+            void *ptr = level->logical +
+                   ptrans->base.box.z * level->layer_stride +
+                   ptrans->base.box.y / util_format_get_blockheight(resource->base.format) * level->stride +
+                   ptrans->base.box.x / util_format_get_blockwidth(resource->base.format) * bpe;
+            /* XXX pipe_linear_to_tile */
+            etna_texture_tile(ptr, ptrans->buffer, ptrans->base.box.width, ptrans->base.box.height, 
+                    ptrans->base.stride, bpe);
+        } else { /* non-tiled or compressed format */
+            util_copy_box(level->logical,
+              resource->base.format,
+              level->stride, level->layer_stride,
+              ptrans->base.box.x, ptrans->base.box.y, ptrans->base.box.z,
+              ptrans->base.box.width, ptrans->base.box.height, ptrans->base.box.depth,
+              ptrans->buffer,
+              ptrans->base.stride, ptrans->base.layer_stride,
+              0, 0, 0);
+        }
+    } else
+    {
+        printf("etna_pipe_transfer_unmap: unsupported tiling %i\n", resource->layout);
+    }
+
+    FREE(ptrans->buffer);
+    util_slab_free(&priv->transfer_pool, ptrans);
+}
+
 struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct etna_pipe_specs *specs)
 {
     struct pipe_context *pc = CALLOC_STRUCT(pipe_context);
@@ -1704,6 +1823,8 @@ struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct et
     priv->dirty_bits = 0xffffffff;
     priv->conn = dev;
     priv->specs = *specs;
+    util_slab_create(&priv->transfer_pool, sizeof(struct etna_transfer),
+                     16, UTIL_SLAB_SINGLETHREADED);
 
     /* TODO set sensible defaults for the other state */
     priv->base_setup.PA_W_CLIP_LIMIT = 0x34000001;
@@ -1712,12 +1833,20 @@ struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct et
     /* fill in vtable entries one by one */
     pc->destroy = etna_pipe_destroy;
     pc->draw_vbo = etna_pipe_draw_vbo;
+    /* XXX render_condition */
+    /* XXX create_query */
+    /* XXX destroy_query */
+    /* XXX begin_query */
+    /* XXX end_query */
+    /* XXX get_query_result */
     pc->create_blend_state = etna_pipe_create_blend_state;
     pc->bind_blend_state = etna_pipe_bind_blend_state;
     pc->delete_blend_state = etna_pipe_delete_blend_state;
     pc->create_sampler_state = etna_pipe_create_sampler_state;
     pc->bind_fragment_sampler_states = etna_pipe_bind_fragment_sampler_states;
     pc->bind_vertex_sampler_states = etna_pipe_bind_vertex_sampler_states;
+    /* XXX bind_geometry_sampler_states */
+    /* XXX bind_compute_sampler_states */
     pc->delete_sampler_state = etna_pipe_delete_sampler_state;
     pc->create_rasterizer_state = etna_pipe_create_rasterizer_state;
     pc->bind_rasterizer_state = etna_pipe_bind_rasterizer_state;
@@ -1731,19 +1860,33 @@ struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct et
     pc->create_vs_state = etna_pipe_create_shader_state;
     pc->bind_vs_state = etna_pipe_bind_vs_state;
     pc->delete_vs_state = etna_pipe_delete_shader_state;
+    /* XXX create_gs_state */
+    /* XXX bind_gs_state */
+    /* XXX delete_gs_state */
     pc->create_vertex_elements_state = etna_pipe_create_vertex_elements_state;
     pc->bind_vertex_elements_state = etna_pipe_bind_vertex_elements_state;
     pc->delete_vertex_elements_state = etna_pipe_delete_vertex_elements_state;
     pc->set_blend_color = etna_pipe_set_blend_color;
     pc->set_stencil_ref = etna_pipe_set_stencil_ref;
     pc->set_sample_mask = etna_pipe_set_sample_mask;
+    pc->set_clip_state = etna_pipe_set_clip_state;
+    /* XXX set_constant_buffer */
     pc->set_framebuffer_state = etna_pipe_set_framebuffer_state;
+    /* XXX set_polygon_stipple */
     pc->set_scissor_state = etna_pipe_set_scissor_state;
     pc->set_viewport_state = etna_pipe_set_viewport_state;
     pc->set_fragment_sampler_views = etna_pipe_set_fragment_sampler_views;
     pc->set_vertex_sampler_views = etna_pipe_set_vertex_sampler_views;
+    /* XXX set_geometry_sampler_views */
+    /* XXX set_compute_sampler_views */
+    /* XXX set_shader_resources */
     pc->set_vertex_buffers = etna_pipe_set_vertex_buffers;
     pc->set_index_buffer = etna_pipe_set_index_buffer;
+    /* XXX create_stream_output_target */
+    /* XXX stream_output_target_destroy */
+    /* XXX set_stream_output_targets */
+    pc->resource_copy_region = etna_pipe_resource_copy_region;
+    pc->blit = etna_pipe_blit;
     pc->clear = etna_pipe_clear;
     pc->clear_render_target = etna_pipe_clear_render_target;
     pc->clear_depth_stencil = etna_pipe_clear_depth_stencil;
@@ -1752,9 +1895,27 @@ struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct et
     pc->sampler_view_destroy = etna_pipe_sampler_view_destroy;
     pc->create_surface = etna_pipe_create_surface;
     pc->surface_destroy = etna_pipe_surface_destroy;
+    pc->transfer_map = etna_pipe_transfer_map;
+    pc->transfer_flush_region = u_default_transfer_flush_region;
+    pc->transfer_unmap = etna_pipe_transfer_unmap;
+    pc->transfer_inline_write = u_default_transfer_inline_write;
     pc->texture_barrier = etna_pipe_texture_barrier;
+    /* XXX create_video_decoder */
+    /* XXX create_video_buffer */
+    /* XXX create_compute_state */
+    /* XXX bind_compute_state */
+    /* XXX delete_compute_state */
+    /* XXX set_compute_resources */
+    /* XXX set_global_binding */
+    /* XXX launch_grid */
 
     return pc;
+}
+
+struct etna_ctx *etna_pipe_get_etna_context(struct pipe_context *pipe)
+{
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    return priv->ctx;
 }
 
 void *etna_pipe_get_resource_ptr(struct pipe_context *pipe, struct pipe_resource *resource_, unsigned layer, unsigned level)
@@ -1764,39 +1925,6 @@ void *etna_pipe_get_resource_ptr(struct pipe_context *pipe, struct pipe_resource
         return NULL;
     /// XXX size of returned area is resource->levels[lod].layer_stride 
     return resource->levels[level].logical + resource->levels[level].layer_stride * layer;
-}
-
-void etna_pipe_inline_write(struct pipe_context *pipe, struct pipe_resource *resource_, unsigned layer, unsigned level, void *data, size_t size)
-{
-    struct etna_resource *resource = etna_resource(resource_);
-    if(layer >= resource->base.array_size || level > resource->base.last_level)
-        return; /// XXX
-    /// XXX size of returned area is resource->levels[lod].layer_stride 
-    void *ptr = etna_pipe_get_resource_ptr(pipe, resource_, layer, level);
-    if(resource->layout == ETNA_LAYOUT_LINEAR)
-    {
-        assert(size <= resource->levels[level].layer_stride);
-        memcpy(ptr, data, size);
-    } else if(resource->layout == ETNA_LAYOUT_TILED)
-    {
-        assert(size <= resource->levels[level].layer_stride);
-        if(!util_format_is_compressed(resource->base.format))
-        {
-            etna_texture_tile(ptr, data, resource->levels[level].width, resource->levels[level].height, 
-                    resource->levels[level].stride, util_format_get_blocksize(resource->base.format));
-        } else { /* compressed format */
-            memcpy(ptr, data, size);
-        }
-    } else
-    {
-        printf("etna_pipe_inline_write: unsupported tiling %i\n", resource->layout);
-    }
-}
-
-struct etna_ctx *etna_pipe_get_etna_context(struct pipe_context *pipe)
-{
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
-    return priv->ctx;
 }
 
 

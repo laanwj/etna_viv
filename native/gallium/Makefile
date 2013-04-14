@@ -28,6 +28,8 @@ GALLIUM_OBJS = auxiliary/tgsi/tgsi_dump.o \
 	auxiliary/util/u_format_zs.o \
 	auxiliary/util/u_surface.o \
 	auxiliary/util/u_tile.o \
+	auxiliary/util/u_transfer.o \
+	auxiliary/util/u_slab.o \
 	auxiliary/os/os_misc.o \
 	auxiliary/cso_cache/cso_hash.o \
 	auxiliary/cso_cache/cso_cache.o \

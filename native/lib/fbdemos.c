@@ -114,4 +114,22 @@ struct pipe_resource *fbdemo_create_cube(struct pipe_screen *screen, unsigned bi
             });
 }
 
+void etna_pipe_inline_write(struct pipe_context *pipe, struct pipe_resource *resource, unsigned layer, unsigned level, void *data, size_t size)
+{
+    uint stride, layer_stride;
+    struct pipe_box box;
+    struct etna_resource *eresource = etna_resource(resource);
+
+    box.x = 0;
+    box.y = 0;
+    box.z = layer;
+    box.width = eresource->levels[level].width;
+    box.height = eresource->levels[level].height;
+    box.depth = 1;
+    stride = eresource->levels[level].stride;
+    layer_stride = eresource->levels[level].layer_stride;
+
+    pipe->transfer_inline_write(pipe, resource, level, 
+           (PIPE_TRANSFER_WRITE | PIPE_TRANSFER_UNSYNCHRONIZED), &box, data, stride, layer_stride);
+}
 

@@ -129,6 +129,14 @@ struct etna_sampler_view
     struct compiled_sampler_view *internal;
 };
 
+struct etna_transfer
+{
+    struct pipe_transfer base;
+
+    void *buffer;
+    size_t size;
+};
+
 static INLINE struct etna_resource *
 etna_resource(struct pipe_resource *p)
 {
@@ -147,6 +155,12 @@ etna_sampler_view(struct pipe_sampler_view *p)
     return (struct etna_sampler_view *)p;
 }
 
+static INLINE struct etna_transfer *
+etna_transfer(struct pipe_transfer *p)
+{
+    return (struct etna_transfer *)p;
+}
+
 struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct etna_pipe_specs *specs);
 
 /* Temporary entry point to get access to the memory behind a resource.
@@ -155,13 +169,6 @@ struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct et
  * XXX tiling textures need currently be done manually using etna_texture_tile
  */
 void *etna_pipe_get_resource_ptr(struct pipe_context *pipe, struct pipe_resource *resource, unsigned layer, unsigned level);
-
-/** 
- * One-shot write to texture or buffer, similar to gallium transfer_inline_write but somewhat more limited right now.
- * Does tiling if needed.
- * XXX no stride parameter, assumes that data is tightly packed.
- */
-void etna_pipe_inline_write(struct pipe_context *pipe, struct pipe_resource *resource, unsigned layer, unsigned level, void *data, size_t size);
 
 /* raw shader methods -- used by fb_rawshader demos */
 void *etna_create_shader_state(struct pipe_context *pipe, const struct etna_shader_program *rs);
