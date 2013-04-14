@@ -141,9 +141,11 @@ int main(int argc, char **argv)
     struct pipe_resource *vtx_resource = pipe_buffer_create(fbs->screen, PIPE_BIND_VERTEX_BUFFER, PIPE_USAGE_IMMUTABLE, VERTEX_BUFFER_SIZE);
     struct pipe_resource *idx_resource = pipe_buffer_create(fbs->screen, PIPE_BIND_INDEX_BUFFER, PIPE_USAGE_IMMUTABLE, INDEX_BUFFER_SIZE);
 
-    float *vtx_logical = etna_pipe_get_resource_ptr(pipe, vtx_resource, 0, 0);
+    struct pipe_transfer *vtx_transfer = 0;
+    float *vtx_logical = pipe_buffer_map(pipe, vtx_resource, PIPE_TRANSFER_WRITE | PIPE_TRANSFER_UNSYNCHRONIZED, &vtx_transfer);
     assert(vtx_logical);
-    float *idx_logical = etna_pipe_get_resource_ptr(pipe, idx_resource, 0, 0);
+    struct pipe_transfer *idx_transfer = 0;
+    float *idx_logical = pipe_buffer_map(pipe, idx_resource, PIPE_TRANSFER_WRITE | PIPE_TRANSFER_UNSYNCHRONIZED, &idx_transfer);
     assert(idx_logical);
 #ifndef INDEXED
     printf("Interleaving vertices...\n");
@@ -178,6 +180,9 @@ int main(int argc, char **argv)
     assert(COMPANION_TRIANGLE_COUNT*3*sizeof(unsigned short) < INDEX_BUFFER_SIZE);
     memcpy(idx_logical, &companion_triangles[0][0], COMPANION_TRIANGLE_COUNT*3*sizeof(unsigned short));
 #endif
+    pipe_buffer_unmap(pipe, vtx_transfer);
+    pipe_buffer_unmap(pipe, idx_transfer);
+
     struct pipe_vertex_buffer vertex_buffer_desc = {
             .stride = (3 + 3 + 2)*4,
             .buffer_offset = 0,

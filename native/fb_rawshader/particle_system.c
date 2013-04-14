@@ -331,7 +331,8 @@ int main(int argc, char **argv)
     etna_bind_shader_state(pipe, shader_state);
     
     /* Fill in particle data array */
-    float *vtx_logical = etna_pipe_get_resource_ptr(pipe, vtx_resource, 0, 0);
+    struct pipe_transfer *vtx_transfer = 0;
+    float *vtx_logical = pipe_buffer_map(pipe, vtx_resource, PIPE_TRANSFER_WRITE | PIPE_TRANSFER_UNSYNCHRONIZED, &vtx_transfer);
     srand(0);
     for(int i = 0; i < NUM_PARTICLES; i++)
     {
@@ -350,6 +351,7 @@ int main(int argc, char **argv)
        (*particleData++) = ( (float)(rand() % 10000) / 40000.0f ) - 0.125f;
        (*particleData++) = ( (float)(rand() % 10000) / 40000.0f ) - 0.125f;
     }
+    pipe_buffer_unmap(pipe, vtx_transfer);
 
     double prevTime = esNow();
     float time = 1.0f;

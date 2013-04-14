@@ -160,7 +160,8 @@ int main(int argc, char **argv)
     etna_fb_bind_resource(&fbs->fb, rt_resource);
 
     /* vertex / index buffer setup */
-    float *vtx_logical = etna_pipe_get_resource_ptr(pipe, vtx_resource, 0, 0);
+    struct pipe_transfer *vtx_transfer = 0;
+    float *vtx_logical = pipe_buffer_map(pipe, vtx_resource, PIPE_TRANSFER_WRITE | PIPE_TRANSFER_UNSYNCHRONIZED, &vtx_transfer);
     assert(vtx_logical);
     for(int vert=0; vert<NUM_VERTICES; ++vert)
     {
@@ -168,9 +169,13 @@ int main(int argc, char **argv)
         for(int comp=0; comp<3; ++comp)
             vtx_logical[dest_idx+comp+0] = vVertices[vert*3 + comp]; /* 0 */
     }
-    void *idx_logical = etna_pipe_get_resource_ptr(pipe, idx_resource, 0, 0);
+    pipe_buffer_unmap(pipe, vtx_transfer);
+
+    struct pipe_transfer *idx_transfer = 0;
+    void *idx_logical = pipe_buffer_map(pipe, idx_resource, PIPE_TRANSFER_WRITE | PIPE_TRANSFER_UNSYNCHRONIZED, &idx_transfer);
     assert(idx_logical);
     memcpy(idx_logical, indices, sizeof(indices));
+    pipe_buffer_unmap(pipe, idx_transfer);
 
     struct pipe_vertex_buffer vertex_buf_desc = {
             .stride = (3)*4,

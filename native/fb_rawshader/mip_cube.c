@@ -276,7 +276,8 @@ int main(int argc, char **argv)
      * Unlike the GL example we only do this once, not every time glDrawArrays is called, the same would be accomplished
      * from GL by using a vertex buffer object.
      */
-    float *vtx_logical = etna_pipe_get_resource_ptr(pipe, vtx_resource, 0, 0);
+    struct pipe_transfer *vtx_transfer = 0;
+    float *vtx_logical = pipe_buffer_map(pipe, vtx_resource, PIPE_TRANSFER_WRITE | PIPE_TRANSFER_UNSYNCHRONIZED, &vtx_transfer);
     assert(vtx_logical);
     for(int vert=0; vert<NUM_VERTICES; ++vert)
     {
@@ -288,6 +289,7 @@ int main(int argc, char **argv)
         for(int comp=0; comp<2; ++comp)
             vtx_logical[dest_idx+comp+6] = vTexCoords[vert*2 + comp]; /* 2 */
     }
+    pipe_buffer_unmap(pipe, vtx_transfer);
 
     /* compile gallium3d states */
     void *blend = pipe->create_blend_state(pipe, &(struct pipe_blend_state) {

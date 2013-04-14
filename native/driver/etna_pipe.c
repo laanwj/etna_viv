@@ -1700,7 +1700,9 @@ void etna_pipe_resource_copy_region(struct pipe_context *pipe,
     assert(src->format == dst->format);
     /* Resources with nr_samples > 1 are not allowed. */
     assert(src->nr_samples == 1 && dst->nr_samples == 1);
-    /* XXX we can use the RS as a literal copy engine here */
+    /* XXX we can use the RS as a literal copy engine here 
+     * the only complexity is tiling; the size of the boxes needs to be aligned to the tile size 
+     */
 }
 
 void etna_pipe_blit(struct pipe_context *pipe, const struct pipe_blit_info *info)
@@ -1917,14 +1919,4 @@ struct etna_ctx *etna_pipe_get_etna_context(struct pipe_context *pipe)
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
     return priv->ctx;
 }
-
-void *etna_pipe_get_resource_ptr(struct pipe_context *pipe, struct pipe_resource *resource_, unsigned layer, unsigned level)
-{
-    struct etna_resource *resource = etna_resource(resource_);
-    if(layer >= resource->base.array_size || level > resource->base.last_level)
-        return NULL;
-    /// XXX size of returned area is resource->levels[lod].layer_stride 
-    return resource->levels[level].logical + resource->levels[level].layer_stride * layer;
-}
-
 

@@ -163,13 +163,6 @@ etna_transfer(struct pipe_transfer *p)
 
 struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct etna_pipe_specs *specs);
 
-/* Temporary entry point to get access to the memory behind a resource.
- * Eventually we should use pipe transfers and lock/unlock like gallium,
- * to enable sane handling of cache etc, but for now at least it's better than directly accessing the internal structure
- * XXX tiling textures need currently be done manually using etna_texture_tile
- */
-void *etna_pipe_get_resource_ptr(struct pipe_context *pipe, struct pipe_resource *resource, unsigned layer, unsigned level);
-
 /* raw shader methods -- used by fb_rawshader demos */
 void *etna_create_shader_state(struct pipe_context *pipe, const struct etna_shader_program *rs);
 void etna_bind_shader_state(struct pipe_context *pipe, void *sh);

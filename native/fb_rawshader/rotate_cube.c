@@ -231,7 +231,8 @@ int main(int argc, char **argv)
     /* geometry */
     struct pipe_resource *vtx_resource = pipe_buffer_create(fbs->screen, PIPE_BIND_VERTEX_BUFFER, PIPE_USAGE_IMMUTABLE, VERTEX_BUFFER_SIZE);
 
-    float *vtx_logical = etna_pipe_get_resource_ptr(pipe, vtx_resource, 0, 0);
+    struct pipe_transfer *transfer = 0;
+    float *vtx_logical = pipe_buffer_map(pipe, vtx_resource, PIPE_TRANSFER_WRITE | PIPE_TRANSFER_UNSYNCHRONIZED, &transfer);
     assert(vtx_logical);
     for(int vert=0; vert<NUM_VERTICES; ++vert)
     {
@@ -244,6 +245,7 @@ int main(int argc, char **argv)
             ((float*)vtx_logical)[dest_idx+comp+6] = vColors[src_idx + comp]; /* 2 */
         }
     }
+    pipe_buffer_unmap(pipe, transfer);
 
     struct pipe_vertex_buffer vertex_buffer_desc = {
             .stride = (3 + 3 + 3)*4,

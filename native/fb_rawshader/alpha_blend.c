@@ -143,7 +143,8 @@ int main(int argc, char **argv)
     etna_fb_bind_resource(&fbs->fb, rt_resource);
 
     /* interleave vertex data */
-    float *vtx_logical = etna_pipe_get_resource_ptr(pipe, vtx_resource, 0, 0);
+    struct pipe_transfer *transfer = 0;
+    float *vtx_logical = pipe_buffer_map(pipe, vtx_resource, PIPE_TRANSFER_WRITE | PIPE_TRANSFER_UNSYNCHRONIZED, &transfer);
     assert(vtx_logical);
     for(int vert=0; vert<NUM_VERTICES; ++vert)
     {
@@ -155,6 +156,7 @@ int main(int argc, char **argv)
         for(int comp=0; comp<3; ++comp)
             vtx_logical[dest_idx+comp+6] = vColors[vert*3 + comp]; /* 2 */
     }
+    pipe_buffer_unmap(pipe, transfer);
 
     /* compile gallium3d states */
     void *blend = pipe->create_blend_state(pipe, &(struct pipe_blend_state) {
