@@ -25,7 +25,9 @@
 #define H_ETNA_ASM
 #include <stdint.h>
 
+/* Size of instruction in 32-bit words */
 #define ETNA_INST_SIZE (4)
+/* Number of source operands per instruction */
 #define ETNA_NUM_SRC (3)
 
 /*** operands ***/

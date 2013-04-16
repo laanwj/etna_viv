@@ -88,7 +88,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
          -->
     </enum>
     <enum name="TEXTURE_FORMAT" brief="Texture format">
-        <!-- 0 read as all zeros -->
+        <value value="0" name="NONE"/> <!-- reads as all zeros -->
         <value value="1" name="A8"/>
         <value value="2" name="L8"/>
         <value value="3" name="I8"/>

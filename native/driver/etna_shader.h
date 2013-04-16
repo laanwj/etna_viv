@@ -39,7 +39,6 @@
 #define ETNA_MAX_INSTRUCTIONS (1024)
 #define ETNA_NUM_INPUTS (16)
 #define ETNA_NUM_VARYINGS (16)
-#define ETNA_MAX_UNIFORMS (256)
 
 struct etna_pipe_specs;
 

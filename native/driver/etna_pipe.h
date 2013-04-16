@@ -35,11 +35,7 @@
 #include "pipe/p_shader_tokens.h"
 #include "pipe/p_state.h"
 #include "pipe/p_context.h"
-
-#define ETNA_NUM_INPUTS (16)
-#define ETNA_NUM_VARYINGS (16)
-#define ETNA_NUM_LOD (14)
-#define ETNA_NUM_LAYERS (6)
+#include "util/u_slab.h"
 
 struct etna_shader_input
 {
@@ -137,6 +133,72 @@ struct etna_transfer
     size_t size;
 };
 
+/* group all current CSOs, for dirty bits */
+enum
+{
+    ETNA_STATE_BASE_SETUP = (1<<0), /* basic openGL setup */
+    ETNA_STATE_BLEND = (1<<1),
+    ETNA_STATE_SAMPLERS = (1<<2),
+    ETNA_STATE_RASTERIZER = (1<<3),
+    ETNA_STATE_DSA = (1<<4),
+    ETNA_STATE_VERTEX_ELEMENTS = (1<<5),
+    ETNA_STATE_BLEND_COLOR = (1<<6),
+    ETNA_STATE_STENCIL_REF = (1<<7),
+    ETNA_STATE_SAMPLE_MASK = (1<<8),
+    ETNA_STATE_VIEWPORT = (1<<9),
+    ETNA_STATE_FRAMEBUFFER = (1<<10),
+    ETNA_STATE_SCISSOR = (1<<11),
+    ETNA_STATE_SAMPLER_VIEWS = (1<<12),
+    ETNA_STATE_VERTEX_BUFFERS = (1<<13),
+    ETNA_STATE_INDEX_BUFFER = (1<<14),
+    ETNA_STATE_SHADER = (1<<15),
+    ETNA_STATE_VS_UNIFORMS = (1<<16),
+    ETNA_STATE_PS_UNIFORMS = (1<<17),
+    ETNA_STATE_TS = (1<<18) /* set after clear and when RS blit operations from other surface affect TS */
+};
+
+/* private opaque context structure */
+struct etna_pipe_context_priv
+{
+    struct viv_conn *conn;
+    struct etna_ctx *ctx;
+    unsigned dirty_bits;
+    struct pipe_framebuffer_state framebuffer_s;
+    struct etna_pipe_specs specs;
+    struct util_slab_mempool transfer_pool;
+
+    /* constant */
+    struct compiled_base_setup_state base_setup;
+
+    /* bindable state */
+    struct compiled_blend_state *blend;
+    unsigned num_vertex_samplers;
+    unsigned num_fragment_samplers;
+    struct compiled_sampler_state *sampler[PIPE_MAX_SAMPLERS];
+    struct compiled_rasterizer_state *rasterizer;
+    struct compiled_depth_stencil_alpha_state *depth_stencil_alpha;
+    struct compiled_vertex_elements_state *vertex_elements;
+    struct compiled_shader_state shader_state;
+    struct etna_shader_object *vs;
+    struct etna_shader_object *fs;
+
+    /* parameter-like state */
+    struct compiled_blend_color blend_color;
+    struct compiled_stencil_ref stencil_ref;
+    struct compiled_sample_mask sample_mask;
+    struct compiled_framebuffer_state framebuffer;
+    struct compiled_scissor_state scissor;
+    struct compiled_viewport_state viewport;
+    unsigned num_fragment_sampler_views;
+    unsigned num_vertex_sampler_views;
+    struct compiled_sampler_view sampler_view[PIPE_MAX_SAMPLERS];
+    struct compiled_set_vertex_buffer vertex_buffer;
+    struct compiled_set_index_buffer index_buffer;
+
+    /* cached state */
+    struct etna_3d_state gpu3d;
+};
+
 static INLINE struct etna_resource *
 etna_resource(struct pipe_resource *p)
 {
@@ -160,6 +222,8 @@ etna_transfer(struct pipe_transfer *p)
 {
     return (struct etna_transfer *)p;
 }
+
+#define ETNA_PIPE(pipe) ((struct etna_pipe_context_priv*)(pipe)->priv)
 
 struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct etna_pipe_specs *specs);
 

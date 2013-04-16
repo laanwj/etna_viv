@@ -28,7 +28,7 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 
 <domain name="VIVS" brief="GPU state">
-    <enum name="DE_FORMAT" brief="2D pixel format">
+    <enum name="DE_FORMAT" brief="2D pixel format"> <!-- 0..7 match RS_FORMAT -->
         <value value="0" name="X4R4G4B4"/>
         <value value="1" name="A4R4G4B4"/>
         <value value="2" name="X1R5G5B5"/>

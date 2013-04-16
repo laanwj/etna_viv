@@ -21,7 +21,6 @@
  * DEALINGS IN THE SOFTWARE.
  */
 #include "etna.h"
-#include "etna_state.h"
 #include "etna_rs.h"
 #include "etna_translate.h"
 
