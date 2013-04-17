@@ -52,5 +52,7 @@ struct pipe_resource *fbdemo_create_cube(struct pipe_screen *screen, unsigned fl
  */
 void etna_pipe_inline_write(struct pipe_context *pipe, struct pipe_resource *resource, unsigned layer, unsigned level, void *data, size_t size);
 
+void etna_convert_r8g8b8_to_b8g8r8x8(uint32_t *dst, const uint8_t *src, unsigned num_pixels);
+
 #endif
 

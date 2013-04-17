@@ -133,3 +133,12 @@ void etna_pipe_inline_write(struct pipe_context *pipe, struct pipe_resource *res
            (PIPE_TRANSFER_WRITE | PIPE_TRANSFER_UNSYNCHRONIZED), &box, data, stride, layer_stride);
 }
 
+void etna_convert_r8g8b8_to_b8g8r8x8(uint32_t *dst, const uint8_t *src, unsigned num_pixels)
+{
+    for(unsigned idx=0; idx<num_pixels; ++idx)
+    {
+        dst[idx] = ((0xFF) << 24) | (src[idx*3+0] << 16) | (src[idx*3+1] << 8) | src[idx*3+2];
+    }
+}
+
+
