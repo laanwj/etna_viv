@@ -926,19 +926,25 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
     SET_STATE_FIXP(SE_SCISSOR_BOTTOM, (sv->height << 16)-1);
 
     /* Set up TS as well. Warning: this is shared with RS */
-    SET_STATE(TS_MEM_CONFIG, 
-            VIVS_TS_MEM_CONFIG_DEPTH_FAST_CLEAR |
-            VIVS_TS_MEM_CONFIG_COLOR_FAST_CLEAR |
+    uint32_t ts_mem_config = 0;
+    if(zsbuf->surf.ts_address)
+    {
+        ts_mem_config |= VIVS_TS_MEM_CONFIG_DEPTH_FAST_CLEAR |
             (depth_bits == 16 ? VIVS_TS_MEM_CONFIG_DEPTH_16BPP : 0) | 
-            VIVS_TS_MEM_CONFIG_DEPTH_COMPRESSION /* |
-            VIVS_TS_MEM_CONFIG_MSAA | 
-            translate_msaa_format(cbuf->format) */);
-    SET_STATE(TS_DEPTH_CLEAR_VALUE, zsbuf->clear_value);
-    SET_STATE(TS_DEPTH_STATUS_BASE, zsbuf->surf.ts_address);
-    SET_STATE(TS_DEPTH_SURFACE_BASE, zsbuf->surf.address);
-    SET_STATE(TS_COLOR_CLEAR_VALUE, cbuf->clear_value);
-    SET_STATE(TS_COLOR_STATUS_BASE, cbuf->surf.ts_address);
-    SET_STATE(TS_COLOR_SURFACE_BASE, cbuf->surf.address);
+            VIVS_TS_MEM_CONFIG_DEPTH_COMPRESSION;
+        SET_STATE(TS_DEPTH_CLEAR_VALUE, zsbuf->clear_value);
+        SET_STATE(TS_DEPTH_STATUS_BASE, zsbuf->surf.ts_address);
+        SET_STATE(TS_DEPTH_SURFACE_BASE, zsbuf->surf.address);
+    }
+    if(cbuf->surf.ts_address)
+    {
+        ts_mem_config |= VIVS_TS_MEM_CONFIG_COLOR_FAST_CLEAR;
+        SET_STATE(TS_COLOR_CLEAR_VALUE, cbuf->clear_value);
+        SET_STATE(TS_COLOR_STATUS_BASE, cbuf->surf.ts_address);
+        SET_STATE(TS_COLOR_SURFACE_BASE, cbuf->surf.address);
+    }
+    /* XXX VIVS_TS_MEM_CONFIG_MSAA | translate_msaa_format(cbuf->format) */
+    SET_STATE(TS_MEM_CONFIG, ts_mem_config);
 
     priv->dirty_bits |= ETNA_STATE_VIEWPORT;
     priv->framebuffer_s = *sv; /* keep copy of original structure */
@@ -1042,6 +1048,33 @@ static void etna_pipe_set_index_buffer( struct pipe_context *pipe,
     priv->dirty_bits |= ETNA_STATE_INDEX_BUFFER;
 }
 
+/* Generate clear command for a surface (non-TS case) */
+static void etna_rs_gen_clear_surface(struct etna_surface *surf, uint32_t clear_value)
+{
+    uint bs = util_format_get_blocksize(surf->base.format);
+    uint format = 0;
+    switch(bs) 
+    {
+    case 2: format = RS_FORMAT_A1R5G5B5; break;
+    case 4: format = RS_FORMAT_A8R8G8B8; break;
+    default: printf("Unhandled clear blocksize: %i (fmt %i)\n", bs, surf->base.format);
+             format = RS_FORMAT_A8R8G8B8;
+    }
+    etna_compile_rs_state(&surf->clear_command, &(struct rs_state){
+            .source_format = format,
+            .dest_format = format,
+            .dest_addr = surf->surf.address,
+            .dest_stride = surf->surf.stride,
+            .dest_tiling = surf->layout,
+            .dither = {0xffffffff, 0xffffffff},
+            .width = surf->surf.width,
+            .height = surf->surf.height,
+            .clear_value = {clear_value},
+            .clear_mode = VIVS_RS_CLEAR_CONTROL_MODE_ENABLED1,
+            .clear_bits = 0xffff
+        });
+}
+
 static void etna_pipe_clear(struct pipe_context *pipe,
              unsigned buffers,
              const union pipe_color_union *color,
@@ -1057,20 +1090,32 @@ static void etna_pipe_clear(struct pipe_context *pipe,
         for(int idx=0; idx<priv->framebuffer_s.nr_cbufs; ++idx)
         {
             struct etna_surface *surf = etna_surface(priv->framebuffer_s.cbufs[idx]);
-
-            surf->clear_value = translate_clear_color(surf->base.format, &color[idx]); 
-            priv->framebuffer.TS_COLOR_CLEAR_VALUE = surf->clear_value;
-            priv->dirty_bits |= ETNA_STATE_TS;
+            uint32_t new_clear_value = translate_clear_color(surf->base.format, &color[idx]);
+            if(surf->surf.ts_address) /* TS: use precompiled clear command */
+            {
+                priv->framebuffer.TS_COLOR_CLEAR_VALUE = new_clear_value;
+                priv->dirty_bits |= ETNA_STATE_TS;
+            }
+            else if(new_clear_value != surf->clear_value) /* Queue normal RS clear for non-TS surfaces */
+            {
+                etna_rs_gen_clear_surface(surf, new_clear_value);
+            }
             etna_submit_rs_state(priv->ctx, &surf->clear_command);
+            surf->clear_value = new_clear_value; 
         }
     }
     if((buffers & PIPE_CLEAR_DEPTHSTENCIL) && priv->framebuffer_s.zsbuf != NULL)
     {
         struct etna_surface *surf = etna_surface(priv->framebuffer_s.zsbuf);
-
-        surf->clear_value = translate_clear_depth_stencil(surf->base.format, depth, stencil);
-        priv->framebuffer.TS_DEPTH_CLEAR_VALUE = surf->clear_value;
-        priv->dirty_bits |= ETNA_STATE_TS;
+        uint32_t new_clear_value = translate_clear_depth_stencil(surf->base.format, depth, stencil);
+        if(surf->surf.ts_address) /* TS: use precompiled clear command */
+        {
+            priv->framebuffer.TS_DEPTH_CLEAR_VALUE = new_clear_value;
+            priv->dirty_bits |= ETNA_STATE_TS;
+        } else if(new_clear_value != surf->clear_value) /* Queue normal RS clear for non-TS surfaces */
+        {
+            etna_rs_gen_clear_surface(surf, new_clear_value);
+        }
         etna_submit_rs_state(priv->ctx, &surf->clear_command);
     }
 }
@@ -1180,8 +1225,11 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
     surf->surf.logical += layer * surf->surf.layer_stride; 
     surf->clear_value = 0; /* last clear value */
 
-    if(surf->surf.ts_address) /* XXX handle non-fast-clear case */
+    if(surf->surf.ts_address)
     {
+        /* This abuses the RS as a plain buffer memset().
+           Currently uses a fixed row size of 64 bytes. Some benchmarking with different sizes may be in order.
+         */
         etna_compile_rs_state(&surf->clear_command, &(struct rs_state){
                 .source_format = RS_FORMAT_X8R8G8B8,
                 .dest_format = RS_FORMAT_X8R8G8B8,
@@ -1194,6 +1242,8 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
                 .clear_mode = VIVS_RS_CLEAR_CONTROL_MODE_ENABLED1,
                 .clear_bits = 0xffff
             });
+    } else {
+        etna_rs_gen_clear_surface(surf, surf->clear_value);
     }
     return &surf->base;
 }

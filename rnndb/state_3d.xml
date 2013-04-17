@@ -622,7 +622,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <doc>Write some value to this register to kick off resolver</doc>
         </reg32>
         <reg32 offset="0x01604" name="CONFIG" brief="Resolve configuration register" value="0x00000000">
-            <bitfield high="4" low="0" name="SOURCE_FORMAT" type="RS_FORMAT" brief="Source color format"/>
+            <bitfield high="4" low="0" name="SOURCE_FORMAT" type="RS_FORMAT" brief="Source color format">
+                <doc>
+                    For clear operations, this specifies the format that CLEAR_CONTROL.BITS is in.
+                </doc>
+            </bitfield>
             <bitfield pos="5" name="DOWNSAMPLE_X" brief="Downsampling horizontally"/>
             <bitfield pos="6" name="DOWNSAMPLE_Y" brief="Downsampling vertically"/>
             <bitfield pos="7" name="SOURCE_TILED" brief="Source is tiled"/>
