@@ -5,6 +5,8 @@ Directory contents
 
 - `replay`: original replay command stream tests (very low level)
 
+- `etnaviv`: libetnaviv low-level command buffer handling library and register definition headers
+
 - `fb`: attempts at rendering to framebuffer using `etna_pipe` (high level gallium-like interface)
 
 - `fb_rawshader`: same as `fb`, but using manually assembled shaders. &lt;GC1000 only.
@@ -19,4 +21,5 @@ Directory contents
 
 - `resources`: meshes, textures used in demos
 
+- `cl`: OpenCL test (like egl, for command stream interception)
 

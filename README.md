@@ -317,7 +317,8 @@ On hardfloat targets you should use `gcc-arm-linux-gnueabihf-` instead.
 
 General
 --------
-Run make in `native`, or alternatively in `native/gallium`, `native/fb`, `native/replay` and/or `native/egl` separately.
+Run make in `native`, or alternatively in `native/gallium`, `native/etnaviv`, `native/fb`, `native/replay` and/or `native/egl` separately
+(see the README.md in `native` for a description of all the directories contained within).
 
 Compatibility
 ================
