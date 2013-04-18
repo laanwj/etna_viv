@@ -3,8 +3,6 @@ TOP=..
 include $(TOP)/Makefile.inc
 
 COMMON_FLAGS += -Iauxiliary -Iinclude -DDEBUG
-CFLAGS += $(COMMON_FLAGS)
-CXXFLAGS += $(COMMON_FLAGS) 
 LDFLAGS +=
 GALLIUM_OBJS = auxiliary/tgsi/tgsi_dump.o \
 	auxiliary/tgsi/tgsi_iterate.o \
@@ -35,12 +33,12 @@ GALLIUM_OBJS = auxiliary/tgsi/tgsi_dump.o \
 	auxiliary/cso_cache/cso_cache.o \
         targets/graw-null/graw_util.o
 
-TARGETS = libminigallium.a test
+TARGETS = libminigallium.a
 
 all: $(TARGETS)
 
 clean:
-	rm -f $(GALLIUM_OBJS) ../driver/*.o
+	rm -f $(GALLIUM_OBJS)
 	rm -f $(TARGETS) *.o
 
 libminigallium.a: $(GALLIUM_OBJS)

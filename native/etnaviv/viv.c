@@ -33,7 +33,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#define DEBUG
+//#define DEBUG
 
 // XXX const char *galcore_device[] = {"/dev/galcore", "/dev/graphics/galcore", NULL};
 #define GALCORE_DEVICE "/dev/galcore"

@@ -2,7 +2,7 @@ TOP=.
 
 include $(TOP)/Makefile.inc
 
-DIRS=gallium fb egl
+DIRS=gallium etnaviv fb fb_rawshader replay egl
 
 .PHONY: all clean install $(DIRS)
 

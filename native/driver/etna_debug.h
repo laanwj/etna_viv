@@ -21,9 +21,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/* Misc util */
-#ifndef H_ETNA_UTIL
-#define H_ETNA_UTIL
+/* Common debug stuffl */
+#ifndef H_ETNA_DEBUG
+#define H_ETNA_DEBUG
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -37,41 +37,6 @@ extern int etna_mesa_debug;
 			debug_printf("%s:%d: "fmt "\n", \
 				__FUNCTION__, __LINE__, ##__VA_ARGS__); } while (0)
 
-static inline uint32_t etna_align_up(uint32_t value, uint32_t granularity)
-{
-    return (value + (granularity-1)) & (~(granularity-1));
-}
-static inline uint32_t etna_umin(uint32_t a, uint32_t b) { return (a<b)?a:b; }
-static inline uint32_t etna_umax(uint32_t a, uint32_t b) { return (a>b)?a:b; }
-static inline uint32_t etna_smin(int32_t a, int32_t b) { return (a<b)?a:b; }
-static inline uint32_t etna_smax(int32_t a, int32_t b) { return (a>b)?a:b; }
-static inline uint32_t etna_bits_ones(unsigned num) { return (1<<num)-1; }
-
-/* clamped float [0.0 .. 1.0] -> [0 .. 255] */
-static inline uint8_t etna_cfloat_to_uint8(float f)
-{
-    if(f<=0.0f) return 0;
-    if(f>=(1.0f-1.0f/256.0f)) return 255;
-    return f * 256.0f;
-}
-
-/* clamped float [0.0 .. 1.0] -> [0 .. (1<<bits)-1] */
-static inline uint32_t etna_cfloat_to_uintN(float f, int bits)
-{
-    if(f<=0.0f) return 0;
-    if(f>=(1.0f-1.0f/(1<<bits))) return (1<<bits)-1;
-    return f * (1<<bits);
-}
-
-/* binary reinterpretation of f32 as u32 */
-static inline uint32_t etna_f32_to_u32(float value)
-{
-    union {
-        uint32_t u32;
-        float f32;
-    } x = { .f32 = value };
-    return x.u32;
-}
 
 #endif
 
