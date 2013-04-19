@@ -43,7 +43,6 @@
 #include "write_bmp.h"
 #include "viv.h"
 #include "etna.h"
-#include "etna_state.h"
 #include "etna_rs.h"
 #include "etna_fb.h"
 #include "etna_mem.h"

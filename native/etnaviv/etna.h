@@ -47,6 +47,7 @@
 #ifdef DEBUG
 #include <stdio.h>
 #endif
+#include <string.h> /* for memcpy */
 
 /* Number of command buffers, to be used in a circular fashion.
  */
