@@ -1390,6 +1390,34 @@ void etna_set_uniforms(struct pipe_context *pipe, unsigned type, unsigned offset
     }
 }
 
+static void etna_set_constant_buffer(struct pipe_context *pipe,
+                                uint shader, uint index,
+                                struct pipe_constant_buffer *buf)
+{
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    assert(buf->buffer == NULL && buf->user_buffer != NULL); 
+    /* support only user buffer for now; XXX support PIPE_BIND_CONSTANT buffers */
+    assert(priv->vs && priv->fs);
+    if(index == 0)
+    {
+        /* copy only up to shader-specific constant size; never overwrite immediates */
+        switch(shader)
+        {
+        case PIPE_SHADER_VERTEX:
+            memcpy(priv->shader_state.VS_UNIFORMS, buf->user_buffer, etna_umin(buf->buffer_size, priv->vs->const_size * 4));
+            priv->dirty_bits |= ETNA_STATE_VS_UNIFORMS;
+            break;
+        case PIPE_SHADER_FRAGMENT:
+            memcpy(priv->shader_state.PS_UNIFORMS, buf->user_buffer, etna_umin(buf->buffer_size, priv->fs->const_size * 4));
+            priv->dirty_bits |= ETNA_STATE_PS_UNIFORMS;
+            break;
+        default: printf("Unhandled shader type %i\n", shader);
+        }
+    } else {
+        printf("Unhandled buffer index %i\n", index);
+    }
+}
+
 static void *etna_pipe_create_shader_state(struct pipe_context *pipe, const struct pipe_shader_state *pss)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
@@ -1610,7 +1638,7 @@ struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct et
     pc->set_stencil_ref = etna_pipe_set_stencil_ref;
     pc->set_sample_mask = etna_pipe_set_sample_mask;
     pc->set_clip_state = etna_pipe_set_clip_state;
-    /* XXX set_constant_buffer */
+    pc->set_constant_buffer = etna_set_constant_buffer;
     pc->set_framebuffer_state = etna_pipe_set_framebuffer_state;
     /* XXX set_polygon_stipple */
     pc->set_scissor_state = etna_pipe_set_scissor_state;
