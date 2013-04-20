@@ -27,15 +27,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "util/u_memory.h"
-
 //#define DEBUG
 #define ETNA_VIDMEM_ALIGNMENT (0x40) 
 
 int etna_vidmem_alloc_linear(struct viv_conn *conn, struct etna_vidmem **mem_out, size_t bytes, gceSURF_TYPE type, gcePOOL pool, bool lock)
 {
     if(mem_out == NULL) return ETNA_INVALID_ADDR;
-    struct etna_vidmem *mem = CALLOC_STRUCT(etna_vidmem);
+    struct etna_vidmem *mem = ETNA_CALLOC_STRUCT(etna_vidmem);
     if(mem == NULL) return ETNA_OUT_OF_MEMORY;
 
     mem->type = type;
@@ -98,14 +96,14 @@ int etna_vidmem_free(struct viv_conn *conn, struct etna_vidmem *mem)
 {
     if(mem == NULL) return ETNA_INVALID_ADDR;
     viv_free_vidmem(conn, mem->node);
-    FREE(mem);
+    ETNA_FREE(mem);
     return ETNA_OK;
 }
 
 int etna_usermem_map(struct viv_conn *conn, struct etna_usermem **mem_out, void *memory, size_t size)
 {
     if(mem_out == NULL) return ETNA_INVALID_ADDR;
-    struct etna_usermem *mem = CALLOC_STRUCT(etna_usermem);
+    struct etna_usermem *mem = ETNA_CALLOC_STRUCT(etna_usermem);
 
     mem->memory = memory;
     mem->size = size;
@@ -123,7 +121,7 @@ int etna_usermem_unmap(struct viv_conn *conn, struct etna_usermem *mem)
 {
     if(mem == NULL) return ETNA_INVALID_ADDR;
     viv_unmap_user_memory(conn, mem->memory, mem->size, mem->info, mem->address);
-    FREE(mem);
+    ETNA_FREE(mem);
     return ETNA_OK;
 }
 

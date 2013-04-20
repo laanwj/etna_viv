@@ -8,7 +8,7 @@ LDFLAGS += ../etnaviv/libetnaviv.a
 
 TARGETS = cube cube_companion cube_etna ps_sandbox_etna etna_test reset viv_info cube_etna2
 COMPANION_OBJS = ../resources/companion_array.o ../resources/companion_mesh.o ../resources/companion_texture.o
-ETNA_OBJS = ../driver/etna_rs.o ../driver/etna_fb.o ../driver/etna_mem.o ../driver/etna_bswap.o ../driver/etna_tex.o 
+ETNA_OBJS = ../driver/etna_rs.o ../driver/etna_fb.o ../driver/etna_bswap.o ../driver/etna_tex.o 
 
 all: $(TARGETS)
 

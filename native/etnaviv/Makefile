@@ -5,7 +5,7 @@ include $(TOP)/Makefile.inc
 COMMON_FLAGS += -Iauxiliary -Iinclude 
 #-DDEBUG
 LDFLAGS +=
-ETNAVIV_OBJS = etna.o viv.o
+ETNAVIV_OBJS = etna.o viv.o etna_mem.o
 
 TARGETS = libetnaviv.a
 
