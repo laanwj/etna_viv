@@ -2,7 +2,7 @@ TOP=..
 
 include $(TOP)/Makefile.inc
 
-COMMON_FLAGS += -Iauxiliary -Iinclude 
+COMMON_FLAGS +=
 #-DDEBUG
 LDFLAGS +=
 ETNAVIV_OBJS = etna.o viv.o etna_mem.o

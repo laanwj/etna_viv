@@ -5,18 +5,16 @@ include $(TOP)/Makefile.inc
 COMMON_FLAGS += -I$(TOP)/resources -I$(TOP)/etnaviv -I$(TOP)/driver
 CFLAGS += -DDUMP
 CXXFLAGS += 
-LDFLAGS += ../gallium/libminigallium.a ../etnaviv/libetnaviv.a
+LDFLAGS +=  ../driver/libetnadriver.a ../gallium/libminigallium.a ../etnaviv/libetnaviv.a
 
 TARGETS = mip_cube cubemap_sphere stencil_test alpha_blend cube_companion particle_system displacement etna_gears rotate_cube
 COMPANION_OBJS = ../resources/companion_array.o ../resources/companion_mesh.o ../resources/companion_texture.o
-ETNA_OBJS = ../driver/etna_rs.o ../driver/etna_fb.o \
-            ../driver/etna_bswap.o ../driver/etna_tex.o  ../driver/etna_pipe.o \
-	    ../driver/etna_shader.o ../driver/etna_asm.o ../driver/etna_screen.o ../lib/fbdemos.o 
+ETNA_OBJS = ../lib/fbdemos.o
 
 all: $(TARGETS)
 
 clean:
-	rm -f *.o ../lib/*.o ../resources/*.o ../driver/*.o
+	rm -f *.o ../lib/*.o ../resources/*.o
 	rm -f $(TARGETS)
 
 rotate_cube: rotate_cube.o ../lib/write_bmp.o $(ETNA_OBJS) ../lib/esTransform.o
