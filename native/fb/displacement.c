@@ -371,6 +371,7 @@ int main(int argc, char **argv)
 
     for(int frame=0; frame<1000; ++frame)
     {
+        float vs_const[12*4];
         if(frame%50 == 0)
             printf("*** FRAME %i ****\n", frame);
         /*   Compute transform matrices in the same way as cube egl demo */ 
@@ -390,17 +391,22 @@ int main(int argc, char **argv)
         pipe->clear(pipe, PIPE_CLEAR_COLOR | PIPE_CLEAR_DEPTHSTENCIL, &(const union pipe_color_union) {
                 .f = {0.2, 0.2, 0.2, 1.0}
                 }, 1.0, 0xff);
-        
-        etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 4*4, 16, (uint32_t*)&modelviewprojection.m[0][0]);
-        etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 1*4, 3, (uint32_t*)&normal.m[0][0]); /* u4.xyz */
-        etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 2*4, 3, (uint32_t*)&normal.m[1][0]); /* u5.xyz */
-        etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 3*4, 3, (uint32_t*)&normal.m[2][0]); /* u6.xyz */
-        etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 8*4, 16, (uint32_t*)&modelview.m[0][0]);
+      
+        memcpy(&vs_const[1*4], &normal.m[0][0], 3*4); /* u4.xyz */
+        memcpy(&vs_const[2*4], &normal.m[1][0], 3*4); /* u5.xyz */
+        memcpy(&vs_const[3*4], &normal.m[2][0], 3*4); /* u6.xyz */
+        memcpy(&vs_const[4*4], &modelviewprojection.m[0][0], 16*4);
+        memcpy(&vs_const[8*4], (uint32_t*)&modelview.m[0][0], 16*4);
 
         float scaling = fmodf(frame* 0.025f, 2.0f);
         if(scaling > 1.0f)
             scaling = 2.0f - scaling;  // sawtooth
-        etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 0*4, 1, (uint32_t*)&scaling);
+        vs_const[0] = scaling;
+        
+        pipe->set_constant_buffer(pipe, PIPE_SHADER_VERTEX, 0, &(struct pipe_constant_buffer){
+                .user_buffer = vs_const,
+                .buffer_size = sizeof(vs_const)
+                });
 
         pipe->draw_vbo(pipe, &(struct pipe_draw_info){
                 .indexed = 1,

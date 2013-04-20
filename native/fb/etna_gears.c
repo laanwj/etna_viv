@@ -329,6 +329,10 @@ draw_gear(struct pipe_context *pipe, struct gear *gear, void *shader_state, ESMa
     ESMatrix model_view;
     ESMatrix normal_matrix;
     ESMatrix model_view_projection;
+    float vs_const[10*4];
+    
+    /* Set the LightSourcePosition uniform which is constant throught the program */
+    memcpy(&vs_const[1*4], LightSourcePosition, 4*4);
 
     /* Translate and rotate the gear */
     model_view = *transform;
@@ -338,7 +342,7 @@ draw_gear(struct pipe_context *pipe, struct gear *gear, void *shader_state, ESMa
     /* Create and set the ModelViewProjectionMatrix */
     esMatrixMultiply(&model_view_projection, &model_view, &ProjectionMatrix);
 
-    etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 6*4, 16, (uint32_t*)&model_view_projection.m[0][0]);
+    memcpy(&vs_const[6*4], &model_view_projection.m[0][0], 16*4);
 
     /* 
      * Create and set the NormalMatrix. It's the inverse transpose of the
@@ -347,10 +351,10 @@ draw_gear(struct pipe_context *pipe, struct gear *gear, void *shader_state, ESMa
     ESMatrix inverse_model_view;
     esMatrixInverse3x3(&inverse_model_view, &model_view);
     esMatrixTranspose(&normal_matrix, &inverse_model_view);
-    etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 2*4, 16, (uint32_t*)&normal_matrix.m[0][0]);
+    memcpy(&vs_const[2*4], &normal_matrix.m[0][0], 16*4);
 
     /* Set the gear color */
-    etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 0*4, 4, (uint32_t*)color);
+    memcpy(&vs_const[0*4], color, 4*4);
 
     /* Set up the position of the attributes in the vertex buffer object */
     pipe->bind_vertex_elements_state(pipe, gear->vertex_elements);
@@ -358,6 +362,10 @@ draw_gear(struct pipe_context *pipe, struct gear *gear, void *shader_state, ESMa
     pipe->set_index_buffer(pipe, NULL);
 
     /* Draw the triangle strips that comprise the gear */
+    pipe->set_constant_buffer(pipe, PIPE_SHADER_VERTEX, 0, &(struct pipe_constant_buffer){
+            .user_buffer = vs_const,
+            .buffer_size = sizeof(vs_const)
+            });
     int n;
     for (n = 0; n < gear->nstrips; n++)
     {
@@ -614,9 +622,6 @@ main(int argc, char *argv[])
     void *frag_shader = graw_parse_fragment_shader(pipe, etna_gears_frag);
     pipe->bind_vs_state(pipe, vtx_shader);
     pipe->bind_fs_state(pipe, frag_shader);
-    
-    /* Set the LightSourcePosition uniform which is constant throught the program */
-    etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 1*4, 4, (uint32_t*)LightSourcePosition);
 
     /* make the gears */
     gear1 = create_gear(pipe, fbs->screen, 1.0, 4.0, 1.0, 20, 0.7);

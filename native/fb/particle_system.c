@@ -339,6 +339,8 @@ int main(int argc, char **argv)
     float time = 1.0f;
     for(int frame=0; frame<1000; ++frame)
     {
+        float vs_const[2*4];
+        float fs_const[2*4];
         if(frame%50 == 0)
             printf("*** FRAME %i ****\n", frame);
        
@@ -361,18 +363,27 @@ int main(int argc, char **argv)
             centerPos[0] = ( (float)(rand() % 10000) / 10000.0f ) - 0.5f;
             centerPos[1] = ( (float)(rand() % 10000) / 10000.0f ) - 0.5f;
             centerPos[2] = ( (float)(rand() % 10000) / 10000.0f ) - 0.5f;
-          
-            etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 0, 3, (uint32_t*)&centerPos[0]);
 
+            memcpy(&vs_const[0*4], &centerPos[0], 3*4);
+          
             // Random color
             color[0] = ( (float)(rand() % 10000) / 20000.0f ) + 0.5f;
             color[1] = ( (float)(rand() % 10000) / 20000.0f ) + 0.5f;
             color[2] = ( (float)(rand() % 10000) / 20000.0f ) + 0.5f;
             color[3] = 0.5;
 
-            etna_set_uniforms(pipe, PIPE_SHADER_FRAGMENT, 4, 4, (uint32_t*)&color[0]);
+            memcpy(&fs_const[1*4], &color[0], 4*4);
         }
-        etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 4, 1, (uint32_t*)&time);
+        vs_const[4] = time;
+        
+        pipe->set_constant_buffer(pipe, PIPE_SHADER_VERTEX, 0, &(struct pipe_constant_buffer){
+                .user_buffer = vs_const,
+                .buffer_size = sizeof(vs_const)
+                });
+        pipe->set_constant_buffer(pipe, PIPE_SHADER_FRAGMENT, 0, &(struct pipe_constant_buffer){
+                .user_buffer = fs_const,
+                .buffer_size = sizeof(fs_const)
+                });
 
         pipe->draw_vbo(pipe, &(struct pipe_draw_info){
                 .indexed = 0,

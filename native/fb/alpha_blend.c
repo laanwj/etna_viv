@@ -315,6 +315,7 @@ int main(int argc, char **argv)
 
         for(int idx=0; idx<5; ++idx)
         {
+            float vs_const[5*4];
             ESMatrix modelview, modelviewprojection;
             esMatrixLoadIdentity(&modelview);
 
@@ -327,9 +328,16 @@ int main(int argc, char **argv)
             esMatrixLoadIdentity(&modelviewprojection);
             esMatrixMultiply(&modelviewprojection, &modelview, &projection);
         
-            etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 0, 16, (uint32_t*)&modelviewprojection.m[0][0]);
-            etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 16, 4, (uint32_t*)(float[]) /* material color */
-                 {idx*0.25f, 0.3f, 1.0f - idx*0.25f, 0.5f});
+            memcpy(&vs_const[0], (uint32_t*)&modelviewprojection.m[0][0], 16 * 4);
+            /* material color */
+            vs_const[16] = idx*0.25f;
+            vs_const[17] = 0.3f;
+            vs_const[18] = 1.0f - idx*0.25f;
+            vs_const[19] = 0.5f;
+            pipe->set_constant_buffer(pipe, PIPE_SHADER_VERTEX, 0, &(struct pipe_constant_buffer){
+                    .user_buffer = vs_const,
+                    .buffer_size = sizeof(vs_const)
+                    });
         
             pipe->draw_vbo(pipe, &(struct pipe_draw_info){
                     .indexed = 0,

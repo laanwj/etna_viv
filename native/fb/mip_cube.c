@@ -446,6 +446,7 @@ int main(int argc, char **argv)
 
     for(int frame=0; frame<1000; ++frame)
     {
+        float vs_const[11*4];
         if(frame%50 == 0)
             printf("*** FRAME %i ****\n", frame);
         /*   Compute transform matrices in the same way as cube egl demo */ 
@@ -469,11 +470,15 @@ int main(int argc, char **argv)
                 .f = {0.2, 0.2, 0.2, 1.0}
                 }, 1.0, 0xff);
         
-        etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 0*4, 3, (uint32_t*)&normal.m[0][0]); /* CONST[0] */
-        etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 1*4, 3, (uint32_t*)&normal.m[1][0]); /* CONST[1] */
-        etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 2*4, 3, (uint32_t*)&normal.m[2][0]); /* CONST[2] */
-        etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 3*4, 16, (uint32_t*)&modelviewprojection.m[0][0]); /* CONST[3..6] */
-        etna_set_uniforms(pipe, PIPE_SHADER_VERTEX, 7*4, 16, (uint32_t*)&modelview.m[0][0]); /* CONST[7..10] */
+        memcpy(&vs_const[0*4], &normal.m[0][0], 3*4); /* CONST[0] */
+        memcpy(&vs_const[1*4], &normal.m[1][0], 3*4); /* CONST[1] */
+        memcpy(&vs_const[2*4], &normal.m[2][0], 3*4); /* CONST[2] */
+        memcpy(&vs_const[3*4], &modelviewprojection.m[0][0], 16*4); /* CONST[3..6] */
+        memcpy(&vs_const[7*4], &modelview.m[0][0], 16*4); /* CONST[7..10] */
+        pipe->set_constant_buffer(pipe, PIPE_SHADER_VERTEX, 0, &(struct pipe_constant_buffer){
+                .user_buffer = vs_const,
+                .buffer_size = sizeof(vs_const)
+                });
 
         for(int prim=0; prim<6; ++prim)
         {

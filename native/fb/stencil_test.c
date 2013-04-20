@@ -486,9 +486,13 @@ int main(int argc, char **argv)
         pipe->bind_depth_stencil_alpha_state(pipe, dsa_bigquad);
         for(int idx=0; idx<NumTests; ++idx)
         {
+            float fs_const[4];
             /* material color */
-            etna_set_uniforms(pipe, PIPE_SHADER_FRAGMENT, 0, 4, 
-                    (uint32_t*)colors[idx]);
+            memcpy(&fs_const[0], colors[idx], 4*4);
+            pipe->set_constant_buffer(pipe, PIPE_SHADER_FRAGMENT, 0, &(struct pipe_constant_buffer){
+                    .user_buffer = fs_const,
+                    .buffer_size = sizeof(fs_const)
+                    });
             pipe->set_stencil_ref(pipe, &(struct pipe_stencil_ref){
                     .ref_value[0] = stencilValues[idx],
                     .ref_value[1] = stencilValues[idx]});
