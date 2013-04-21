@@ -34,6 +34,7 @@
 #include "cmdstream.xml.h"
 #include "etna_util.h"
 #include "etna_internal.h"
+#include "etna_debug.h"
 
 #include "util/u_format.h"
 
@@ -41,6 +42,8 @@
 #include <math.h>
 
 #define RCPLOG2 (1.4426950408889634f)
+/* Returned when there is no match of pipe value to etna value */
+#define ETNA_NO_MATCH (~0)
 
 /* float to fixp 5.5 */
 static inline uint32_t float_to_fixp55(float f)
@@ -63,7 +66,7 @@ static inline uint32_t translate_cull_face(unsigned cull_face, unsigned front_cc
     case PIPE_FACE_NONE: return VIVS_PA_CONFIG_CULL_FACE_MODE_OFF;
     case PIPE_FACE_FRONT: return front_ccw ? VIVS_PA_CONFIG_CULL_FACE_MODE_CW : VIVS_PA_CONFIG_CULL_FACE_MODE_CCW;
     case PIPE_FACE_BACK: return front_ccw ? VIVS_PA_CONFIG_CULL_FACE_MODE_CCW : VIVS_PA_CONFIG_CULL_FACE_MODE_CW;
-    default: printf("Unhandled cull face mode %i\n", cull_face); return 0;
+    default: DBG("Unhandled cull face mode %i\n", cull_face); return ETNA_NO_MATCH;
     }
 }
 
@@ -74,7 +77,7 @@ static inline uint32_t translate_polygon_mode(unsigned polygon_mode)
     case PIPE_POLYGON_MODE_FILL: return VIVS_PA_CONFIG_FILL_MODE_SOLID;
     case PIPE_POLYGON_MODE_LINE: return VIVS_PA_CONFIG_FILL_MODE_WIREFRAME;
     case PIPE_POLYGON_MODE_POINT: return VIVS_PA_CONFIG_FILL_MODE_POINT;
-    default: printf("Unhandled polygon mode %i\n", polygon_mode); return 0;
+    default: DBG("Unhandled polygon mode %i\n", polygon_mode); return ETNA_NO_MATCH;
     }
 }
 
@@ -101,7 +104,7 @@ static inline uint32_t translate_stencil_op(unsigned stencil_op)
     case PIPE_STENCIL_OP_INCR_WRAP: return STENCIL_OP_INCR_WRAP;
     case PIPE_STENCIL_OP_DECR_WRAP: return STENCIL_OP_DECR_WRAP;
     case PIPE_STENCIL_OP_INVERT:  return STENCIL_OP_INVERT;
-    default: printf("Unhandled stencil op: %i\n", stencil_op); return 0;
+    default: DBG("Unhandled stencil op: %i\n", stencil_op); return ETNA_NO_MATCH;
     }
 }
 
@@ -114,7 +117,7 @@ static inline uint32_t translate_blend(unsigned blend)
     case PIPE_BLEND_REVERSE_SUBTRACT: return BLEND_EQ_REVERSE_SUBTRACT;
     case PIPE_BLEND_MIN: return BLEND_EQ_MIN;
     case PIPE_BLEND_MAX: return BLEND_EQ_MAX;
-    default: printf("Unhandled blend: %i\n", blend); return 0;
+    default: DBG("Unhandled blend: %i\n", blend); return ETNA_NO_MATCH;
     }
 }
 
@@ -141,7 +144,7 @@ static inline uint32_t translate_blend_factor(unsigned blend_factor)
     case PIPE_BLENDFACTOR_SRC1_ALPHA:
     case PIPE_BLENDFACTOR_INV_SRC1_COLOR:
     case PIPE_BLENDFACTOR_INV_SRC1_ALPHA:
-    default: printf("Unhandled blend factor: %i\n", blend_factor); return 0;
+    default: DBG("Unhandled blend factor: %i\n", blend_factor); return ETNA_NO_MATCH;
     }
 }
 
@@ -157,7 +160,7 @@ static inline uint32_t translate_texture_wrapmode(unsigned wrap)
     case PIPE_TEX_WRAP_MIRROR_CLAMP:    return TEXTURE_WRAPMODE_MIRRORED_REPEAT; /* XXX */
     case PIPE_TEX_WRAP_MIRROR_CLAMP_TO_EDGE:   return TEXTURE_WRAPMODE_MIRRORED_REPEAT; /* XXX */
     case PIPE_TEX_WRAP_MIRROR_CLAMP_TO_BORDER: return TEXTURE_WRAPMODE_MIRRORED_REPEAT; /* XXX */
-    default: printf("Unhandled texture wrapmode: %i\n", wrap); return 0;
+    default: DBG("Unhandled texture wrapmode: %i\n", wrap); return ETNA_NO_MATCH;
     }
 }
 
@@ -168,7 +171,7 @@ static inline uint32_t translate_texture_mipfilter(unsigned filter)
     case PIPE_TEX_MIPFILTER_NEAREST: return TEXTURE_FILTER_NEAREST;
     case PIPE_TEX_MIPFILTER_LINEAR:  return TEXTURE_FILTER_LINEAR;
     case PIPE_TEX_MIPFILTER_NONE:    return TEXTURE_FILTER_NONE;
-    default: printf("Unhandled texture mipfilter: %i\n", filter); return 0;
+    default: DBG("Unhandled texture mipfilter: %i\n", filter); return ETNA_NO_MATCH;
     }
 }
 
@@ -178,7 +181,8 @@ static inline uint32_t translate_texture_filter(unsigned filter)
     {
     case PIPE_TEX_FILTER_NEAREST: return TEXTURE_FILTER_NEAREST;
     case PIPE_TEX_FILTER_LINEAR:  return TEXTURE_FILTER_LINEAR;
-    default: printf("Unhandled texture filter: %i\n", filter); return 0;
+    /* What about anisotropic? */
+    default: DBG("Unhandled texture filter: %i\n", filter); return ETNA_NO_MATCH;
     }
 }
 
@@ -210,7 +214,7 @@ static inline uint32_t translate_texture_format(enum pipe_format fmt)
     case PIPE_FORMAT_DXT3_RGBA: return TEXTURE_FORMAT_DXT2_DXT3;
     case PIPE_FORMAT_DXT5_RGBA: return TEXTURE_FORMAT_DXT4_DXT5;
     case PIPE_FORMAT_ETC1_RGB8: return TEXTURE_FORMAT_ETC1;
-    default: printf("Unhandled texture format: %i\n", fmt); return 0;
+    default: DBG("Unhandled texture format: %i\n", fmt); return ETNA_NO_MATCH;
     }
 }
 
@@ -228,7 +232,7 @@ static inline uint32_t translate_rt_format(enum pipe_format fmt)
     case PIPE_FORMAT_B8G8R8X8_UNORM: return RS_FORMAT_X8R8G8B8;
     case PIPE_FORMAT_B8G8R8A8_UNORM: return RS_FORMAT_A8R8G8B8;
     case PIPE_FORMAT_YUYV: return RS_FORMAT_YUY2;
-    default: printf("Unhandled rs surface format: %i\n", fmt); return 0;
+    default: DBG("Unhandled rs surface format: %i\n", fmt); return ETNA_NO_MATCH;
     }
 }
 
@@ -240,7 +244,7 @@ static inline uint32_t translate_depth_format(enum pipe_format fmt)
     case PIPE_FORMAT_Z16_UNORM: return VIVS_PE_DEPTH_CONFIG_DEPTH_FORMAT_D16;
     case PIPE_FORMAT_X8Z24_UNORM: return VIVS_PE_DEPTH_CONFIG_DEPTH_FORMAT_D24S8;
     case PIPE_FORMAT_S8_UINT_Z24_UNORM: return VIVS_PE_DEPTH_CONFIG_DEPTH_FORMAT_D24S8;
-    default: printf("Unhandled depth format: %i\n", fmt); return 0;
+    default: DBG("Unhandled depth format: %i\n", fmt); return ETNA_NO_MATCH;
     }
 }
 
@@ -258,7 +262,7 @@ static inline uint32_t translate_msaa_format(enum pipe_format fmt)
     case PIPE_FORMAT_B8G8R8X8_UNORM: return VIVS_TS_MEM_CONFIG_MSAA_FORMAT_X8R8G8B8;
     case PIPE_FORMAT_B8G8R8A8_UNORM: return VIVS_TS_MEM_CONFIG_MSAA_FORMAT_A8R8G8B8;
     /* MSAA with YUYV not supported */
-    default: printf("Unhandled msaa surface format: %i\n", fmt); return 0;
+    default: DBG("Unhandled msaa surface format: %i\n", fmt); return ETNA_NO_MATCH;
     }
 }
 
@@ -268,7 +272,7 @@ static inline uint32_t translate_texture_target(enum pipe_texture_target tgt)
     {
     case PIPE_TEXTURE_2D: return TEXTURE_TYPE_2D;
     case PIPE_TEXTURE_CUBE: return TEXTURE_TYPE_CUBE_MAP;
-    default: printf("Unhandled texture target: %i\n", tgt); return 0;
+    default: DBG("Unhandled texture target: %i\n", tgt); return ETNA_NO_MATCH;
     }
 }
 
@@ -352,7 +356,7 @@ static inline uint32_t translate_vertex_format_type(enum pipe_format fmt)
     case PIPE_FORMAT_R10G10B10A2_SNORM:
     case PIPE_FORMAT_R10G10B10A2_SSCALED:
         return VIVS_FE_VERTEX_ELEMENT_CONFIG_TYPE_INT_10_10_10_2;
-    default: printf("Unhandled vertex format: %i", fmt); return 0;
+    default: DBG("Unhandled vertex format: %i", fmt); return ETNA_NO_MATCH;
     }
 }
 
@@ -375,7 +379,7 @@ static inline uint32_t translate_index_size(unsigned index_size)
     case 1: return VIVS_FE_INDEX_STREAM_CONTROL_TYPE_UNSIGNED_CHAR;
     case 2: return VIVS_FE_INDEX_STREAM_CONTROL_TYPE_UNSIGNED_SHORT;
     case 4: return VIVS_FE_INDEX_STREAM_CONTROL_TYPE_UNSIGNED_INT;
-    default: printf("Unhandled index size %i\n", index_size); return 0;
+    default: DBG("Unhandled index size %i\n", index_size); return ETNA_NO_MATCH;
     }
 }
 
@@ -391,7 +395,7 @@ static inline uint32_t translate_draw_mode(unsigned mode)
     case PIPE_PRIM_TRIANGLE_STRIP: return PRIMITIVE_TYPE_TRIANGLE_STRIP;
     case PIPE_PRIM_TRIANGLE_FAN: return PRIMITIVE_TYPE_TRIANGLE_FAN;
     case PIPE_PRIM_QUADS: return PRIMITIVE_TYPE_QUADS;
-    default: printf("Unhandled draw mode primitive %i\n", mode); return 0;
+    default: DBG("Unhandled draw mode primitive %i\n", mode); return ETNA_NO_MATCH;
     }
 }
 
@@ -409,7 +413,7 @@ static inline int translate_vertex_count(unsigned mode, int vertex_count)
     case PIPE_PRIM_TRIANGLE_STRIP: return vertex_count - 2; 
     case PIPE_PRIM_TRIANGLE_FAN: return vertex_count - 2;
     case PIPE_PRIM_QUADS: return vertex_count / 4;
-    default: printf("Unhandled draw mode primitive %i\n", mode); return 0;
+    default: DBG("Unhandled draw mode primitive %i\n", mode); return 0;
     }
 }
 
@@ -421,7 +425,7 @@ static inline unsigned etna_layout_multiple(unsigned layout)
     case ETNA_LAYOUT_LINEAR: return 1;
     case ETNA_LAYOUT_TILED:  return 4;
     case ETNA_LAYOUT_SUPERTILED: return 64;
-    default: printf("Unhandled layout %i\n", layout); return 0;
+    default: DBG("Unhandled layout %i\n", layout); return 0;
     }
 }
 
@@ -461,7 +465,7 @@ static inline uint32_t translate_clear_color(enum pipe_format format, const unio
         clear_value |= clear_value << 16;
         break;
     default:
-        printf("Unhandled pipe format for color clear: %i\n", format);
+        DBG("Unhandled pipe format for color clear: %i\n", format);
     }
     return clear_value;
 }
@@ -480,7 +484,7 @@ static inline uint32_t translate_clear_depth_stencil(enum pipe_format format, fl
         clear_value = (etna_cfloat_to_uintN(depth, 24) << 8) | (stencil & 0xFF);
         break;
     default:
-        printf("Unhandled pipe format for depth stencil clear: %i\n", format);
+        DBG("Unhandled pipe format for depth stencil clear: %i\n", format);
     }
     return clear_value;
 }

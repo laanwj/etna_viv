@@ -271,10 +271,65 @@ static boolean etna_screen_is_format_supported( struct pipe_screen *screen,
                                enum pipe_format format,
                                enum pipe_texture_target target,
                                unsigned sample_count,
-                               unsigned bindings )
+                               unsigned usage)
 {
-    DBG("unimplemented etna_screen_is_format_supported");
-    return false;
+    struct etna_screen *priv = etna_screen(screen);
+    unsigned allowed = 0;
+    if ((target >= PIPE_MAX_TEXTURE_TYPES) ||
+                (sample_count > 1) || /* TODO add MSAA */
+                !util_format_is_supported(format, usage)) {
+        DBG("not supported: format=%s, target=%d, sample_count=%d, usage=%x",
+                        util_format_name(format), target, sample_count, usage);
+        return FALSE;
+    }
+
+    if (usage & PIPE_BIND_RENDER_TARGET)
+    {
+        /* if render target, must be RS-supported format */
+        if(translate_rt_format(format) != ETNA_NO_MATCH)
+        {
+            allowed |= PIPE_BIND_RENDER_TARGET;
+        }
+    }
+    if (usage & PIPE_BIND_DEPTH_STENCIL)
+    {
+        /* must be supported depth format */
+        if(translate_depth_format(format) != ETNA_NO_MATCH)
+        {
+            allowed |= PIPE_BIND_DEPTH_STENCIL;
+        }
+    }
+    if (usage & PIPE_BIND_SAMPLER_VIEW)
+    {
+        /* must be supported texture format */
+        if(translate_texture_format(format) != ETNA_NO_MATCH)
+        {
+            allowed |= PIPE_BIND_SAMPLER_VIEW;
+        }
+    }
+    if (usage & PIPE_BIND_VERTEX_BUFFER)
+    {
+        /* must be supported vertex format */
+        if(translate_vertex_format_type(format) == ETNA_NO_MATCH)
+        {
+            allowed |= PIPE_BIND_VERTEX_BUFFER;
+        }
+    }
+    if (usage & PIPE_BIND_INDEX_BUFFER)
+    {
+        /* must be supported index format */
+        if(format == PIPE_FORMAT_I8_UINT ||
+           format == PIPE_FORMAT_I16_UINT ||
+           (format == PIPE_FORMAT_I32_UINT && VIV_FEATURE(priv->dev, chipFeatures, 32_BIT_INDICES)))
+        {
+            allowed |= PIPE_BIND_INDEX_BUFFER;
+        }
+    }
+    /* Always allowed */
+    allowed |= usage & (PIPE_BIND_DISPLAY_TARGET | PIPE_BIND_SCANOUT | 
+            PIPE_BIND_SHARED | PIPE_BIND_TRANSFER_READ | PIPE_BIND_TRANSFER_WRITE);
+
+    return usage == allowed;
 }
 
 static boolean etna_screen_is_video_format_supported( struct pipe_screen *screen,
@@ -495,9 +550,9 @@ etna_screen_create(struct viv_conn *dev)
     screen->dev = dev;
 
     /* Determine specs for device */
-    screen->specs.can_supertile = VIV_FEATURE(dev, chipMinorFeatures0,SUPER_TILED);
-    screen->specs.bits_per_tile = VIV_FEATURE(dev, chipMinorFeatures0,2BITPERTILE)?2:4;
-    screen->specs.ts_clear_value = VIV_FEATURE(dev, chipMinorFeatures0,2BITPERTILE)?0x55555555:0x11111111;
+    screen->specs.can_supertile = VIV_FEATURE(dev, chipMinorFeatures0, SUPER_TILED);
+    screen->specs.bits_per_tile = VIV_FEATURE(dev, chipMinorFeatures0, 2BITPERTILE)?2:4;
+    screen->specs.ts_clear_value = VIV_FEATURE(dev, chipMinorFeatures0, 2BITPERTILE)?0x55555555:0x11111111;
     screen->specs.vertex_sampler_offset = 8; /* vertex and fragment samplers live in one address space */
     screen->specs.vs_need_z_div = dev->chip.chip_model < 0x1000 && dev->chip.chip_model != 0x880;
     screen->specs.vertex_output_buffer_size = dev->chip.vertex_output_buffer_size;
