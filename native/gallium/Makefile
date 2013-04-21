@@ -12,6 +12,8 @@ GALLIUM_OBJS = auxiliary/tgsi/tgsi_dump.o \
 	auxiliary/tgsi/tgsi_text.o \
 	auxiliary/tgsi/tgsi_build.o \
 	auxiliary/tgsi/tgsi_sanity.o \
+	auxiliary/tgsi/tgsi_ureg.o \
+	auxiliary/util/u_blitter.o \
 	auxiliary/util/u_debug.o \
 	auxiliary/util/u_format.o \
 	auxiliary/util/u_format_etc.o \
@@ -28,9 +30,29 @@ GALLIUM_OBJS = auxiliary/tgsi/tgsi_dump.o \
 	auxiliary/util/u_tile.o \
 	auxiliary/util/u_transfer.o \
 	auxiliary/util/u_slab.o \
+	auxiliary/util/u_helpers.o \
+	auxiliary/util/u_framebuffer.o \
+	auxiliary/util/u_simple_shaders.o \
+	auxiliary/util/u_bitmask.o \
+	auxiliary/util/u_debug_refcnt.o \
+	auxiliary/util/u_debug_describe.o \
+	auxiliary/util/u_debug_stack.o \
+	auxiliary/util/u_debug_memory.o \
+        auxiliary/util/u_debug_symbol.o \
+	auxiliary/util/u_upload_mgr.o \
+	auxiliary/util/u_draw.o \
+	auxiliary/util/u_draw_quad.o \
+	auxiliary/util/u_hash_table.o \
+	auxiliary/util/u_texture.o \
+	auxiliary/util/u_vbuf.o \
 	auxiliary/os/os_misc.o \
 	auxiliary/cso_cache/cso_hash.o \
 	auxiliary/cso_cache/cso_cache.o \
+	auxiliary/cso_cache/cso_context.o \
+	auxiliary/translate/translate.o \
+	auxiliary/translate/translate_cache.o \
+	auxiliary/translate/translate_generic.o \
+	auxiliary/translate/translate_sse.o \
         targets/graw-null/graw_util.o
 
 TARGETS = libminigallium.a

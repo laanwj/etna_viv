@@ -163,9 +163,9 @@ struct etna_pipe_context_priv
     struct viv_conn *conn;
     struct etna_ctx *ctx;
     unsigned dirty_bits;
-    struct pipe_framebuffer_state framebuffer_s;
     struct etna_pipe_specs specs;
     struct util_slab_mempool transfer_pool;
+    struct blitter_context *blitter;
 
     /* constant */
     struct compiled_base_setup_state base_setup;
@@ -182,7 +182,16 @@ struct etna_pipe_context_priv
     struct etna_shader_object *vs;
     struct etna_shader_object *fs;
 
-    /* parameter-like state */
+    /* saved parameter-like state. this is mainly kept around for the blitter. */
+    struct pipe_framebuffer_state framebuffer_s;
+    unsigned sample_mask_s;
+    struct pipe_stencil_ref stencil_ref_s;
+    struct pipe_viewport_state viewport_s;
+    struct pipe_scissor_state scissor_s;
+    struct pipe_sampler_view *sampler_view_s[PIPE_MAX_SAMPLERS];
+    struct pipe_vertex_buffer vertex_buffer_s;
+
+    /* compiled parameter-like state */
     struct compiled_blend_color blend_color;
     struct compiled_stencil_ref stencil_ref;
     struct compiled_sample_mask sample_mask;

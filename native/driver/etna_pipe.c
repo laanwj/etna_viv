@@ -54,6 +54,7 @@
 #include "etna_tex.h"
 #include "etna_util.h"
 #include "etna_shader.h"
+#include "etna_debug.h"
 
 #include "pipe/p_defines.h"
 #include "pipe/p_format.h"
@@ -64,6 +65,7 @@
 #include "util/u_memory.h"
 #include "util/u_transfer.h"
 #include "util/u_surface.h"
+#include "util/u_blitter.h"
 
 /*********************************************************************/
 /* Macros to define state */
@@ -557,6 +559,9 @@ static void sync_context(struct pipe_context *pipe)
 static void etna_pipe_destroy(struct pipe_context *pipe)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    if (priv->blitter)
+            util_blitter_destroy(priv->blitter);
+
     etna_free(priv->ctx);
     FREE(priv);
     FREE(pipe);
@@ -863,6 +868,9 @@ static void etna_pipe_set_stencil_ref(struct pipe_context *pipe,
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
     struct compiled_stencil_ref *cs = &priv->stencil_ref;
+
+    priv->stencil_ref_s = *sr;
+
     SET_STATE(PE_STENCIL_CONFIG, 
             VIVS_PE_STENCIL_CONFIG_REF_FRONT(sr->ref_value[0]) 
             /* rest of bits comes from depth_stencil_alpha, merged in */
@@ -878,6 +886,8 @@ static void etna_pipe_set_sample_mask(struct pipe_context *pipe,
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
     struct compiled_sample_mask *cs = &priv->sample_mask;
+
+    priv->sample_mask_s = sample_mask;
 
     SET_STATE(GL_MULTI_SAMPLE_CONFIG, 
             /* to be merged with render target state */
@@ -961,6 +971,7 @@ static void etna_pipe_set_scissor_state( struct pipe_context *pipe,
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
     struct compiled_scissor_state *cs = &priv->scissor;
+    priv->scissor_s = *ss;
     SET_STATE_FIXP(SE_SCISSOR_LEFT, (ss->minx << 16));
     SET_STATE_FIXP(SE_SCISSOR_TOP, (ss->miny << 16));
     SET_STATE_FIXP(SE_SCISSOR_RIGHT, (ss->maxx << 16)-1);
@@ -974,6 +985,7 @@ static void etna_pipe_set_viewport_state( struct pipe_context *pipe,
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
     struct compiled_viewport_state *cs = &priv->viewport;
+    priv->viewport_s = *vs;
     /**
      * For Vivante GPU, viewport z transformation is 0..1 to 0..1 instead of -1..1 to 0..1.
      * scaling and translation to 0..1 already happened, so remove that
@@ -1004,7 +1016,10 @@ static void etna_pipe_set_fragment_sampler_views(struct pipe_context *pipe,
     priv->dirty_bits |= ETNA_STATE_SAMPLER_VIEWS;
     priv->num_fragment_sampler_views = num_views;
     for(int idx=0; idx<num_views; ++idx)
+    {
+        priv->sampler_view_s[idx] = info[idx]; /* TODO reference */
         priv->sampler_view[idx] = *etna_sampler_view(info[idx])->internal;
+    }
 }
 
 static void etna_pipe_set_vertex_sampler_views(struct pipe_context *pipe,
@@ -1015,7 +1030,10 @@ static void etna_pipe_set_vertex_sampler_views(struct pipe_context *pipe,
     priv->dirty_bits |= ETNA_STATE_SAMPLER_VIEWS;
     priv->num_vertex_sampler_views = num_views;
     for(int idx=0; idx<num_views; ++idx)
+    {
+        priv->sampler_view_s[priv->specs.vertex_sampler_offset + idx] = info[idx];
         priv->sampler_view[priv->specs.vertex_sampler_offset + idx] = *etna_sampler_view(info[idx])->internal;
+    }
 }
 
 static void etna_pipe_set_vertex_buffers( struct pipe_context *pipe,
@@ -1028,6 +1046,7 @@ static void etna_pipe_set_vertex_buffers( struct pipe_context *pipe,
 
     assert(start_slot == 0 && num_buffers == 1); /* XXX TODO */
     assert(vb[0].buffer); /* XXX user_buffer */
+    priv->vertex_buffer_s = vb[0];
     SET_STATE(FE_VERTEX_STREAM_CONTROL, 
             VIVS_FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE(vb[0].stride));
     SET_STATE(FE_VERTEX_STREAM_BASE_ADDR, etna_resource(vb[0].buffer)->levels[0].address + vb[0].buffer_offset);
@@ -1474,10 +1493,13 @@ void etna_pipe_resource_copy_region(struct pipe_context *pipe,
     assert(src->nr_samples == 1 && dst->nr_samples == 1);
     /* XXX we can use the RS as a literal copy engine here 
      * the only complexity is tiling; the size of the boxes needs to be aligned to the tile size 
+     * how to handle the case where a resource is copied from/to a non-aligned position?
+     * from non-aligned: can fall back to rendering-based copy?
+     * to non-aligned: can fall back to rendering-based copy?
      */
 }
 
-void etna_pipe_blit(struct pipe_context *pipe, const struct pipe_blit_info *info)
+void etna_pipe_blit(struct pipe_context *pipe, const struct pipe_blit_info *blit_info)
 {
     /* This is a more extended version of resource_copy_region */
     /* TODO Some cases can be handled by RS; if not, fall back to rendering */
@@ -1489,7 +1511,56 @@ void etna_pipe_blit(struct pipe_context *pipe, const struct pipe_blit_info *info
      *   convert between tiling formats (layouts)
      *   downsample 2x in x and y
      *   convert between a limited number of pixel formats
+     *
+     * For the rest, fall back to util_blitter
      */
+    struct pipe_blit_info info = *blit_info;
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    if (info.src.resource->nr_samples > 1 &&
+                info.dst.resource->nr_samples <= 1 &&
+                !util_format_is_depth_or_stencil(info.src.resource->format) &&
+                !util_format_is_pure_integer(info.src.resource->format)) {
+        DBG("color resolve unimplemented");
+        return;
+    }
+#if 0 /* remove once implemented */
+    if (util_try_blit_via_copy_region(pctx, &info)) {
+        return; /* done */
+    }
+#endif
+    if (info.mask & PIPE_MASK_S) {
+        DBG("cannot blit stencil, skipping");
+        info.mask &= ~PIPE_MASK_S;
+    }
+
+    if (!util_blitter_is_blit_supported(priv->blitter, &info)) {
+        DBG("blit unsupported %s -> %s",
+                        util_format_short_name(info.src.resource->format),
+                        util_format_short_name(info.dst.resource->format));
+        return;
+    }
+
+    /* save current state */
+    util_blitter_save_vertex_buffer_slot(priv->blitter, &priv->vertex_buffer_s);
+    util_blitter_save_vertex_elements(priv->blitter, priv->vertex_elements);
+    util_blitter_save_vertex_shader(priv->blitter, priv->vs);
+    util_blitter_save_rasterizer(priv->blitter, priv->rasterizer);
+    util_blitter_save_viewport(priv->blitter, &priv->viewport_s);
+    util_blitter_save_scissor(priv->blitter, &priv->scissor_s);
+    util_blitter_save_fragment_shader(priv->blitter, priv->fs);
+    util_blitter_save_blend(priv->blitter, priv->blend);
+    util_blitter_save_depth_stencil_alpha(priv->blitter, priv->depth_stencil_alpha);
+    util_blitter_save_stencil_ref(priv->blitter, &priv->stencil_ref_s);
+    util_blitter_save_sample_mask(priv->blitter, priv->sample_mask_s);
+    util_blitter_save_framebuffer(priv->blitter, &priv->framebuffer_s);
+    util_blitter_save_fragment_sampler_states(priv->blitter,
+                    priv->num_fragment_samplers,
+                    (void **)priv->sampler);
+    util_blitter_save_fragment_sampler_views(priv->blitter,
+                    priv->num_fragment_sampler_views, priv->sampler_view_s);
+
+    util_blitter_blit(priv->blitter, &info);
+
 }
    
 void *etna_pipe_transfer_map(struct pipe_context *pipe,
@@ -1599,6 +1670,7 @@ struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct et
     priv->specs = *specs;
     util_slab_create(&priv->transfer_pool, sizeof(struct etna_transfer),
                      16, UTIL_SLAB_SINGLETHREADED);
+    priv->blitter = util_blitter_create(pc);
 
     /* TODO set sensible defaults for the other state */
     priv->base_setup.PA_W_CLIP_LIMIT = 0x34000001;
