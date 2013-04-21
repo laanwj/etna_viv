@@ -37,7 +37,9 @@ struct fb_info
 {
     int fd;
     int num_buffers;
+    /* GPU addresses of buffers */
     size_t physical[ETNA_FB_MAX_BUFFERS];
+    /* CPU addresses of buffers */
     void *logical[ETNA_FB_MAX_BUFFERS];
     size_t stride;
     size_t buffer_stride;
@@ -47,6 +49,10 @@ struct fb_info
 
     struct etna_resource *resource;
     struct compiled_rs_state copy_to_screen[ETNA_FB_MAX_BUFFERS];
+
+    /* Resolve format (-1 if no match), and swap red/blue bit */
+    int rs_format;
+    bool swap_rb;
 };
 
 /* Open framebuffer and get information */

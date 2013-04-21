@@ -66,13 +66,14 @@
 #include "util/u_surface.h"
 
 /*********************************************************************/
-/* Define state */
+/* Macros to define state */
 #define SET_STATE(addr, value) cs->addr = (value)
 #define SET_STATE_FIXP(addr, value) cs->addr = (value)
 #define SET_STATE_F32(addr, value) cs->addr = etna_f32_to_u32(value)
 
-/* Create bit field of which samplers are active and thus need to be programmed
- * 32 bits is enough for 32 samplers. 
+/* Create bit field that specifies which samplers are active and thus need to be programmed
+ * 32 bits is enough for 32 samplers. As far as I know this is the upper bound supported on any Vivante hw
+ * up to GC4000.
  */
 static uint32_t active_samplers_bits(struct pipe_context *pipe)
 {
@@ -84,9 +85,9 @@ static uint32_t active_samplers_bits(struct pipe_context *pipe)
     return active_samplers;
 }
 
-/* fill in shader_state from vs and fs
+/* Link vs and fs together: fill in shader_state from vs and fs
  * as this function is called every time a new fs or vs is bound, the goal is to do little code as possible here,
- * and to precompute as much as possible per vs/fs shader_object.
+ * and to precompute as much as possible in the vs/fs shader_object.
  */
 static void etna_link_shaders(struct pipe_context *pipe,
                               struct compiled_shader_state *cs, 
@@ -94,8 +95,10 @@ static void etna_link_shaders(struct pipe_context *pipe,
 {
     assert(vs->processor == TGSI_PROCESSOR_VERTEX);
     assert(fs->processor == TGSI_PROCESSOR_FRAGMENT);
+#ifdef DEBUG
     etna_dump_shader_object(vs);
     etna_dump_shader_object(fs);
+#endif
 
     /* set last_varying_2x flag if the last varying has 1 or 2 components */
     bool last_varying_2x = false;
@@ -212,7 +215,10 @@ static void etna_link_shaders(struct pipe_context *pipe,
     memcpy(&cs->PS_UNIFORMS[fs->imm_base], fs->imm_data, fs->imm_size*4);
 }
     
-/* Weave state */
+/* Weave state. This function merges all the compiled state blocks under the context into 
+ * one device register state. Parts of this state that are changed since last call (dirty)
+ * will be uploaded as state changes in the command buffer.
+ */
 static void sync_context(struct pipe_context *pipe)
 {
     struct etna_pipe_context_priv *restrict e = ETNA_PIPE(pipe);
@@ -234,9 +240,9 @@ static void sync_context(struct pipe_context *pipe)
     }
 
     /* XXX todo: 
-     * - caching, don't re-emit cached state ?
+     * - caching, don't re-emit cached state (use struct etna_3d_state as a write-through cache?)
      * - group consecutive states into one LOAD_STATE command stream
-     * - update context
+     * - update context: libetnaviv needs to provide interface for this
      * - flush texture? 
      * - flush depth/color on depth/color framebuffer change
      */

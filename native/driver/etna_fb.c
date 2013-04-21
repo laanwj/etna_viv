@@ -47,11 +47,80 @@
 #define FBDEV_DEV "/dev/fb%i"
 #endif
 
-/* XXX:
- * If you get "Error: failed to run ioctl to pan display", use
- *     fbset -vyres 2160
- * replace 2160 by 2* y resolution.
+/* Structure to convert framebuffer format to RS destination conf */
+struct etna_fb_format_desc
+{
+    unsigned bits_per_pixel;
+    unsigned red_offset;
+    unsigned red_length;
+    unsigned green_offset;
+    unsigned green_length;
+    unsigned blue_offset;
+    unsigned blue_length;
+    unsigned alpha_offset;
+    unsigned alpha_length;
+    unsigned rs_format;
+    bool swap_rb;
+};
+
+static const struct etna_fb_format_desc etna_fb_formats[] = {
+ /* bpp  ro  rl go gl bo  bl ao  al rs_format           swap_rb */
+    {32, 16, 8, 8, 8, 0 , 8, 0,  0, RS_FORMAT_X8R8G8B8, false},
+    {32, 0 , 8, 8, 8, 16, 8, 0,  0, RS_FORMAT_X8R8G8B8, true},
+    {32, 16, 8, 8, 8, 0 , 8, 24, 8, RS_FORMAT_A8R8G8B8, false},
+    {32, 0 , 8, 8, 8, 16, 8, 24, 8, RS_FORMAT_A8R8G8B8, true},
+    {16, 8 , 4, 4, 4, 0,  4, 0,  0, RS_FORMAT_X4R4G4B4, false},
+    {16, 0 , 4, 4, 4, 8,  4, 0,  0, RS_FORMAT_X4R4G4B4, true},
+    {16, 8 , 4, 4, 4, 0,  4, 12, 4, RS_FORMAT_A4R4G4B4, false},
+    {16, 0 , 4, 4, 4, 8,  4, 12, 4, RS_FORMAT_A4R4G4B4, true},
+    {16, 10, 5, 5, 5, 0,  5, 0,  0, RS_FORMAT_X1R5G5B5, false},
+    {16, 0,  5, 5, 5, 10, 5, 0,  0, RS_FORMAT_X1R5G5B5, true},
+    {16, 10, 5, 5, 5, 0,  5, 15, 1, RS_FORMAT_A1R5G5B5, false},
+    {16, 0,  5, 5, 5, 10, 5, 15, 1, RS_FORMAT_A1R5G5B5, true},
+    {16, 11, 5, 5, 6, 0,  5, 0,  0, RS_FORMAT_R5G6B5, false},
+    {16, 0,  5, 5, 6, 11, 5, 0,  0, RS_FORMAT_R5G6B5, true},
+    /* I guess we could support YUV outputs as well, for overlays... */
+};
+
+#define NUM_FB_FORMATS (sizeof(etna_fb_formats) / sizeof(etna_fb_formats[0]))
+
+/* Get resolve format and swap red/blue format based on report on red/green/blue
+ * positions from kernel.
  */
+static int fb_get_format(const struct fb_var_screeninfo *fb_var)
+{
+    int fmt_idx=0;
+    /* linear scan of table to find matching format */
+    for(fmt_idx=0; fmt_idx<NUM_FB_FORMATS; ++fmt_idx)
+    {
+        const struct etna_fb_format_desc *desc = &etna_fb_formats[fmt_idx];
+        if(desc->red_offset == fb_var->red.offset &&
+            desc->red_length == fb_var->red.length &&
+            desc->green_offset == fb_var->green.offset &&
+            desc->green_length == fb_var->green.length &&
+            desc->blue_offset == fb_var->blue.offset &&
+            desc->blue_length == fb_var->blue.length &&
+            (desc->alpha_offset == fb_var->transp.offset || desc->alpha_length == 0) &&
+            desc->alpha_length == fb_var->transp.length)
+        {
+            break;
+        }
+    }
+    if(fmt_idx == NUM_FB_FORMATS)
+    {
+        printf("Unsupported framebuffer format: red_offset=%i red_length=%i green_offset=%i green_length=%i blue_offset=%i blue_length=%i trans_offset=%i transp_length=%i\n",
+                (int)fb_var->red.offset, (int)fb_var->red.length,
+                (int)fb_var->green.offset, (int)fb_var->green.length,
+                (int)fb_var->blue.offset, (int)fb_var->blue.length,
+                (int)fb_var->transp.offset, (int)fb_var->transp.length);
+        fmt_idx = -1;
+    } else {
+        printf("Framebuffer format: %i, flip_rb=%i\n", 
+                etna_fb_formats[fmt_idx].rs_format, 
+                etna_fb_formats[fmt_idx].swap_rb);
+    }
+    return fmt_idx;
+}
 
 /* Open framebuffer and get information */
 int fb_open(int num, struct fb_info *out)
@@ -120,9 +189,21 @@ int fb_open(int num, struct fb_info *out)
         out->fb_var.yres_virtual = req_virth;
         if (ioctl(out->fd, FBIOPUT_VSCREENINFO, &out->fb_var))
         {
-            printf("Warning: failed to run ioctl to change virtual height: %s\n", strerror(errno));
+            printf("Warning: failed to run ioctl to change virtual height for buffering: %s. Rendering may fail.\n", strerror(errno));
         }
     }
+
+    /* determine resolve format */
+    int fmt_idx = fb_get_format(&out->fb_var);
+    if(fmt_idx != -1)
+    {
+        out->rs_format = etna_fb_formats[fmt_idx].rs_format;
+        out->swap_rb = etna_fb_formats[fmt_idx].swap_rb;
+    } else {
+        out->rs_format = -1;
+        out->swap_rb = false;
+    }
+
     return 0;
 }
 
@@ -140,68 +221,18 @@ int fb_set_buffer(struct fb_info *fb, int buffer)
 
 int fb_close(struct fb_info *fb)
 {
+    if(fb->map)
+        munmap(fb->map, fb->fb_fix.smem_len);
     close(fb->fd);
     return 0;
 }
 
-/* Structure to convert framebuffer format to RS destination conf */
-struct etna_fb_format_desc
-{
-    unsigned bits_per_pixel;
-    unsigned red_offset;
-    unsigned red_length;
-    unsigned green_offset;
-    unsigned green_length;
-    unsigned blue_offset;
-    unsigned blue_length;
-    unsigned rs_format;
-    bool swap_rb;
-};
-
-static const struct etna_fb_format_desc etna_fb_formats[] = {
-    {32, 16, 8, 8, 8, 0 , 8, RS_FORMAT_X8R8G8B8, false}, /* X8R8G8B8 */
-    {32, 0 , 8, 8, 8, 16, 8, RS_FORMAT_X8R8G8B8, true},  /* X8B8G8R8 */
-    {16, 8 , 4, 4, 4, 0,  4, RS_FORMAT_X4R4G4B4, false}, /* X4R4G4B4 */
-    {16, 0 , 4, 4, 4, 8,  4, RS_FORMAT_X4R4G4B4, true},  /* X4B4G4R4 */
-    {16, 10, 5, 5, 5, 0,  5, RS_FORMAT_X1R5G5B5, false}, /* X1R5G5B5 */
-    {16, 0,  5, 5, 5, 10, 5, RS_FORMAT_X1R5G5B5, true},  /* X1B5G5R5 */
-    {16, 11, 5, 5, 6, 0,  5, RS_FORMAT_R5G6B5, false},   /* R5G6B5 */
-    {16, 0,  5, 5, 6, 11, 5, RS_FORMAT_R5G6B5, true},    /* B5G6R5 */
-    /* I guess we could support YUV outputs as well... */
-};
-#define NUM_FB_FORMATS (sizeof(etna_fb_formats) / sizeof(etna_fb_formats[0]))
 
 int etna_fb_bind_resource(struct fb_info *fb, struct pipe_resource *rt_resource_)
 {
     struct etna_resource *rt_resource = etna_resource(rt_resource_);
-    int fmt_idx = 0;
     fb->resource = rt_resource;
-    
-    for(fmt_idx=0; fmt_idx<NUM_FB_FORMATS; ++fmt_idx)
-    {
-        const struct etna_fb_format_desc *desc = &etna_fb_formats[fmt_idx];
-        if(desc->red_offset == fb->fb_var.red.offset &&
-            desc->red_length == fb->fb_var.red.length &&
-            desc->green_offset == fb->fb_var.green.offset &&
-            desc->green_length == fb->fb_var.green.length &&
-            desc->blue_offset == fb->fb_var.blue.offset &&
-            desc->blue_length == fb->fb_var.blue.length)
-        {
-            break;
-        }
-    }
-    if(fmt_idx == NUM_FB_FORMATS)
-    {
-        printf("Unsupported framebuffer format: red_offset=%i red_length=%i green_offset=%i green_length=%i blue_offset=%i blue_length=%i\n",
-                (int)fb->fb_var.red.offset, (int)fb->fb_var.red.length,
-                (int)fb->fb_var.green.offset, (int)fb->fb_var.green.length,
-                (int)fb->fb_var.blue.offset, (int)fb->fb_var.blue.length);
-        fmt_idx = 0; // XXX
-    } else {
-        printf("Framebuffer format: %i, flip_rb=%i\n", 
-                etna_fb_formats[fmt_idx].rs_format, 
-                etna_fb_formats[fmt_idx].swap_rb);
-    }
+    assert(rt_resource->base.width0 <= fb->fb_var.xres && rt_resource->base.height0 <= fb->fb_var.yres);
     for(int bi=0; bi<ETNA_FB_MAX_BUFFERS; ++bi)
     {
         etna_compile_rs_state(&fb->copy_to_screen[bi], &(struct rs_state){
@@ -209,11 +240,11 @@ int etna_fb_bind_resource(struct fb_info *fb, struct pipe_resource *rt_resource_
                     .source_tiling = rt_resource->layout,
                     .source_addr = rt_resource->levels[0].address,
                     .source_stride = rt_resource->levels[0].stride,
-                    .dest_format = etna_fb_formats[fmt_idx].rs_format,
+                    .dest_format = fb->rs_format,
                     .dest_tiling = ETNA_LAYOUT_LINEAR,
                     .dest_addr = fb->physical[bi],
                     .dest_stride = fb->fb_fix.line_length,
-                    .swap_rb = etna_fb_formats[fmt_idx].swap_rb,
+                    .swap_rb = fb->swap_rb,
                     .dither = {0xffffffff, 0xffffffff}, // XXX dither when going from 24 to 16 bit?
                     .clear_mode = VIVS_RS_CLEAR_CONTROL_MODE_DISABLED,
                     .width = fb->fb_var.xres,
@@ -225,7 +256,7 @@ int etna_fb_bind_resource(struct fb_info *fb, struct pipe_resource *rt_resource_
 
 int etna_fb_copy_buffer(struct fb_info *fb, struct etna_ctx *ctx, int buffer)
 {
-    assert(fb->resource);
+    assert(fb->resource && fb->rs_format != -1);
     /*  XXX assumes TS is still set up correctly */
     etna_submit_rs_state(ctx, &fb->copy_to_screen[buffer]);
     return 0;
