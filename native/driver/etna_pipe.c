@@ -188,7 +188,7 @@ static void etna_link_shaders(struct pipe_context *pipe,
             total_components += 1;
         }
     }
-    SET_STATE(GL_VARYING_TOTAL_COMPONENTS, VIVS_GL_VARYING_TOTAL_COMPONENTS_NUM(etna_align_up(total_components, 2)));
+    SET_STATE(GL_VARYING_TOTAL_COMPONENTS, VIVS_GL_VARYING_TOTAL_COMPONENTS_NUM(align(total_components, 2)));
     SET_STATE(GL_VARYING_NUM_COMPONENTS, num_components);
     SET_STATE(GL_VARYING_COMPONENT_USE[0], component_use[0]);
     SET_STATE(GL_VARYING_COMPONENT_USE[1], component_use[1]);
@@ -1362,7 +1362,7 @@ void *etna_create_shader_state(struct pipe_context *pipe, const struct etna_shad
         }
         total_components += rs->varyings[idx].num_components;
     }
-    SET_STATE(GL_VARYING_TOTAL_COMPONENTS, VIVS_GL_VARYING_TOTAL_COMPONENTS_NUM(etna_align_up(total_components, 2)));
+    SET_STATE(GL_VARYING_TOTAL_COMPONENTS, VIVS_GL_VARYING_TOTAL_COMPONENTS_NUM(align(total_components, 2)));
     SET_STATE(GL_VARYING_NUM_COMPONENTS, num_components);
     SET_STATE(GL_VARYING_COMPONENT_USE[0], component_use[0]);
     SET_STATE(GL_VARYING_COMPONENT_USE[1], component_use[1]);
@@ -1584,8 +1584,8 @@ void *etna_pipe_transfer_map(struct pipe_context *pipe,
     ptrans->base.level = level;
     ptrans->base.usage = usage;
     ptrans->base.box = *box;
-    ptrans->base.stride = etna_align_up(box->width, divSizeX) * util_format_get_blocksize(format); /* row stride in bytes */
-    ptrans->base.layer_stride = etna_align_up(box->height, divSizeY) * ptrans->base.stride;
+    ptrans->base.stride = align(box->width, divSizeX) * util_format_get_blocksize(format); /* row stride in bytes */
+    ptrans->base.layer_stride = align(box->height, divSizeY) * ptrans->base.stride;
     ptrans->size = ptrans->base.layer_stride * box->depth;
     /* XXX currently always allocates a buffer for copying; if the resource is not in use,
      * and no tiling is needed, can just return a direct pointer. 

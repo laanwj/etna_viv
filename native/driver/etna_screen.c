@@ -32,6 +32,7 @@
 #include "util/u_memory.h"
 #include "util/u_format.h"
 #include "util/u_transfer.h"
+#include "util/u_math.h"
 
 #include <stdio.h>
 
@@ -54,6 +55,7 @@ static const char *etna_screen_get_vendor( struct pipe_screen *screen )
 
 static int etna_screen_get_param( struct pipe_screen *screen, enum pipe_cap param )
 {
+    struct etna_screen *priv = etna_screen(screen);
     switch (param) {
     /* Supported features (boolean caps). */
     case PIPE_CAP_TWO_SIDED_STENCIL:
@@ -80,8 +82,10 @@ static int etna_screen_get_param( struct pipe_screen *screen, enum pipe_cap para
     case PIPE_CAP_GLSL_FEATURE_LEVEL:
             return 120;
 
+    case PIPE_CAP_NPOT_TEXTURES:
+            return VIV_FEATURE(priv->dev, chipMinorFeatures1, NON_POWER_OF_TWO);
+
     /* Unsupported features. */
-    case PIPE_CAP_NPOT_TEXTURES: /* XXX supported on gc2000 */
     case PIPE_CAP_TEXTURE_SWIZZLE: /* XXX supported on gc2000 */
     case PIPE_CAP_COMPUTE: /* XXX supported on gc2000 */
     case PIPE_CAP_MIXED_COLORBUFFER_FORMATS: /* only one colorbuffer supported, so mixing makes no sense */
@@ -452,12 +456,12 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
         struct etna_resource_level *mip = &resource->levels[ix];
         mip->width = x;
         mip->height = y;
-        mip->padded_width = etna_align_up(x, padding);
-        mip->padded_height = etna_align_up(y, padding);
-        mip->stride = etna_align_up(resource->levels[ix].padded_width, divSizeX)/divSizeX * element_size;
+        mip->padded_width = align(x, padding);
+        mip->padded_height = align(y, padding);
+        mip->stride = align(resource->levels[ix].padded_width, divSizeX)/divSizeX * element_size;
         mip->offset = offset;
-        mip->layer_stride = etna_align_up(mip->padded_width, divSizeX)/divSizeX * 
-                      etna_align_up(mip->padded_height, divSizeY)/divSizeY * element_size;
+        mip->layer_stride = align(mip->padded_width, divSizeX)/divSizeX * 
+                      align(mip->padded_height, divSizeY)/divSizeY * element_size;
         mip->size = templat->array_size * mip->layer_stride;
         offset += mip->size;
         if(ix == max_mip_level || (x == 1 && y == 1))
@@ -471,7 +475,7 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     size_t rt_size = offset;
     size_t rt_ts_size = 0;
     if(templat->bind & PIPE_BIND_RENDER_TARGET) /* TS only for level 0 -- XXX is this formula correct? */
-        rt_ts_size = etna_align_up(resource->levels[0].size*priv->specs.bits_per_tile/0x80, 0x100);
+        rt_ts_size = align(resource->levels[0].size*priv->specs.bits_per_tile/0x80, 0x100);
     
     /* determine memory type */
     gceSURF_TYPE memtype = gcvSURF_TYPE_UNKNOWN;
