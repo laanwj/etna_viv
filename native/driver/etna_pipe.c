@@ -1670,7 +1670,6 @@ struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct et
     priv->specs = *specs;
     util_slab_create(&priv->transfer_pool, sizeof(struct etna_transfer),
                      16, UTIL_SLAB_SINGLETHREADED);
-    priv->blitter = util_blitter_create(pc);
 
     /* TODO set sensible defaults for the other state */
     priv->base_setup.PA_W_CLIP_LIMIT = 0x34000001;
@@ -1755,6 +1754,9 @@ struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct et
     /* XXX set_global_binding */
     /* XXX launch_grid */
 
+#if 0 /* disable for now -- causes segmentation fault */
+    priv->blitter = util_blitter_create(pc);
+#endif
     return pc;
 }
 
