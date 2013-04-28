@@ -1643,7 +1643,7 @@ void etna_pipe_transfer_unmap(struct pipe_context *pipe,
     util_slab_free(&priv->transfer_pool, ptrans);
 }
 
-struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct etna_pipe_specs *specs)
+struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct etna_pipe_specs *specs, struct pipe_screen *screen)
 {
     struct pipe_context *pc = CALLOC_STRUCT(pipe_context);
     if(pc == NULL)
@@ -1656,6 +1656,8 @@ struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct et
         return NULL;
     }
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pc);
+
+    pc->screen = screen;
 
     if(etna_create(dev, &priv->ctx) < 0)
     {
@@ -1754,9 +1756,7 @@ struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct et
     /* XXX set_global_binding */
     /* XXX launch_grid */
 
-#if 0 /* disable for now -- causes segmentation fault */
     priv->blitter = util_blitter_create(pc);
-#endif
     return pc;
 }
 

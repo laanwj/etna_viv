@@ -37,6 +37,8 @@
 #include "pipe/p_context.h"
 #include "util/u_slab.h"
 
+struct pipe_screen;
+
 struct etna_shader_input
 {
     int vs_reg; /* VS input register */
@@ -234,7 +236,7 @@ etna_transfer(struct pipe_transfer *p)
 
 #define ETNA_PIPE(pipe) ((struct etna_pipe_context_priv*)(pipe)->priv)
 
-struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct etna_pipe_specs *specs);
+struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct etna_pipe_specs *specs, struct pipe_screen *scr);
 
 /* raw shader methods -- used by fb_rawshader demos */
 void *etna_create_shader_state(struct pipe_context *pipe, const struct etna_shader_program *rs);
