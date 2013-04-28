@@ -6,7 +6,8 @@ COMMON_FLAGS += -I$(TOP)/resources -I$(TOP)/etnaviv -I$(TOP)/driver
 LDFLAGS += -lm
 LDFLAGS += ../etnaviv/libetnaviv.a
 
-TARGETS = cube cube_companion cube_etna ps_sandbox_etna etna_test reset viv_info cube_etna2
+TARGETS = reset viv_info
+TARGETS_GC800 = cube cube_companion cube_etna ps_sandbox_etna etna_test cube_etna2
 COMPANION_OBJS = ../resources/companion_array.o ../resources/companion_mesh.o ../resources/companion_texture.o
 ETNA_OBJS = ../driver/etna_rs.o ../driver/etna_fb.o ../driver/etna_bswap.o ../driver/etna_tex.o 
 
@@ -15,6 +16,9 @@ all: $(TARGETS)
 clean:
 	rm -f *.o ../lib/*.o ../driver/*.o
 	rm -f $(TARGETS)
+
+# These specifically replay command streams for gc800, don't build them by default
+gc800: $(TARGETS_GC800)
 
 cube: cube.o ../lib/write_bmp.o
 	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)

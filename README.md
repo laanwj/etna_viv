@@ -1,5 +1,3 @@
-Welcome to the Etna_viv project.
-
 Introduction
 =================
 
