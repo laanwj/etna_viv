@@ -38,9 +38,9 @@
 #endif
 #include "gc_hal_types.h"
 
-#include "common.xml.h"
-#include "cmdstream.xml.h"
-#include "etna_util.h"
+#include <etnaviv/common.xml.h>
+#include <etnaviv/cmdstream.xml.h>
+#include <etnaviv/etna_util.h>
 
 #include <stdint.h>
 #include <stdlib.h>

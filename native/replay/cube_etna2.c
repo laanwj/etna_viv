@@ -35,18 +35,18 @@
 
 #include <errno.h>
 
-#include "common.xml.h"
-#include "state.xml.h"
-#include "state_3d.xml.h"
-#include "cmdstream.xml.h"
+#include <etnaviv/common.xml.h>
+#include <etnaviv/state.xml.h>
+#include <etnaviv/state_3d.xml.h>
+#include <etnaviv/cmdstream.xml.h>
+#include <etnaviv/viv.h>
+#include <etnaviv/etna.h>
+#include <etnaviv/etna_mem.h>
+#include <etnaviv/etna_util.h>
 
 #include "write_bmp.h"
-#include "viv.h"
-#include "etna.h"
 #include "etna_rs.h"
 #include "etna_fb.h"
-#include "etna_mem.h"
-#include "etna_util.h"
 
 #include "esTransform.h"
 

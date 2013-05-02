@@ -23,8 +23,8 @@
 #include "etna_fb.h"
 #include "etna_translate.h"
 #include "etna_pipe.h"
-#include "state.xml.h"
-#include "state_3d.xml.h"
+#include <etnaviv/state.xml.h>
+#include <etnaviv/state_3d.xml.h>
 
 #include <stdio.h>
 #include <unistd.h>
@@ -79,13 +79,14 @@ static const struct etna_fb_format_desc etna_fb_formats[] = {
     {16, 0,  5, 5, 5, 10, 5, 15, 1, RS_FORMAT_A1R5G5B5, true},
     {16, 11, 5, 5, 6, 0,  5, 0,  0, RS_FORMAT_R5G6B5, false},
     {16, 0,  5, 5, 6, 11, 5, 0,  0, RS_FORMAT_R5G6B5, true},
-    /* I guess we could support YUV outputs as well, for overlays... */
+    /* I guess we could support YUV outputs as well, for overlays,
+     * at least on GPUs that support YUV resolve target... */
 };
 
 #define NUM_FB_FORMATS (sizeof(etna_fb_formats) / sizeof(etna_fb_formats[0]))
 
 /* Get resolve format and swap red/blue format based on report on red/green/blue
- * positions from kernel.
+ * bit positions from kernel.
  */
 static int fb_get_format(const struct fb_var_screeninfo *fb_var)
 {
@@ -257,7 +258,10 @@ int etna_fb_bind_resource(struct fb_info *fb, struct pipe_resource *rt_resource_
 int etna_fb_copy_buffer(struct fb_info *fb, struct etna_ctx *ctx, int buffer)
 {
     assert(fb->resource && fb->rs_format != -1);
-    /*  XXX assumes TS is still set up correctly */
+    /*  XXX assumes TS is still set up correctly for the resource to be copied
+     *  from. Currently this is not the case when another render target has been selected
+     *  before calling this function.
+     */
     etna_submit_rs_state(ctx, &fb->copy_to_screen[buffer]);
     return 0;
 }

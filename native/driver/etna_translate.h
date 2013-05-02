@@ -28,11 +28,11 @@
 #include "pipe/p_format.h"
 #include "pipe/p_state.h"
 
-#include "common.xml.h"
-#include "state.xml.h"
-#include "state_3d.xml.h"
-#include "cmdstream.xml.h"
-#include "etna_util.h"
+#include <etnaviv/common.xml.h>
+#include <etnaviv/state.xml.h>
+#include <etnaviv/state_3d.xml.h>
+#include <etnaviv/cmdstream.xml.h>
+#include <etnaviv/etna_util.h>
 #include "etna_internal.h"
 #include "etna_debug.h"
 

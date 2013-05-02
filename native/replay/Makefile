@@ -2,7 +2,7 @@ TOP=..
 
 include $(TOP)/Makefile.inc
 
-COMMON_FLAGS += -I$(TOP)/resources -I$(TOP)/etnaviv -I$(TOP)/driver
+COMMON_FLAGS += -I$(TOP)/resources -I$(TOP)/driver
 LDFLAGS += -lm
 LDFLAGS += ../etnaviv/libetnaviv.a
 

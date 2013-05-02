@@ -11,12 +11,12 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include "common.xml.h"
-#include "state.xml.h"
-#include "state_3d.xml.h"
-#include "cmdstream.xml.h"
+#include <etnaviv/common.xml.h>
+#include <etnaviv/state.xml.h>
+#include <etnaviv/state_3d.xml.h>
+#include <etnaviv/cmdstream.xml.h>
+#include <etnaviv/viv.h>
 #include "write_bmp.h"
-#include "viv.h"
 #include "esTransform.h"
 
 /* Print generated command buffer */

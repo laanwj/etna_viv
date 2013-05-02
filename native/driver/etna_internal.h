@@ -24,8 +24,8 @@
 #ifndef H_ETNA_INTERNAL
 #define H_ETNA_INTERNAL
 
-#include "state.xml.h"
-#include "state_3d.xml.h"
+#include <etnaviv/state.xml.h>
+#include <etnaviv/state_3d.xml.h>
 
 #define ETNA_NUM_INPUTS (16)
 #define ETNA_NUM_VARYINGS (16)

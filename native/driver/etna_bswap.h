@@ -24,7 +24,7 @@
 #ifndef H_ETNA_BUFSWAP
 #define H_ETNA_BUFSWAP
 
-#include "etna.h"
+#include <etnaviv/etna.h>
 #include "etna_rs.h"
 
 #include <pthread.h>

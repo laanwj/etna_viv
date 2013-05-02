@@ -26,9 +26,10 @@
 #define H_ETNA_PIPE
 
 #include <stdint.h>
-#include "etna.h"
+#include <etnaviv/etna.h>
+#include <etnaviv/etna_mem.h>
+
 #include "etna_internal.h"
-#include "etna_mem.h"
 #include "etna_rs.h"
 #include "pipe/p_defines.h"
 #include "pipe/p_format.h"

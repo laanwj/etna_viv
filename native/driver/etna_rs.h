@@ -22,7 +22,8 @@
  */
 #ifndef H_ETNA_RS
 #define H_ETNA_RS
-#include "viv.h"
+#include <etnaviv/viv.h>
+#include <etnaviv/etna.h>
 
 struct rs_state
 {

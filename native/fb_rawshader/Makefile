@@ -2,7 +2,7 @@ TOP=..
 
 include $(TOP)/Makefile.inc
 
-COMMON_FLAGS += -I$(TOP)/resources -I$(TOP)/etnaviv -I$(TOP)/driver
+COMMON_FLAGS += -I$(TOP)/resources -I$(TOP)/driver
 CFLAGS += -DDUMP
 CXXFLAGS += 
 LDFLAGS +=  ../driver/libetnadriver.a ../gallium/libminigallium.a ../etnaviv/libetnaviv.a

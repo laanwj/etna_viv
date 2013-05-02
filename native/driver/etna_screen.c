@@ -21,13 +21,14 @@
  * DEALINGS IN THE SOFTWARE.
  */
 #include "etna_screen.h"
-#include "etna.h"
-#include "etna_util.h"
 #include "etna_pipe.h"
 #include "etna_shader.h"
 #include "etna_translate.h"
 #include "etna_debug.h"
-#include "viv.h"
+
+#include <etnaviv/viv.h>
+#include <etnaviv/etna.h>
+#include <etnaviv/etna_util.h>
 
 #include "util/u_memory.h"
 #include "util/u_format.h"

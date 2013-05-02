@@ -22,7 +22,7 @@
  */
 #include "etna_asm.h"
 
-#include "isa.xml.h"
+#include <etnaviv/isa.xml.h>
 
 int etna_assemble(uint32_t *out, const struct etna_inst *inst)
 {

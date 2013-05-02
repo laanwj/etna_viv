@@ -20,7 +20,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#include "viv.h"
+#include <etnaviv/viv.h>
 
 #include <unistd.h>
 #include <stdlib.h>

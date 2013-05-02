@@ -20,9 +20,9 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#include "etna.h"
-#include "viv.h"
-#include "state.xml.h"
+#include <etnaviv/etna.h>
+#include <etnaviv/viv.h>
+#include <etnaviv/state.xml.h>
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -30,8 +30,6 @@
 #include <stdio.h>
 
 #include "etna_context_cmd.h"
-
-#include "util/u_memory.h"
 
 //#define DEBUG
 //#define DEBUG_CMDBUF
@@ -48,7 +46,7 @@ static int initialize_gpu_context(struct viv_conn *conn, gcoCONTEXT vctx)
     /* First build context state map from compressed representation */
     size_t contextbuf_addr_size = sizeof(contextbuf_addr)/sizeof(address_index_t);
     size_t state_count = contextbuf_addr[contextbuf_addr_size - 1].address / 4 + 1;
-    uint32_t *context_map = MALLOC(state_count * 4);
+    uint32_t *context_map = ETNA_MALLOC(state_count * 4);
     if(context_map == NULL)
     {
         return ETNA_OUT_OF_MEMORY;
@@ -66,7 +64,7 @@ static int initialize_gpu_context(struct viv_conn *conn, gcoCONTEXT vctx)
     vctx->id = 0x0; // Actual ID will be returned here by kernel
     vctx->map = context_map;
     vctx->stateCount = state_count;
-    vctx->buffer = MALLOC(sizeof(contextbuf));
+    vctx->buffer = ETNA_MALLOC(sizeof(contextbuf));
     memcpy(vctx->buffer, contextbuf, sizeof(contextbuf)); /* copy over hardcoded context command buffer */
     vctx->pipe3DIndex = 0x2d6; // XXX should not be hardcoded
     vctx->pipe2DIndex = 0x106e; // XXX should not be hardcoded
@@ -93,7 +91,7 @@ static int initialize_gpu_context(struct viv_conn *conn, gcoCONTEXT vctx)
 #ifdef DEBUG
         fprintf(stderr, "Error allocating contiguous host memory for context\n");
 #endif
-        FREE(context_map);
+        ETNA_FREE(context_map);
         return ETNA_OUT_OF_MEMORY;
     }
 #ifdef DEBUG
@@ -117,13 +115,13 @@ static int initialize_gpu_context(struct viv_conn *conn, gcoCONTEXT vctx)
 int etna_create(struct viv_conn *conn, struct etna_ctx **ctx_out)
 {
     if(ctx_out == NULL) return ETNA_INVALID_ADDR;
-    struct etna_ctx *ctx = CALLOC_STRUCT(etna_ctx);
+    struct etna_ctx *ctx = ETNA_CALLOC_STRUCT(etna_ctx);
     if(ctx == NULL) return ETNA_OUT_OF_MEMORY;
     ctx->conn = conn;
 
     if(initialize_gpu_context(conn, &ctx->ctx) != ETNA_OK)
     {
-        FREE(ctx);
+        ETNA_FREE(ctx);
         return ETNA_INTERNAL_ERROR;
     }
 
@@ -222,7 +220,7 @@ int etna_free(struct etna_ctx *ctx)
     /* TODO: free context buffer */
     // viv_free_contiguous
     /* TODO: free command buffers */
-    /* TODO: FREE(ctx) */
+    /* TODO: ETNA_FREE(ctx) */
     return ETNA_OK;
 }
 

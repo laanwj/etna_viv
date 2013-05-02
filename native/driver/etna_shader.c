@@ -48,12 +48,12 @@
 #include "util/u_memory.h"
 #include "util/u_math.h"
 
-#include "etna.h"
-#include "etna_util.h"
+#include <etnaviv/etna.h>
+#include <etnaviv/etna_util.h>
+#include <etnaviv/isa.xml.h>
+#include <etnaviv/state_3d.xml.h>
 #include "etna_asm.h"
 #include "etna_internal.h"
-#include "isa.xml.h"
-#include "state_3d.xml.h"
 
 #include <stdio.h>
 #include <sys/types.h>

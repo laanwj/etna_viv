@@ -20,12 +20,20 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+/* Buffer-swapping implementation */
+
+/* Creates synchronization primitives for each buffer, both at the user space
+ * and kernel side. The application can signal when it finished rendering to a buffer,
+ * after which a synchronization signal will be queued to the kernel when the
+ * rendering is finished. A thread waits for these synchronization signals and 
+ * displays the buffer when ready.
+ */
 #include "etna_bswap.h"
 
-#include "viv.h"
-#include "etna.h"
-#include "state.xml.h"
-#include "state_3d.xml.h"
+#include <etnaviv/viv.h>
+#include <etnaviv/etna.h>
+#include <etnaviv/state.xml.h>
+#include <etnaviv/state_3d.xml.h>
 
 #include "util/u_memory.h"
 

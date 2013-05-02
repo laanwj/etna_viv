@@ -10,7 +10,7 @@
 #include <string.h>
 
 #include "write_bmp.h"
-#include "viv.h"
+#include <etnaviv/viv.h>
 
 #include "cube_cmd.h"
 /* TODO: should actually update context as we go,

@@ -24,11 +24,8 @@
 #ifndef H_ETNA_MEM
 #define H_ETNA_MEM
 
-#include "viv.h"
+#include <etnaviv/viv.h>
 #include <stdbool.h>
-
-#define ETNA_CALLOC_STRUCT(T)   (struct T *) calloc(1, sizeof(struct T))
-#define ETNA_FREE(_ptr ) free(_ptr)
 
 /* Structure describing a block of video memory */
 struct etna_vidmem {

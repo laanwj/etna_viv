@@ -20,13 +20,14 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#include "etna.h"
 #include "etna_rs.h"
 #include "etna_translate.h"
 
-#include "state.xml.h"
-#include "state_3d.xml.h"
+#include <etnaviv/etna.h>
+#include <etnaviv/state.xml.h>
+#include <etnaviv/state_3d.xml.h>
 
+/* Some kind of RS flush, used in the older drivers */
 void etna_warm_up_rs(struct etna_ctx *cmdbuf, viv_addr_t aux_rt_physical, viv_addr_t aux_rt_ts_physical)
 {
     etna_set_state(cmdbuf, VIVS_TS_COLOR_STATUS_BASE, aux_rt_ts_physical); /* ADDR_G */

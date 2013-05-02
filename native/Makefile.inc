@@ -7,7 +7,7 @@ LD = $(GCCPREFIX)ld
 AR = $(GCCPREFIX)ar
 
 COMMON_FLAGS =  -O2 -g -Wall -DGCABI_${GCABI} -I$(TOP)/lib -I$(TOP)/include_$(GCABI) -g -fPIC \
-          -I$(TOP)/gallium/include -I$(TOP)/gallium/auxiliary
+          -I$(TOP)/gallium/include -I$(TOP)/gallium/auxiliary -I$(TOP)
 
 CFLAGS += $(PLATFORM_CFLAGS) $(COMMON_FLAGS) -std=c99
 CXXFLAGS += $(PLATFORM_CXXFLAGS) $(COMMON_FLAGS)

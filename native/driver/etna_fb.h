@@ -24,7 +24,7 @@
 #ifndef H_ETNA_FB
 #define H_ETNA_FB
 
-#include "etna.h"
+#include <etnaviv/etna.h>
 #include "etna_rs.h"
 
 #include <stdint.h>
