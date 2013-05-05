@@ -63,7 +63,7 @@ void fbdemo_init(struct fbdemos_scaffold **out)
     }
     fbs->ctx = etna_pipe_get_etna_context(fbs->pipe);
     
-    if(etna_bswap_create(fbs->ctx, &fbs->buffers, (etna_set_buffer_cb_t)&fb_set_buffer, (etna_copy_buffer_cb_t)&etna_fb_copy_buffer, &fbs->fb) != ETNA_OK)
+    if(etna_bswap_create(fbs->ctx, &fbs->buffers, fbs->fb.num_buffers, (etna_set_buffer_cb_t)&fb_set_buffer, (etna_copy_buffer_cb_t)&etna_fb_copy_buffer, &fbs->fb) != ETNA_OK)
     {
         printf("Unable to create buffer swapper\n");
         exit(1);

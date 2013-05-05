@@ -79,7 +79,7 @@ static void etna_bswap_thread(struct etna_bswap_buffers *bufs)
         bufs->set_buffer(bufs->userptr, cur);
         bufs->frontbuffer = cur;
         /* X = (X+1)%buffers */
-        cur = (cur+1) % ETNA_BSWAP_NUM_BUFFERS;
+        cur = (cur+1) % bufs->num_buffers;
         /* set "buffer available" for buffer X, signal condition */
         pthread_mutex_lock(&bufs->buf[cur].available_mutex);
         bufs->buf[cur].is_available = 1;
@@ -89,6 +89,7 @@ static void etna_bswap_thread(struct etna_bswap_buffers *bufs)
 }
 
 int etna_bswap_create(struct etna_ctx *ctx, struct etna_bswap_buffers **bufs_out, 
+        int num_buffers,
         etna_set_buffer_cb_t set_buffer, 
         etna_copy_buffer_cb_t copy_buffer,
         void *userptr)
@@ -100,15 +101,16 @@ int etna_bswap_create(struct etna_ctx *ctx, struct etna_bswap_buffers **bufs_out
         return ETNA_INTERNAL_ERROR;
     bufs->conn = ctx->conn;
     bufs->ctx = ctx;
+    bufs->num_buffers = etna_umax(ETNA_BSWAP_NUM_BUFFERS, num_buffers);
     bufs->set_buffer = set_buffer;
     bufs->copy_buffer = copy_buffer;
     bufs->userptr = userptr;
     bufs->frontbuffer = 0;
-    bufs->backbuffer = 1;
+    bufs->backbuffer = (bufs->frontbuffer + 1) % bufs->num_buffers;
     bufs->terminate = false;
     bufs->set_buffer(bufs->userptr, bufs->frontbuffer);
 
-    for(int idx=0; idx<ETNA_BSWAP_NUM_BUFFERS; ++idx)
+    for(int idx=0; idx<bufs->num_buffers; ++idx)
         etna_bswap_init_buffer(bufs->conn, &bufs->buf[idx]);
     pthread_create(&bufs->thread, NULL, (void * (*)(void *))&etna_bswap_thread, bufs);
 
@@ -120,10 +122,10 @@ int etna_bswap_free(struct etna_bswap_buffers *bufs)
 {
     bufs->terminate = true;
     /* signal ready signals, to prevent thread from waiting forever for buffer to become ready */
-    for(int idx=0; idx<ETNA_BSWAP_NUM_BUFFERS; ++idx)
+    for(int idx=0; idx<bufs->num_buffers; ++idx)
         (void)viv_user_signal_signal(bufs->conn, bufs->buf[idx].sig_id_ready, 1); 
     (void)pthread_join(bufs->thread, NULL);
-    for(int idx=0; idx<ETNA_BSWAP_NUM_BUFFERS; ++idx)
+    for(int idx=0; idx<bufs->num_buffers; ++idx)
         etna_bswap_destroy_buffer(bufs->conn, &bufs->buf[idx]);
     FREE(bufs);
     return ETNA_OK;
@@ -159,22 +161,37 @@ int etna_bswap_queue_swap(struct etna_bswap_buffers *bufs)
 #endif
         return ETNA_INTERNAL_ERROR;
     }
-    bufs->backbuffer = (bufs->backbuffer + 1) % ETNA_BSWAP_NUM_BUFFERS;
+    bufs->backbuffer = (bufs->backbuffer + 1) % bufs->num_buffers;
     return ETNA_OK;
 }
 
 int etna_swap_buffers(struct etna_bswap_buffers *bufs)
 {
     assert(bufs->copy_buffer);
-    /* copy to screen */
-    etna_bswap_wait_available(bufs);
-
     /*  this flush is really needed, otherwise some quads will have pieces undrawn */
     etna_set_state(bufs->ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
+    if(bufs->num_buffers > 1)
+    {
+        /* copy to screen */
+        etna_bswap_wait_available(bufs);
 
-    bufs->copy_buffer(bufs->userptr, bufs->ctx, bufs->backbuffer);
+        bufs->copy_buffer(bufs->userptr, bufs->ctx, bufs->backbuffer);
 
-    etna_bswap_queue_swap(bufs);
+        etna_bswap_queue_swap(bufs);
+    } else { /* single buffer fallback */
+        if(viv_event_queue_signal(bufs->conn, bufs->buf[0].sig_id_ready, gcvKERNEL_PIXEL) != 0)
+        {
+            fprintf(stderr, "Unable to queue framebuffer sync signal\n");
+            return ETNA_INTERNAL_ERROR;
+        }
+        if(viv_user_signal_wait(bufs->conn, bufs->buf[0].sig_id_ready, SIG_WAIT_INDEFINITE) != 0)
+        {
+            fprintf(stderr, "Error waiting for framebuffer sync signal\n");
+            return ETNA_INTERNAL_ERROR; // ?
+        }
+        bufs->copy_buffer(bufs->userptr, bufs->ctx, 0);
+    }
+
     return 0;
 }
 

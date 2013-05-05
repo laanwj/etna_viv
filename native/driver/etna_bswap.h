@@ -30,7 +30,8 @@
 #include <pthread.h>
 #include <stdbool.h>
 
-#define ETNA_BSWAP_NUM_BUFFERS 2
+/* maximum number of buffers supported (triple) */
+#define ETNA_BSWAP_NUM_BUFFERS 3
 
 struct etna_bswap_buffer {
     pthread_mutex_t available_mutex;
@@ -46,6 +47,7 @@ struct etna_bswap_buffers {
     struct viv_conn *conn;
     struct etna_ctx *ctx;
     pthread_t thread;
+    int num_buffers;
     int backbuffer, frontbuffer;
     bool terminate;
 
@@ -56,6 +58,7 @@ struct etna_bswap_buffers {
 };
 
 int etna_bswap_create(struct etna_ctx *ctx, struct etna_bswap_buffers **bufs_out, 
+        int num_buffers,
         etna_set_buffer_cb_t set_buffer, 
         etna_copy_buffer_cb_t copy_buffer,
         void *userptr);

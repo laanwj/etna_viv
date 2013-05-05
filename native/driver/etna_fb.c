@@ -174,8 +174,6 @@ int fb_open(int num, struct fb_info *out)
     if(out->num_buffers > ETNA_FB_MAX_BUFFERS)
         out->num_buffers = ETNA_FB_MAX_BUFFERS;
 
-    assert(out->num_buffers >= 2); /* if you hit this assert, there is not enough fb memory for double-buffering, */
-                                   /* either fix single-buffering in etna or modify your kernel fb driver settings */
     for(int idx=0; idx<out->num_buffers; ++idx)
     {
         out->physical[idx] = out->fb_fix.smem_start + idx * out->buffer_stride;
