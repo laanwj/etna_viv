@@ -163,10 +163,12 @@ debug_symbol_name_dbghelp(const void *addr, char* buf, unsigned size)
 static INLINE void
 debug_symbol_name_glibc(const void *addr, char* buf, unsigned size)
 {
+#ifndef __UCLIBC__
    char** syms = backtrace_symbols((void**)&addr, 1);
    strncpy(buf, syms[0], size);
    buf[size - 1] = 0;
    free(syms);
+#endif
 }
 #endif
 
