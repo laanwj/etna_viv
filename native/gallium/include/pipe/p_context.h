@@ -70,7 +70,6 @@ struct pipe_viewport_state;
 struct pipe_compute_state;
 union pipe_color_union;
 union pipe_query_result;
-struct etna_shader_program;
 
 /**
  * Gallium rendering context.  Basically:
@@ -521,6 +520,19 @@ struct pipe_context {
                        const uint *block_layout, const uint *grid_layout,
                        uint32_t pc, const void *input);
    /*@}*/
+
+   /**
+    * Get sample position for an individual sample point.
+    *
+    * \param sample_count - total number of samples
+    * \param sample_index - sample to get the position values for
+    * \param out_value - return value of 2 floats for x and y position for
+    *                    requested sample.
+    */
+   void (*get_sample_position)(struct pipe_context *context,
+                               unsigned sample_count,
+                               unsigned sample_index,
+                               float *out_value);
 };
 
 

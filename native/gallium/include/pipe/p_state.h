@@ -64,6 +64,7 @@ extern "C" {
 #define PIPE_MAX_SHADER_RESOURCES 32
 #define PIPE_MAX_TEXTURE_LEVELS   16
 #define PIPE_MAX_SO_BUFFERS        4
+#define PIPE_MAX_SO_OUTPUTS       64
 
 
 struct pipe_reference
@@ -107,18 +108,8 @@ struct pipe_rasterizer_state
     */
    unsigned flatshade_first:1;
 
-   /**
-    * When true, triangle rasterization uses (0.5, 0.5) pixel centers
-    * for determining pixel ownership.
-    *
-    * When false, triangle rasterization uses (0,0) pixel centers for
-    * determining pixel ownership.
-    *
-    * Triangle rasterization always uses a 'top,left' rule for pixel
-    * ownership, this just alters which point we consider the pixel
-    * center for that test.
-    */
-   unsigned gl_rasterization_rules:1;
+   unsigned half_pixel_center:1;
+   unsigned bottom_edge_rule:1;
 
    /**
     * When true, rasterization is disabled and no pixels are written.
@@ -132,6 +123,12 @@ struct pipe_rasterizer_state
     * This depends on PIPE_CAP_DEPTH_CLIP_DISABLE.
     */
    unsigned depth_clip:1;
+
+   /**
+    * When true clip space in the z axis goes from [0..1] (D3D).  When false
+    * [-1, 1] (GL).
+    */
+   unsigned clip_halfz:1;
 
    /**
     * Enable bits for clipping half-spaces.
@@ -202,7 +199,7 @@ struct pipe_stream_output_info
       unsigned num_components:3;  /** 1 to 4 */
       unsigned output_buffer:3;   /**< 0 to PIPE_MAX_SO_BUFFERS */
       unsigned dst_offset:16;     /**< offset into the buffer in dwords */
-   } output[PIPE_MAX_SHADER_OUTPUTS];
+   } output[PIPE_MAX_SO_OUTPUTS];
 };
 
 

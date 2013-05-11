@@ -282,7 +282,7 @@ int main(int argc, char **argv)
                 .line_stipple_enable = 0,
                 .line_last_pixel = 0,
                 .flatshade_first = 0,
-                .gl_rasterization_rules = 1,
+                .half_pixel_center = 1,
                 .rasterizer_discard = 0,
                 .depth_clip = 0,
                 .clip_plane_enable = 0,

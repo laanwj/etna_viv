@@ -100,7 +100,7 @@ struct blitter_context_priv
    void *velem_state;
    void *velem_uint_state;
    void *velem_sint_state;
-   void *velem_state_readbuf;
+   void *velem_state_readbuf[4]; /**< X, XY, XYZ, XYZW */
 
    /* Sampler state. */
    void *sampler_state;
@@ -239,7 +239,8 @@ struct blitter_context *util_blitter_create(struct pipe_context *pipe)
    /* rasterizer state */
    memset(&rs_state, 0, sizeof(rs_state));
    rs_state.cull_face = PIPE_FACE_NONE;
-   rs_state.gl_rasterization_rules = 1;
+   rs_state.half_pixel_center = 1;
+   rs_state.bottom_edge_rule = 1;
    rs_state.flatshade = 1;
    rs_state.depth_clip = 1;
    ctx->rs_state = pipe->create_rasterizer_state(pipe, &rs_state);
@@ -285,9 +286,19 @@ struct blitter_context *util_blitter_create(struct pipe_context *pipe)
    }
 
    if (ctx->has_stream_out) {
-      velem[0].src_format = PIPE_FORMAT_R32_UINT;
-      velem[0].vertex_buffer_index = ctx->base.vb_slot;
-      ctx->velem_state_readbuf = pipe->create_vertex_elements_state(pipe, 1, &velem[0]);
+      static enum pipe_format formats[4] = {
+         PIPE_FORMAT_R32_UINT,
+         PIPE_FORMAT_R32G32_UINT,
+         PIPE_FORMAT_R32G32B32_UINT,
+         PIPE_FORMAT_R32G32B32A32_UINT
+      };
+
+      for (i = 0; i < 4; i++) {
+         velem[0].src_format = formats[i];
+         velem[0].vertex_buffer_index = ctx->base.vb_slot;
+         ctx->velem_state_readbuf[i] =
+               pipe->create_vertex_elements_state(pipe, 1, &velem[0]);
+      }
    }
 
    /* fragment shaders are created on-demand */
@@ -352,8 +363,11 @@ void util_blitter_destroy(struct blitter_context *blitter)
       pipe->delete_vertex_elements_state(pipe, ctx->velem_sint_state);
       pipe->delete_vertex_elements_state(pipe, ctx->velem_uint_state);
    }
-   if (ctx->velem_state_readbuf)
-      pipe->delete_vertex_elements_state(pipe, ctx->velem_state_readbuf);
+   for (i = 0; i < 4; i++) {
+      if (ctx->velem_state_readbuf[i]) {
+         pipe->delete_vertex_elements_state(pipe, ctx->velem_state_readbuf[i]);
+      }
+   }
 
    for (i = 0; i < PIPE_MAX_TEXTURE_TYPES; i++) {
       if (ctx->fs_texfetch_col[i])
@@ -1135,18 +1149,17 @@ static boolean is_blit_generic_supported(struct blitter_context *blitter,
 
    if (dst) {
       unsigned bind;
-      boolean is_stencil;
       const struct util_format_description *desc =
             util_format_description(dst_format);
-
-      is_stencil = util_format_has_stencil(desc);
+      boolean dst_has_stencil = util_format_has_stencil(desc);
 
       /* Stencil export must be supported for stencil copy. */
-      if ((mask & PIPE_MASK_S) && is_stencil && !ctx->has_stencil_export) {
+      if ((mask & PIPE_MASK_S) && dst_has_stencil &&
+          !ctx->has_stencil_export) {
          return FALSE;
       }
 
-      if (is_stencil || util_format_has_depth(desc))
+      if (dst_has_stencil || util_format_has_depth(desc))
          bind = PIPE_BIND_DEPTH_STENCIL;
       else
          bind = PIPE_BIND_RENDER_TARGET;
@@ -1168,15 +1181,18 @@ static boolean is_blit_generic_supported(struct blitter_context *blitter,
       }
 
       /* Check stencil sampler support for stencil copy. */
-      if (util_format_has_stencil(util_format_description(src_format))) {
-         enum pipe_format stencil_format =
+      if (mask & PIPE_MASK_S) {
+         if (util_format_has_stencil(util_format_description(src_format))) {
+            enum pipe_format stencil_format =
                util_format_stencil_only(src_format);
-         assert(stencil_format != PIPE_FORMAT_NONE);
+            assert(stencil_format != PIPE_FORMAT_NONE);
 
-         if (stencil_format != src_format &&
-             !screen->is_format_supported(screen, stencil_format, src->target,
-                                 src->nr_samples, PIPE_BIND_SAMPLER_VIEW)) {
-            return FALSE;
+            if (stencil_format != src_format &&
+                !screen->is_format_supported(screen, stencil_format,
+                                             src->target, src->nr_samples,
+                                             PIPE_BIND_SAMPLER_VIEW)) {
+               return FALSE;
+            }
          }
       }
    }
@@ -1737,7 +1753,7 @@ void util_blitter_copy_buffer(struct blitter_context *blitter,
    vb.stride = 4;
 
    pipe->set_vertex_buffers(pipe, ctx->base.vb_slot, 1, &vb);
-   pipe->bind_vertex_elements_state(pipe, ctx->velem_state_readbuf);
+   pipe->bind_vertex_elements_state(pipe, ctx->velem_state_readbuf[0]);
    pipe->bind_vs_state(pipe, ctx->vs_pos_only);
    if (ctx->has_geometry_shader)
       pipe->bind_gs_state(pipe, NULL);
@@ -1752,6 +1768,66 @@ void util_blitter_copy_buffer(struct blitter_context *blitter,
    blitter_restore_render_cond(ctx);
    blitter_unset_running_flag(ctx);
    pipe_so_target_reference(&so_target, NULL);
+}
+
+void util_blitter_clear_buffer(struct blitter_context *blitter,
+                               struct pipe_resource *dst,
+                               unsigned offset, unsigned size,
+                               unsigned num_channels,
+                               const union pipe_color_union *clear_value)
+{
+   struct blitter_context_priv *ctx = (struct blitter_context_priv*)blitter;
+   struct pipe_context *pipe = ctx->base.pipe;
+   struct pipe_vertex_buffer vb = {0};
+   struct pipe_stream_output_target *so_target;
+
+   assert(num_channels >= 1);
+   assert(num_channels <= 4);
+
+   /* IMPORTANT:  DON'T DO ANY BOUNDS CHECKING HERE!
+    *
+    * R600 uses this to initialize texture resources, so width0 might not be
+    * what you think it is.
+    */
+
+   /* Streamout is required. */
+   if (!ctx->has_stream_out) {
+      assert(!"Streamout unsupported in util_blitter_clear_buffer()");
+      return;
+   }
+
+   /* Some alignment is required. */
+   if (offset % 4 != 0 || size % 4 != 0) {
+      assert(!"Bad alignment in util_blitter_clear_buffer()");
+      return;
+   }
+
+   u_upload_data(ctx->upload, 0, num_channels*4, clear_value,
+                 &vb.buffer_offset, &vb.buffer);
+   vb.stride = 0;
+
+   blitter_set_running_flag(ctx);
+   blitter_check_saved_vertex_states(ctx);
+   blitter_disable_render_cond(ctx);
+
+   pipe->set_vertex_buffers(pipe, ctx->base.vb_slot, 1, &vb);
+   pipe->bind_vertex_elements_state(pipe,
+                                    ctx->velem_state_readbuf[num_channels-1]);
+   pipe->bind_vs_state(pipe, ctx->vs_pos_only);
+   if (ctx->has_geometry_shader)
+      pipe->bind_gs_state(pipe, NULL);
+   pipe->bind_rasterizer_state(pipe, ctx->rs_discard_state);
+
+   so_target = pipe->create_stream_output_target(pipe, dst, offset, size);
+   pipe->set_stream_output_targets(pipe, 1, &so_target, 0);
+
+   util_draw_arrays(pipe, PIPE_PRIM_POINTS, 0, size / 4);
+
+   blitter_restore_vertex_states(ctx);
+   blitter_restore_render_cond(ctx);
+   blitter_unset_running_flag(ctx);
+   pipe_so_target_reference(&so_target, NULL);
+   pipe_resource_reference(&vb.buffer, NULL);
 }
 
 /* probably radeon specific */

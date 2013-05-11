@@ -112,7 +112,7 @@ static const struct tgsi_opcode_info opcode_info[TGSI_OPCODE_LAST] =
    { 1, 2, 1, 0, 0, 0, OTHR, "TXL", TGSI_OPCODE_TXL },
    { 0, 0, 0, 0, 0, 0, NONE, "BRK", TGSI_OPCODE_BRK },
    { 0, 1, 0, 1, 0, 1, NONE, "IF", TGSI_OPCODE_IF },
-   { 1, 1, 0, 0, 0, 1, NONE, "", 75 },      /* removed */
+   { 0, 1, 0, 1, 0, 1, NONE, "UIF", TGSI_OPCODE_UIF },
    { 0, 1, 0, 0, 0, 1, NONE, "", 76 },      /* removed */
    { 0, 0, 0, 1, 1, 1, NONE, "ELSE", TGSI_OPCODE_ELSE },
    { 0, 0, 0, 0, 1, 0, NONE, "ENDIF", TGSI_OPCODE_ENDIF },
@@ -151,7 +151,7 @@ static const struct tgsi_opcode_info opcode_info[TGSI_OPCODE_LAST] =
    { 0, 0, 0, 0, 0, 0, NONE, "", 111 },     /* removed */
    { 1, 1, 0, 0, 0, 0, REPL, "NRM4", TGSI_OPCODE_NRM4 },
    { 0, 1, 0, 0, 0, 0, NONE, "CALLNZ", TGSI_OPCODE_CALLNZ },
-   { 0, 1, 0, 0, 0, 0, NONE, "IFC", TGSI_OPCODE_IFC },
+   { 0, 1, 0, 0, 0, 0, NONE, "", 114 },     /* removed */
    { 0, 1, 0, 0, 0, 0, NONE, "BREAKC", TGSI_OPCODE_BREAKC },
    { 0, 1, 0, 0, 0, 0, NONE, "KIL", TGSI_OPCODE_KIL },
    { 0, 0, 0, 0, 0, 0, NONE, "END", TGSI_OPCODE_END },
@@ -297,6 +297,10 @@ tgsi_opcode_infer_src_type( uint opcode )
    case TGSI_OPCODE_TXF:
    case TGSI_OPCODE_SAMPLE_I:
    case TGSI_OPCODE_SAMPLE_I_MS:
+   case TGSI_OPCODE_UIF:
+   case TGSI_OPCODE_CASE:
+   case TGSI_OPCODE_SWITCH:
+   case TGSI_OPCODE_BREAKC:
       return TGSI_TYPE_UNSIGNED;
    case TGSI_OPCODE_MOD:
    case TGSI_OPCODE_I2F:
@@ -327,6 +331,7 @@ tgsi_opcode_infer_dst_type( uint opcode )
 {
    switch (opcode) {
    case TGSI_OPCODE_MOV:
+   case TGSI_OPCODE_UCMP:
       return TGSI_TYPE_UNTYPED;
    case TGSI_OPCODE_F2U:
    case TGSI_OPCODE_AND:

@@ -956,7 +956,6 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
             case TGSI_OPCODE_NOP: break;
             case TGSI_OPCODE_NRM4: assert(0); break;
             case TGSI_OPCODE_CALLNZ: assert(0); break;
-            case TGSI_OPCODE_IFC: assert(0); break;
             case TGSI_OPCODE_BREAKC: assert(0); break;
             case TGSI_OPCODE_END: /* Nothing to do */ break;
             case TGSI_OPCODE_F2I: assert(0); break;

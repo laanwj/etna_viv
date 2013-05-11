@@ -712,13 +712,15 @@ static void *etna_pipe_create_rasterizer_state(struct pipe_context *pipe,
             (rs->line_last_pixel ? VIVS_SE_CONFIG_LAST_PIXEL_ENABLE : 0) 
             /* XXX anything else? */
             );
-    /* XXX rs->gl_rasterization_rules is likely one of the bits in VIVS_PA_SYSTEM_MODE */
+    /* XXX bottom_edge_rule */
     SET_STATE(PA_SYSTEM_MODE, 
-            (rs->gl_rasterization_rules ? (VIVS_PA_SYSTEM_MODE_UNK0 | VIVS_PA_SYSTEM_MODE_UNK4) : 0));
+            (rs->half_pixel_center ? (VIVS_PA_SYSTEM_MODE_UNK0 | VIVS_PA_SYSTEM_MODE_UNK4) : 0));
     /* rs->scissor overrides the scissor, defaulting to the whole framebuffer, with the scissor state */
     cs->scissor = rs->scissor;
     /* point size per vertex adds a vertex shader output */
     cs->VS_OUTPUT_COUNT = rs->point_size_per_vertex;
+
+    assert(!rs->clip_halfz); /* could be supported with shader magic, actually D3D z is default on older gc */
     return cs;
 }
 

@@ -397,6 +397,10 @@ enum pipe_flush_flags {
 #define PIPE_QUERY_PIPELINE_STATISTICS  10
 #define PIPE_QUERY_TYPES                11
 
+/* start of driver queries,
+ * see pipe_screen::get_driver_query_info */
+#define PIPE_QUERY_DRIVER_SPECIFIC     256
+
 
 /**
  * Conditional rendering modes
@@ -499,8 +503,15 @@ enum pipe_cap {
    PIPE_CAP_CUBE_MAP_ARRAY = 76,
    PIPE_CAP_TEXTURE_BUFFER_OBJECTS = 77,
    PIPE_CAP_TEXTURE_BUFFER_OFFSET_ALIGNMENT = 78,
-   PIPE_CAP_TGSI_TEXCOORD = 79
+   PIPE_CAP_TGSI_TEXCOORD = 79,
+   PIPE_CAP_PREFER_BLIT_BASED_TEXTURE_TRANSFER = 80,
+   PIPE_CAP_QUERY_PIPELINE_STATISTICS = 81,
+   PIPE_CAP_TEXTURE_BORDER_COLOR_QUIRK = 82
 };
+
+#define PIPE_QUIRK_TEXTURE_BORDER_COLOR_SWIZZLE_NV50 (1 << 0)
+#define PIPE_QUIRK_TEXTURE_BORDER_COLOR_SWIZZLE_R600 (1 << 1)
+
 
 /**
  * Implementation limits which are queried through
@@ -646,6 +657,14 @@ union pipe_color_union
    float f[4];
    int i[4];
    unsigned int ui[4];
+};
+
+struct pipe_driver_query_info
+{
+   const char *name;
+   unsigned query_type; /* PIPE_QUERY_DRIVER_SPECIFIC + i */
+   uint64_t max_value; /* max value that can be returned */
+   boolean uses_byte_units; /* whether the result is in bytes */
 };
 
 #ifdef __cplusplus

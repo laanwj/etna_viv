@@ -485,8 +485,7 @@ util_get_min_point_size(const struct pipe_rasterizer_state *state)
 {
    /* The point size should be clamped to this value at the rasterizer stage.
     */
-   return state->gl_rasterization_rules &&
-          !state->point_quad_rasterization &&
+   return !state->point_quad_rasterization &&
           !state->point_smooth &&
           !state->multisample ? 1.0f : 0.0f;
 }
@@ -517,7 +516,7 @@ util_query_clear_result(union pipe_query_result *result, unsigned type)
       memset(&result->pipeline_statistics, 0, sizeof(result->pipeline_statistics));
       break;
    default:
-      assert(0);
+      memset(result, 0, sizeof(*result));
    }
 }
 
@@ -583,7 +582,7 @@ util_copy_constant_buffer(struct pipe_constant_buffer *dst,
 }
 
 static INLINE unsigned
-util_max_layer(struct pipe_resource *r, unsigned level)
+util_max_layer(const struct pipe_resource *r, unsigned level)
 {
    switch (r->target) {
    case PIPE_TEXTURE_CUBE:
