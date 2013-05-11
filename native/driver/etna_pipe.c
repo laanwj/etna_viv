@@ -48,7 +48,6 @@
 #include <etnaviv/etna_mem.h>
 #include <etnaviv/etna_util.h>
 
-#include "write_bmp.h"
 #include "etna_rs.h"
 #include "etna_fb.h"
 #include "etna_bswap.h"
