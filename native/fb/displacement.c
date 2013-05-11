@@ -104,7 +104,7 @@ static const char displacement_frag[] =
 
 #define TEX_WIDTH (32)
 #define TEX_HEIGHT (32)
-struct pipe_resource *createSimpleTexture(struct pipe_screen *screen, struct pipe_context *pipe)
+static struct pipe_resource *createSimpleTexture(struct pipe_screen *screen, struct pipe_context *pipe)
 {
     struct pipe_resource *tex_resource = fbdemo_create_2d(screen, PIPE_BIND_SAMPLER_VIEW, PIPE_FORMAT_L8_UNORM, TEX_WIDTH, TEX_HEIGHT, 0);
     uint8_t pixels[TEX_HEIGHT][TEX_WIDTH];

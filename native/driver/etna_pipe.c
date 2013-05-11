@@ -1475,12 +1475,12 @@ static void etna_pipe_bind_vs_state(struct pipe_context *pipe, void *vss_)
     priv->vs = vss;
 }
 
-void etna_pipe_set_clip_state(struct pipe_context *pipe, const struct pipe_clip_state *pcs)
+static void etna_pipe_set_clip_state(struct pipe_context *pipe, const struct pipe_clip_state *pcs)
 {
     /* NOOP */
 }
 
-void etna_pipe_resource_copy_region(struct pipe_context *pipe,
+static void etna_pipe_resource_copy_region(struct pipe_context *pipe,
                             struct pipe_resource *dst,
                             unsigned dst_level,
                             unsigned dstx, unsigned dsty, unsigned dstz,
@@ -1500,7 +1500,7 @@ void etna_pipe_resource_copy_region(struct pipe_context *pipe,
      */
 }
 
-void etna_pipe_blit(struct pipe_context *pipe, const struct pipe_blit_info *blit_info)
+static void etna_pipe_blit(struct pipe_context *pipe, const struct pipe_blit_info *blit_info)
 {
     /* This is a more extended version of resource_copy_region */
     /* TODO Some cases can be handled by RS; if not, fall back to rendering */
@@ -1564,7 +1564,7 @@ void etna_pipe_blit(struct pipe_context *pipe, const struct pipe_blit_info *blit
 
 }
    
-void *etna_pipe_transfer_map(struct pipe_context *pipe,
+static void *etna_pipe_transfer_map(struct pipe_context *pipe,
                          struct pipe_resource *resource,
                          unsigned level,
                          unsigned usage,  /* a combination of PIPE_TRANSFER_x */
@@ -1597,7 +1597,7 @@ void *etna_pipe_transfer_map(struct pipe_context *pipe,
     return ptrans->buffer;
 }
 
-void etna_pipe_transfer_unmap(struct pipe_context *pipe,
+static void etna_pipe_transfer_unmap(struct pipe_context *pipe,
                       struct pipe_transfer *transfer_)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
