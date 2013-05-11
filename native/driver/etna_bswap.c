@@ -101,7 +101,7 @@ int etna_bswap_create(struct etna_ctx *ctx, struct etna_bswap_buffers **bufs_out
         return ETNA_INTERNAL_ERROR;
     bufs->conn = ctx->conn;
     bufs->ctx = ctx;
-    bufs->num_buffers = etna_umax(ETNA_BSWAP_NUM_BUFFERS, num_buffers);
+    bufs->num_buffers = etna_umin(ETNA_BSWAP_NUM_BUFFERS, num_buffers);
     bufs->set_buffer = set_buffer;
     bufs->copy_buffer = copy_buffer;
     bufs->userptr = userptr;
