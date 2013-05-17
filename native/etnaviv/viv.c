@@ -101,7 +101,11 @@ static void convert_chip_specs(struct viv_specs *out, const struct _gcsHAL_QUERY
     out->vertex_cache_size = in->vertexCacheSize;
     out->vertex_output_buffer_size = in->vertexOutputBufferSize;
 #ifdef GCABI_CHIPIDENTITY_EXT
+#ifdef GCABI_HAS_CONTEXT
     out->pixel_pipes = in->pixelPipe;
+#else
+    out->pixel_pipes = in->pixelPipes;
+#endif
     out->instruction_count = in->instructionCount;
     out->num_constants = in->numConstants;
     out->buffer_size = in->bufferSize;
