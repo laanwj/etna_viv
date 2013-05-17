@@ -171,10 +171,12 @@ struct compiled_framebuffer_state
     uint32_t PE_COLOR_FORMAT;
     uint32_t PE_DEPTH_CONFIG;
     uint32_t PE_DEPTH_ADDR;
+    uint32_t PE_PIPE_DEPTH_ADDR[2];
     uint32_t PE_DEPTH_STRIDE;
     uint32_t PE_HDEPTH_CONTROL;
     uint32_t PE_DEPTH_NORMALIZE;
     uint32_t PE_COLOR_ADDR;
+    uint32_t PE_PIPE_COLOR_ADDR[2];
     uint32_t PE_COLOR_STRIDE;
     uint32_t SE_SCISSOR_LEFT; // fixp, restricted by scissor state *if* enabled in rasterizer state
     uint32_t SE_SCISSOR_TOP; // fixp
@@ -290,6 +292,10 @@ struct etna_3d_state
     uint32_t /*014A0*/ PE_STENCIL_CONFIG_EXT;
     uint32_t /*014A4*/ PE_LOGIC_OP;
     uint32_t /*014A8*/ PE_DITHER[2];
+    uint32_t /*01460*/ PE_PIPE_0_COLOR_ADDR;
+    uint32_t /*01464*/ PE_PIPE_1_COLOR_ADDR;
+    uint32_t /*01480*/ PE_PIPE_0_DEPTH_ADDR;
+    uint32_t /*01484*/ PE_PIPE_1_DEPTH_ADDR;
     
     uint32_t /*01604*/ RS_CONFIG;
     uint32_t /*01608*/ RS_SOURCE_ADDR;
