@@ -113,7 +113,11 @@ struct etna_ctx {
     /* Structures for kernel */
     struct _gcoCMDBUF cmdbuf[NUM_COMMAND_BUFFERS];
     int cmdbuf_sig[NUM_COMMAND_BUFFERS]; /* sync signals for command buffers */
+#ifdef GCABI_HAS_CONTEXT
     struct _gcoCONTEXT ctx;
+#else
+    struct _gckCONTEXT ctx;
+#endif
 };
 
 /** Convenience macros for command buffer building, remember to reserve enough space before using them */
