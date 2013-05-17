@@ -122,7 +122,11 @@ int viv_lock_vidmem(struct viv_conn *conn, gcuVIDMEM_NODE_PTR node, viv_addr_t *
 
 /** Commit GPU command buffer and context.
  */
+#ifdef GCABI_HAS_CONTEXT
 int viv_commit(struct viv_conn *conn, gcoCMDBUF commandBuffer, gcoCONTEXT contextBuffer);
+#else
+int viv_commit(struct viv_conn *conn, gcoCMDBUF commandBuffer, gckCONTEXT context);
+#endif
 
 /**  Unlock (unmap) video memory node from GPU and CPU memory.
  */

@@ -261,6 +261,7 @@ int viv_unlock_vidmem(struct viv_conn *conn, gcuVIDMEM_NODE_PTR node, gceSURF_TY
 
 /* TODO free contiguous memory and video memory */
 
+#ifdef GCABI_HAS_CONTEXT
 int viv_commit(struct viv_conn *conn, gcoCMDBUF commandBuffer, gcoCONTEXT contextBuffer)
 {
     gcsHAL_INTERFACE id = {
@@ -275,6 +276,24 @@ int viv_commit(struct viv_conn *conn, gcoCMDBUF commandBuffer, gcoCONTEXT contex
     };
     return viv_invoke(conn, &id);
 }
+#else
+int viv_commit(struct viv_conn *conn, gcoCMDBUF commandBuffer, gckCONTEXT context)
+{
+    gcsHAL_INTERFACE id = {
+        .command = gcvHAL_COMMIT,
+        .u = {
+            .Commit = {
+                .commandBuffer = commandBuffer,
+                .context = context,
+                .queue = NULL,
+                /* TODO: State delta buffer*/
+            }
+        }
+    };
+
+    return viv_invoke(conn, &id);
+}
+#endif
 
 int viv_event_commit(struct viv_conn *conn, gcsQUEUE *queue)
 {
