@@ -34,7 +34,7 @@
 #ifdef GCABI_HAS_CONTEXT
 #include "gc_hal_user_context.h"
 #else
-#include "gc_hal_kernel_buffer.h"
+#include "gc_hal_kernel_context.h"
 #endif
 #include "gc_hal_types.h"
 
@@ -113,7 +113,11 @@ struct etna_ctx {
     /* Structures for kernel */
     struct _gcoCMDBUF cmdbuf[NUM_COMMAND_BUFFERS];
     int cmdbuf_sig[NUM_COMMAND_BUFFERS]; /* sync signals for command buffers */
+#ifdef GCABI_HAS_CONTEXT
     struct _gcoCONTEXT ctx;
+#else
+    struct _gckCONTEXT ctx;
+#endif
 };
 
 /** Convenience macros for command buffer building, remember to reserve enough space before using them */
