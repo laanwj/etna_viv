@@ -68,8 +68,12 @@ void etna_compile_rs_state(struct compiled_rs_state *cs, const struct rs_state *
                             ((rs->swap_rb)?VIVS_RS_CONFIG_SWAP_RB:0) |
                             ((rs->flip)?VIVS_RS_CONFIG_FLIP:0));
     SET_STATE(RS_SOURCE_ADDR, rs->source_addr);
+    SET_STATE(RS_PIPE_SOURCE_ADDR[0], rs->source_addr);
+    SET_STATE(RS_PIPE_SOURCE_ADDR[1], rs->source_addr);  /* TODO */
     SET_STATE(RS_SOURCE_STRIDE, (rs->source_stride << source_stride_shift) | ((rs->source_tiling&2)?VIVS_RS_SOURCE_STRIDE_TILING:0));
     SET_STATE(RS_DEST_ADDR, rs->dest_addr);
+    SET_STATE(RS_PIPE_DEST_ADDR[0], rs->dest_addr);
+    SET_STATE(RS_PIPE_DEST_ADDR[1], rs->dest_addr);  /* TODO */
     SET_STATE(RS_DEST_STRIDE, (rs->dest_stride << dest_stride_shift) | ((rs->dest_tiling&2)?VIVS_RS_DEST_STRIDE_TILING:0));
     SET_STATE(RS_WINDOW_SIZE, VIVS_RS_WINDOW_SIZE_WIDTH(rs->width) | VIVS_RS_WINDOW_SIZE_HEIGHT(rs->height));
     SET_STATE(RS_DITHER[0], rs->dither[0]);
@@ -86,28 +90,67 @@ void etna_compile_rs_state(struct compiled_rs_state *cs, const struct rs_state *
  * except TS if this is a source-to-destination blit. */
 void etna_submit_rs_state(struct etna_ctx *restrict ctx, const struct compiled_rs_state *cs)
 {
-    etna_reserve(ctx, 22);
-    /*0 */ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_CONFIG>>2, 5, 0);
-    /*1 */ ETNA_EMIT(ctx, cs->RS_CONFIG);
-    /*2 */ ETNA_EMIT(ctx, cs->RS_SOURCE_ADDR);
-    /*3 */ ETNA_EMIT(ctx, cs->RS_SOURCE_STRIDE);
-    /*4 */ ETNA_EMIT(ctx, cs->RS_DEST_ADDR);
-    /*5 */ ETNA_EMIT(ctx, cs->RS_DEST_STRIDE);
-    /*6 */ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_WINDOW_SIZE>>2, 1, 0);
-    /*7 */ ETNA_EMIT(ctx, cs->RS_WINDOW_SIZE);
-    /*8 */ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_DITHER(0)>>2, 2, 0);
-    /*9 */ ETNA_EMIT(ctx, cs->RS_DITHER[0]);
-    /*10*/ ETNA_EMIT(ctx, cs->RS_DITHER[1]);
-    /*11*/ ETNA_EMIT(ctx, 0xbabb1e); /* pad */
-    /*12*/ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_CLEAR_CONTROL>>2, 5, 0);
-    /*13*/ ETNA_EMIT(ctx, cs->RS_CLEAR_CONTROL);
-    /*14*/ ETNA_EMIT(ctx, cs->RS_FILL_VALUE[0]);
-    /*15*/ ETNA_EMIT(ctx, cs->RS_FILL_VALUE[1]);
-    /*16*/ ETNA_EMIT(ctx, cs->RS_FILL_VALUE[2]);
-    /*17*/ ETNA_EMIT(ctx, cs->RS_FILL_VALUE[3]);
-    /*18*/ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_EXTRA_CONFIG>>2, 1, 0);
-    /*19*/ ETNA_EMIT(ctx, cs->RS_EXTRA_CONFIG);
-    /*20*/ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_KICKER>>2, 1, 0);
-    /*21*/ ETNA_EMIT(ctx, 0xbeebbeeb);
+    if (ctx->conn->chip.pixel_pipes == 1)
+    {
+        etna_reserve(ctx, 22);
+        /*0 */ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_CONFIG>>2, 5, 0);
+        /*1 */ ETNA_EMIT(ctx, cs->RS_CONFIG);
+        /*2 */ ETNA_EMIT(ctx, cs->RS_SOURCE_ADDR);
+        /*3 */ ETNA_EMIT(ctx, cs->RS_SOURCE_STRIDE);
+        /*4 */ ETNA_EMIT(ctx, cs->RS_DEST_ADDR);
+        /*5 */ ETNA_EMIT(ctx, cs->RS_DEST_STRIDE);
+        /*6 */ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_WINDOW_SIZE>>2, 1, 0);
+        /*7 */ ETNA_EMIT(ctx, cs->RS_WINDOW_SIZE);
+        /*8 */ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_DITHER(0)>>2, 2, 0);
+        /*9 */ ETNA_EMIT(ctx, cs->RS_DITHER[0]);
+        /*10*/ ETNA_EMIT(ctx, cs->RS_DITHER[1]);
+        /*11*/ ETNA_EMIT(ctx, 0xbabb1e); /* pad */
+        /*12*/ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_CLEAR_CONTROL>>2, 5, 0);
+        /*13*/ ETNA_EMIT(ctx, cs->RS_CLEAR_CONTROL);
+        /*14*/ ETNA_EMIT(ctx, cs->RS_FILL_VALUE[0]);
+        /*15*/ ETNA_EMIT(ctx, cs->RS_FILL_VALUE[1]);
+        /*16*/ ETNA_EMIT(ctx, cs->RS_FILL_VALUE[2]);
+        /*17*/ ETNA_EMIT(ctx, cs->RS_FILL_VALUE[3]);
+        /*18*/ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_EXTRA_CONFIG>>2, 1, 0);
+        /*19*/ ETNA_EMIT(ctx, cs->RS_EXTRA_CONFIG);
+        /*20*/ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_KICKER>>2, 1, 0);
+        /*21*/ ETNA_EMIT(ctx, 0xbeebbeeb);
+    }
+    else if (ctx->conn->chip.pixel_pipes == 2)
+    {
+        etna_reserve(ctx, 32);
+        /*0 */ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_CONFIG>>2, 5, 0);
+        /*1 */ ETNA_EMIT(ctx, cs->RS_CONFIG);
+        /*2 */ ETNA_EMIT(ctx, cs->RS_SOURCE_STRIDE);
+        /*3 */ ETNA_EMIT(ctx, cs->RS_DEST_ADDR);
+        /*4 */ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_PIPE_SOURCE_ADDR(0)>>2, 2, 0);
+        /*5 */ ETNA_EMIT(ctx, cs->RS_PIPE_SOURCE_ADDR[0]);
+        /*6 */ ETNA_EMIT(ctx, cs->RS_PIPE_SOURCE_ADDR[1]);
+        /*7 */ ETNA_EMIT(ctx, 0x00000000); /* pad */
+        /*8 */ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_PIPE_DEST_ADDR(0)>>2, 2, 0);
+        /*9 */ ETNA_EMIT(ctx, cs->RS_PIPE_DEST_ADDR[0]);
+        /*10*/ ETNA_EMIT(ctx, cs->RS_PIPE_DEST_ADDR[1]);
+        /*11*/ ETNA_EMIT(ctx, 0x00000000); /* pad */
+        /*12*/ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_PIPE_OFFSET(0)>>2, 2, 0);
+        /*13*/ ETNA_EMIT(ctx, cs->RS_PIPE_OFFSET[0]);
+        /*14*/ ETNA_EMIT(ctx, cs->RS_PIPE_OFFSET[1]);
+        /*15*/ ETNA_EMIT(ctx, 0x00000000); /* pad */
+        /*16*/ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_WINDOW_SIZE>>2, 1, 0);
+        /*17*/ ETNA_EMIT(ctx, cs->RS_WINDOW_SIZE);
+        /*18*/ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_DITHER(0)>>2, 2, 0);
+        /*19*/ ETNA_EMIT(ctx, cs->RS_DITHER[0]);
+        /*20*/ ETNA_EMIT(ctx, cs->RS_DITHER[1]);
+        /*21*/ ETNA_EMIT(ctx, 0xbabb1e); /* pad */
+        /*22*/ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_CLEAR_CONTROL>>2, 5, 0);
+        /*23*/ ETNA_EMIT(ctx, cs->RS_CLEAR_CONTROL);
+        /*24*/ ETNA_EMIT(ctx, cs->RS_FILL_VALUE[0]);
+        /*25*/ ETNA_EMIT(ctx, cs->RS_FILL_VALUE[1]);
+        /*26*/ ETNA_EMIT(ctx, cs->RS_FILL_VALUE[2]);
+        /*27*/ ETNA_EMIT(ctx, cs->RS_FILL_VALUE[3]);
+        /*28*/ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_EXTRA_CONFIG>>2, 1, 0);
+        /*29*/ ETNA_EMIT(ctx, cs->RS_EXTRA_CONFIG);
+        /*30*/ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_KICKER>>2, 1, 0);
+        /*31*/ ETNA_EMIT(ctx, 0xbeebbeeb);
+    }
 }
 

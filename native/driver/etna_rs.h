@@ -62,6 +62,9 @@ struct compiled_rs_state
     uint32_t RS_CLEAR_CONTROL;
     uint32_t RS_FILL_VALUE[4];
     uint32_t RS_EXTRA_CONFIG;
+    uint32_t RS_PIPE_SOURCE_ADDR[2];    /* TODO is there hardware with more then 2 pipes? */
+    uint32_t RS_PIPE_DEST_ADDR[2];      /* TODO is there hardware with more then 2 pipes? */
+    uint32_t RS_PIPE_OFFSET[2];         /* TODO is there hardware with more then 2 pipes? */
 };
 
 /* Flush RS? warm up RS on aux render target */

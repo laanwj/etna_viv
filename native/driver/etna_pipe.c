@@ -385,7 +385,17 @@ static void sync_context(struct pipe_context *pipe)
     if(dirty & (ETNA_STATE_FRAMEBUFFER))
     {
         /*0140C*/ EMIT_STATE(PE_DEPTH_NORMALIZE, PE_DEPTH_NORMALIZE, e->framebuffer.PE_DEPTH_NORMALIZE);
-        /*01410*/ EMIT_STATE(PE_DEPTH_ADDR, PE_DEPTH_ADDR, e->framebuffer.PE_DEPTH_ADDR);
+
+        if (ctx->conn->chip.pixel_pipes == 1)
+        {
+            /*01410*/ EMIT_STATE(PE_DEPTH_ADDR, PE_DEPTH_ADDR, e->framebuffer.PE_DEPTH_ADDR);
+        }
+        else if (ctx->conn->chip.pixel_pipes == 2)
+        {
+            /*01480*/ EMIT_STATE(PE_PIPE_DEPTH_ADDR(0), PE_PIPE_0_DEPTH_ADDR, e->framebuffer.PE_PIPE_DEPTH_ADDR[0]);
+            /*01484*/ EMIT_STATE(PE_PIPE_DEPTH_ADDR(1), PE_PIPE_1_DEPTH_ADDR, e->framebuffer.PE_PIPE_DEPTH_ADDR[1]);
+        }
+
         /*01414*/ EMIT_STATE(PE_DEPTH_STRIDE, PE_DEPTH_STRIDE, e->framebuffer.PE_DEPTH_STRIDE);
     }
     if(dirty & (ETNA_STATE_DSA))
@@ -414,7 +424,16 @@ static void sync_context(struct pipe_context *pipe)
     }
     if(dirty & (ETNA_STATE_FRAMEBUFFER))
     {
-        /*01430*/ EMIT_STATE(PE_COLOR_ADDR, PE_COLOR_ADDR, e->framebuffer.PE_COLOR_ADDR);
+        if (ctx->conn->chip.pixel_pipes == 1)
+        {
+            /*01430*/ EMIT_STATE(PE_COLOR_ADDR, PE_COLOR_ADDR, e->framebuffer.PE_COLOR_ADDR);
+        }
+        else if (ctx->conn->chip.pixel_pipes == 2)
+        {
+            /*01460*/ EMIT_STATE(PE_PIPE_COLOR_ADDR(0), PE_PIPE_0_COLOR_ADDR, e->framebuffer.PE_PIPE_COLOR_ADDR[0]);
+            /*01464*/ EMIT_STATE(PE_PIPE_COLOR_ADDR(1), PE_PIPE_1_COLOR_ADDR, e->framebuffer.PE_PIPE_COLOR_ADDR[1]);
+        }
+
         /*01434*/ EMIT_STATE(PE_COLOR_STRIDE, PE_COLOR_STRIDE, e->framebuffer.PE_COLOR_STRIDE);
         /*01454*/ EMIT_STATE(PE_HDEPTH_CONTROL, PE_HDEPTH_CONTROL, e->framebuffer.PE_HDEPTH_CONTROL);
     }
@@ -930,11 +949,27 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
             /* VIVS_PE_DEPTH_CONFIG_ONLY_DEPTH */
             ); /* merged with depth_stencil_alpha */
 
-    SET_STATE(PE_DEPTH_ADDR, zsbuf->surf.address);
+    if (priv->ctx->conn->chip.pixel_pipes == 1)
+    {
+        SET_STATE(PE_DEPTH_ADDR, zsbuf->surf.address);
+    }
+    else if (priv->ctx->conn->chip.pixel_pipes == 2)
+    {
+        SET_STATE(PE_PIPE_DEPTH_ADDR[0], zsbuf->surf.address);
+        SET_STATE(PE_PIPE_DEPTH_ADDR[1], zsbuf->surf.address);  /* TODO */
+    }
     SET_STATE(PE_DEPTH_STRIDE, zsbuf->surf.stride);
     SET_STATE(PE_HDEPTH_CONTROL, VIVS_PE_HDEPTH_CONTROL_FORMAT_DISABLED);
     SET_STATE_F32(PE_DEPTH_NORMALIZE, exp2f(depth_bits) - 1.0f);
-    SET_STATE(PE_COLOR_ADDR, cbuf->surf.address);
+    if (priv->ctx->conn->chip.pixel_pipes == 1)
+    {
+        SET_STATE(PE_COLOR_ADDR, cbuf->surf.address);
+    }
+    else if (priv->ctx->conn->chip.pixel_pipes == 2)
+    {
+        SET_STATE(PE_PIPE_COLOR_ADDR[0], zsbuf->surf.address);
+        SET_STATE(PE_PIPE_DEPTH_ADDR[1], zsbuf->surf.address);  /* TODO */
+    }
     SET_STATE(PE_COLOR_STRIDE, cbuf->surf.stride);
     
     SET_STATE_FIXP(SE_SCISSOR_LEFT, 0); /* affected by rasterizer and scissor state as well */

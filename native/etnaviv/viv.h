@@ -31,7 +31,7 @@
 #ifdef GCABI_HAS_CONTEXT
 #include "gc_hal_user_context.h"
 #else
-#include "gc_hal_kernel_buffer.h"
+#include "gc_hal_kernel_context.h"
 #endif
 #include "gc_hal_types.h"
 #include <stdint.h>
@@ -122,7 +122,11 @@ int viv_lock_vidmem(struct viv_conn *conn, gcuVIDMEM_NODE_PTR node, viv_addr_t *
 
 /** Commit GPU command buffer and context.
  */
+#ifdef GCABI_HAS_CONTEXT
 int viv_commit(struct viv_conn *conn, gcoCMDBUF commandBuffer, gcoCONTEXT contextBuffer);
+#else
+int viv_commit(struct viv_conn *conn, gcoCMDBUF commandBuffer, gckCONTEXT context);
+#endif
 
 /**  Unlock (unmap) video memory node from GPU and CPU memory.
  */
