@@ -115,55 +115,23 @@ static int initialize_gpu_context(struct viv_conn *conn, gcoCONTEXT vctx)
 #else
 static int initialize_gpu_context(struct viv_conn *conn, gckCONTEXT vctx)
 {
-    /* First build context state map from compressed representation */
-    size_t contextbuf_addr_size = sizeof(contextbuf_addr)/sizeof(address_index_t);
-    size_t state_count = contextbuf_addr[contextbuf_addr_size - 1].address / 4 + 1;
-    uint32_t *context_map = ETNA_MALLOC(state_count * 4);
-    if(context_map == NULL)
-    {
-        return ETNA_OUT_OF_MEMORY;
-    }
-    memset(context_map, 0, state_count*4);
-    for(int idx=0; idx<contextbuf_addr_size; ++idx)
-    {
-        context_map[contextbuf_addr[idx].address / 4] = contextbuf_addr[idx].index;
-    }
-#ifdef DEBUG
-    printf("Initialized state map (%x)\n", state_count);
-#endif
-    /* fill in context */
-    vctx->object.type = gcvOBJ_CONTEXT;
-    vctx->map = context_map;
-    vctx->stateCount = state_count;
-    vctx->buffer = ETNA_MALLOC(sizeof(contextbuf));
-    memcpy(vctx->buffer, contextbuf, sizeof(contextbuf)); /* copy over hardcoded context command buffer */
-    vctx->bufferSize = sizeof(contextbuf);
-#ifdef GCABI_CONTEXT_HAS_PHYSICAL /* Are these used by the kernel on other platforms? otherwise better to remove them completely */
-    vctx->bytes = 0x0; // Number of bytes at actually allocated for physical, logical
-    vctx->physical = (void*)0x0;
-#endif
-    vctx->entryPipe = ETNA_PIPE_3D;
-
-    viv_addr_t cbuf0_physical = 0;
-    void *cbuf0_logical = 0;
-    size_t cbuf0_bytes = 0;
-    if(viv_alloc_contiguous(conn, vctx->bufferSize, &cbuf0_physical, &cbuf0_logical, &cbuf0_bytes)!=0)
+    /* attach to GPU */
+    int err;
+    gcsHAL_INTERFACE id = {};
+    id.command = gcvHAL_ATTACH;
+    if((err=viv_invoke(conn, &id)) != gcvSTATUS_OK)
     {
 #ifdef DEBUG
-        fprintf(stderr, "Error allocating contiguous host memory for context\n");
+        fprintf(stderr, "Error attaching to GPU\n");
 #endif
-        ETNA_FREE(context_map);
-        return ETNA_OUT_OF_MEMORY;
+        return ETNA_INTERNAL_ERROR;
     }
+
 #ifdef DEBUG
-    printf("Allocated buffer (size 0x%x) for context: phys=%08x log=%08x\n", (int)cbuf0_bytes, (int)cbuf0_physical, (int)cbuf0_logical);
+    printf("Context 0x%08x\n", (int)id.u.Attach.context);
 #endif
 
-#ifdef GCABI_HAS_PHYSICAL
-    vctx->bytes = cbuf0_bytes; /* actual size of buffer */
-    vctx->physical = (void*)cbuf0_physical;
-#endif
-
+    vctx = id.u.Attach.context;
     return ETNA_OK;
 }
 #endif
