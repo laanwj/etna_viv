@@ -317,7 +317,9 @@ int etna_flush(struct etna_ctx *ctx)
 #endif
     /* TODO: analyze command buffer to update context */
     /* set context entryPipe to currentPipe (next commit will start with current pipe) */
+#ifdef GCABI_HAS_CONTEXT
     ctx->ctx.entryPipe = ctx->ctx.currentPipe;
+#endif
 
     /* TODO: update context, NOP out final pipe2D if entryPipe is 2D, else put in the 2D pipe switch */
     /* TODO: if context was used, queue it to be freed later, and initialize new context buffer */
