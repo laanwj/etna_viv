@@ -327,7 +327,11 @@ int etna_flush(struct etna_ctx *ctx)
     cur_buf->offset = cur_buf->startOffset + BEGIN_COMMIT_CLEARANCE;
     ctx->offset = cur_buf->offset / 4;
 #ifdef DEBUG
+#ifdef GCABI_HAS_CONTEXT
     printf("  New start offset: %x New offset: %x Contextbuffer used: %i\n", cur_buf->startOffset, cur_buf->offset, *ctx->ctx.inUse);
+#else
+    printf("  New start offset: %x New offset: %x\n", cur_buf->startOffset, cur_buf->offset);
+#endif
 #endif
     return ETNA_OK;
 }
