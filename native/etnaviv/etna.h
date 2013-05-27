@@ -116,7 +116,7 @@ struct etna_ctx {
 #ifdef GCABI_HAS_CONTEXT
     struct _gcoCONTEXT ctx;
 #else
-    struct _gckCONTEXT ctx;
+    gckCONTEXT ctx;
 #endif
 };
 

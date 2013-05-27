@@ -113,7 +113,7 @@ static int initialize_gpu_context(struct viv_conn *conn, gcoCONTEXT vctx)
     return ETNA_OK;
 }
 #else
-static int initialize_gpu_context(struct viv_conn *conn, gckCONTEXT vctx)
+static int initialize_gpu_context(struct viv_conn *conn, gckCONTEXT *vctx)
 {
     /* attach to GPU */
     int err;
@@ -131,7 +131,7 @@ static int initialize_gpu_context(struct viv_conn *conn, gckCONTEXT vctx)
     printf("Context 0x%08x\n", (int)id.u.Attach.context);
 #endif
 
-    vctx = id.u.Attach.context;
+    *vctx = id.u.Attach.context;
     return ETNA_OK;
 }
 #endif
@@ -300,7 +300,11 @@ int etna_flush(struct etna_ctx *ctx)
     }
     printf("}\n");
 #endif
+#ifdef GCABI_HAS_CONTEXT
     int status = viv_commit(ctx->conn, cur_buf, &ctx->ctx);
+#else
+    int status = viv_commit(ctx->conn, cur_buf, ctx->ctx);
+#endif
     if(status != 0)
     {
 #ifdef DEBUG
@@ -385,9 +389,6 @@ int etna_set_pipe(struct etna_ctx *ctx, etna_pipe pipe)
 
 #ifdef GCABI_HAS_CONTEXT
     ctx->ctx.currentPipe = pipe;
-#else
-    ctx->ctx.entryPipe = pipe;
-    ctx->ctx.exitPipe = pipe;
 #endif
     return ETNA_OK;
 }
