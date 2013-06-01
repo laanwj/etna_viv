@@ -180,12 +180,10 @@ int etna_swap_buffers(struct etna_bswap_buffers *bufs)
         etna_bswap_wait_available(bufs);
 
         bufs->copy_buffer(bufs->userptr, bufs->ctx, bufs->backbuffer);
-        etna_set_state(bufs->ctx, VIVS_RS_FLUSH_CACHE, VIVS_RS_FLUSH_CACHE_FLUSH);
 
         etna_bswap_queue_swap(bufs);
     } else { /* single buffer fallback */
         bufs->copy_buffer(bufs->userptr, bufs->ctx, 0);
-        etna_set_state(bufs->ctx, VIVS_RS_FLUSH_CACHE, VIVS_RS_FLUSH_CACHE_FLUSH);
     }
 
     return 0;
