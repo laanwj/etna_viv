@@ -154,10 +154,10 @@ int main(int argc, char **argv)
      * Unlike the GL example we only do this once, not every time glDrawArrays is called, the same would be accomplished
      * from GL by using a vertex buffer object.
      */
-    GLfloat *vVertices;
-    GLfloat *vNormals;
-    GLfloat *vTexCoords;
-    GLushort *vIndices;
+    float *vVertices;
+    float *vNormals;
+    float *vTexCoords;
+    uint16_t *vIndices;
     int numVertices = 0;
     int numIndices = esGenSphere(80, 1.0f, &vVertices, &vNormals,
                                         &vTexCoords, &vIndices, &numVertices);
@@ -181,7 +181,7 @@ int main(int argc, char **argv)
     assert((numIndices * 2) < VERTEX_BUFFER_SIZE);
     struct pipe_transfer *idx_transfer = 0;
     void *idx_logical = pipe_buffer_map(pipe, idx_resource, PIPE_TRANSFER_WRITE | PIPE_TRANSFER_UNSYNCHRONIZED, &idx_transfer);
-    memcpy(idx_logical, vIndices, numIndices*sizeof(GLushort));
+    memcpy(idx_logical, vIndices, numIndices*sizeof(uint16_t));
     pipe_buffer_unmap(pipe, idx_transfer);
 
     /* compile gallium3d states */
@@ -364,7 +364,7 @@ int main(int argc, char **argv)
     pipe->bind_fs_state(pipe, frag_shader);
 
     ESMatrix projection;
-    GLfloat aspect = (GLfloat)(height) / (GLfloat)(width);
+    float aspect = (float)(height) / (float)(width);
     esMatrixLoadIdentity(&projection);
     esFrustum(&projection, -1.8f, +1.8f, -1.8f * aspect, +1.8f * aspect, 6.0f, 10.0f);
 

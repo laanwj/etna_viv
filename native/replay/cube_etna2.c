@@ -494,7 +494,7 @@ int main(int argc, char **argv)
         esRotate(&modelview, 45.0f, 0.0f, 1.0f, 0.0f);
         esRotate(&modelview, frame*0.5f, 0.0f, 0.0f, 1.0f);
 
-        GLfloat aspect = (GLfloat)(height) / (GLfloat)(width);
+        float aspect = (float)(height) / (float)(width);
 
         ESMatrix projection;
         esMatrixLoadIdentity(&projection);

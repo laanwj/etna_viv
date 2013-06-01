@@ -20,8 +20,7 @@
 ///
 //  Includes
 //
-#include <GLES2/gl2.h>
-#include <EGL/egl.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 
