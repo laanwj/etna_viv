@@ -51,8 +51,8 @@
 /// \return The number of indices required for rendering the buffers (the number of indices stored in the indices array
 ///         if it is not NULL ) as a GL_TRIANGLE_STRIP
 //
-int ESUTIL_API esGenSphere ( int numSlices, float radius, GLfloat **vertices, GLfloat **normals, 
-                             GLfloat **texCoords, GLushort **indices, int *numVertices_out)
+int ESUTIL_API esGenSphere ( int numSlices, float radius, float **vertices, float **normals, 
+                             float **texCoords, uint16_t **indices, int *numVertices_out)
 {
    int i;
    int j;
@@ -63,16 +63,16 @@ int ESUTIL_API esGenSphere ( int numSlices, float radius, GLfloat **vertices, GL
 
    // Allocate memory for buffers
    if ( vertices != NULL )
-      *vertices = malloc ( sizeof(GLfloat) * 3 * numVertices );
+      *vertices = malloc ( sizeof(float) * 3 * numVertices );
    
    if ( normals != NULL )
-      *normals = malloc ( sizeof(GLfloat) * 3 * numVertices );
+      *normals = malloc ( sizeof(float) * 3 * numVertices );
 
    if ( texCoords != NULL )
-      *texCoords = malloc ( sizeof(GLfloat) * 2 * numVertices );
+      *texCoords = malloc ( sizeof(float) * 2 * numVertices );
 
    if ( indices != NULL )
-      *indices = malloc ( sizeof(GLushort) * numIndices );
+      *indices = malloc ( sizeof(uint16_t) * numIndices );
 
    for ( i = 0; i < numParallels + 1; i++ )
    {
@@ -108,7 +108,7 @@ int ESUTIL_API esGenSphere ( int numSlices, float radius, GLfloat **vertices, GL
    // Generate the indices
    if ( indices != NULL )
    {
-      GLushort *indexBuf = (*indices);
+      uint16_t *indexBuf = (*indices);
       for ( i = 0; i < numParallels ; i++ ) 
       {
          for ( j = 0; j < numSlices; j++ )
@@ -143,14 +143,14 @@ int ESUTIL_API esGenSphere ( int numSlices, float radius, GLfloat **vertices, GL
 /// \return The number of indices required for rendering the buffers (the number of indices stored in the indices array
 ///         if it is not NULL ) as a GL_TRIANGLE_STRIP
 //
-int ESUTIL_API esGenCube ( float scale, GLfloat **vertices, GLfloat **normals,
-                           GLfloat **texCoords, GLushort **indices, int *numVertices_out )
+int ESUTIL_API esGenCube ( float scale, float **vertices, float **normals,
+                           float **texCoords, uint16_t **indices, int *numVertices_out )
 {
    int i;
    int numVertices = 24;
    int numIndices = 36;
    
-   GLfloat cubeVerts[] =
+   float cubeVerts[] =
    {
       -0.5f, -0.5f, -0.5f,
       -0.5f, -0.5f,  0.5f,
@@ -178,7 +178,7 @@ int ESUTIL_API esGenCube ( float scale, GLfloat **vertices, GLfloat **normals,
       0.5f,  0.5f, -0.5f,
    };
 
-   GLfloat cubeNormals[] =
+   float cubeNormals[] =
    {
       0.0f, -1.0f, 0.0f,
       0.0f, -1.0f, 0.0f,
@@ -206,7 +206,7 @@ int ESUTIL_API esGenCube ( float scale, GLfloat **vertices, GLfloat **normals,
       1.0f, 0.0f, 0.0f,
    };
 
-   GLfloat cubeTex[] =
+   float cubeTex[] =
    {
       0.0f, 0.0f,
       0.0f, 1.0f,
@@ -237,7 +237,7 @@ int ESUTIL_API esGenCube ( float scale, GLfloat **vertices, GLfloat **normals,
    // Allocate memory for buffers
    if ( vertices != NULL )
    {
-      *vertices = malloc ( sizeof(GLfloat) * 3 * numVertices );
+      *vertices = malloc ( sizeof(float) * 3 * numVertices );
       memcpy( *vertices, cubeVerts, sizeof( cubeVerts ) );
       for ( i = 0; i < numVertices * 3; i++ )
       {
@@ -247,13 +247,13 @@ int ESUTIL_API esGenCube ( float scale, GLfloat **vertices, GLfloat **normals,
 
    if ( normals != NULL )
    {
-      *normals = malloc ( sizeof(GLfloat) * 3 * numVertices );
+      *normals = malloc ( sizeof(float) * 3 * numVertices );
       memcpy( *normals, cubeNormals, sizeof( cubeNormals ) );
    }
 
    if ( texCoords != NULL )
    {
-      *texCoords = malloc ( sizeof(GLfloat) * 2 * numVertices );
+      *texCoords = malloc ( sizeof(float) * 2 * numVertices );
       memcpy( *texCoords, cubeTex, sizeof( cubeTex ) ) ;
    }
 
@@ -261,7 +261,7 @@ int ESUTIL_API esGenCube ( float scale, GLfloat **vertices, GLfloat **normals,
    // Generate the indices
    if ( indices != NULL )
    {
-      GLushort cubeIndices[] =
+      uint16_t cubeIndices[] =
       {
          0, 2, 1,
          0, 3, 2, 
@@ -277,7 +277,7 @@ int ESUTIL_API esGenCube ( float scale, GLfloat **vertices, GLfloat **normals,
          20, 22, 21
       };
 
-      *indices = malloc ( sizeof(GLushort) * numIndices );
+      *indices = malloc ( sizeof(uint16_t) * numIndices );
       memcpy( *indices, cubeIndices, sizeof( cubeIndices ) );
    }
    

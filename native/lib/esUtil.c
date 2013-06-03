@@ -23,8 +23,6 @@
 #include <string.h>
 #include <stdarg.h>
 #include <sys/time.h>
-#include <GLES2/gl2.h>
-#include <EGL/egl.h>
 #include "esUtil.h"
 
 ///

@@ -304,7 +304,7 @@ int main(int argc, char **argv)
 
         /*   Compute transform matrices in the same way as cube egl demo */ 
         ESMatrix projection;
-        GLfloat aspect = (GLfloat)(height) / (GLfloat)(width);
+        float aspect = (float)(height) / (float)(width);
         esMatrixLoadIdentity(&projection);
         esFrustum(&projection, -1.8f, +1.8f, -1.8f * aspect, +1.8f * aspect, 5.0f, 10.0f);
 

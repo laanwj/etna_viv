@@ -567,7 +567,7 @@ static void sync_context(struct pipe_context *pipe)
     }
     if(dirty & (ETNA_STATE_FRAMEBUFFER | ETNA_STATE_TS))
     {
-        /* wait rasterizer until PE finished configuration */
+        /* wait rasterizer until RS (PE) finished configuration */
         etna_stall(ctx, SYNC_RECIPIENT_RA, SYNC_RECIPIENT_PE);
     }
 
@@ -1178,7 +1178,11 @@ static void etna_pipe_clear(struct pipe_context *pipe,
             etna_rs_gen_clear_surface(surf, new_clear_value);
         }
         etna_submit_rs_state(priv->ctx, &surf->clear_command);
+        surf->clear_value = new_clear_value;
     }
+    /* Wait rasterizer until PE finished updating. This makes sure that it sees the updated surface.
+     */
+    etna_stall(priv->ctx, SYNC_RECIPIENT_RA, SYNC_RECIPIENT_PE);
 }
 
 static void etna_pipe_clear_render_target(struct pipe_context *pipe,
@@ -1209,8 +1213,8 @@ static void etna_pipe_flush(struct pipe_context *pipe,
              struct pipe_fence_handle **fence,
              enum pipe_flush_flags flags)
 {
-    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
-    /* TODO fill me in */
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    etna_flush(priv->ctx);
 }
 
 static struct pipe_sampler_view *etna_pipe_create_sampler_view(struct pipe_context *pipe,

@@ -76,13 +76,13 @@
  */
 struct vertex_strip {
    /** The first vertex in the strip */
-   GLint first;
+   int first;
    /** The number of consecutive vertices in the strip after the first */
-   GLint count;
+   int count;
 };
 
-/* Each vertex consist of GEAR_VERTEX_STRIDE GLfloat attributes */
-typedef GLfloat GearVertex[GEAR_VERTEX_STRIDE];
+/* Each vertex consist of GEAR_VERTEX_STRIDE float attributes */
+typedef float GearVertex[GEAR_VERTEX_STRIDE];
 
 /**
  * Struct representing a gear.
@@ -103,15 +103,15 @@ struct gear {
 };
 
 /** The view rotation [x, y, z] */
-static GLfloat view_rot[3] = { 20.0, 30.0, 0.0 };
+static float view_rot[3] = { 20.0, 30.0, 0.0 };
 /** The gears */
 static struct gear *gear1, *gear2, *gear3;
 /** The current gear rotation angle */
-static GLfloat angle = 0.0;
+static float angle = 0.0;
 /** The projection matrix */
 static ESMatrix ProjectionMatrix;
 /** The direction of the directional light for the scene */
-static const GLfloat LightSourcePosition[4] = { 5.0, 5.0, 10.0, 1.0};
+static const float LightSourcePosition[4] = { 5.0, 5.0, 10.0, 1.0};
 
 /** 
  * Fills a gear vertex.
@@ -125,7 +125,7 @@ static const GLfloat LightSourcePosition[4] = { 5.0, 5.0, 10.0, 1.0};
  * @return the operation error code
  */
 static GearVertex *
-vert(GearVertex *v, GLfloat x, GLfloat y, GLfloat z, GLfloat n[3])
+vert(GearVertex *v, float x, float y, float z, float n[3])
 {
    v[0][0] = x;
    v[0][1] = y;
@@ -155,15 +155,15 @@ static void sincos_(double x, double *s, double *c)
  *  @return pointer to the constructed struct gear
  */
 static struct gear *
-create_gear(struct pipe_screen *screen, struct pipe_context *pipe, GLfloat inner_radius, GLfloat outer_radius, GLfloat width,
-      GLint teeth, GLfloat tooth_depth)
+create_gear(struct pipe_screen *screen, struct pipe_context *pipe, float inner_radius, float outer_radius, float width,
+      int teeth, float tooth_depth)
 {
-   GLfloat r0, r1, r2;
-   GLfloat da;
+   float r0, r1, r2;
+   float da;
    GearVertex *v;
    struct gear *gear;
    double s[5], c[5];
-   GLfloat normal[3];
+   float normal[3];
    int cur_strip = 0;
    int i;
 
@@ -222,8 +222,8 @@ create_gear(struct pipe_screen *screen, struct pipe_context *pipe, GLfloat inner
 } while(0)
 
       struct point {
-         GLfloat x;
-         GLfloat y;
+         float x;
+         float y;
       };
 
       /* Create the 7 points (only x,y coords) used to draw a tooth */
@@ -328,7 +328,7 @@ create_gear(struct pipe_screen *screen, struct pipe_context *pipe, GLfloat inner
  */
 static void
 draw_gear(struct pipe_context *pipe, struct gear *gear, void *shader_state, ESMatrix *transform,
-      GLfloat x, GLfloat y, GLfloat angle, const GLfloat color[4])
+      float x, float y, float angle, const float color[4])
 {
     ESMatrix model_view;
     ESMatrix normal_matrix;
@@ -380,9 +380,9 @@ draw_gear(struct pipe_context *pipe, struct gear *gear, void *shader_state, ESMa
 static void
 gears_draw(struct pipe_context *pipe, void *shader_state)
 {
-    const static GLfloat red[4] = { 0.8, 0.1, 0.0, 1.0 };
-    const static GLfloat green[4] = { 0.0, 0.8, 0.2, 1.0 };
-    const static GLfloat blue[4] = { 0.2, 0.2, 1.0, 1.0 };
+    const static float red[4] = { 0.8, 0.1, 0.0, 1.0 };
+    const static float green[4] = { 0.0, 0.8, 0.2, 1.0 };
+    const static float blue[4] = { 0.2, 0.2, 1.0, 1.0 };
     ESMatrix transform;
     esMatrixLoadIdentity(&transform);
 
@@ -445,8 +445,8 @@ gears_idle(struct etna_bswap_buffers *buffers)
     if (tRate0 < 0.0)
         tRate0 = t;
     if (t - tRate0 >= 5.0) {
-        GLfloat seconds = t - tRate0;
-        GLfloat fps = frames / seconds;
+        float seconds = t - tRate0;
+        float fps = frames / seconds;
         printf("%d frames in %3.1f seconds = %6.3f FPS\n", frames, seconds,
               fps);
         tRate0 = t;

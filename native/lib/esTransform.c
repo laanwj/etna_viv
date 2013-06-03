@@ -37,7 +37,7 @@
 #define PI 3.1415926535897932384626433832795f
 
 void ESUTIL_API
-esScale(ESMatrix *result, GLfloat sx, GLfloat sy, GLfloat sz)
+esScale(ESMatrix *result, float sx, float sy, float sz)
 {
     result->m[0][0] *= sx;
     result->m[0][1] *= sx;
@@ -56,7 +56,7 @@ esScale(ESMatrix *result, GLfloat sx, GLfloat sy, GLfloat sz)
 }
 
 void ESUTIL_API
-esTranslate(ESMatrix *result, GLfloat tx, GLfloat ty, GLfloat tz)
+esTranslate(ESMatrix *result, float tx, float ty, float tz)
 {
     result->m[3][0] += (result->m[0][0] * tx + result->m[1][0] * ty + result->m[2][0] * tz);
     result->m[3][1] += (result->m[0][1] * tx + result->m[1][1] * ty + result->m[2][1] * tz);
@@ -65,17 +65,17 @@ esTranslate(ESMatrix *result, GLfloat tx, GLfloat ty, GLfloat tz)
 }
 
 void ESUTIL_API
-esRotate(ESMatrix *result, GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
+esRotate(ESMatrix *result, float angle, float x, float y, float z)
 {
-   GLfloat sinAngle, cosAngle;
-   GLfloat mag = sqrtf(x * x + y * y + z * z);
+   float sinAngle, cosAngle;
+   float mag = sqrtf(x * x + y * y + z * z);
       
    sinAngle = sinf ( angle * PI / 180.0f );
    cosAngle = cosf ( angle * PI / 180.0f );
    if ( mag > 0.0f )
    {
-      GLfloat xx, yy, zz, xy, yz, zx, xs, ys, zs;
-      GLfloat oneMinusCos;
+      float xx, yy, zz, xy, yz, zx, xs, ys, zs;
+      float oneMinusCos;
       ESMatrix rotMat;
    
       x /= mag;
@@ -150,7 +150,7 @@ esFrustum(ESMatrix *result, float left, float right, float bottom, float top, fl
 void ESUTIL_API 
 esPerspective(ESMatrix *result, float fovy, float aspect, float nearZ, float farZ)
 {
-   GLfloat frustumW, frustumH;
+   float frustumW, frustumH;
    
    frustumH = tanf( fovy / 360.0f * PI ) * nearZ;
    frustumW = frustumH * aspect;

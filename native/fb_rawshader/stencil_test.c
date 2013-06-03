@@ -52,7 +52,7 @@
 /*********************************************************************/
 #define VERTEX_BUFFER_SIZE 0x60000
    
-const GLfloat vVertices[] = { 
+const float vVertices[] = { 
    -0.75f,  0.25f,  0.50f, // Quad #0
    -0.25f,  0.25f,  0.50f,
    -0.25f,  0.75f,  0.50f,
@@ -75,7 +75,7 @@ const GLfloat vVertices[] = {
    -1.00f,  1.00f,  0.00f
 };
 
-const GLubyte indices[][6] = { 
+const uint8_t indices[][6] = { 
    {  0,  1,  2,  0,  2,  3 }, // Quad #0
    {  4,  5,  6,  4,  6,  7 }, // Quad #1
    {  8,  9, 10,  8, 10, 11 }, // Quad #2
@@ -84,14 +84,14 @@ const GLubyte indices[][6] = {
 };
 
 #define NumTests  4
-const GLfloat  colors[NumTests][4] = { 
+const float  colors[NumTests][4] = { 
    { 1.0f, 0.0f, 0.0f, 1.0f },
    { 0.0f, 1.0f, 0.0f, 1.0f },
    { 0.0f, 0.0f, 1.0f, 1.0f },
    { 1.0f, 1.0f, 0.0f, 1.0f }
 };
    
-GLuint  stencilValues[NumTests] = { 
+uint32_t  stencilValues[NumTests] = { 
   0x7, // Result of test 0
   0x0, // Result of test 1
   0x2, // Result of test 2
@@ -99,7 +99,7 @@ GLuint  stencilValues[NumTests] = {
        //  value in a run-time
 };
 
-#define NUM_VERTICES (sizeof(vVertices) / (sizeof(GLfloat)*3))
+#define NUM_VERTICES (sizeof(vVertices) / (sizeof(float)*3))
 
 /* stencil_test_vs.asm */
 uint32_t vs[] = {

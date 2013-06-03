@@ -36,8 +36,7 @@
 ///
 //  Includes
 //
-#include <GLES2/gl2.h>
-#include <EGL/egl.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,10 +44,10 @@ extern "C" {
 
 #define ESUTIL_API
 
-int ESUTIL_API esGenSphere ( int numSlices, float radius, GLfloat **vertices, GLfloat **normals, 
-                             GLfloat **texCoords, GLushort **indices, int *numVertices_out );
-int ESUTIL_API esGenCube ( float scale, GLfloat **vertices, GLfloat **normals,
-                           GLfloat **texCoords, GLushort **indices, int *numVertices_out );
+int ESUTIL_API esGenSphere ( int numSlices, float radius, float **vertices, float **normals, 
+                             float **texCoords, uint16_t **indices, int *numVertices_out );
+int ESUTIL_API esGenCube ( float scale, float **vertices, float **normals,
+                           float **texCoords, uint16_t **indices, int *numVertices_out );
 
 
 #ifdef __cplusplus

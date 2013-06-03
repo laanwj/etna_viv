@@ -36,8 +36,6 @@
 ///
 //  Includes
 //
-#include <GLES2/gl2.h>
-#include <EGL/egl.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,7 +49,7 @@ extern "C" {
 
 typedef struct
 {
-    GLfloat   m[4][4];
+    float   m[4][4];
 } ESMatrix;
 
 //
@@ -59,14 +57,14 @@ typedef struct
 /// \param result Specifies the input matrix.  Scaled matrix is returned in result.
 /// \param sx, sy, sz Scale factors along the x, y and z axes respectively
 //
-void ESUTIL_API esScale(ESMatrix *result, GLfloat sx, GLfloat sy, GLfloat sz);
+void ESUTIL_API esScale(ESMatrix *result, float sx, float sy, float sz);
 
 //
 /// \brief multiply matrix specified by result with a translation matrix and return new matrix in result
 /// \param result Specifies the input matrix.  Translated matrix is returned in result.
 /// \param tx, ty, tz Scale factors along the x, y and z axes respectively
 //
-void ESUTIL_API esTranslate(ESMatrix *result, GLfloat tx, GLfloat ty, GLfloat tz);
+void ESUTIL_API esTranslate(ESMatrix *result, float tx, float ty, float tz);
 
 //
 /// \brief multiply matrix specified by result with a rotation matrix and return new matrix in result
@@ -74,7 +72,7 @@ void ESUTIL_API esTranslate(ESMatrix *result, GLfloat tx, GLfloat ty, GLfloat tz
 /// \param angle Specifies the angle of rotation, in degrees.
 /// \param x, y, z Specify the x, y and z coordinates of a vector, respectively
 //
-void ESUTIL_API esRotate(ESMatrix *result, GLfloat angle, GLfloat x, GLfloat y, GLfloat z);
+void ESUTIL_API esRotate(ESMatrix *result, float angle, float x, float y, float z);
 
 //
 // \brief multiply matrix specified by result with a perspective matrix and return new matrix in result

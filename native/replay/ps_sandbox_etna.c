@@ -31,14 +31,14 @@
  */
 #include "context_cmd.h"
     
-GLfloat vVertices[] = {
+float vVertices[] = {
   -1.0f, -1.0f, +0.0f,
   +1.0f, -1.0f, +0.0f,
   -1.0f, +1.0f, +0.0f,
   +1.0f, +1.0f, +0.0f,
 };
 
-GLfloat vTexCoords[] = {
+float vTexCoords[] = {
   +0.0f, +0.0f, 
   +1.0f, +0.0f, 
   +0.0f, +1.0f, 
