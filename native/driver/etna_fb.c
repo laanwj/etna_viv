@@ -235,7 +235,7 @@ int etna_fb_bind_resource(struct fb_info *fb, struct pipe_resource *rt_resource_
     for(int bi=0; bi<ETNA_FB_MAX_BUFFERS; ++bi)
     {
         etna_compile_rs_state(&fb->copy_to_screen[bi], &(struct rs_state){
-                    .source_format = translate_rt_format(rt_resource->base.format),
+                    .source_format = translate_rt_format(rt_resource->base.format, false),
                     .source_tiling = rt_resource->layout,
                     .source_addr = rt_resource->levels[0].address,
                     .source_stride = rt_resource->levels[0].stride,

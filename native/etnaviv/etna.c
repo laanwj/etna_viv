@@ -325,12 +325,15 @@ int etna_flush(struct etna_ctx *ctx)
         return ETNA_OK; /* Nothing to do */
     cur_buf->offset = ctx->offset*4; /* Copy over current ending offset into CMDBUF, for kernel */
 #ifdef DEBUG_CMDBUF
+    etna_dump_cmd_buffer(ctx);
+    /*
     printf("    {");
     for(size_t i=cur_buf->startOffset; i<cur_buf->offset; i+=4)
     {
         printf("0x%08x,", *((uint32_t*)(((size_t)cur_buf->logical)+i)));
     }
     printf("}\n");
+    */
 #endif
     int status = viv_commit(ctx->conn, cur_buf, &ctx->ctx);
     if(status != 0)

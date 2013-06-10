@@ -186,7 +186,7 @@ static inline uint32_t translate_texture_filter(unsigned filter)
     }
 }
 
-static inline uint32_t translate_texture_format(enum pipe_format fmt)
+static inline uint32_t translate_texture_format(enum pipe_format fmt, bool silent)
 {
     switch(fmt) /* XXX with TEXTURE_FORMAT_EXT and swizzle on newer chips we can support much more */
     {
@@ -214,12 +214,12 @@ static inline uint32_t translate_texture_format(enum pipe_format fmt)
     case PIPE_FORMAT_DXT3_RGBA: return TEXTURE_FORMAT_DXT2_DXT3;
     case PIPE_FORMAT_DXT5_RGBA: return TEXTURE_FORMAT_DXT4_DXT5;
     case PIPE_FORMAT_ETC1_RGB8: return TEXTURE_FORMAT_ETC1;
-    default: DBG("Unhandled texture format: %i\n", fmt); return ETNA_NO_MATCH;
+    default: if(!silent) { DBG("Unhandled texture format: %i\n", fmt); } return ETNA_NO_MATCH;
     }
 }
 
 /* render target format */
-static inline uint32_t translate_rt_format(enum pipe_format fmt)
+static inline uint32_t translate_rt_format(enum pipe_format fmt, bool silent)
 {
     switch(fmt) 
     {
@@ -232,11 +232,11 @@ static inline uint32_t translate_rt_format(enum pipe_format fmt)
     case PIPE_FORMAT_B8G8R8X8_UNORM: return RS_FORMAT_X8R8G8B8;
     case PIPE_FORMAT_B8G8R8A8_UNORM: return RS_FORMAT_A8R8G8B8;
     case PIPE_FORMAT_YUYV: return RS_FORMAT_YUY2;
-    default: DBG("Unhandled rs surface format: %i\n", fmt); return ETNA_NO_MATCH;
+    default: if(!silent) { DBG("Unhandled rs surface format: %i\n", fmt); } return ETNA_NO_MATCH;
     }
 }
 
-static inline uint32_t translate_depth_format(enum pipe_format fmt)
+static inline uint32_t translate_depth_format(enum pipe_format fmt, bool silent)
 {
     switch(fmt) 
     {
@@ -244,12 +244,12 @@ static inline uint32_t translate_depth_format(enum pipe_format fmt)
     case PIPE_FORMAT_Z16_UNORM: return VIVS_PE_DEPTH_CONFIG_DEPTH_FORMAT_D16;
     case PIPE_FORMAT_X8Z24_UNORM: return VIVS_PE_DEPTH_CONFIG_DEPTH_FORMAT_D24S8;
     case PIPE_FORMAT_S8_UINT_Z24_UNORM: return VIVS_PE_DEPTH_CONFIG_DEPTH_FORMAT_D24S8;
-    default: DBG("Unhandled depth format: %i\n", fmt); return ETNA_NO_MATCH;
+    default: if(!silent) { DBG("Unhandled depth format: %i\n", fmt); } return ETNA_NO_MATCH;
     }
 }
 
 /* render target format for MSAA */
-static inline uint32_t translate_msaa_format(enum pipe_format fmt)
+static inline uint32_t translate_msaa_format(enum pipe_format fmt, bool silent)
 {
     switch(fmt) 
     {
@@ -262,11 +262,11 @@ static inline uint32_t translate_msaa_format(enum pipe_format fmt)
     case PIPE_FORMAT_B8G8R8X8_UNORM: return VIVS_TS_MEM_CONFIG_MSAA_FORMAT_X8R8G8B8;
     case PIPE_FORMAT_B8G8R8A8_UNORM: return VIVS_TS_MEM_CONFIG_MSAA_FORMAT_A8R8G8B8;
     /* MSAA with YUYV not supported */
-    default: DBG("Unhandled msaa surface format: %i\n", fmt); return ETNA_NO_MATCH;
+    default: if(!silent) { DBG("Unhandled msaa surface format: %i\n", fmt); } return ETNA_NO_MATCH;
     }
 }
 
-static inline uint32_t translate_texture_target(enum pipe_texture_target tgt)
+static inline uint32_t translate_texture_target(enum pipe_texture_target tgt, bool silent)
 {
     switch(tgt)
     {
@@ -277,7 +277,7 @@ static inline uint32_t translate_texture_target(enum pipe_texture_target tgt)
 }
 
 /* Return type flags for vertex element format */
-static inline uint32_t translate_vertex_format_type(enum pipe_format fmt)
+static inline uint32_t translate_vertex_format_type(enum pipe_format fmt, bool silent)
 {
     switch(fmt)
     {
@@ -356,7 +356,7 @@ static inline uint32_t translate_vertex_format_type(enum pipe_format fmt)
     case PIPE_FORMAT_R10G10B10A2_SNORM:
     case PIPE_FORMAT_R10G10B10A2_SSCALED:
         return VIVS_FE_VERTEX_ELEMENT_CONFIG_TYPE_INT_10_10_10_2;
-    default: DBG("Unhandled vertex format: %i", fmt); return ETNA_NO_MATCH;
+    default: if(!silent) { DBG("Unhandled vertex format: %i", fmt); } return ETNA_NO_MATCH;
     }
 }
 

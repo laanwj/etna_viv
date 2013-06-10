@@ -106,7 +106,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <value value="2" name="ON"/>
             </bitfield>
             <bitfield high="23" low="16" name="START" brief="Starting offset of element data"/>
-            <bitfield high="31" low="24" name="END" brief="End offset of element data"/>
+            <bitfield high="31" low="24" name="END" brief="End offset of element data minus start of this consecutive stretch"/>
         </reg32>
         <reg32 offset="0x00640" name="CMD_STREAM_BASE_ADDR"/>
         <reg32 offset="0x00644" name="INDEX_STREAM_BASE_ADDR" value="0x00000000" type="VIVM"/>
