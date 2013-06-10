@@ -32,6 +32,7 @@
 #include <sys/ioctl.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
 
 //#define DEBUG
 
@@ -279,6 +280,9 @@ int viv_commit(struct viv_conn *conn, gcoCMDBUF commandBuffer, gcoCONTEXT contex
 #else
 int viv_commit(struct viv_conn *conn, gcoCMDBUF commandBuffer, gckCONTEXT context)
 {
+    gcsSTATE_DELTA fake_delta;
+    memset(&fake_delta, 0, sizeof(gcsSTATE_DELTA));
+
     gcsHAL_INTERFACE id = {
         .command = gcvHAL_COMMIT,
         .u = {
@@ -286,7 +290,7 @@ int viv_commit(struct viv_conn *conn, gcoCMDBUF commandBuffer, gckCONTEXT contex
                 .commandBuffer = commandBuffer,
                 .context = context,
                 .queue = NULL,
-                /* TODO: State delta buffer*/
+                .delta = &fake_delta,
             }
         }
     };
