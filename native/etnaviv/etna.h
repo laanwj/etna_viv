@@ -188,7 +188,7 @@ static inline int etna_reserve(struct etna_ctx *ctx, size_t n)
     if(ctx->cur_buf != -1)
     {
         gcoCMDBUF cur_buf = &ctx->cmdbuf[ctx->cur_buf];
-#ifdef DEBUG
+#ifdef CMD_DEBUG
         printf("etna_reserve: %i at offset %i\n", (int)n, (int)ctx->offset);
 #endif
         ETNA_ALIGN(ctx);

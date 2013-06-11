@@ -195,10 +195,10 @@ static void etna_link_shaders(struct pipe_context *pipe,
     /* reference instruction memory */
 #if 0
     {
-        int fd=creat("/mnt/sdcard/shader_vs.bin", 0777);
+        int fd=creat("/tmp/shader_vs.bin", 0777);
         write(fd, vs->code, vs->code_size*4);
         close(fd);
-        fd=creat("/mnt/sdcard/shader_ps.bin", 0777);
+        fd=creat("/tmp/shader_ps.bin", 0777);
         write(fd, fs->code, fs->code_size*4);
         close(fd);
     }
@@ -619,16 +619,22 @@ static void *etna_pipe_create_blend_state(struct pipe_context *pipe,
     bool separate_alpha = enable && !(rt0->rgb_src_factor == rt0->alpha_src_factor &&
                                       rt0->rgb_dst_factor == rt0->alpha_dst_factor);
     bool full_overwrite = (rt0->colormask == 15) && !enable;
-    SET_STATE(PE_ALPHA_CONFIG, 
-            (enable ? VIVS_PE_ALPHA_CONFIG_BLEND_ENABLE_COLOR : 0) | 
-            (separate_alpha ? VIVS_PE_ALPHA_CONFIG_BLEND_SEPARATE_ALPHA : 0) |
-            VIVS_PE_ALPHA_CONFIG_SRC_FUNC_COLOR(translate_blend_factor(rt0->rgb_src_factor)) |
-            VIVS_PE_ALPHA_CONFIG_SRC_FUNC_ALPHA(translate_blend_factor(rt0->alpha_src_factor)) |
-            VIVS_PE_ALPHA_CONFIG_DST_FUNC_COLOR(translate_blend_factor(rt0->rgb_dst_factor)) |
-            VIVS_PE_ALPHA_CONFIG_DST_FUNC_ALPHA(translate_blend_factor(rt0->alpha_dst_factor)) |
-            VIVS_PE_ALPHA_CONFIG_EQ_COLOR(translate_blend(rt0->rgb_func)) |
-            VIVS_PE_ALPHA_CONFIG_EQ_ALPHA(translate_blend(rt0->alpha_func))
-            );
+    if(enable)
+    {
+        SET_STATE(PE_ALPHA_CONFIG, 
+                VIVS_PE_ALPHA_CONFIG_BLEND_ENABLE_COLOR | 
+                (separate_alpha ? VIVS_PE_ALPHA_CONFIG_BLEND_SEPARATE_ALPHA : 0) |
+                VIVS_PE_ALPHA_CONFIG_SRC_FUNC_COLOR(translate_blend_factor(rt0->rgb_src_factor)) |
+                VIVS_PE_ALPHA_CONFIG_SRC_FUNC_ALPHA(translate_blend_factor(rt0->alpha_src_factor)) |
+                VIVS_PE_ALPHA_CONFIG_DST_FUNC_COLOR(translate_blend_factor(rt0->rgb_dst_factor)) |
+                VIVS_PE_ALPHA_CONFIG_DST_FUNC_ALPHA(translate_blend_factor(rt0->alpha_dst_factor)) |
+                VIVS_PE_ALPHA_CONFIG_EQ_COLOR(translate_blend(rt0->rgb_func)) |
+                VIVS_PE_ALPHA_CONFIG_EQ_ALPHA(translate_blend(rt0->alpha_func))
+                );
+    } else {
+        SET_STATE(PE_ALPHA_CONFIG, 0);
+    }
+    /* XXX should colormask be used if enable==false? */
     SET_STATE(PE_COLOR_FORMAT, 
             VIVS_PE_COLOR_FORMAT_COMPONENTS(rt0->colormask) |
             (full_overwrite ? VIVS_PE_COLOR_FORMAT_OVERWRITE : 0)
@@ -833,25 +839,31 @@ static void *etna_pipe_create_vertex_elements_state(struct pipe_context *pipe,
     //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
     struct compiled_vertex_elements_state *cs = CALLOC_STRUCT(compiled_vertex_elements_state);
     /* VERTEX_ELEMENT_STRIDE is in pipe_vertex_buffer */
+    /* XXX could minimize number of consecutive stretches here by sorting, and 
+     * permuting or does Mesa do this already? */
     cs->num_elements = num_elements;
+    unsigned start_offset = 0; /* start of current consecutive stretch */
+    bool nonconsecutive = true; /* previous value of nonconsecutive */
     for(unsigned idx=0; idx<num_elements; ++idx)
     {
         unsigned element_size = util_format_get_blocksize(elements[idx].src_format);
         unsigned end_offset = elements[idx].src_offset + element_size;
+        if(nonconsecutive)
+            start_offset = elements[idx].src_offset;
         assert(element_size != 0 && end_offset <= 256); /* maximum vertex size is 256 bytes */
         /* check whether next element is consecutive to this one */
-        bool nonconsecutive = (idx == (num_elements-1)) || 
+        nonconsecutive = (idx == (num_elements-1)) || 
                     elements[idx+1].vertex_buffer_index != elements[idx].vertex_buffer_index ||
                     end_offset != elements[idx+1].src_offset;
         SET_STATE(FE_VERTEX_ELEMENT_CONFIG[idx], 
                 (nonconsecutive ? VIVS_FE_VERTEX_ELEMENT_CONFIG_NONCONSECUTIVE : 0) |
-                translate_vertex_format_type(elements[idx].src_format) |
+                translate_vertex_format_type(elements[idx].src_format, false) |
                 VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM(util_format_get_nr_components(elements[idx].src_format)) |
                 translate_vertex_format_normalize(elements[idx].src_format) |
                 VIVS_FE_VERTEX_ELEMENT_CONFIG_ENDIAN(ENDIAN_MODE_NO_SWAP) |
                 VIVS_FE_VERTEX_ELEMENT_CONFIG_STREAM(elements[idx].vertex_buffer_index) |
                 VIVS_FE_VERTEX_ELEMENT_CONFIG_START(elements[idx].src_offset) |
-                VIVS_FE_VERTEX_ELEMENT_CONFIG_END(end_offset));
+                VIVS_FE_VERTEX_ELEMENT_CONFIG_END(end_offset - elements[idx].src_offset));
     }
     return cs;
 }
@@ -924,7 +936,7 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
     struct etna_surface *zsbuf = etna_surface(sv->zsbuf);
     /* XXX rendering with only color or only depth should be possible */
     assert(cbuf != NULL && zsbuf != NULL);
-    uint32_t depth_format = translate_depth_format(zsbuf->base.format);
+    uint32_t depth_format = translate_depth_format(zsbuf->base.format, false);
     unsigned depth_bits = depth_format == VIVS_PE_DEPTH_CONFIG_DEPTH_FORMAT_D16 ? 16 : 24; 
     assert((cbuf->layout & 1) && (zsbuf->layout & 1)); /* color and depth buffer must be at least tiled */
     bool color_supertiled = (cbuf->layout & 2)!=0;
@@ -938,7 +950,7 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
             VIVS_GL_MULTI_SAMPLE_CONFIG_UNK16 */
             );  /* merged with sample_mask */
     SET_STATE(PE_COLOR_FORMAT, 
-            VIVS_PE_COLOR_FORMAT_FORMAT(translate_rt_format(cbuf->base.format)) |
+            VIVS_PE_COLOR_FORMAT_FORMAT(translate_rt_format(cbuf->base.format, false)) |
             (color_supertiled ? VIVS_PE_COLOR_FORMAT_SUPER_TILED : 0) /* XXX depends on layout */
             /* XXX VIVS_PE_COLOR_FORMAT_OVERWRITE and the rest comes from blend_state / depth_stencil_alpha */
             ); /* merged with depth_stencil_alpha */
@@ -1079,7 +1091,7 @@ static void etna_pipe_set_vertex_buffers( struct pipe_context *pipe,
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
     struct compiled_set_vertex_buffer *cs = &priv->vertex_buffer;
-
+    printf("pipe_set_vertex_buffers %i %i\n", start_slot, num_buffers);
     assert(start_slot == 0 && num_buffers == 1); /* XXX TODO */
     assert(vb[0].buffer); /* XXX user_buffer */
     priv->vertex_buffer_s = vb[0];
@@ -1143,7 +1155,8 @@ static void etna_pipe_clear(struct pipe_context *pipe,
              unsigned stencil)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
-    /* XXX need to update clear command in non-TS (fast clear) case *if*
+    printf("Pipe clear\n");
+    /* Need to update clear command in non-TS (fast clear) case *if*
      * clear value is different from previous time. 
      */
     if(buffers & PIPE_CLEAR_COLOR)
@@ -1233,8 +1246,8 @@ static struct pipe_sampler_view *etna_pipe_create_sampler_view(struct pipe_conte
     assert(res != NULL);
 
     SET_STATE(TE_SAMPLER_CONFIG0, 
-                VIVS_TE_SAMPLER_CONFIG0_TYPE(translate_texture_target(res->base.target)) |
-                VIVS_TE_SAMPLER_CONFIG0_FORMAT(translate_texture_format(sv->base.format)) 
+                VIVS_TE_SAMPLER_CONFIG0_TYPE(translate_texture_target(res->base.target, false)) |
+                VIVS_TE_SAMPLER_CONFIG0_FORMAT(translate_texture_format(sv->base.format, false)) 
                 /* merged with sampler state */
             );
     /* XXX VIVS_TE_SAMPLER_CONFIG1 (swizzle, extended format), swizzle_(r|g|b|a) */
@@ -1602,7 +1615,13 @@ static void etna_pipe_blit(struct pipe_context *pipe, const struct pipe_blit_inf
     util_blitter_blit(priv->blitter, &info);
 
 }
-   
+
+static void etna_pipe_set_polygon_stipple(struct pipe_context *pctx,
+		const struct pipe_poly_stipple *stipple)
+{
+    /* NOP */
+}
+
 static void *etna_pipe_transfer_map(struct pipe_context *pipe,
                          struct pipe_resource *resource,
                          unsigned level,
@@ -1759,7 +1778,7 @@ struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct et
     pc->set_clip_state = etna_pipe_set_clip_state;
     pc->set_constant_buffer = etna_set_constant_buffer;
     pc->set_framebuffer_state = etna_pipe_set_framebuffer_state;
-    /* XXX set_polygon_stipple */
+    pc->set_polygon_stipple = etna_pipe_set_polygon_stipple;
     pc->set_scissor_state = etna_pipe_set_scissor_state;
     pc->set_viewport_state = etna_pipe_set_viewport_state;
     pc->set_fragment_sampler_views = etna_pipe_set_fragment_sampler_views;
