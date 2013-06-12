@@ -863,7 +863,7 @@ static void *etna_pipe_create_vertex_elements_state(struct pipe_context *pipe,
                 VIVS_FE_VERTEX_ELEMENT_CONFIG_ENDIAN(ENDIAN_MODE_NO_SWAP) |
                 VIVS_FE_VERTEX_ELEMENT_CONFIG_STREAM(elements[idx].vertex_buffer_index) |
                 VIVS_FE_VERTEX_ELEMENT_CONFIG_START(elements[idx].src_offset) |
-                VIVS_FE_VERTEX_ELEMENT_CONFIG_END(end_offset - elements[idx].src_offset));
+                VIVS_FE_VERTEX_ELEMENT_CONFIG_END(end_offset - start_offset));
     }
     return cs;
 }
