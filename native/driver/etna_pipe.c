@@ -1338,7 +1338,8 @@ static void etna_pipe_texture_barrier(struct pipe_context *pipe)
     /* clear texture cache */
     etna_set_state(priv->ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_TEXTURE | VIVS_GL_FLUSH_CACHE_TEXTUREVS);
 }
-   
+
+#ifdef RAWSHADER
 /* XXX to be removed: test entry point */
 void *etna_create_shader_state(struct pipe_context *pipe, const struct etna_shader_program *rs)
 {
@@ -1449,7 +1450,7 @@ void etna_delete_shader_state(struct pipe_context *pipe, void *sh_)
     FREE(sh);
 }
 
-/* XXX to be removed: test entry point, replace with proper const buf handling */
+/* XXX to be removed: test entry point */
 void etna_set_uniforms(struct pipe_context *pipe, unsigned type, unsigned offset, unsigned count, const uint32_t *values)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
@@ -1467,6 +1468,7 @@ void etna_set_uniforms(struct pipe_context *pipe, unsigned type, unsigned offset
     default: printf("Unhandled shader type %i\n", type);
     }
 }
+#endif
 
 static void etna_set_constant_buffer(struct pipe_context *pipe,
                                 uint shader, uint index,

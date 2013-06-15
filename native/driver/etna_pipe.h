@@ -58,7 +58,7 @@ struct etna_shader_varying
     int vs_reg; /* VS output register */
 };
 
-
+#ifdef RAWSHADER
 struct etna_shader_program 
 {
     unsigned num_inputs;
@@ -82,6 +82,7 @@ struct etna_shader_program
     unsigned ps_uniforms_size; /* Size of uniforms (in words) */
     uint32_t *ps_uniforms; /* Initial values for VS uniforms */
 };
+#endif
 
 struct etna_resource_level
 {
@@ -239,11 +240,13 @@ etna_transfer(struct pipe_transfer *p)
 
 struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct etna_pipe_specs *specs, struct pipe_screen *scr);
 
+#ifdef RAWSHADER
 /* raw shader methods -- used by fb_rawshader demos */
 void *etna_create_shader_state(struct pipe_context *pipe, const struct etna_shader_program *rs);
 void etna_bind_shader_state(struct pipe_context *pipe, void *sh);
 void etna_delete_shader_state(struct pipe_context *pipe, void *sh_);
 void etna_set_uniforms(struct pipe_context *pipe, unsigned type, unsigned offset, unsigned count, const uint32_t *values);
+#endif
 
 struct etna_ctx *etna_pipe_get_etna_context(struct pipe_context *pipe);
 
