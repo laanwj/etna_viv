@@ -88,7 +88,7 @@ static const struct etna_fb_format_desc etna_fb_formats[] = {
 /* Get resolve format and swap red/blue format based on report on red/green/blue
  * bit positions from kernel.
  */
-static int fb_get_format(const struct fb_var_screeninfo *fb_var)
+bool etna_fb_get_format(const struct fb_var_screeninfo *fb_var, unsigned *rs_format, bool *swap_rb)
 {
     int fmt_idx=0;
     /* linear scan of table to find matching format */
@@ -114,13 +114,15 @@ static int fb_get_format(const struct fb_var_screeninfo *fb_var)
                 (int)fb_var->green.offset, (int)fb_var->green.length,
                 (int)fb_var->blue.offset, (int)fb_var->blue.length,
                 (int)fb_var->transp.offset, (int)fb_var->transp.length);
-        fmt_idx = -1;
+        return false;
     } else {
         printf("Framebuffer format: %i, flip_rb=%i\n", 
                 etna_fb_formats[fmt_idx].rs_format, 
                 etna_fb_formats[fmt_idx].swap_rb);
+        *rs_format = etna_fb_formats[fmt_idx].rs_format;
+        *swap_rb = etna_fb_formats[fmt_idx].swap_rb;
+        return true;
     }
-    return fmt_idx;
 }
 
 /* Open framebuffer and get information */
@@ -193,12 +195,9 @@ int fb_open(int num, struct fb_info *out)
     }
 
     /* determine resolve format */
-    int fmt_idx = fb_get_format(&out->fb_var);
-    if(fmt_idx != -1)
+    if(!etna_fb_get_format(&out->fb_var, (unsigned*)&out->rs_format, &out->swap_rb))
     {
-        out->rs_format = etna_fb_formats[fmt_idx].rs_format;
-        out->swap_rb = etna_fb_formats[fmt_idx].swap_rb;
-    } else {
+        /* no match */
         out->rs_format = -1;
         out->swap_rb = false;
     }

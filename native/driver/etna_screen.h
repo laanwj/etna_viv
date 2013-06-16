@@ -28,6 +28,8 @@
 
 struct viv_conn;
 
+/* Gallium screen structure for etna driver.
+ */
 struct etna_screen {
     struct pipe_screen base;
     struct viv_conn *dev;

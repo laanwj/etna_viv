@@ -218,7 +218,7 @@ static inline uint32_t translate_texture_format(enum pipe_format fmt, bool silen
     }
 }
 
-/* render target format */
+/* render target format (non-rb swapped RS-supported formats) */
 static inline uint32_t translate_rt_format(enum pipe_format fmt, bool silent)
 {
     switch(fmt) 

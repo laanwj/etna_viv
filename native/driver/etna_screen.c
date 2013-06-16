@@ -25,6 +25,7 @@
 #include "etna_shader.h"
 #include "etna_translate.h"
 #include "etna_debug.h"
+#include "etna_rs.h"
 
 #include <etnaviv/viv.h>
 #include <etnaviv/etna.h>
@@ -375,24 +376,15 @@ static struct pipe_resource * etna_screen_resource_from_handle(struct pipe_scree
     return NULL;
 }
 
-
-/** Temporary hack, belongs in a winsys,
- * and should likely contain a context, flags such as swap_rb,
- * and precompiled RS command like etna_fb.
+/* XXX this should use a blit or resource copy, when implemented, instead
+ * of programming the RS directly.
  */
-struct fbdev_etna_drawable {
-   enum pipe_format format;
-   unsigned x, y;
-   unsigned width, height;
-   size_t smem_start, smem_len, line_length;
-};
-
 static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
                           struct pipe_resource *resource,
                           unsigned level, unsigned layer,
                           void *winsys_drawable_handle )
 {
-    struct fbdev_etna_drawable *drawable = (struct fbdev_etna_drawable *)winsys_drawable_handle;
+    struct etna_rs_target *drawable = (struct etna_rs_target *)winsys_drawable_handle;
     struct etna_resource *rt_resource = etna_resource(resource);
     struct etna_pipe_context_priv *priv = ETNA_PIPE(_hack_ctx);
     assert(priv);
@@ -405,11 +397,11 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
                 .source_tiling = rt_resource->layout,
                 .source_addr = rt_resource->levels[0].address,
                 .source_stride = rt_resource->levels[0].stride,
-                .dest_format = RS_FORMAT_X8R8G8B8, // XXX
+                .dest_format = drawable->rs_format,
                 .dest_tiling = ETNA_LAYOUT_LINEAR,
-                .dest_addr = drawable->smem_start,
-                .dest_stride = drawable->line_length,
-                .swap_rb = 0, // XXX
+                .dest_addr = drawable->addr,
+                .dest_stride = drawable->stride,
+                .swap_rb = drawable->swap_rb,
                 .dither = {0xffffffff, 0xffffffff}, // XXX dither when going from 24 to 16 bit?
                 .clear_mode = VIVS_RS_CLEAR_CONTROL_MODE_DISABLED,
                 .width = drawable->width,
@@ -420,7 +412,7 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
     /* Flush RS */
     etna_set_state(ctx, VIVS_RS_FLUSH_CACHE, VIVS_RS_FLUSH_CACHE_FLUSH);
     printf("Queued RS command to flush screen from %08x to %08x stride=%08x width=%i height=%i, ctx %p\n", rt_resource->levels[0].address, 
-            drawable->smem_start, drawable->line_length,
+            drawable->addr, drawable->stride,
             drawable->width, drawable->height, ctx);
     etna_flush(ctx);
     //DBG("unimplemented etna_screen_flush_frontbuffer");

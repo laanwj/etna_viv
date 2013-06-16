@@ -1091,7 +1091,6 @@ static void etna_pipe_set_vertex_buffers( struct pipe_context *pipe,
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
     struct compiled_set_vertex_buffer *cs = &priv->vertex_buffer;
-    printf("pipe_set_vertex_buffers %i %i\n", start_slot, num_buffers);
     assert(start_slot == 0 && num_buffers == 1); /* XXX TODO */
     assert(vb[0].buffer); /* XXX user_buffer */
     priv->vertex_buffer_s = vb[0];
@@ -1155,7 +1154,6 @@ static void etna_pipe_clear(struct pipe_context *pipe,
              unsigned stencil)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
-    printf("Pipe clear\n");
     /* Need to update clear command in non-TS (fast clear) case *if*
      * clear value is different from previous time. 
      */
