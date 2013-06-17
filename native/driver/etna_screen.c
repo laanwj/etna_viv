@@ -35,6 +35,7 @@
 #include "util/u_format.h"
 #include "util/u_transfer.h"
 #include "util/u_math.h"
+#include "util/u_inlines.h"
 
 #include <stdio.h>
 
@@ -57,7 +58,7 @@ static const char *etna_screen_get_vendor( struct pipe_screen *screen )
 
 static int etna_screen_get_param( struct pipe_screen *screen, enum pipe_cap param )
 {
-    /* struct etna_screen *priv = etna_screen(screen); */
+    struct etna_screen *priv = etna_screen(screen);
     switch (param) {
     /* Supported features (boolean caps). */
     case PIPE_CAP_TWO_SIDED_STENCIL:
@@ -135,7 +136,7 @@ static int etna_screen_get_param( struct pipe_screen *screen, enum pipe_cap para
     case PIPE_CAP_MAX_TEXTURE_ARRAY_LAYERS:
             return 0;
     case PIPE_CAP_MAX_COMBINED_SAMPLERS:
-            return 12; /* XXX depends on caps */
+            return priv->specs.fragment_sampler_count + priv->specs.vertex_sampler_count;
     case PIPE_CAP_CUBE_MAP_ARRAY:
             return 0;
     case PIPE_CAP_MIN_TEXEL_OFFSET:
@@ -192,6 +193,7 @@ static float etna_screen_get_paramf( struct pipe_screen *screen, enum pipe_capf 
 
 static int etna_screen_get_shader_param( struct pipe_screen *screen, unsigned shader, enum pipe_shader_cap param )
 {
+    struct etna_screen *priv = etna_screen(screen);
     switch(shader)
     {
     case PIPE_SHADER_FRAGMENT:
@@ -245,7 +247,8 @@ static int etna_screen_get_shader_param( struct pipe_screen *screen, unsigned sh
     case PIPE_SHADER_CAP_INTEGERS: /* XXX supported on gc2000 */
             return 0;
     case PIPE_SHADER_CAP_MAX_TEXTURE_SAMPLERS:
-            return shader==PIPE_SHADER_FRAGMENT ? 16 : 8;
+            return shader==PIPE_SHADER_FRAGMENT ? priv->specs.fragment_sampler_count : 
+                                                  priv->specs.vertex_sampler_count;
     case PIPE_SHADER_CAP_PREFERRED_IR:
             return PIPE_SHADER_IR_TGSI;
     default:
@@ -566,6 +569,7 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     resource->layout = layout;
     resource->surface = rt;
     resource->ts = rt_ts;
+    pipe_reference_init(&resource->base.reference, 1);
 
     for(unsigned ix=0; ix<=resource->base.last_level; ++ix)
     {
@@ -610,6 +614,8 @@ etna_screen_create(struct viv_conn *dev)
     screen->specs.bits_per_tile = VIV_FEATURE(dev, chipMinorFeatures0, 2BITPERTILE)?2:4;
     screen->specs.ts_clear_value = VIV_FEATURE(dev, chipMinorFeatures0, 2BITPERTILE)?0x55555555:0x11111111;
     screen->specs.vertex_sampler_offset = 8; /* vertex and fragment samplers live in one address space */
+    screen->specs.fragment_sampler_count = 8;
+    screen->specs.vertex_sampler_count = 4;
     screen->specs.vs_need_z_div = dev->chip.chip_model < 0x1000 && dev->chip.chip_model != 0x880;
     screen->specs.vertex_output_buffer_size = dev->chip.vertex_output_buffer_size;
     screen->specs.vertex_cache_size = dev->chip.vertex_cache_size;

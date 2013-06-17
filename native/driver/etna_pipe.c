@@ -942,6 +942,12 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
     bool color_supertiled = (cbuf->layout & 2)!=0;
     bool depth_supertiled = (zsbuf->layout & 2)!=0;
 
+    /* acquire or release references to underlying surfaces */
+    if(cbuf != NULL)
+        pipe_surface_reference(&cs->cbuf, &cbuf->base);
+    if(zsbuf != NULL)
+        pipe_surface_reference(&cs->zsbuf, &zsbuf->base);
+
     /* XXX support multisample 2X/4X, take care that required width/height is doubled */
     SET_STATE(GL_MULTI_SAMPLE_CONFIG, 
             VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_SAMPLES_NONE
@@ -980,7 +986,7 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
     else if (priv->ctx->conn->chip.pixel_pipes == 2)
     {
         SET_STATE(PE_PIPE_COLOR_ADDR[0], zsbuf->surf.address);
-        SET_STATE(PE_PIPE_DEPTH_ADDR[1], zsbuf->surf.address);  /* TODO */
+        SET_STATE(PE_PIPE_COLOR_ADDR[1], zsbuf->surf.address);  /* TODO */
     }
     SET_STATE(PE_COLOR_STRIDE, cbuf->surf.stride);
     
@@ -989,7 +995,7 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
     SET_STATE_FIXP(SE_SCISSOR_RIGHT, (sv->width << 16)-1);
     SET_STATE_FIXP(SE_SCISSOR_BOTTOM, (sv->height << 16)-1);
 
-    /* Set up TS as well. Warning: this is shared with RS */
+    /* Set up TS as well. Warning: this state is used by both the RS and PE */
     uint32_t ts_mem_config = 0;
     if(zsbuf->surf.ts_address)
     {
@@ -1061,12 +1067,17 @@ static void etna_pipe_set_fragment_sampler_views(struct pipe_context *pipe,
                                   struct pipe_sampler_view **info)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    unsigned idx;
     priv->dirty_bits |= ETNA_STATE_SAMPLER_VIEWS;
     priv->num_fragment_sampler_views = num_views;
-    for(int idx=0; idx<num_views; ++idx)
+    for(idx=0; idx<num_views; ++idx)
     {
-        priv->sampler_view_s[idx] = info[idx]; /* TODO reference */
+        pipe_sampler_view_reference(&priv->sampler_view_s[idx], info[idx]);
         priv->sampler_view[idx] = *etna_sampler_view(info[idx])->internal;
+    }
+    for(; idx<priv->specs.fragment_sampler_count; ++idx)
+    {
+        pipe_sampler_view_reference(&priv->sampler_view_s[idx], NULL);
     }
 }
 
@@ -1075,12 +1086,18 @@ static void etna_pipe_set_vertex_sampler_views(struct pipe_context *pipe,
                                   struct pipe_sampler_view **info)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    unsigned idx;
+    unsigned offset = priv->specs.vertex_sampler_offset;
     priv->dirty_bits |= ETNA_STATE_SAMPLER_VIEWS;
     priv->num_vertex_sampler_views = num_views;
-    for(int idx=0; idx<num_views; ++idx)
+    for(idx=0; idx<num_views; ++idx)
     {
-        priv->sampler_view_s[priv->specs.vertex_sampler_offset + idx] = info[idx];
-        priv->sampler_view[priv->specs.vertex_sampler_offset + idx] = *etna_sampler_view(info[idx])->internal;
+        pipe_sampler_view_reference(&priv->sampler_view_s[offset + idx], info[idx]);
+        priv->sampler_view[offset + idx] = *etna_sampler_view(info[idx])->internal;
+    }
+    for(; idx<priv->specs.vertex_sampler_count; ++idx)
+    {
+        pipe_sampler_view_reference(&priv->sampler_view_s[offset + idx], NULL);
     }
 }
 
@@ -1108,11 +1125,13 @@ static void etna_pipe_set_index_buffer( struct pipe_context *pipe,
     struct compiled_set_index_buffer *cs = &priv->index_buffer;
     if(ib == NULL)
     {
+        pipe_resource_reference(&cs->buffer, NULL); /* update reference to buffer */
         SET_STATE(FE_INDEX_STREAM_CONTROL, 0);
         SET_STATE(FE_INDEX_STREAM_BASE_ADDR, 0);
     } else
     {
-        assert(ib->buffer); /* XXX user_buffer */
+        assert(ib->buffer); /* user index buffers not handled */
+        pipe_resource_reference(&cs->buffer, ib->buffer); /* update reference to buffer */
         SET_STATE(FE_INDEX_STREAM_CONTROL, 
                 translate_index_size(ib->index_size));
         SET_STATE(FE_INDEX_STREAM_BASE_ADDR, etna_resource(ib->buffer)->levels[0].address + ib->offset);
@@ -1236,6 +1255,8 @@ static struct pipe_sampler_view *etna_pipe_create_sampler_view(struct pipe_conte
     struct etna_sampler_view *sv = CALLOC_STRUCT(etna_sampler_view);
     sv->base = *templat;
     sv->base.context = pipe;
+    sv->base.texture = 0;
+    pipe_resource_reference(&sv->base.texture, texture);
     sv->base.texture = texture;
     assert(sv->base.texture);
 
@@ -1271,6 +1292,7 @@ static void etna_pipe_sampler_view_destroy(struct pipe_context *pipe,
                             struct pipe_sampler_view *view)
 {
     //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    pipe_resource_reference(&view->texture, NULL);
     FREE(etna_sampler_view(view)->internal);
     FREE(view);
 }
@@ -1288,6 +1310,10 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
     assert(layer < resource->base.array_size);
    
     surf->base.context = pipe;
+
+    pipe_reference_init(&surf->base.reference, 1);
+    pipe_resource_reference(&surf->base.texture, &resource->base);
+
     surf->base.texture = &resource->base;
     surf->base.format = resource->base.format;
     surf->base.width = resource->levels[level].width;
@@ -1327,6 +1353,7 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
 static void etna_pipe_surface_destroy(struct pipe_context *pipe, struct pipe_surface *surf)
 {
     //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    pipe_resource_reference(&surf->texture, NULL);
     FREE(surf);
 }
 
@@ -1474,7 +1501,7 @@ static void etna_set_constant_buffer(struct pipe_context *pipe,
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
     assert(buf->buffer == NULL && buf->user_buffer != NULL); 
-    /* support only user buffer for now; XXX support PIPE_BIND_CONSTANT buffers */
+    /* support only user buffer for now */
     assert(priv->vs && priv->fs);
     if(index == 0)
     {

@@ -209,7 +209,7 @@ The event queue effectively schedules kernel operations to happen in the future,
 committed command buffers. This can be used to implement, for example, a fenced free that will release a buffer as soon as the GPU
 is finished with it.
 
-Events queues are sent to the kernel using the command `HAL_EVENT_COMMIT`. Types of interfaces that can be sent using an event are:
+Event queues are sent to the kernel using the command `HAL_EVENT_COMMIT`. Types of interfaces that can be sent using an event are:
 
 - `FREE_NON_PAGED_MEMORY`: free earlier allocated non paged memory
 - `FREE_CONTIGUOUS_MEMORY`: free earier allocated contiguous memory
@@ -219,7 +219,7 @@ Events queues are sent to the kernel using the command `HAL_EVENT_COMMIT`. Types
 - `SIGNAL`: command from the signal API described in this section
 - `UNMAP_USER_MEMORY`: unmap earlier mapped user memory
 
-Userspace can then wait for them using `USER_SIGNAL` with subcommand `USER_SIGNAL_WAIT`.
+Userspace can wait for the signal using `USER_SIGNAL` with subcommand `USER_SIGNAL_WAIT`.
 
 Anatomy of a small rendering test
 ----------------------------------

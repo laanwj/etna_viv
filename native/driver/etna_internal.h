@@ -51,6 +51,10 @@ struct etna_pipe_specs
     uint32_t ts_clear_value;
     /* base of vertex texture units */
     unsigned vertex_sampler_offset;
+    /* number of fragment sampler units */
+    unsigned fragment_sampler_count;
+    /* number of vertex sampler units */
+    unsigned vertex_sampler_count;
     /* needs z=(z+w)/2, for older GCxxx */
     bool vs_need_z_div;
     /* size of vertex shader output buffer */
@@ -167,6 +171,7 @@ struct compiled_sampler_view
 /* Compiled pipe_framebuffer_state */
 struct compiled_framebuffer_state
 {
+    struct pipe_surface *cbuf, *zsbuf; /* keep reference to surfaces */
     uint32_t GL_MULTI_SAMPLE_CONFIG;
     uint32_t PE_COLOR_FORMAT;
     uint32_t PE_DEPTH_CONFIG;
@@ -208,6 +213,7 @@ struct compiled_set_vertex_buffer
 /* Compiled context->set_index_buffer result */
 struct compiled_set_index_buffer
 {
+    struct pipe_resource *buffer; /* keep reference to buffer */
     uint32_t FE_INDEX_STREAM_CONTROL;
     uint32_t FE_INDEX_STREAM_BASE_ADDR;
 };

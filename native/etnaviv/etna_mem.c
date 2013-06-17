@@ -95,7 +95,10 @@ int etna_vidmem_unlock(struct viv_conn *conn, struct etna_vidmem *mem)
 int etna_vidmem_free(struct viv_conn *conn, struct etna_vidmem *mem)
 {
     if(mem == NULL) return ETNA_INVALID_ADDR;
-    viv_free_vidmem(conn, mem->node);
+    if(etna_vidmem_unlock(conn, mem))
+    {
+        printf("etna: Warning: could not unlock memory\n");
+    }
     ETNA_FREE(mem);
     return ETNA_OK;
 }
