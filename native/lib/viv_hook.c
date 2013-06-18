@@ -307,12 +307,21 @@ void the_hook(const char *filename)
 {
     char *mali_path = NULL; // path to libMali.so
     void *mali_base = NULL;
+    char *gal_names[] = {"libGAL.so", "libGAL-fb.so", 0};
 
     _fdr = fdr_open(filename);
 
-    if(parse_maps("libGAL.so", &mali_path, &mali_base))
+    int i=0;
+    while (gal_names[i] != 0)
     {
-        fprintf(stderr, "Could not find libMali library in process map\n");
+        if(parse_maps(gal_names[i], &mali_path, &mali_base) == 0)
+            break;
+        i++;
+    }
+    
+    if (gal_names[i] == 0)
+    {
+        fprintf(stderr, "Could not find libGAL library in process map\n");
         return;
     }
     
