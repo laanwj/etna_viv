@@ -30,8 +30,8 @@
 /* Structure describing a block of video memory */
 struct etna_vidmem {
     size_t size;
-    gceSURF_TYPE type;
-    gcuVIDMEM_NODE_PTR node;
+    enum viv_surf_type type;
+    viv_node_t node;
     viv_addr_t address;
     void *logical;
 };
@@ -40,11 +40,11 @@ struct etna_vidmem {
 struct etna_usermem {
     void *memory;
     size_t size;
-    gctPOINTER info;
+    void *info;
     viv_addr_t address;
 };
 
-int etna_vidmem_alloc_linear(struct viv_conn *conn, struct etna_vidmem **mem_out, size_t bytes, gceSURF_TYPE type, gcePOOL pool, bool lock);
+int etna_vidmem_alloc_linear(struct viv_conn *conn, struct etna_vidmem **mem_out, size_t bytes, enum viv_surf_type type, enum viv_pool pool, bool lock);
 int etna_vidmem_lock(struct viv_conn *conn, struct etna_vidmem *mem);
 int etna_vidmem_unlock(struct viv_conn *conn, struct etna_vidmem *mem);
 int etna_vidmem_free(struct viv_conn *conn, struct etna_vidmem *mem);

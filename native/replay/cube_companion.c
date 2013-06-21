@@ -9,7 +9,7 @@
 #include <stdarg.h>
 
 #include "write_bmp.h"
-#include <etnaviv/viv.h>
+#include "viv_raw.h"
 #include "companion.h"
 
 #include "companion_cmd.h"

@@ -532,24 +532,24 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
         rt_ts_size = align(resource->levels[0].size*priv->specs.bits_per_tile/0x80, 0x100);
     
     /* determine memory type */
-    gceSURF_TYPE memtype = gcvSURF_TYPE_UNKNOWN;
+    enum viv_surf_type memtype = VIV_SURF_UNKNOWN;
     if(templat->bind & PIPE_BIND_RENDER_TARGET)
-        memtype = gcvSURF_RENDER_TARGET;
+        memtype = VIV_SURF_RENDER_TARGET;
     else if(templat->bind & PIPE_BIND_SAMPLER_VIEW)
-        memtype = gcvSURF_TEXTURE;
+        memtype = VIV_SURF_TEXTURE;
     else if(templat->bind & PIPE_BIND_DEPTH_STENCIL)
-        memtype = gcvSURF_DEPTH;
+        memtype = VIV_SURF_DEPTH;
     else if(templat->bind & PIPE_BIND_INDEX_BUFFER) 
-        memtype = gcvSURF_INDEX;
+        memtype = VIV_SURF_INDEX;
     else if(templat->bind & PIPE_BIND_VERTEX_BUFFER)
-        memtype = gcvSURF_VERTEX;
+        memtype = VIV_SURF_VERTEX;
 
     printf("Allocate surface of %ix%i (padded to %ix%i) of format %i (%i bpe %ix%i), size %08x ts_size %08x, flags %08x, memtype %i\n",
             templat->width0, templat->height0, resource->levels[0].padded_width, resource->levels[0].padded_height, templat->format, 
             element_size, divSizeX, divSizeY, rt_size, rt_ts_size, templat->bind, memtype);
 
     struct etna_vidmem *rt = 0;
-    if(etna_vidmem_alloc_linear(priv->dev, &rt, rt_size, memtype, gcvPOOL_DEFAULT, true) != ETNA_OK)
+    if(etna_vidmem_alloc_linear(priv->dev, &rt, rt_size, memtype, VIV_POOL_DEFAULT, true) != ETNA_OK)
     {
         printf("Problem allocating video memory for resource\n");
         return NULL;
@@ -557,7 +557,7 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
    
     /* XXX allocate TS for rendertextures? if so, for each level or only the top? */
     struct etna_vidmem *rt_ts = 0;
-    if(rt_ts_size && etna_vidmem_alloc_linear(priv->dev, &rt_ts, rt_ts_size, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, true)!=ETNA_OK)
+    if(rt_ts_size && etna_vidmem_alloc_linear(priv->dev, &rt_ts, rt_ts_size, VIV_SURF_TILE_STATUS, VIV_POOL_DEFAULT, true)!=ETNA_OK)
     {
         printf("Problem allocating tile status for resource\n");
         return NULL;

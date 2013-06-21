@@ -158,7 +158,7 @@ int etna_bswap_wait_available(struct etna_bswap_buffers *bufs)
 int etna_bswap_queue_swap(struct etna_bswap_buffers *bufs)
 {
     etna_flush(bufs->ctx); /* must flush before swap to make sure signal happens after all current commands processed */
-    if(viv_event_queue_signal(bufs->conn, bufs->buf[bufs->backbuffer].sig_id_ready, gcvKERNEL_PIXEL) != 0)
+    if(viv_event_queue_signal(bufs->conn, bufs->buf[bufs->backbuffer].sig_id_ready, VIV_WHERE_PIXEL) != 0)
     {
 #ifdef DEBUG
         fprintf(stderr, "Unable to queue framebuffer sync signal\n");
