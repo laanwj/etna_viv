@@ -271,7 +271,7 @@ int etna_free(struct etna_ctx *ctx)
     /* Free command buffers */
     for(int x=0; x<NUM_COMMAND_BUFFERS; ++x)
     {
-        viv_free_contiguous(ctx->conn, COMMAND_BUFFER_SIZE, (viv_addr_t)ctx->cmdbuf[x]->logical, ctx->cmdbuf[x]->physical);
+        viv_free_contiguous(ctx->conn, ctx->cmdbuf[x]->bytes, (viv_addr_t)ctx->cmdbuf[x]->physical, ctx->cmdbuf[x]->logical);
         ETNA_FREE(ctx->cmdbuf[x]);
     }
     ETNA_FREE(ctx);
