@@ -30,6 +30,7 @@
 
 #define ETNA_MALLOC(_size) malloc(_size)
 #define ETNA_CALLOC_STRUCT(T)   (struct T *) calloc(1, sizeof(struct T))
+#define ETNA_CALLOC_STRUCT_ARRAY(N, T)   (struct T *) calloc((N), sizeof(struct T))
 #define ETNA_FREE(_ptr) free(_ptr)
 
 static inline uint32_t etna_align_up(uint32_t value, uint32_t granularity)

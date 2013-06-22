@@ -22,6 +22,7 @@
  */
 #include <etnaviv/etna.h>
 #include <etnaviv/viv.h>
+#include <etnaviv/etna_queue.h>
 #include <etnaviv/state.xml.h>
 
 #include <stdlib.h>
@@ -159,6 +160,7 @@ static int initialize_gpu_context(struct viv_conn *conn, gckCONTEXT *vctx)
 
 int etna_create(struct viv_conn *conn, struct etna_ctx **ctx_out)
 {
+    int rv;
     if(ctx_out == NULL) return ETNA_INVALID_ADDR;
     struct etna_ctx *ctx = ETNA_CALLOC_STRUCT(etna_ctx);
     if(ctx == NULL) return ETNA_OUT_OF_MEMORY;
@@ -226,6 +228,15 @@ int etna_create(struct viv_conn *conn, struct etna_ctx **ctx_out)
     ctx->cur_buf = -1;
     *ctx_out = ctx;
 
+    /* Allocate command queue */
+    if((rv = etna_queue_create(ctx, &ctx->queue)) != ETNA_OK)
+    {
+#ifdef DEBUG
+        fprintf(stderr, "Error allocating kernel command queue\n");
+#endif
+        return rv;
+    }
+
     return ETNA_OK;
 }
 
@@ -266,7 +277,7 @@ int etna_free(struct etna_ctx *ctx)
 {
     if(ctx == NULL)
         return ETNA_INVALID_ADDR;
-
+    etna_queue_free(ctx->queue);
     /* TODO: free context buffer */
     /* Free command buffers */
     for(int x=0; x<NUM_COMMAND_BUFFERS; ++x)
@@ -294,12 +305,12 @@ int _etna_reserve_internal(struct etna_ctx *ctx, size_t n)
 #ifdef DEBUG
         printf("Submitting old buffer\n");
 #endif
+        /* Queue signal to signify when buffer is available again */
+        if(etna_queue_signal(ctx->queue, ctx->cmdbuf_sig[ctx->cur_buf], VIV_WHERE_COMMAND) != 0)
+            return ETNA_INTERNAL_ERROR;
         /* Otherwise, if there is something to be committed left in the current command buffer, commit it */
         if((status = etna_flush(ctx)) != ETNA_OK)
             return status;
-        /* Queue signal to signify when buffer is available again */
-        if(viv_event_queue_signal(ctx->conn, ctx->cmdbuf_sig[ctx->cur_buf], gcvKERNEL_COMMAND) != 0)
-            return ETNA_INTERNAL_ERROR;
     }
 
     /* Move on to next buffer if not enough free in current one */
@@ -309,38 +320,34 @@ int _etna_reserve_internal(struct etna_ctx *ctx, size_t n)
 
 int etna_flush(struct etna_ctx *ctx)
 {
+    int status;
     if(ctx == NULL)
         return ETNA_INVALID_ADDR;
+    struct _gcsQUEUE *queue_first = etna_queue_first(ctx->queue);
     if(ctx->cur_buf == -1)
-        return ETNA_OK; /* Nothing to do */
+        goto nothing_to_do;
     gcoCMDBUF cur_buf = ctx->cmdbuf[ctx->cur_buf];
+
     ETNA_ALIGN(ctx); /* make sure end of submitted command buffer end is aligned */
 #ifdef DEBUG
     printf("Committing command buffer %i startOffset=%x offset=%x\n", ctx->cur_buf,
             cur_buf->startOffset, ctx->offset*4);
 #endif
     if(ctx->offset*4 <= (cur_buf->startOffset + BEGIN_COMMIT_CLEARANCE))
-        return ETNA_OK; /* Nothing to do */
+        goto nothing_to_do;
     cur_buf->offset = ctx->offset*4; /* Copy over current ending offset into CMDBUF, for kernel */
 #ifdef DEBUG_CMDBUF
     etna_dump_cmd_buffer(ctx);
-    /*
-    printf("    {");
-    for(size_t i=cur_buf->startOffset; i<cur_buf->offset; i+=4)
-    {
-        printf("0x%08x,", *((uint32_t*)(((size_t)cur_buf->logical)+i)));
-    }
-    printf("}\n");
-    */
 #endif
-    int status = viv_commit(ctx->conn, cur_buf, ctx->ctx);
-    if(status != 0)
+    if((status = viv_commit(ctx->conn, cur_buf, ctx->ctx, queue_first)) != 0)
     {
 #ifdef DEBUG
         fprintf(stderr, "Error committing command buffer\n");
 #endif
         return status;
     }
+    if((status = etna_queue_clear(ctx->queue)) != ETNA_OK)
+        return status;
 #ifdef GCABI_HAS_CONTEXT
     if(*GCCTX(ctx)->inUse)
     {
@@ -367,6 +374,21 @@ int etna_flush(struct etna_ctx *ctx)
 #endif
 #endif
     return ETNA_OK;
+nothing_to_do:
+    /* Nothing in command buffer; but there may be kernel commands to submit. Do this seperately. */
+    if(queue_first != NULL)
+    {
+        if((status = viv_event_commit(ctx->conn, queue_first)) != 0)
+        {
+#ifdef DEBUG
+            fprintf(stderr, "Error committing kernel commands\n");
+#endif
+            return status;
+        }
+        if((status = etna_queue_clear(ctx->queue)) != ETNA_OK)
+            return status;
+    }
+    return ETNA_OK;
 }
 
 int etna_finish(struct etna_ctx *ctx)
@@ -374,13 +396,13 @@ int etna_finish(struct etna_ctx *ctx)
     int status;
     if(ctx == NULL)
         return ETNA_INVALID_ADDR;
-    if((status = etna_flush(ctx)) != ETNA_OK)
-        return status;
     /* Submit event queue with SIGNAL, fromWhere=gcvKERNEL_PIXEL (wait for pixel engine to finish) */
-    if(viv_event_queue_signal(ctx->conn, ctx->sig_id, gcvKERNEL_PIXEL) != 0)
+    if(etna_queue_signal(ctx->queue, ctx->sig_id, VIV_WHERE_PIXEL) != 0)
     {
         return ETNA_INTERNAL_ERROR;
     }
+    if((status = etna_flush(ctx)) != ETNA_OK)
+        return status;
 #ifdef DEBUG
     printf("finish: Waiting for signal...\n");
 #endif

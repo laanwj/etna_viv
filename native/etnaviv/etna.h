@@ -82,6 +82,7 @@ typedef enum _etna_pipe {
 } etna_pipe;
 
 struct _gcoCMDBUF;
+struct etna_queue;
 
 struct etna_ctx {
     /* Driver connection */
@@ -103,8 +104,12 @@ struct etna_ctx {
     int num_vertex_elements; /* number of active vertex elements */
     /* Structures for kernel */
     struct _gcoCMDBUF *cmdbuf[NUM_COMMAND_BUFFERS];
-    int cmdbuf_sig[NUM_COMMAND_BUFFERS]; /* sync signals for command buffers */
+    /* sync signals for command buffers */
+    int cmdbuf_sig[NUM_COMMAND_BUFFERS];
+    /* context */
     void *ctx;
+    /* command queue */
+    struct etna_queue *queue;
 };
 
 /** Convenience macros for command buffer building, remember to reserve enough space before using them */

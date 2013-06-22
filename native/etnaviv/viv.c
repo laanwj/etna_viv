@@ -44,6 +44,7 @@
 #include "gc_hal_kernel_context.h"
 #endif
 #include "gc_hal_types.h"
+#include "etna_enum_convert.h"
 
 //#define DEBUG
 
@@ -59,56 +60,6 @@ typedef struct
     uint32_t out_buf_size;
 } vivante_ioctl_data_t;
 
-/* Convert VIV_SURF_* to kernel specific gcvSURF_* */
-static inline gceSURF_TYPE convert_surf_type(enum viv_surf_type type)
-{
-    switch(type)
-    {
-    case VIV_SURF_INDEX: return gcvSURF_INDEX;
-    case VIV_SURF_VERTEX: return gcvSURF_VERTEX;
-    case VIV_SURF_TEXTURE: return gcvSURF_TEXTURE;
-    case VIV_SURF_RENDER_TARGET: return gcvSURF_RENDER_TARGET;
-    case VIV_SURF_DEPTH: return gcvSURF_DEPTH;
-    case VIV_SURF_BITMAP: return gcvSURF_BITMAP;
-    case VIV_SURF_TILE_STATUS: return gcvSURF_TILE_STATUS;
-#ifndef GCABI_HAS_CONTEXT
-    case VIV_SURF_IMAGE: return gcvSURF_IMAGE;
-#endif
-    case VIV_SURF_MASK: return gcvSURF_MASK;
-    case VIV_SURF_SCISSOR: return gcvSURF_SCISSOR;
-    case VIV_SURF_HIERARCHICAL_DEPTH: return gcvSURF_HIERARCHICAL_DEPTH;
-    default: return gcvSURF_TYPE_UNKNOWN;
-    }
-}
-
-/* Convert semaphore recipient */
-static inline gceKERNEL_WHERE convert_where(enum viv_where where)
-{
-    switch(where)
-    {
-    case VIV_WHERE_COMMAND: return gcvKERNEL_COMMAND;
-    case VIV_WHERE_PIXEL: return gcvKERNEL_PIXEL;
-    default: return gcvKERNEL_PIXEL; /* unknown default */
-    }
-}
-
-/* Convert video memory pool */
-static inline gcePOOL convert_pool(enum viv_pool pool)
-{
-    switch(pool)
-    {
-    case VIV_POOL_DEFAULT: return gcvPOOL_DEFAULT;
-    case VIV_POOL_LOCAL: return gcvPOOL_LOCAL;
-    case VIV_POOL_LOCAL_INTERNAL: return gcvPOOL_LOCAL_INTERNAL;
-    case VIV_POOL_LOCAL_EXTERNAL: return gcvPOOL_LOCAL_EXTERNAL;
-    case VIV_POOL_UNIFIED: return gcvPOOL_UNIFIED;
-    case VIV_POOL_SYSTEM: return gcvPOOL_SYSTEM;
-    case VIV_POOL_VIRTUAL: return gcvPOOL_VIRTUAL;
-    case VIV_POOL_USER: return gcvPOOL_USER;
-    case VIV_POOL_CONTIGUOUS: return gcvPOOL_CONTIGUOUS;
-    default: return gcvPOOL_UNKNOWN;
-    }
-};
 
 /* Call ioctl interface with structure cmd as input and output.
  * @returns status (gcvSTATUS_xxx)
@@ -329,11 +280,10 @@ int viv_unlock_vidmem(struct viv_conn *conn, viv_node_t node, enum viv_surf_type
     return viv_invoke(conn, &id);
 }
 
-/* TODO free contiguous memory and video memory */
-
 #ifdef GCABI_HAS_CONTEXT
-int viv_commit(struct viv_conn *conn, gcoCMDBUF commandBuffer, viv_context_t contextBuffer)
+int viv_commit(struct viv_conn *conn, gcoCMDBUF commandBuffer, viv_context_t contextBuffer, struct _gcsQUEUE *queue)
 {
+    int rv;
     gcsHAL_INTERFACE id = {
         .command = gcvHAL_COMMIT,
         .u = {
@@ -344,10 +294,15 @@ int viv_commit(struct viv_conn *conn, gcoCMDBUF commandBuffer, viv_context_t con
             }
         }
     };
-    return viv_invoke(conn, &id);
+    if((rv=viv_invoke(conn, &id)) != gcvSTATUS_OK)
+        return rv;
+    /* commit queue after command buffer */
+    if(queue != NULL && (rv=viv_event_commit(conn, queue)) != gcvSTATUS_OK)
+       return rv;
+    return gcvSTATUS_OK;
 }
 #else
-int viv_commit(struct viv_conn *conn, gcoCMDBUF commandBuffer, viv_context_t context)
+int viv_commit(struct viv_conn *conn, gcoCMDBUF commandBuffer, viv_context_t context, struct _gcsQUEUE *queue)
 {
     gcsSTATE_DELTA fake_delta;
     memset(&fake_delta, 0, sizeof(gcsSTATE_DELTA));
@@ -358,7 +313,7 @@ int viv_commit(struct viv_conn *conn, gcoCMDBUF commandBuffer, viv_context_t con
             .Commit = {
                 .commandBuffer = commandBuffer,
                 .context = (gckCONTEXT)context,
-                .queue = NULL,
+                .queue = queue,
                 .delta = &fake_delta,
             }
         }
@@ -368,7 +323,7 @@ int viv_commit(struct viv_conn *conn, gcoCMDBUF commandBuffer, viv_context_t con
 }
 #endif
 
-int viv_event_commit(struct viv_conn *conn, gcsQUEUE *queue)
+int viv_event_commit(struct viv_conn *conn, struct _gcsQUEUE *queue)
 {
     gcsHAL_INTERFACE id = {
         .command = gcvHAL_EVENT_COMMIT,
@@ -444,28 +399,6 @@ int viv_user_signal_destroy(struct viv_conn *conn, int sig_id)
         }
     };
     return viv_invoke(conn, &id);
-}
-
-int viv_event_queue_signal(struct viv_conn *conn, int sig_id, enum viv_where fromWhere)
-{
-    /* gcsQUEUE is copied by the kernel, so it does not need to be kept in memory
-     * until the kernel processes it
-     */
-    gcsQUEUE id = {
-        .next = NULL,
-        .iface = {
-            .command = gcvHAL_SIGNAL,
-            .u = {
-                .Signal = {
-                    .signal = (void*)sig_id,
-                    .auxSignal = (void*)0x0,
-                    .process = conn->process,
-                    .fromWhere = convert_where(fromWhere)
-                }
-            }
-        }
-    };
-    return viv_event_commit(conn, &id);
 }
 
 void viv_show_chip_info(struct viv_conn *conn)

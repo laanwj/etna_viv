@@ -68,13 +68,6 @@ enum viv_surf_type
     VIV_SURF_HIERARCHICAL_DEPTH
 };
 
-/* Semaphore recipient */
-enum viv_where
-{
-    VIV_WHERE_COMMAND,
-    VIV_WHERE_PIXEL
-};
-
 /* Video memory pool type. */
 enum viv_pool
 {
@@ -88,6 +81,13 @@ enum viv_pool
     VIV_POOL_VIRTUAL,
     VIV_POOL_USER,
     VIV_POOL_CONTIGUOUS
+};
+
+/* Semaphore recipient */
+enum viv_where
+{
+    VIV_WHERE_COMMAND,
+    VIV_WHERE_PIXEL
 };
 
 /* Type for GPU physical address */
@@ -165,7 +165,7 @@ int viv_lock_vidmem(struct viv_conn *conn, viv_node_t node, viv_addr_t *physical
 
 /** Commit GPU command buffer and context.
  */
-int viv_commit(struct viv_conn *conn, struct _gcoCMDBUF *commandBuffer, viv_context_t context);
+int viv_commit(struct viv_conn *conn, struct _gcoCMDBUF *commandBuffer, viv_context_t context, struct _gcsQUEUE *queue);
 
 /**  Unlock (unmap) video memory node from GPU and CPU memory.
  */
@@ -209,10 +209,6 @@ int viv_user_signal_wait(struct viv_conn *conn, int sig_id, int wait);
 /** Destroy signal created with viv_user_signal_create.
  */
 int viv_user_signal_destroy(struct viv_conn *conn, int sig_id);
-
-/** Queue synchronization signal from GPU.
- */
-int viv_event_queue_signal(struct viv_conn *conn, int sig_id, enum viv_where fromWhere);
 
 void viv_show_chip_info(struct viv_conn *conn);
 

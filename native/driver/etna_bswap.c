@@ -32,6 +32,7 @@
 
 #include <etnaviv/viv.h>
 #include <etnaviv/etna.h>
+#include <etnaviv/etna_queue.h>
 #include <etnaviv/state.xml.h>
 #include <etnaviv/state_3d.xml.h>
 
@@ -157,14 +158,16 @@ int etna_bswap_wait_available(struct etna_bswap_buffers *bufs)
 /* queue buffer swap when GPU ready with rendering to buf */
 int etna_bswap_queue_swap(struct etna_bswap_buffers *bufs)
 {
-    etna_flush(bufs->ctx); /* must flush before swap to make sure signal happens after all current commands processed */
-    if(viv_event_queue_signal(bufs->conn, bufs->buf[bufs->backbuffer].sig_id_ready, VIV_WHERE_PIXEL) != 0)
+    int rv;
+    if(etna_queue_signal(bufs->ctx->queue, bufs->buf[bufs->backbuffer].sig_id_ready, VIV_WHERE_PIXEL) != 0)
     {
 #ifdef DEBUG
         fprintf(stderr, "Unable to queue framebuffer sync signal\n");
 #endif
         return ETNA_INTERNAL_ERROR;
     }
+    if((rv=etna_flush(bufs->ctx)) != ETNA_OK)
+        return rv;
     bufs->backbuffer = (bufs->backbuffer + 1) % bufs->num_buffers;
     return ETNA_OK;
 }
