@@ -201,7 +201,8 @@ int viv_user_signal_create(struct viv_conn *conn, int manualReset, int *id_out);
  */
 int viv_user_signal_signal(struct viv_conn *conn, int sig_id, int state);
 
-/** Wait for signal. Provide time to wait in milliseconds, or SIG_WAIT_INDEFINITE.
+/** Wait for signal. 
+ * @param[in] wait Provide time to wait in milliseconds, or SIG_WAIT_INDEFINITE.
  */
 int viv_user_signal_wait(struct viv_conn *conn, int sig_id, int wait);
 

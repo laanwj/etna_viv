@@ -47,8 +47,7 @@
 
 //#define DEBUG
 
-// XXX const char *galcore_device[] = {"/dev/galcore", "/dev/graphics/galcore", NULL};
-#define GALCORE_DEVICE "/dev/galcore"
+const char *galcore_device[] = {"/dev/galcore", "/dev/graphics/galcore", NULL};
 #define INTERFACE_SIZE (sizeof(gcsHAL_INTERFACE))
 
 /* IOCTL structure for IOCTL_GCHAL_INTERFACE */
@@ -187,7 +186,12 @@ int viv_open(enum viv_hw_type hw_type, struct viv_conn **out)
         return -1;
     conn->hw_type = hw_type;
     gcsHAL_INTERFACE id = {};
-    conn->fd = open(GALCORE_DEVICE, O_RDWR);
+    /* try galcore devices */
+    conn->fd = -1;
+    for(const char **pname = galcore_device; *pname && conn->fd < 0; ++pname)
+    {
+        conn->fd = open(*pname, O_RDWR);
+    }
     if((err=conn->fd) < 0)
         goto error;
     
