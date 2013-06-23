@@ -63,6 +63,8 @@ struct etna_pipe_specs
     unsigned vertex_cache_size;
     /* number of shader cores */
     unsigned shader_core_count;
+    /* number of vertex streams */
+    unsigned stream_count;
 };
 
 /** Compiled Gallium state. All the different compiled state atoms are woven together and uploaded

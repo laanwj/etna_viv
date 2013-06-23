@@ -620,6 +620,7 @@ etna_screen_create(struct viv_conn *dev)
     screen->specs.vertex_output_buffer_size = dev->chip.vertex_output_buffer_size;
     screen->specs.vertex_cache_size = dev->chip.vertex_cache_size;
     screen->specs.shader_core_count = dev->chip.shader_core_count;
+    screen->specs.stream_count = dev->chip.stream_count;
 
     pscreen->destroy = etna_screen_destroy;
     pscreen->get_name = etna_screen_get_name;
