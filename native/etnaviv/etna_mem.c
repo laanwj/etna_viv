@@ -22,6 +22,7 @@
  */
 #include <etnaviv/etna_mem.h>
 #include <etnaviv/etna.h>
+#include <etnaviv/etna_queue.h>
 
 #include <string.h>
 #include <stdlib.h>
@@ -100,6 +101,19 @@ int etna_vidmem_unlock(struct viv_conn *conn, struct etna_vidmem *mem)
         return ETNA_INTERNAL_ERROR;
     }
     mem->logical = NULL;
+    mem->address = 0;
+    return ETNA_OK;
+}
+
+int etna_vidmem_queue_unlock(struct etna_queue *queue, struct etna_vidmem *mem)
+{
+    if(mem == NULL) return ETNA_INVALID_ADDR;
+    if(etna_queue_unlock_vidmem(queue, mem->node, mem->type, 0 /* async */) != ETNA_OK)
+    {
+        return ETNA_INTERNAL_ERROR;
+    }
+    mem->logical = NULL;
+    mem->address = 0;
     return ETNA_OK;
 }
 
@@ -116,6 +130,24 @@ int etna_vidmem_free(struct viv_conn *conn, struct etna_vidmem *mem)
     if(viv_free_vidmem(conn, mem->node) != ETNA_OK)
     {
         printf("etna: Warning: could not free video memory\n");
+    }
+    ETNA_FREE(mem);
+    return ETNA_OK;
+}
+
+int etna_vidmem_queue_free(struct etna_queue *queue, struct etna_vidmem *mem)
+{
+    if(mem == NULL) return ETNA_INVALID_ADDR;
+    if(mem->logical != NULL)
+    {
+        if(etna_vidmem_queue_unlock(queue, mem) != ETNA_OK)
+        {
+            printf("etna: Warning: could not queue unlock memory\n");
+        }
+    }
+    if(etna_queue_free_vidmem(queue, mem->node) != ETNA_OK)
+    {
+        printf("etna: Warning: could not queue free video memory\n");
     }
     ETNA_FREE(mem);
     return ETNA_OK;
@@ -145,4 +177,13 @@ int etna_usermem_unmap(struct viv_conn *conn, struct etna_usermem *mem)
     ETNA_FREE(mem);
     return ETNA_OK;
 }
+
+int etna_usermem_queue_unmap(struct etna_queue *queue, struct etna_usermem *mem)
+{
+    if(mem == NULL) return ETNA_INVALID_ADDR;
+    etna_queue_unmap_user_memory(queue, mem->memory, mem->size, mem->info, mem->address);
+    ETNA_FREE(mem);
+    return ETNA_OK;
+}
+
 

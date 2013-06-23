@@ -44,13 +44,34 @@ struct etna_usermem {
     viv_addr_t address;
 };
 
+struct etna_queue;
+
+/* Allocate linear block of video memory */
 int etna_vidmem_alloc_linear(struct viv_conn *conn, struct etna_vidmem **mem_out, size_t bytes, enum viv_surf_type type, enum viv_pool pool, bool lock);
+
+/* Lock video memory into GPU and CPU memory space */
 int etna_vidmem_lock(struct viv_conn *conn, struct etna_vidmem *mem);
+
+/* Unlock video memory from GPU and CPU memory space */
 int etna_vidmem_unlock(struct viv_conn *conn, struct etna_vidmem *mem);
+
+/* Deferred unlock video memory */
+int etna_vidmem_queue_unlock(struct etna_queue *queue, struct etna_vidmem *mem);
+
+/* Free video memory node */
 int etna_vidmem_free(struct viv_conn *conn, struct etna_vidmem *mem);
 
+/* Deferred free video memory node */
+int etna_vidmem_queue_free(struct etna_queue *queue, struct etna_vidmem *mem);
+
+/* Map user memory into GPU memory space */
 int etna_usermem_map(struct viv_conn *conn, struct etna_usermem **mem_out, void *memory, size_t size);
+
+/* Unmap user memory from GPU memory space */
 int etna_usermem_unmap(struct viv_conn *conn, struct etna_usermem *mem);
+
+/* Deferred unmap user memory */
+int etna_usermem_queue_unmap(struct etna_queue *queue, struct etna_usermem *mem);
 
 #endif
 
