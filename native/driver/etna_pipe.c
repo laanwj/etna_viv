@@ -859,6 +859,11 @@ static void *etna_pipe_create_vertex_elements_state(struct pipe_context *pipe,
     {
         DBG("Warning: vertex element binding is incompatible with hardware\n");
         cs->num_elements = 0;
+        /* XXX interleave elements into one buffer
+         * create translate key
+         * look up translator
+         * compute element target size
+         */
     } else {
         unsigned start_offset = 0; /* start of current consecutive stretch */
         bool nonconsecutive = true; /* previous value of nonconsecutive */
@@ -1128,19 +1133,29 @@ static void etna_pipe_set_vertex_buffers( struct pipe_context *pipe,
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
     assert((start_slot + num_buffers) <= PIPE_MAX_ATTRIBS);
+    struct pipe_vertex_buffer zero_vb = {};
     for(unsigned idx=0; idx<num_buffers; ++idx)
     {
         unsigned slot = start_slot + idx; /* copy from vb[idx] to priv->...[slot] */
+        const struct pipe_vertex_buffer *vbi = vb ? &vb[idx] : &zero_vb;
         struct compiled_set_vertex_buffer *cs = &priv->vertex_buffer[slot];
-        assert(vb[idx].buffer); /* XXX support user_buffer using etna_usermem_map */
+        assert(!vbi->user_buffer); /* XXX support user_buffer using etna_usermem_map */
         /* copy pipe_vertex_buffer structure and take reference */
-        priv->vertex_buffer_s[slot].stride = vb[idx].stride;
-        priv->vertex_buffer_s[slot].buffer_offset = vb[idx].buffer_offset;
-        pipe_resource_reference(&priv->vertex_buffer_s[slot].buffer, vb[idx].buffer);
-        priv->vertex_buffer_s[slot].user_buffer = vb[idx].user_buffer;
-        /* compile state */
-        SET_STATE(FE_VERTEX_STREAM_CONTROL, VIVS_FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE(vb[idx].stride));
-        SET_STATE(FE_VERTEX_STREAM_BASE_ADDR, etna_resource(vb[idx].buffer)->levels[0].address + vb[idx].buffer_offset);
+        priv->vertex_buffer_s[slot].stride = vbi->stride;
+        priv->vertex_buffer_s[slot].buffer_offset = vbi->buffer_offset;
+        pipe_resource_reference(&priv->vertex_buffer_s[slot].buffer, vbi->buffer);
+        priv->vertex_buffer_s[slot].user_buffer = vbi->user_buffer;
+        /* determine addresses */
+        viv_addr_t gpu_addr = 0;
+        cs->logical = 0;
+        if(vbi->buffer) /* GPU buffer */
+        {
+            gpu_addr = etna_resource(vbi->buffer)->levels[0].address + vbi->buffer_offset;
+            cs->logical = etna_resource(vbi->buffer)->levels[0].logical + vbi->buffer_offset;
+        }
+        /* compiled state */
+        SET_STATE(FE_VERTEX_STREAM_CONTROL, VIVS_FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE(vbi->stride));
+        SET_STATE(FE_VERTEX_STREAM_BASE_ADDR, gpu_addr);
     }
     
     priv->dirty_bits |= ETNA_STATE_VERTEX_BUFFERS;
