@@ -58,13 +58,13 @@ int etna_queue_alloc(struct etna_queue *queue, struct _gcsHAL_INTERFACE **cmd_ou
         assert(queue->count == 0);
     }
     struct _gcsQUEUE *cmd = &queue->queue[queue->count++];
+    cmd->next = NULL;
     /* update next pointer of previous record */
     if(queue->last != NULL)
     {
         queue->last->next = cmd;
-    } else {
-        queue->last = cmd;
     }
+    queue->last = cmd;
     *cmd_out = &cmd->iface;
     return ETNA_OK;
 }

@@ -7,7 +7,7 @@ CFLAGS += -DDUMP
 CXXFLAGS += 
 LDFLAGS +=  
 
-TARGETS = rotate_cube alpha_blend cube_companion cubemap_sphere particle_system etna_gears stencil_test displacement mip_cube
+TARGETS = rotate_cube alpha_blend cube_companion cubemap_sphere particle_system etna_gears stencil_test displacement mip_cube rotate_cube_mult
 COMPANION_OBJS = ../resources/companion_array.o ../resources/companion_mesh.o ../resources/companion_texture.o
 ETNA_OBJS = ../lib/fbdemos.o ../driver/libetnadriver.a ../gallium/libminigallium.a ../etnaviv/libetnaviv.a
 
@@ -18,6 +18,9 @@ clean:
 	rm -f $(TARGETS)
 
 rotate_cube: rotate_cube.o ../lib/write_bmp.o $(ETNA_OBJS) ../lib/esTransform.o
+	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
+
+rotate_cube_mult: rotate_cube_mult.o ../lib/write_bmp.o $(ETNA_OBJS) ../lib/esTransform.o
 	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 
 mip_cube: mip_cube.o ../lib/write_bmp.o ../lib/esTransform.o ../lib/dds.o $(ETNA_OBJS)

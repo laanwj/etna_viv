@@ -63,6 +63,7 @@ static inline struct _gcsQUEUE *etna_queue_first(struct etna_queue *queue)
 
 /* Allocate a new kernel command structure, add it to the queue,
  * and return a pointer to it.
+ * @note the returned structure is not zero-initialized
  */
 int etna_queue_alloc(struct etna_queue *queue, struct _gcsHAL_INTERFACE **cmd_out);
 

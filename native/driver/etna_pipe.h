@@ -194,6 +194,7 @@ struct etna_pipe_context_priv
     struct pipe_scissor_state scissor_s;
     struct pipe_sampler_view *sampler_view_s[PIPE_MAX_SAMPLERS];
     struct pipe_vertex_buffer vertex_buffer_s[PIPE_MAX_ATTRIBS];
+    struct pipe_index_buffer index_buffer_s;
 
     /* compiled parameter-like state */
     struct compiled_blend_color blend_color;
