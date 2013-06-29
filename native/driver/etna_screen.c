@@ -25,6 +25,7 @@
 #include "etna_shader.h"
 #include "etna_translate.h"
 #include "etna_debug.h"
+#include "etna_rs.h"
 
 #include <etnaviv/viv.h>
 #include <etnaviv/etna.h>
@@ -34,6 +35,7 @@
 #include "util/u_format.h"
 #include "util/u_transfer.h"
 #include "util/u_math.h"
+#include "util/u_inlines.h"
 
 #include <stdio.h>
 
@@ -56,7 +58,7 @@ static const char *etna_screen_get_vendor( struct pipe_screen *screen )
 
 static int etna_screen_get_param( struct pipe_screen *screen, enum pipe_cap param )
 {
-    /* struct etna_screen *priv = etna_screen(screen); */
+    struct etna_screen *priv = etna_screen(screen);
     switch (param) {
     /* Supported features (boolean caps). */
     case PIPE_CAP_TWO_SIDED_STENCIL:
@@ -134,7 +136,7 @@ static int etna_screen_get_param( struct pipe_screen *screen, enum pipe_cap para
     case PIPE_CAP_MAX_TEXTURE_ARRAY_LAYERS:
             return 0;
     case PIPE_CAP_MAX_COMBINED_SAMPLERS:
-            return 12; /* XXX depends on caps */
+            return priv->specs.fragment_sampler_count + priv->specs.vertex_sampler_count;
     case PIPE_CAP_CUBE_MAP_ARRAY:
             return 0;
     case PIPE_CAP_MIN_TEXEL_OFFSET:
@@ -191,6 +193,7 @@ static float etna_screen_get_paramf( struct pipe_screen *screen, enum pipe_capf 
 
 static int etna_screen_get_shader_param( struct pipe_screen *screen, unsigned shader, enum pipe_shader_cap param )
 {
+    struct etna_screen *priv = etna_screen(screen);
     switch(shader)
     {
     case PIPE_SHADER_FRAGMENT:
@@ -244,7 +247,8 @@ static int etna_screen_get_shader_param( struct pipe_screen *screen, unsigned sh
     case PIPE_SHADER_CAP_INTEGERS: /* XXX supported on gc2000 */
             return 0;
     case PIPE_SHADER_CAP_MAX_TEXTURE_SAMPLERS:
-            return shader==PIPE_SHADER_FRAGMENT ? 16 : 8;
+            return shader==PIPE_SHADER_FRAGMENT ? priv->specs.fragment_sampler_count : 
+                                                  priv->specs.vertex_sampler_count;
     case PIPE_SHADER_CAP_PREFERRED_IR:
             return PIPE_SHADER_IR_TGSI;
     default:
@@ -375,24 +379,15 @@ static struct pipe_resource * etna_screen_resource_from_handle(struct pipe_scree
     return NULL;
 }
 
-
-/** Temporary hack, belongs in a winsys,
- * and should likely contain a context, flags such as swap_rb,
- * and precompiled RS command like etna_fb.
+/* XXX this should use a blit or resource copy, when implemented, instead
+ * of programming the RS directly.
  */
-struct fbdev_etna_drawable {
-   enum pipe_format format;
-   unsigned x, y;
-   unsigned width, height;
-   size_t smem_start, smem_len, line_length;
-};
-
 static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
                           struct pipe_resource *resource,
                           unsigned level, unsigned layer,
                           void *winsys_drawable_handle )
 {
-    struct fbdev_etna_drawable *drawable = (struct fbdev_etna_drawable *)winsys_drawable_handle;
+    struct etna_rs_target *drawable = (struct etna_rs_target *)winsys_drawable_handle;
     struct etna_resource *rt_resource = etna_resource(resource);
     struct etna_pipe_context_priv *priv = ETNA_PIPE(_hack_ctx);
     assert(priv);
@@ -405,11 +400,11 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
                 .source_tiling = rt_resource->layout,
                 .source_addr = rt_resource->levels[0].address,
                 .source_stride = rt_resource->levels[0].stride,
-                .dest_format = RS_FORMAT_X8R8G8B8, // XXX
+                .dest_format = drawable->rs_format,
                 .dest_tiling = ETNA_LAYOUT_LINEAR,
-                .dest_addr = drawable->smem_start,
-                .dest_stride = drawable->line_length,
-                .swap_rb = 0, // XXX
+                .dest_addr = drawable->addr,
+                .dest_stride = drawable->stride,
+                .swap_rb = drawable->swap_rb,
                 .dither = {0xffffffff, 0xffffffff}, // XXX dither when going from 24 to 16 bit?
                 .clear_mode = VIVS_RS_CLEAR_CONTROL_MODE_DISABLED,
                 .width = drawable->width,
@@ -420,7 +415,7 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
     /* Flush RS */
     etna_set_state(ctx, VIVS_RS_FLUSH_CACHE, VIVS_RS_FLUSH_CACHE_FLUSH);
     printf("Queued RS command to flush screen from %08x to %08x stride=%08x width=%i height=%i, ctx %p\n", rt_resource->levels[0].address, 
-            drawable->smem_start, drawable->line_length,
+            drawable->addr, drawable->stride,
             drawable->width, drawable->height, ctx);
     etna_flush(ctx);
     //DBG("unimplemented etna_screen_flush_frontbuffer");
@@ -537,24 +532,24 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
         rt_ts_size = align(resource->levels[0].size*priv->specs.bits_per_tile/0x80, 0x100);
     
     /* determine memory type */
-    gceSURF_TYPE memtype = gcvSURF_TYPE_UNKNOWN;
+    enum viv_surf_type memtype = VIV_SURF_UNKNOWN;
     if(templat->bind & PIPE_BIND_RENDER_TARGET)
-        memtype = gcvSURF_RENDER_TARGET;
+        memtype = VIV_SURF_RENDER_TARGET;
     else if(templat->bind & PIPE_BIND_SAMPLER_VIEW)
-        memtype = gcvSURF_TEXTURE;
+        memtype = VIV_SURF_TEXTURE;
     else if(templat->bind & PIPE_BIND_DEPTH_STENCIL)
-        memtype = gcvSURF_DEPTH;
+        memtype = VIV_SURF_DEPTH;
     else if(templat->bind & PIPE_BIND_INDEX_BUFFER) 
-        memtype = gcvSURF_INDEX;
+        memtype = VIV_SURF_INDEX;
     else if(templat->bind & PIPE_BIND_VERTEX_BUFFER)
-        memtype = gcvSURF_VERTEX;
+        memtype = VIV_SURF_VERTEX;
 
     printf("Allocate surface of %ix%i (padded to %ix%i) of format %i (%i bpe %ix%i), size %08x ts_size %08x, flags %08x, memtype %i\n",
             templat->width0, templat->height0, resource->levels[0].padded_width, resource->levels[0].padded_height, templat->format, 
             element_size, divSizeX, divSizeY, rt_size, rt_ts_size, templat->bind, memtype);
 
     struct etna_vidmem *rt = 0;
-    if(etna_vidmem_alloc_linear(priv->dev, &rt, rt_size, memtype, gcvPOOL_DEFAULT, true) != ETNA_OK)
+    if(etna_vidmem_alloc_linear(priv->dev, &rt, rt_size, memtype, VIV_POOL_DEFAULT, true) != ETNA_OK)
     {
         printf("Problem allocating video memory for resource\n");
         return NULL;
@@ -562,7 +557,7 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
    
     /* XXX allocate TS for rendertextures? if so, for each level or only the top? */
     struct etna_vidmem *rt_ts = 0;
-    if(rt_ts_size && etna_vidmem_alloc_linear(priv->dev, &rt_ts, rt_ts_size, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, true)!=ETNA_OK)
+    if(rt_ts_size && etna_vidmem_alloc_linear(priv->dev, &rt_ts, rt_ts_size, VIV_SURF_TILE_STATUS, VIV_POOL_DEFAULT, true)!=ETNA_OK)
     {
         printf("Problem allocating tile status for resource\n");
         return NULL;
@@ -574,6 +569,7 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     resource->layout = layout;
     resource->surface = rt;
     resource->ts = rt_ts;
+    pipe_reference_init(&resource->base.reference, 1);
 
     for(unsigned ix=0; ix<=resource->base.last_level; ++ix)
     {
@@ -618,10 +614,13 @@ etna_screen_create(struct viv_conn *dev)
     screen->specs.bits_per_tile = VIV_FEATURE(dev, chipMinorFeatures0, 2BITPERTILE)?2:4;
     screen->specs.ts_clear_value = VIV_FEATURE(dev, chipMinorFeatures0, 2BITPERTILE)?0x55555555:0x11111111;
     screen->specs.vertex_sampler_offset = 8; /* vertex and fragment samplers live in one address space */
+    screen->specs.fragment_sampler_count = 8;
+    screen->specs.vertex_sampler_count = 4;
     screen->specs.vs_need_z_div = dev->chip.chip_model < 0x1000 && dev->chip.chip_model != 0x880;
     screen->specs.vertex_output_buffer_size = dev->chip.vertex_output_buffer_size;
     screen->specs.vertex_cache_size = dev->chip.vertex_cache_size;
     screen->specs.shader_core_count = dev->chip.shader_core_count;
+    screen->specs.stream_count = dev->chip.stream_count;
 
     pscreen->destroy = etna_screen_destroy;
     pscreen->get_name = etna_screen_get_name;

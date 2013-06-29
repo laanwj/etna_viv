@@ -20,7 +20,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#include <etnaviv/viv.h>
+#include "viv_raw.h"
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -34,21 +34,10 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "gc_abi.h"
-#include "gc_hal_base.h"
-#include "gc_hal.h"
-#include "gc_hal_driver.h"
-#ifdef GCABI_HAS_CONTEXT
-#include "gc_hal_user_context.h"
-#else
-#include "gc_hal_kernel_context.h"
-#endif
-#include "gc_hal_types.h"
-#include "etna_enum_convert.h"
-
 //#define DEBUG
 
-const char *galcore_device[] = {"/dev/galcore", "/dev/graphics/galcore", NULL};
+// XXX const char *galcore_device[] = {"/dev/galcore", "/dev/graphics/galcore", NULL};
+#define GALCORE_DEVICE "/dev/galcore"
 #define INTERFACE_SIZE (sizeof(gcsHAL_INTERFACE))
 
 /* IOCTL structure for IOCTL_GCHAL_INTERFACE */
@@ -60,10 +49,6 @@ typedef struct
     uint32_t out_buf_size;
 } vivante_ioctl_data_t;
 
-
-/* Call ioctl interface with structure cmd as input and output.
- * @returns status (gcvSTATUS_xxx)
- */
 int viv_invoke(struct viv_conn *conn, gcsHAL_INTERFACE *cmd)
 {
     vivante_ioctl_data_t ic = {
@@ -137,12 +122,7 @@ int viv_open(enum viv_hw_type hw_type, struct viv_conn **out)
         return -1;
     conn->hw_type = hw_type;
     gcsHAL_INTERFACE id = {};
-    /* try galcore devices */
-    conn->fd = -1;
-    for(const char **pname = galcore_device; *pname && conn->fd < 0; ++pname)
-    {
-        conn->fd = open(*pname, O_RDWR);
-    }
+    conn->fd = open(GALCORE_DEVICE, O_RDWR);
     if((err=conn->fd) < 0)
         goto error;
     
@@ -214,7 +194,7 @@ int viv_alloc_contiguous(struct viv_conn *conn, size_t bytes, viv_addr_t *physic
     return gcvSTATUS_OK;
 }
 
-int viv_alloc_linear_vidmem(struct viv_conn *conn, size_t bytes, size_t alignment, enum viv_surf_type type, enum viv_pool pool, viv_node_t *node, size_t *bytes_out)
+int viv_alloc_linear_vidmem(struct viv_conn *conn, size_t bytes, size_t alignment, gceSURF_TYPE type, gcePOOL pool, gcuVIDMEM_NODE_PTR *node, size_t *bytes_out)
 {
     gcsHAL_INTERFACE id = {
         .command = gcvHAL_ALLOCATE_LINEAR_VIDEO_MEMORY,
@@ -222,8 +202,8 @@ int viv_alloc_linear_vidmem(struct viv_conn *conn, size_t bytes, size_t alignmen
             .AllocateLinearVideoMemory = {
                 .bytes = bytes,
                 .alignment = alignment,
-                .type = convert_surf_type(type),
-                .pool = convert_pool(pool)
+                .type = type,
+                .pool = pool
             }
         }
     };
@@ -241,7 +221,7 @@ int viv_alloc_linear_vidmem(struct viv_conn *conn, size_t bytes, size_t alignmen
     return gcvSTATUS_OK; 
 }
 
-int viv_lock_vidmem(struct viv_conn *conn, viv_node_t node, viv_addr_t *physical, void **logical)
+int viv_lock_vidmem(struct viv_conn *conn, gcuVIDMEM_NODE_PTR node, viv_addr_t *physical, void **logical)
 {
     gcsHAL_INTERFACE id = {
         .command = gcvHAL_LOCK_VIDEO_MEMORY,
@@ -265,14 +245,14 @@ int viv_lock_vidmem(struct viv_conn *conn, viv_node_t node, viv_addr_t *physical
 
 /** Unlock (unmap) video memory node from GPU and CPU memory.
  */
-int viv_unlock_vidmem(struct viv_conn *conn, viv_node_t node, enum viv_surf_type type, int async)
+int viv_unlock_vidmem(struct viv_conn *conn, gcuVIDMEM_NODE_PTR node, gceSURF_TYPE type, int async)
 {
     gcsHAL_INTERFACE id = {
         .command = gcvHAL_UNLOCK_VIDEO_MEMORY,
         .u = {
             .UnlockVideoMemory = {
                 .node = node,
-                .type = convert_surf_type(type), /* why does this need type? */
+                .type = type, /* why does this need type? */
                 .asynchroneous = async
             }
         }
@@ -280,29 +260,25 @@ int viv_unlock_vidmem(struct viv_conn *conn, viv_node_t node, enum viv_surf_type
     return viv_invoke(conn, &id);
 }
 
+/* TODO free contiguous memory and video memory */
+
 #ifdef GCABI_HAS_CONTEXT
-int viv_commit(struct viv_conn *conn, gcoCMDBUF commandBuffer, viv_context_t contextBuffer, struct _gcsQUEUE *queue)
+int viv_commit(struct viv_conn *conn, gcoCMDBUF commandBuffer, gcoCONTEXT contextBuffer)
 {
-    int rv;
     gcsHAL_INTERFACE id = {
         .command = gcvHAL_COMMIT,
         .u = {
             .Commit = {
                 .commandBuffer = commandBuffer,
-                .contextBuffer = (gcoCONTEXT)contextBuffer,
+                .contextBuffer = contextBuffer,
                 .process = conn->process
             }
         }
     };
-    if((rv=viv_invoke(conn, &id)) != gcvSTATUS_OK)
-        return rv;
-    /* commit queue after command buffer */
-    if(queue != NULL && (rv=viv_event_commit(conn, queue)) != gcvSTATUS_OK)
-       return rv;
-    return gcvSTATUS_OK;
+    return viv_invoke(conn, &id);
 }
 #else
-int viv_commit(struct viv_conn *conn, gcoCMDBUF commandBuffer, viv_context_t context, struct _gcsQUEUE *queue)
+int viv_commit(struct viv_conn *conn, gcoCMDBUF commandBuffer, gckCONTEXT context)
 {
     gcsSTATE_DELTA fake_delta;
     memset(&fake_delta, 0, sizeof(gcsSTATE_DELTA));
@@ -312,8 +288,8 @@ int viv_commit(struct viv_conn *conn, gcoCMDBUF commandBuffer, viv_context_t con
         .u = {
             .Commit = {
                 .commandBuffer = commandBuffer,
-                .context = (gckCONTEXT)context,
-                .queue = queue,
+                .context = context,
+                .queue = NULL,
                 .delta = &fake_delta,
             }
         }
@@ -323,7 +299,7 @@ int viv_commit(struct viv_conn *conn, gcoCMDBUF commandBuffer, viv_context_t con
 }
 #endif
 
-int viv_event_commit(struct viv_conn *conn, struct _gcsQUEUE *queue)
+int viv_event_commit(struct viv_conn *conn, gcsQUEUE *queue)
 {
     gcsHAL_INTERFACE id = {
         .command = gcvHAL_EVENT_COMMIT,
@@ -401,6 +377,28 @@ int viv_user_signal_destroy(struct viv_conn *conn, int sig_id)
     return viv_invoke(conn, &id);
 }
 
+int viv_event_queue_signal(struct viv_conn *conn, int sig_id, gceKERNEL_WHERE fromWhere)
+{
+    /* gcsQUEUE is copied by the kernel, so it does not need to be kept in memory
+     * until the kernel processes it
+     */
+    gcsQUEUE id = {
+        .next = NULL,
+        .iface = {
+            .command = gcvHAL_SIGNAL,
+            .u = {
+                .Signal = {
+                    .signal = (void*)sig_id,
+                    .auxSignal = (void*)0x0,
+                    .process = conn->process,
+                    .fromWhere = fromWhere
+                }
+            }
+        }
+    };
+    return viv_event_commit(conn, &id);
+}
+
 void viv_show_chip_info(struct viv_conn *conn)
 {
     printf("* Chip identity:\n");
@@ -431,42 +429,27 @@ int viv_reset(struct viv_conn *conn)
     return viv_invoke(conn, &id);
 }
 
-int viv_free_vidmem(struct viv_conn *conn, viv_node_t node)
+int viv_free_vidmem(struct viv_conn *conn, gcuVIDMEM_NODE_PTR node)
 {
     gcsHAL_INTERFACE id = {
         .command = gcvHAL_FREE_VIDEO_MEMORY,
         .u = {
             .FreeVideoMemory = {
-                .node = node
+                node = node
             }
         }
     };
     return viv_invoke(conn, &id);
 }
 
-int viv_free_contiguous(struct viv_conn *conn, size_t bytes, viv_addr_t physical, void *logical)
-{
-    gcsHAL_INTERFACE id = {
-        .command = gcvHAL_FREE_CONTIGUOUS_MEMORY,
-        .u = {
-            .FreeContiguousMemory = {
-                .bytes = bytes,
-                .physical = (gctPHYS_ADDR)physical,
-                .logical = logical
-            }
-        }
-    };
-    return viv_invoke(conn, &id);
-}
-
-int viv_map_user_memory(struct viv_conn *conn, void *memory, size_t size, void **info, viv_addr_t *address)
+int viv_map_user_memory(struct viv_conn *conn, void *memory, size_t size, gctPOINTER *info, viv_addr_t *address)
 {
     gcsHAL_INTERFACE id = {
         .command = gcvHAL_MAP_USER_MEMORY,
         .u = {
             .MapUserMemory = {
-                .memory = memory,
-                .size = size
+                memory = memory,
+                size = size
             }
         }
     };
@@ -476,16 +459,16 @@ int viv_map_user_memory(struct viv_conn *conn, void *memory, size_t size, void *
     return status;
 }
 
-int viv_unmap_user_memory(struct viv_conn *conn, void *memory, size_t size, void *info, viv_addr_t address)
+int viv_unmap_user_memory(struct viv_conn *conn, void *memory, size_t size, gctPOINTER info, viv_addr_t address)
 {
     gcsHAL_INTERFACE id = {
         .command = gcvHAL_UNMAP_USER_MEMORY,
         .u = {
             .UnmapUserMemory = {
-                .memory = memory,
-                .size = size,
-                .info = info,
-                .address = address
+                memory = memory,
+                size = size,
+                info = info,
+                address = address
             }
         }
     };

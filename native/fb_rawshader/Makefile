@@ -3,7 +3,7 @@ TOP=..
 include $(TOP)/Makefile.inc
 
 COMMON_FLAGS += -I$(TOP)/resources -I$(TOP)/driver
-CFLAGS += -DDUMP
+CFLAGS += -DDUMP -DRAWSHADER
 CXXFLAGS += 
 LDFLAGS +=  ../driver/libetnadriver.a ../gallium/libminigallium.a ../etnaviv/libetnaviv.a
 

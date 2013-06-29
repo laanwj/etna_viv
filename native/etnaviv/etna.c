@@ -22,12 +22,24 @@
  */
 #include <etnaviv/etna.h>
 #include <etnaviv/viv.h>
+#include <etnaviv/etna_queue.h>
 #include <etnaviv/state.xml.h>
 
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
+
+#include "gc_abi.h"
+#include "gc_hal_base.h"
+#include "gc_hal.h"
+#include "gc_hal_driver.h"
+#ifdef GCABI_HAS_CONTEXT
+#include "gc_hal_user_context.h"
+#else
+#include "gc_hal_kernel_context.h"
+#endif
+#include "gc_hal_types.h"
 
 #include "etna_context_cmd.h"
 
@@ -42,14 +54,21 @@
 
 /* Initialize kernel GPU context and state map */
 #ifdef GCABI_HAS_CONTEXT
-static int initialize_gpu_context(struct viv_conn *conn, gcoCONTEXT vctx)
+#define GCCTX(x) ((gcoCONTEXT)((x)->ctx))
+static int initialize_gpu_context(struct viv_conn *conn, gcoCONTEXT *pvctx)
 {
     /* First build context state map from compressed representation */
+    gcoCONTEXT vctx = ETNA_CALLOC_STRUCT(_gcoCONTEXT);
+    if(vctx == NULL)
+    {
+        return ETNA_OUT_OF_MEMORY;
+    }
     size_t contextbuf_addr_size = sizeof(contextbuf_addr)/sizeof(address_index_t);
     size_t state_count = contextbuf_addr[contextbuf_addr_size - 1].address / 4 + 1;
     uint32_t *context_map = ETNA_MALLOC(state_count * 4);
     if(context_map == NULL)
     {
+        ETNA_FREE(vctx);
         return ETNA_OUT_OF_MEMORY;
     }
     memset(context_map, 0, state_count*4);
@@ -92,6 +111,7 @@ static int initialize_gpu_context(struct viv_conn *conn, gcoCONTEXT vctx)
 #ifdef DEBUG
         fprintf(stderr, "Error allocating contiguous host memory for context\n");
 #endif
+        ETNA_FREE(vctx);
         ETNA_FREE(context_map);
         return ETNA_OUT_OF_MEMORY;
     }
@@ -99,7 +119,7 @@ static int initialize_gpu_context(struct viv_conn *conn, gcoCONTEXT vctx)
     printf("Allocated buffer (size 0x%x) for context: phys=%08x log=%08x\n", (int)cbuf0_bytes, (int)cbuf0_physical, (int)cbuf0_logical);
 #endif
 
-#ifdef GCABI_HAS_PHYSICAL
+#ifdef GCABI_CONTEXT_HAS_PHYSICAL
     vctx->bytes = cbuf0_bytes; /* actual size of buffer */
     vctx->physical = (void*)cbuf0_physical;
 #endif
@@ -110,9 +130,11 @@ static int initialize_gpu_context(struct viv_conn *conn, gcoCONTEXT vctx)
     /* copy over context buffer to contiguous memory, clear in-use flag */
     memcpy(vctx->logical, vctx->buffer, vctx->bufferSize);
     *vctx->inUse = 0;
+    *pvctx = vctx;
     return ETNA_OK;
 }
 #else
+#define GCCTX(x) ((gckCONTEXT)((x)->ctx))
 static int initialize_gpu_context(struct viv_conn *conn, gckCONTEXT *vctx)
 {
     /* attach to GPU */
@@ -138,12 +160,17 @@ static int initialize_gpu_context(struct viv_conn *conn, gckCONTEXT *vctx)
 
 int etna_create(struct viv_conn *conn, struct etna_ctx **ctx_out)
 {
+    int rv;
     if(ctx_out == NULL) return ETNA_INVALID_ADDR;
     struct etna_ctx *ctx = ETNA_CALLOC_STRUCT(etna_ctx);
     if(ctx == NULL) return ETNA_OUT_OF_MEMORY;
     ctx->conn = conn;
 
-    if(initialize_gpu_context(conn, &ctx->ctx) != ETNA_OK)
+#ifdef GCABI_HAS_CONTEXT
+    if(initialize_gpu_context(conn, (struct _gcoCONTEXT**)&ctx->ctx) != ETNA_OK)
+#else
+    if(initialize_gpu_context(conn, (struct _gckCONTEXT**)&ctx->ctx) != ETNA_OK)
+#endif
     {
         ETNA_FREE(ctx);
         return ETNA_INTERNAL_ERROR;
@@ -169,6 +196,7 @@ int etna_create(struct viv_conn *conn, struct etna_ctx **ctx_out)
         viv_addr_t buf0_physical = 0;
         void *buf0_logical = 0;
         size_t buf0_bytes = 0;
+        ctx->cmdbuf[x] = ETNA_CALLOC_STRUCT(_gcoCMDBUF);
         if(viv_alloc_contiguous(conn, COMMAND_BUFFER_SIZE, &buf0_physical, &buf0_logical, &buf0_bytes)!=0)
         {
 #ifdef DEBUG
@@ -176,10 +204,10 @@ int etna_create(struct viv_conn *conn, struct etna_ctx **ctx_out)
 #endif
             return ETNA_OUT_OF_MEMORY;
         }
-        ctx->cmdbuf[x].object.type = gcvOBJ_COMMANDBUFFER;
-        ctx->cmdbuf[x].physical = (void*)buf0_physical;
-        ctx->cmdbuf[x].logical = (void*)buf0_logical;
-        ctx->cmdbuf[x].bytes = buf0_bytes;
+        ctx->cmdbuf[x]->object.type = gcvOBJ_COMMANDBUFFER;
+        ctx->cmdbuf[x]->physical = (void*)buf0_physical;
+        ctx->cmdbuf[x]->logical = (void*)buf0_logical;
+        ctx->cmdbuf[x]->bytes = buf0_bytes;
 
         if(viv_user_signal_create(conn, 0, &ctx->cmdbuf_sig[x]) != 0 ||
            viv_user_signal_signal(conn, ctx->cmdbuf_sig[x], 1) != 0)
@@ -199,6 +227,15 @@ int etna_create(struct viv_conn *conn, struct etna_ctx **ctx_out)
      */
     ctx->cur_buf = -1;
     *ctx_out = ctx;
+
+    /* Allocate command queue */
+    if((rv = etna_queue_create(ctx, &ctx->queue)) != ETNA_OK)
+    {
+#ifdef DEBUG
+        fprintf(stderr, "Error allocating kernel command queue\n");
+#endif
+        return rv;
+    }
 
     return ETNA_OK;
 }
@@ -226,10 +263,10 @@ static int switch_next_buffer(struct etna_ctx *ctx)
 #endif
         return ETNA_INTERNAL_ERROR;
     }
-    clear_buffer(&ctx->cmdbuf[next_buf_id]);
+    clear_buffer(ctx->cmdbuf[next_buf_id]);
     ctx->cur_buf = next_buf_id;
-    ctx->buf = ctx->cmdbuf[next_buf_id].logical;
-    ctx->offset = ctx->cmdbuf[next_buf_id].offset / 4;
+    ctx->buf = ctx->cmdbuf[next_buf_id]->logical;
+    ctx->offset = ctx->cmdbuf[next_buf_id]->offset / 4;
 #ifdef DEBUG
     printf("Switched to command buffer %i\n", ctx->cur_buf);
 #endif
@@ -240,11 +277,15 @@ int etna_free(struct etna_ctx *ctx)
 {
     if(ctx == NULL)
         return ETNA_INVALID_ADDR;
-
+    etna_queue_free(ctx->queue);
     /* TODO: free context buffer */
-    // viv_free_contiguous
-    /* TODO: free command buffers */
-    /* TODO: ETNA_FREE(ctx) */
+    /* Free command buffers */
+    for(int x=0; x<NUM_COMMAND_BUFFERS; ++x)
+    {
+        viv_free_contiguous(ctx->conn, ctx->cmdbuf[x]->bytes, (viv_addr_t)ctx->cmdbuf[x]->physical, ctx->cmdbuf[x]->logical);
+        ETNA_FREE(ctx->cmdbuf[x]);
+    }
+    ETNA_FREE(ctx);
     return ETNA_OK;
 }
 
@@ -264,12 +305,12 @@ int _etna_reserve_internal(struct etna_ctx *ctx, size_t n)
 #ifdef DEBUG
         printf("Submitting old buffer\n");
 #endif
+        /* Queue signal to signify when buffer is available again */
+        if(etna_queue_signal(ctx->queue, ctx->cmdbuf_sig[ctx->cur_buf], VIV_WHERE_COMMAND) != 0)
+            return ETNA_INTERNAL_ERROR;
         /* Otherwise, if there is something to be committed left in the current command buffer, commit it */
         if((status = etna_flush(ctx)) != ETNA_OK)
             return status;
-        /* Queue signal to signify when buffer is available again */
-        if(viv_event_queue_signal(ctx->conn, ctx->cmdbuf_sig[ctx->cur_buf], gcvKERNEL_COMMAND) != 0)
-            return ETNA_INTERNAL_ERROR;
     }
 
     /* Move on to next buffer if not enough free in current one */
@@ -279,53 +320,45 @@ int _etna_reserve_internal(struct etna_ctx *ctx, size_t n)
 
 int etna_flush(struct etna_ctx *ctx)
 {
+    int status;
     if(ctx == NULL)
         return ETNA_INVALID_ADDR;
+    struct _gcsQUEUE *queue_first = etna_queue_first(ctx->queue);
     if(ctx->cur_buf == -1)
-        return ETNA_OK; /* Nothing to do */
-    gcoCMDBUF cur_buf = &ctx->cmdbuf[ctx->cur_buf];
+        goto nothing_to_do;
+    gcoCMDBUF cur_buf = ctx->cmdbuf[ctx->cur_buf];
+
     ETNA_ALIGN(ctx); /* make sure end of submitted command buffer end is aligned */
 #ifdef DEBUG
     printf("Committing command buffer %i startOffset=%x offset=%x\n", ctx->cur_buf,
             cur_buf->startOffset, ctx->offset*4);
 #endif
     if(ctx->offset*4 <= (cur_buf->startOffset + BEGIN_COMMIT_CLEARANCE))
-        return ETNA_OK; /* Nothing to do */
+        goto nothing_to_do;
     cur_buf->offset = ctx->offset*4; /* Copy over current ending offset into CMDBUF, for kernel */
 #ifdef DEBUG_CMDBUF
     etna_dump_cmd_buffer(ctx);
-    /*
-    printf("    {");
-    for(size_t i=cur_buf->startOffset; i<cur_buf->offset; i+=4)
-    {
-        printf("0x%08x,", *((uint32_t*)(((size_t)cur_buf->logical)+i)));
-    }
-    printf("}\n");
-    */
 #endif
-#ifdef GCABI_HAS_CONTEXT
-    int status = viv_commit(ctx->conn, cur_buf, &ctx->ctx);
-#else
-    int status = viv_commit(ctx->conn, cur_buf, ctx->ctx);
-#endif
-    if(status != 0)
+    if((status = viv_commit(ctx->conn, cur_buf, ctx->ctx, queue_first)) != 0)
     {
 #ifdef DEBUG
         fprintf(stderr, "Error committing command buffer\n");
 #endif
         return status;
     }
+    if((status = etna_queue_clear(ctx->queue)) != ETNA_OK)
+        return status;
 #ifdef GCABI_HAS_CONTEXT
-    if(*ctx->ctx.inUse)
+    if(*GCCTX(ctx)->inUse)
     {
         printf("    Warning: context buffer used, full context handling not yet supported. Rendering may be corrupted.\n");
-        *ctx->ctx.inUse = 0;
+        *GCCTX(ctx)->inUse = 0;
     }
 #endif
     /* TODO: analyze command buffer to update context */
     /* set context entryPipe to currentPipe (next commit will start with current pipe) */
 #ifdef GCABI_HAS_CONTEXT
-    ctx->ctx.entryPipe = ctx->ctx.currentPipe;
+    GCCTX(ctx)->entryPipe = GCCTX(ctx)->currentPipe;
 #endif
 
     /* TODO: update context, NOP out final pipe2D if entryPipe is 2D, else put in the 2D pipe switch */
@@ -341,6 +374,21 @@ int etna_flush(struct etna_ctx *ctx)
 #endif
 #endif
     return ETNA_OK;
+nothing_to_do:
+    /* Nothing in command buffer; but there may be kernel commands to submit. Do this seperately. */
+    if(queue_first != NULL)
+    {
+        if((status = viv_event_commit(ctx->conn, queue_first)) != 0)
+        {
+#ifdef DEBUG
+            fprintf(stderr, "Error committing kernel commands\n");
+#endif
+            return status;
+        }
+        if((status = etna_queue_clear(ctx->queue)) != ETNA_OK)
+            return status;
+    }
+    return ETNA_OK;
 }
 
 int etna_finish(struct etna_ctx *ctx)
@@ -348,13 +396,13 @@ int etna_finish(struct etna_ctx *ctx)
     int status;
     if(ctx == NULL)
         return ETNA_INVALID_ADDR;
-    if((status = etna_flush(ctx)) != ETNA_OK)
-        return status;
     /* Submit event queue with SIGNAL, fromWhere=gcvKERNEL_PIXEL (wait for pixel engine to finish) */
-    if(viv_event_queue_signal(ctx->conn, ctx->sig_id, gcvKERNEL_PIXEL) != 0)
+    if(etna_queue_signal(ctx->queue, ctx->sig_id, VIV_WHERE_PIXEL) != 0)
     {
         return ETNA_INTERNAL_ERROR;
     }
+    if((status = etna_flush(ctx)) != ETNA_OK)
+        return status;
 #ifdef DEBUG
     printf("finish: Waiting for signal...\n");
 #endif
@@ -391,7 +439,7 @@ int etna_set_pipe(struct etna_ctx *ctx, etna_pipe pipe)
     ETNA_EMIT(ctx, pipe);
 
 #ifdef GCABI_HAS_CONTEXT
-    ctx->ctx.currentPipe = pipe;
+    GCCTX(ctx)->currentPipe = pipe;
 #endif
     return ETNA_OK;
 }
@@ -431,7 +479,7 @@ int etna_stall(struct etna_ctx *ctx, uint32_t from, uint32_t to)
 
 void etna_dump_cmd_buffer(struct etna_ctx *ctx)
 {
-    uint32_t start_offset = ctx->cmdbuf[ctx->cur_buf].startOffset/4 + 8;
+    uint32_t start_offset = ctx->cmdbuf[ctx->cur_buf]->startOffset/4 + 8;
     uint32_t *buf = &ctx->buf[start_offset]; 
     size_t size = ctx->offset - start_offset;
     printf("cmdbuf:\n");

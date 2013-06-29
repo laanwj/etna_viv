@@ -33,6 +33,8 @@
 #define ETNA_NUM_LAYERS (6)
 #define ETNA_MAX_UNIFORMS (256)
 
+struct translate; /* translate/translate.h */
+
 enum etna_surface_layout
 {
     ETNA_LAYOUT_LINEAR = 0,
@@ -51,6 +53,10 @@ struct etna_pipe_specs
     uint32_t ts_clear_value;
     /* base of vertex texture units */
     unsigned vertex_sampler_offset;
+    /* number of fragment sampler units */
+    unsigned fragment_sampler_count;
+    /* number of vertex sampler units */
+    unsigned vertex_sampler_count;
     /* needs z=(z+w)/2, for older GCxxx */
     bool vs_need_z_div;
     /* size of vertex shader output buffer */
@@ -59,6 +65,8 @@ struct etna_pipe_specs
     unsigned vertex_cache_size;
     /* number of shader cores */
     unsigned shader_core_count;
+    /* number of vertex streams */
+    unsigned stream_count;
 };
 
 /** Compiled Gallium state. All the different compiled state atoms are woven together and uploaded
@@ -167,6 +175,7 @@ struct compiled_sampler_view
 /* Compiled pipe_framebuffer_state */
 struct compiled_framebuffer_state
 {
+    struct pipe_surface *cbuf, *zsbuf; /* keep reference to surfaces */
     uint32_t GL_MULTI_SAMPLE_CONFIG;
     uint32_t PE_COLOR_FORMAT;
     uint32_t PE_DEPTH_CONFIG;
@@ -196,11 +205,14 @@ struct compiled_vertex_elements_state
 {
     unsigned num_elements;
     uint32_t FE_VERTEX_ELEMENT_CONFIG[VIVS_FE_VERTEX_ELEMENT_CONFIG__LEN];
+    /* optional translator for vertices */
+    struct translate *translate;
 };
 
 /* Compiled context->set_vertex_buffer result */
 struct compiled_set_vertex_buffer
 {
+    void *logical; /* CPU address of vertex buffer base */
     uint32_t FE_VERTEX_STREAM_CONTROL;
     uint32_t FE_VERTEX_STREAM_BASE_ADDR;
 };
@@ -208,6 +220,7 @@ struct compiled_set_vertex_buffer
 /* Compiled context->set_index_buffer result */
 struct compiled_set_index_buffer
 {
+    void *logical;
     uint32_t FE_INDEX_STREAM_CONTROL;
     uint32_t FE_INDEX_STREAM_BASE_ADDR;
 };

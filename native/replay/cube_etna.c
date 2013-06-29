@@ -15,7 +15,7 @@
 #include <etnaviv/state.xml.h>
 #include <etnaviv/state_3d.xml.h>
 #include <etnaviv/cmdstream.xml.h>
-#include <etnaviv/viv.h>
+#include "viv_raw.h"
 #include "write_bmp.h"
 #include "esTransform.h"
 

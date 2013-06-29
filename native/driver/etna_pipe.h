@@ -58,7 +58,7 @@ struct etna_shader_varying
     int vs_reg; /* VS output register */
 };
 
-
+#ifdef RAWSHADER
 struct etna_shader_program 
 {
     unsigned num_inputs;
@@ -82,6 +82,7 @@ struct etna_shader_program
     unsigned ps_uniforms_size; /* Size of uniforms (in words) */
     uint32_t *ps_uniforms; /* Initial values for VS uniforms */
 };
+#endif
 
 struct etna_resource_level
 {
@@ -192,7 +193,8 @@ struct etna_pipe_context_priv
     struct pipe_viewport_state viewport_s;
     struct pipe_scissor_state scissor_s;
     struct pipe_sampler_view *sampler_view_s[PIPE_MAX_SAMPLERS];
-    struct pipe_vertex_buffer vertex_buffer_s;
+    struct pipe_vertex_buffer vertex_buffer_s[PIPE_MAX_ATTRIBS];
+    struct pipe_index_buffer index_buffer_s;
 
     /* compiled parameter-like state */
     struct compiled_blend_color blend_color;
@@ -204,7 +206,7 @@ struct etna_pipe_context_priv
     unsigned num_fragment_sampler_views;
     unsigned num_vertex_sampler_views;
     struct compiled_sampler_view sampler_view[PIPE_MAX_SAMPLERS];
-    struct compiled_set_vertex_buffer vertex_buffer;
+    struct compiled_set_vertex_buffer vertex_buffer[PIPE_MAX_ATTRIBS];
     struct compiled_set_index_buffer index_buffer;
 
     /* cached state */
@@ -239,11 +241,13 @@ etna_transfer(struct pipe_transfer *p)
 
 struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct etna_pipe_specs *specs, struct pipe_screen *scr);
 
+#ifdef RAWSHADER
 /* raw shader methods -- used by fb_rawshader demos */
 void *etna_create_shader_state(struct pipe_context *pipe, const struct etna_shader_program *rs);
 void etna_bind_shader_state(struct pipe_context *pipe, void *sh);
 void etna_delete_shader_state(struct pipe_context *pipe, void *sh_);
 void etna_set_uniforms(struct pipe_context *pipe, unsigned type, unsigned offset, unsigned count, const uint32_t *values);
+#endif
 
 struct etna_ctx *etna_pipe_get_etna_context(struct pipe_context *pipe);
 

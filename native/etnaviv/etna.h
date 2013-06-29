@@ -27,17 +27,6 @@
 #ifndef H_ETNA
 #define H_ETNA
 
-#include "gc_abi.h"
-#include "gc_hal_base.h"
-#include "gc_hal.h"
-#include "gc_hal_driver.h"
-#ifdef GCABI_HAS_CONTEXT
-#include "gc_hal_user_context.h"
-#else
-#include "gc_hal_kernel_context.h"
-#endif
-#include "gc_hal_types.h"
-
 #include <etnaviv/common.xml.h>
 #include <etnaviv/cmdstream.xml.h>
 #include <etnaviv/etna_util.h>
@@ -92,6 +81,9 @@ typedef enum _etna_pipe {
     ETNA_PIPE_2D = 1
 } etna_pipe;
 
+struct _gcoCMDBUF;
+struct etna_queue;
+
 struct etna_ctx {
     /* Driver connection */
     struct viv_conn *conn;
@@ -111,13 +103,13 @@ struct etna_ctx {
     /* Status for updating context */
     int num_vertex_elements; /* number of active vertex elements */
     /* Structures for kernel */
-    struct _gcoCMDBUF cmdbuf[NUM_COMMAND_BUFFERS];
-    int cmdbuf_sig[NUM_COMMAND_BUFFERS]; /* sync signals for command buffers */
-#ifdef GCABI_HAS_CONTEXT
-    struct _gcoCONTEXT ctx;
-#else
-    gckCONTEXT ctx;
-#endif
+    struct _gcoCMDBUF *cmdbuf[NUM_COMMAND_BUFFERS];
+    /* sync signals for command buffers */
+    int cmdbuf_sig[NUM_COMMAND_BUFFERS];
+    /* context */
+    void *ctx;
+    /* command queue */
+    struct etna_queue *queue;
 };
 
 /** Convenience macros for command buffer building, remember to reserve enough space before using them */
@@ -187,13 +179,12 @@ static inline int etna_reserve(struct etna_ctx *ctx, size_t n)
         return ETNA_INVALID_ADDR;
     if(ctx->cur_buf != -1)
     {
-        gcoCMDBUF cur_buf = &ctx->cmdbuf[ctx->cur_buf];
 #ifdef CMD_DEBUG
         printf("etna_reserve: %i at offset %i\n", (int)n, (int)ctx->offset);
 #endif
         ETNA_ALIGN(ctx);
 
-        if(((ctx->offset + n)*4 + END_COMMIT_CLEARANCE) <= cur_buf->bytes) /* enough bytes free in buffer */
+        if(((ctx->offset + n)*4 + END_COMMIT_CLEARANCE) <= COMMAND_BUFFER_SIZE) /* enough bytes free in buffer */
         {
             return ETNA_OK;
         }

@@ -20,10 +20,20 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-/* Thin wrapper around Vivante ioctls */
-#ifndef H_VIV
-#define H_VIV
+/* Thin wrapper around Vivante ioctls: raw version for old replay demos */
+#ifndef H_VIVRAW
+#define H_VIVRAW
 
+#include "gc_abi.h"
+#include "gc_hal_base.h"
+#include "gc_hal.h"
+#include "gc_hal_driver.h"
+#ifdef GCABI_HAS_CONTEXT
+#include "gc_hal_user_context.h"
+#else
+#include "gc_hal_kernel_context.h"
+#endif
+#include "gc_hal_types.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -51,56 +61,8 @@ enum viv_hw_type
     VIV_HW_2D3D = VIV_HW_3D | VIV_HW_2D
 };
 
-/* Surface types */
-enum viv_surf_type
-{
-    VIV_SURF_UNKNOWN,
-    VIV_SURF_INDEX,
-    VIV_SURF_VERTEX,
-    VIV_SURF_TEXTURE,
-    VIV_SURF_RENDER_TARGET,
-    VIV_SURF_DEPTH,
-    VIV_SURF_BITMAP,
-    VIV_SURF_TILE_STATUS,
-    VIV_SURF_IMAGE,
-    VIV_SURF_MASK,
-    VIV_SURF_SCISSOR,
-    VIV_SURF_HIERARCHICAL_DEPTH
-};
-
-/* Video memory pool type. */
-enum viv_pool
-{
-    VIV_POOL_UNKNOWN,
-    VIV_POOL_DEFAULT,
-    VIV_POOL_LOCAL,
-    VIV_POOL_LOCAL_INTERNAL,
-    VIV_POOL_LOCAL_EXTERNAL,
-    VIV_POOL_UNIFIED,
-    VIV_POOL_SYSTEM,
-    VIV_POOL_VIRTUAL,
-    VIV_POOL_USER,
-    VIV_POOL_CONTIGUOUS
-};
-
-/* Semaphore recipient */
-enum viv_where
-{
-    VIV_WHERE_COMMAND,
-    VIV_WHERE_PIXEL
-};
-
 /* Type for GPU physical address */
 typedef uint32_t viv_addr_t;
-
-/* General process handle */
-typedef void* viv_handle_t;
-
-/* Memory node handle */
-typedef void* viv_node_t;
-
-/* GPU context handle */
-typedef void* viv_context_t;
 
 /* kernel-interface independent chip specs structure, this is much easier to use
  * than checking GCABI defines all the time. 
@@ -129,14 +91,9 @@ struct viv_conn {
     viv_addr_t base_address;
     void *mem;
     viv_addr_t mem_base;
-    viv_handle_t process;
+    gctHANDLE process;
     struct viv_specs chip;
 };
-
-/* Predefines for some kernel structures */
-struct _gcsHAL_INTERFACE;
-struct _gcoCMDBUF;
-struct _gcsQUEUE;
 
 /* Open connection to GPU driver.
  */
@@ -145,7 +102,7 @@ int viv_open(enum viv_hw_type hw_type, struct viv_conn **out);
 /* Call ioctl interface with structure cmd as input and output.
  * @returns status (gcvSTATUS_xxx)
  */
-int viv_invoke(struct viv_conn *conn, struct _gcsHAL_INTERFACE *cmd);
+int viv_invoke(struct viv_conn *conn, gcsHAL_INTERFACE *cmd);
 
 /* Close connection to GPU driver.
  */
@@ -157,39 +114,39 @@ int viv_alloc_contiguous(struct viv_conn *conn, size_t bytes, viv_addr_t *physic
 /** Allocate linear video memory.
   @returns a handle. To get the GPU and CPU address of the memory, use lock_vidmem
  */
-int viv_alloc_linear_vidmem(struct viv_conn *conn, size_t bytes, size_t alignment, enum viv_surf_type type, enum viv_pool pool, viv_node_t *node, size_t *bytes_out);
+int viv_alloc_linear_vidmem(struct viv_conn *conn, size_t bytes, size_t alignment, gceSURF_TYPE type, gcePOOL pool, gcuVIDMEM_NODE_PTR *node, size_t *bytes_out);
 
 /** Lock (map) video memory node to GPU and CPU memory.
  */
-int viv_lock_vidmem(struct viv_conn *conn, viv_node_t node, viv_addr_t *physical, void **logical);
+int viv_lock_vidmem(struct viv_conn *conn, gcuVIDMEM_NODE_PTR node, viv_addr_t *physical, void **logical);
 
 /** Commit GPU command buffer and context.
  */
-int viv_commit(struct viv_conn *conn, struct _gcoCMDBUF *commandBuffer, viv_context_t context, struct _gcsQUEUE *queue);
+#ifdef GCABI_HAS_CONTEXT
+int viv_commit(struct viv_conn *conn, gcoCMDBUF commandBuffer, gcoCONTEXT contextBuffer);
+#else
+int viv_commit(struct viv_conn *conn, gcoCMDBUF commandBuffer, gckCONTEXT context);
+#endif
 
 /**  Unlock (unmap) video memory node from GPU and CPU memory.
  */
-int viv_unlock_vidmem(struct viv_conn *conn, viv_node_t node, enum viv_surf_type type, int async);
+int viv_unlock_vidmem(struct viv_conn *conn, gcuVIDMEM_NODE_PTR node, gceSURF_TYPE type, int async);
 
 /**  Free block of video memory previously allocated with viv_alloc_linear_vidmem.
  */
-int viv_free_vidmem(struct viv_conn *conn, viv_node_t node);
-
-/**  Free block of contiguous memory previously allocated with viv_alloc_contiguous.
- */
-int viv_free_contiguous(struct viv_conn *conn, size_t bytes, viv_addr_t physical, void *logical);
+int viv_free_vidmem(struct viv_conn *conn, gcuVIDMEM_NODE_PTR node);
 
 /**  Map user memory to GPU memory.
  */
-int viv_map_user_memory(struct viv_conn *conn, void *memory, size_t size, void **info, viv_addr_t *address);
+int viv_map_user_memory(struct viv_conn *conn, void *memory, size_t size, gctPOINTER *info, viv_addr_t *address);
 
 /**  Unmap user memory from GPU memory.
  */
-int viv_unmap_user_memory(struct viv_conn *conn, void *memory, size_t size, void *info, viv_addr_t address);
+int viv_unmap_user_memory(struct viv_conn *conn, void *memory, size_t size, gctPOINTER info, viv_addr_t address);
 
 /** Commit event queue.
  */
-int viv_event_commit(struct viv_conn *conn, struct _gcsQUEUE *queue);
+int viv_event_commit(struct viv_conn *conn, gcsQUEUE *queue);
 
 /** Create a new user signal.
  *  if manualReset=0 automatic reset on WAIT
@@ -201,14 +158,17 @@ int viv_user_signal_create(struct viv_conn *conn, int manualReset, int *id_out);
  */
 int viv_user_signal_signal(struct viv_conn *conn, int sig_id, int state);
 
-/** Wait for signal. 
- * @param[in] wait Provide time to wait in milliseconds, or SIG_WAIT_INDEFINITE.
+/** Wait for signal. Provide time to wait in milliseconds, or SIG_WAIT_INDEFINITE.
  */
 int viv_user_signal_wait(struct viv_conn *conn, int sig_id, int wait);
 
 /** Destroy signal created with viv_user_signal_create.
  */
 int viv_user_signal_destroy(struct viv_conn *conn, int sig_id);
+
+/** Queue synchronization signal from GPU.
+ */
+int viv_event_queue_signal(struct viv_conn *conn, int sig_id, gceKERNEL_WHERE fromWhere);
 
 void viv_show_chip_info(struct viv_conn *conn);
 

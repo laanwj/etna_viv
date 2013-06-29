@@ -195,7 +195,7 @@ int main(int argc, char **argv)
                 .light_twoside = 1,
                 .clamp_vertex_color = 1,
                 .clamp_fragment_color = 1,
-                .front_ccw = 1,
+                .front_ccw = 0,
                 .cull_face = PIPE_FACE_BACK,      /**< PIPE_FACE_x */
                 .fill_front = PIPE_POLYGON_MODE_FILL,     /**< PIPE_POLYGON_MODE_x */
                 .fill_back = PIPE_POLYGON_MODE_FILL,      /**< PIPE_POLYGON_MODE_x */

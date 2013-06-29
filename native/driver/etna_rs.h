@@ -67,6 +67,18 @@ struct compiled_rs_state
     uint32_t RS_PIPE_OFFSET[2];         /* TODO is there hardware with more then 2 pipes? */
 };
 
+/* Resolve target.
+ * Used by etna_screen_flush_frontbuffer 
+ */
+struct etna_rs_target 
+{
+   unsigned rs_format;
+   bool swap_rb;
+   unsigned width, height;
+   size_t addr; /* GPU address */
+   size_t stride;
+};
+
 /* Flush RS? warm up RS on aux render target */
 void etna_warm_up_rs(struct etna_ctx *cmdbuf, viv_addr_t aux_rt_physical, viv_addr_t aux_rt_ts_physical);
 

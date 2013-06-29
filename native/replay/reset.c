@@ -9,7 +9,7 @@
 #include <sys/mman.h>
 #include <stdarg.h>
 
-#include <etnaviv/viv.h>
+#include "viv_raw.h"
 
 int main(int argc, char **argv)
 {

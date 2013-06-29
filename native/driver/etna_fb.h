@@ -70,5 +70,8 @@ int etna_fb_bind_resource(struct fb_info *fb, struct pipe_resource *rt_resource)
 /* Copy framebuffer from bound render target resource */
 int etna_fb_copy_buffer(struct fb_info *fb, struct etna_ctx *ctx, int buffer);
 
+/* Determine the framebuffer format from Linux framebuffer info structure */
+bool etna_fb_get_format(const struct fb_var_screeninfo *fb_var, unsigned *rs_format, bool *swap_rb);
+
 #endif
 
