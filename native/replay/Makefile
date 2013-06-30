@@ -8,7 +8,7 @@ LDFLAGS_ETNA = $(LDFLAGS) -L$(TOP)/etnaviv -letnaviv
 
 TARGETS = reset viv_info
 TARGETS_GC800 = cube cube_companion cube_etna ps_sandbox_etna etna_test cube_etna2
-TARGETS_GC2000 = cube_etna2_gc2000 empty_screen_gc2000
+TARGETS_GC2000 = cube_etna2_gc2000 empty_screen_gc2000 cube_gc2000
 COMPANION_OBJS = ../resources/companion_array.o ../resources/companion_mesh.o ../resources/companion_texture.o
 ETNA_OBJS = ../lib/etna_bswap.o
 
@@ -25,6 +25,9 @@ gc800: $(TARGETS_GC800)
 gc2000: $(TARGETS_GC2000)
 
 empty_screen_gc2000: empty_screen_gc2000.o ../lib/write_bmp.o
+	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
+
+cube_gc2000: cube_gc2000.o ../lib/write_bmp.o
 	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 
 cube: cube.o ../lib/write_bmp.o viv_raw.o
