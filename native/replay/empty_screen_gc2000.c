@@ -179,13 +179,10 @@ int main(int argc, char **argv)
     cmdbuf1[111] = 0xffff0000; // color ABGR - second command buffer swaps red and blue
 
     /* Submit first command buffer */
-    //commandBuffer.startOffset = 0;
+    commandBuffer.startOffset = 0;
     memcpy((void*)((size_t)commandBuffer.logical + commandBuffer.startOffset), cmdbuf1, sizeof(cmdbuf1));
-    //commandBuffer.offset = commandBuffer.startOffset + sizeof(cmdbuf1);
-    //commandBuffer.free -= sizeof(cmdbuf1) + 0x18;
-    commandBuffer.offset = 0x250;
-    commandBuffer.free = 0x1fda0;
-    commandBuffer.lastOffset = 0x240;
+    commandBuffer.offset = commandBuffer.startOffset + sizeof(cmdbuf1);
+    commandBuffer.free -= sizeof(cmdbuf1) + 0x18;
     printf("[1] startOffset=%08x, offset=%08x, free=%08x\n", (uint32_t)commandBuffer.startOffset, (uint32_t)commandBuffer.offset, (uint32_t)commandBuffer.free);
     
     if(viv_commit(conn, &commandBuffer, context) != 0)
@@ -202,12 +199,10 @@ int main(int argc, char **argv)
     /*Second command buffer - SWAP_RB=1 - swaps red and blue*/
     cmdbuf2[35] = color_surface_physical;
     cmdbuf2[37] = rs_dest_physical;
-    commandBuffer.bytes = 0x20000,
-    commandBuffer.startOffset = 0x258,
+    commandBuffer.startOffset = commandBuffer.offset + 0x18;
     memcpy((void*)((size_t)commandBuffer.logical + commandBuffer.startOffset), cmdbuf2, sizeof(cmdbuf2));
-    commandBuffer.offset = 0x300;
-    commandBuffer.free = 0x1fcf0;
-    commandBuffer.lastOffset = 0x2f0;
+    commandBuffer.offset = commandBuffer.startOffset + sizeof(cmdbuf2);
+    commandBuffer.free -= sizeof(cmdbuf2) + 0x18;
     if(viv_commit(conn, &commandBuffer, context) != 0)
     {
         fprintf(stderr, "Error committing second command buffer\n");
