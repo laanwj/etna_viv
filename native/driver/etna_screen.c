@@ -600,6 +600,12 @@ static void etna_screen_resource_destroy(struct pipe_screen *screen,
     struct etna_resource *resource = etna_resource(resource_);
     if(resource == NULL)
         return;
+    /* XXX should really use etna_vidmem_queue_free to make sure the
+     * resource is only actually released after the command queue
+     * cannot have references to it anymore, but we don't have the context here or
+     * a way to do fencing per-screen.
+     * I suppose the resource could remember what context(s) it was used with.
+     */
     etna_vidmem_free(priv->dev, resource->surface);
     etna_vidmem_free(priv->dev, resource->ts);
     FREE(resource);

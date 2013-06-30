@@ -1694,6 +1694,17 @@ static void etna_pipe_set_polygon_stipple(struct pipe_context *pctx,
     /* NOP */
 }
 
+/* Compute offset into a 1D/2D/3D buffer of a certain box.
+ * This box must be aligned to the block width and height of the underlying format.
+ */
+static inline size_t etna_compute_offset(enum pipe_format format, const struct pipe_box *box,
+        size_t stride, size_t layer_stride)
+{
+    return box->z * layer_stride +
+           box->y / util_format_get_blockheight(format) * stride +
+           box->x / util_format_get_blockwidth(format) * util_format_get_blocksize(format);
+}
+
 static void *etna_pipe_transfer_map(struct pipe_context *pipe,
                          struct pipe_resource *resource,
                          unsigned level,
@@ -1703,25 +1714,36 @@ static void *etna_pipe_transfer_map(struct pipe_context *pipe,
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
     struct etna_transfer *ptrans = util_slab_alloc(&priv->transfer_pool);
+    struct etna_resource *resource_priv = etna_resource(resource);
     enum pipe_format format = resource->format;
     if (!ptrans)
         return NULL;
     assert(level <= resource->last_level);
 
-    unsigned divSizeX = util_format_get_blockwidth(format);
-    unsigned divSizeY = util_format_get_blockheight(format);
-
+    /* No need to allocate a buffer for copying if the resource is not in use,
+     * and no tiling is needed, can just return a direct pointer.
+     */
+    ptrans->in_place = resource_priv->layout == ETNA_LAYOUT_LINEAR ||
+                       (resource_priv->layout == ETNA_LAYOUT_TILED && util_format_is_compressed(resource->format));
     ptrans->base.resource = resource;
     ptrans->base.level = level;
     ptrans->base.usage = usage;
     ptrans->base.box = *box;
-    ptrans->base.stride = align(box->width, divSizeX) * util_format_get_blocksize(format); /* row stride in bytes */
-    ptrans->base.layer_stride = align(box->height, divSizeY) * ptrans->base.stride;
-    ptrans->size = ptrans->base.layer_stride * box->depth;
-    /* XXX currently always allocates a buffer for copying; if the resource is not in use,
-     * and no tiling is needed, can just return a direct pointer. 
-     */
-    ptrans->buffer = MALLOC(ptrans->size);
+
+    if(ptrans->in_place)
+    {
+        struct etna_resource_level *res_level = &resource_priv->levels[level];
+        ptrans->base.stride = res_level->stride;
+        ptrans->base.layer_stride = res_level->layer_stride;
+        ptrans->buffer = res_level->logical + etna_compute_offset(resource->format, box, res_level->stride, res_level->layer_stride);
+    } else {
+        unsigned divSizeX = util_format_get_blockwidth(format);
+        unsigned divSizeY = util_format_get_blockheight(format);
+        ptrans->base.stride = align(box->width, divSizeX) * util_format_get_blocksize(format); /* row stride in bytes */
+        ptrans->base.layer_stride = align(box->height, divSizeY) * ptrans->base.stride;
+        size_t size = ptrans->base.layer_stride * box->depth;
+        ptrans->buffer = MALLOC(size);
+    }
 
     *out_transfer = &ptrans->base;
     return ptrans->buffer;
@@ -1742,35 +1764,34 @@ static void etna_pipe_transfer_unmap(struct pipe_context *pipe,
     assert(ptrans->base.level <= resource->base.last_level);
     struct etna_resource_level *level = &resource->levels[ptrans->base.level];
 
-    if(resource->layout == ETNA_LAYOUT_LINEAR || resource->layout == ETNA_LAYOUT_TILED)
+    if(!ptrans->in_place)
     {
-        if(resource->layout == ETNA_LAYOUT_TILED && !util_format_is_compressed(resource->base.format))
+        if(resource->layout == ETNA_LAYOUT_LINEAR || resource->layout == ETNA_LAYOUT_TILED)
         {
-            uint bpe = util_format_get_blocksize(resource->base.format);
-            /* XXX currently only handles multiples of the tile size */
-            void *ptr = level->logical +
-                   ptrans->base.box.z * level->layer_stride +
-                   ptrans->base.box.y / util_format_get_blockheight(resource->base.format) * level->stride +
-                   ptrans->base.box.x / util_format_get_blockwidth(resource->base.format) * bpe;
-            /* XXX pipe_linear_to_tile */
-            etna_texture_tile(ptr, ptrans->buffer, ptrans->base.box.width, ptrans->base.box.height, 
-                    ptrans->base.stride, bpe);
-        } else { /* non-tiled or compressed format */
-            util_copy_box(level->logical,
-              resource->base.format,
-              level->stride, level->layer_stride,
-              ptrans->base.box.x, ptrans->base.box.y, ptrans->base.box.z,
-              ptrans->base.box.width, ptrans->base.box.height, ptrans->base.box.depth,
-              ptrans->buffer,
-              ptrans->base.stride, ptrans->base.layer_stride,
-              0, 0, 0);
+            if(resource->layout == ETNA_LAYOUT_TILED && !util_format_is_compressed(resource->base.format))
+            {
+                uint bpe = util_format_get_blocksize(resource->base.format);
+                /* XXX currently only handles multiples of the tile size */
+                void *ptr = level->logical + etna_compute_offset(resource->base.format, &ptrans->base.box, level->stride, level->layer_stride);
+                /* XXX pipe_linear_to_tile */
+                etna_texture_tile(ptr, ptrans->buffer, ptrans->base.box.width, ptrans->base.box.height, 
+                        ptrans->base.stride, bpe);
+            } else { /* non-tiled or compressed format */
+                util_copy_box(level->logical,
+                  resource->base.format,
+                  level->stride, level->layer_stride,
+                  ptrans->base.box.x, ptrans->base.box.y, ptrans->base.box.z,
+                  ptrans->base.box.width, ptrans->base.box.height, ptrans->base.box.depth,
+                  ptrans->buffer,
+                  ptrans->base.stride, ptrans->base.layer_stride,
+                  0, 0, 0);
+            }
+        } else
+        {
+            printf("etna_pipe_transfer_unmap: unsupported tiling %i\n", resource->layout);
         }
-    } else
-    {
-        printf("etna_pipe_transfer_unmap: unsupported tiling %i\n", resource->layout);
+        FREE(ptrans->buffer);
     }
-
-    FREE(ptrans->buffer);
     util_slab_free(&priv->transfer_pool, ptrans);
 }
 
