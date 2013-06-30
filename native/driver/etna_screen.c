@@ -90,6 +90,9 @@ static int etna_screen_get_param( struct pipe_screen *screen, enum pipe_cap para
     case PIPE_CAP_NPOT_TEXTURES: /* MUST be supported with GLES 2.0 */
             return true; /* VIV_FEATURE(priv->dev, chipMinorFeatures1, NON_POWER_OF_TWO); */
 
+    case PIPE_CAP_MAX_VERTEX_BUFFERS:
+            return priv->specs.stream_count;
+
     /* Unsupported features. */
     case PIPE_CAP_TEXTURE_SWIZZLE: /* XXX supported on gc2000 */
     case PIPE_CAP_COMPUTE: /* XXX supported on gc2000 */
