@@ -65,8 +65,6 @@
 #include "util/u_transfer.h"
 #include "util/u_surface.h"
 #include "util/u_blitter.h"
-#include "translate/translate.h"
-#include "translate/translate_cache.h"
 
 /*********************************************************************/
 /* Macros to define state */
@@ -594,88 +592,21 @@ static void etna_pipe_draw_vbo(struct pipe_context *pipe,
     if(priv->vertex_elements == NULL || priv->vertex_elements->num_elements == 0)
         return; /* Nothing to do */
     int prims = translate_vertex_count(info->mode, info->count);
-    struct translate *translate = priv->vertex_elements->translate;
     if(unlikely(prims <= 0))
     {
         DBG("Invalid draw primitive mode=%i or no primitives to be drawn\n", info->mode);
         return;
     }
-    if(translate)
+    /* First, sync state, then emit DRAW_PRIMITIVES or DRAW_INDEXED_PRIMITIVES */
+    sync_context(pipe);
+    if(info->indexed)
     {
-        struct compiled_set_vertex_buffer stored_vtxbuf = {};
-        /* Create temporary buffer for translate result.
-         * Always unroll indices, for now.
-         */
-        size_t tempsize = info->count * translate->key.output_stride;
-        struct etna_vidmem *tempmem = NULL;
-        int rv;
-        if((rv = etna_vidmem_alloc_linear(priv->conn, &tempmem, tempsize, VIV_SURF_VERTEX, VIV_POOL_DEFAULT, true)) != ETNA_OK)
-        {
-            DBG("Error allocating %u bytes of temporary memory for rendering\n", (unsigned)tempsize);
-            return;
-        }
-#if 0
-        printf("interleave buffer node=%p logical=%p physical=%08x %u\n", 
-                tempmem->node,
-                tempmem->logical,
-                (unsigned)tempmem->address,
-                (unsigned)tempsize);
-#endif
-        /* Set input buffers */
-        for(int idx=0; idx<PIPE_MAX_ATTRIBS; ++idx)
-        {
-            translate->set_buffer(translate, idx, priv->vertex_buffer[idx].logical,
-                    priv->vertex_buffer_s[idx].stride, 0xffffffff);
-        }
-        /* Translate the vertices from the input buffers */
-        if(info->indexed)
-        {
-            switch(priv->index_buffer_s.index_size)
-            {
-            case 1:
-                translate->run_elts8(translate, priv->index_buffer.logical, info->count, info->start_instance, tempmem->logical);
-                break;
-            case 2:
-                translate->run_elts16(translate, priv->index_buffer.logical, info->count, info->start_instance, tempmem->logical);
-                break;
-            case 4:
-                translate->run_elts(translate, priv->index_buffer.logical, info->count, info->start_instance, tempmem->logical);
-                break;
-            default:
-                DBG("Unsupported index size %i\n", priv->index_buffer_s.index_size);
-            }
-        } else {
-            translate->run(translate, info->start, info->count, info->start_instance, tempmem->logical);
-        }
-        /* Override FE_VERTEX_STREAM_CONTROL / FE_VERTEX_STREAM_BASE_ADDR for first buffer */
-        stored_vtxbuf = priv->vertex_buffer[0];
-        priv->vertex_buffer[0].FE_VERTEX_STREAM_CONTROL = VIVS_FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE(translate->key.output_stride);
-        priv->vertex_buffer[0].FE_VERTEX_STREAM_BASE_ADDR = tempmem->address;
-        priv->dirty_bits |= ETNA_STATE_VERTEX_BUFFERS;
-
-        /* First, sync state, then emit DRAW_PRIMITIVES */
-        sync_context(pipe);
-        etna_draw_primitives(priv->ctx, translate_draw_mode(info->mode), 0, prims);
-
-        /* release temporary buffer (fenced) */
-        etna_vidmem_queue_free(priv->ctx->queue, tempmem);
-        /* Restore FE_VERTEX_STREAM_CONTROL / FE_VERTEX_STREAM_BASE_ADDR for first buffer */
-        priv->vertex_buffer[0] = stored_vtxbuf;
-        priv->dirty_bits |= ETNA_STATE_VERTEX_BUFFERS;
-    }
-    else
+        etna_draw_indexed_primitives(priv->ctx, translate_draw_mode(info->mode), 
+                info->start, prims, info->index_bias);
+    } else
     {
-        /* First, sync state, then emit DRAW_PRIMITIVES or DRAW_INDEXED_PRIMITIVES */
-        sync_context(pipe);
-        if(info->indexed)
-        {
-            etna_draw_indexed_primitives(priv->ctx, translate_draw_mode(info->mode), 
-                    info->start, prims, info->index_bias);
-        } else
-        {
-            etna_draw_primitives(priv->ctx, translate_draw_mode(info->mode), 
-                    info->start, prims);
-        }
+        etna_draw_primitives(priv->ctx, translate_draw_mode(info->mode), 
+                info->start, prims);
     }
 }
 
@@ -927,42 +858,8 @@ static void *etna_pipe_create_vertex_elements_state(struct pipe_context *pipe,
     cs->num_elements = num_elements;
     if(incompatible)
     {
-        DBG("Warning: vertex element binding is incompatible with hardware, linearizing");
-        /* create translator and state to interleave elements into one buffer */
-        unsigned dest_offset = 0;
-        struct translate_key key;
-        for(unsigned idx=0; idx<num_elements; ++idx)
-        {
-            unsigned element_size = util_format_get_blocksize(elements[idx].src_format);
-            bool nonconsecutive = (idx == (num_elements-1));
-            /* conversion for element */
-            key.element[idx].type = TRANSLATE_ELEMENT_NORMAL;
-            key.element[idx].input_format = elements[idx].src_format;
-            key.element[idx].output_format = elements[idx].src_format; /* just copy */
-            key.element[idx].input_buffer = elements[idx].vertex_buffer_index;
-            key.element[idx].input_offset = elements[idx].src_offset;
-            key.element[idx].instance_divisor = elements[idx].instance_divisor;
-            key.element[idx].output_offset = dest_offset;
-
-            /* gpu state for element */
-            SET_STATE(FE_VERTEX_ELEMENT_CONFIG[idx],
-                    (nonconsecutive ? VIVS_FE_VERTEX_ELEMENT_CONFIG_NONCONSECUTIVE : 0) |
-                    translate_vertex_format_type(elements[idx].src_format, false) |
-                    VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM(util_format_get_nr_components(elements[idx].src_format)) |
-                    translate_vertex_format_normalize(elements[idx].src_format) |
-                    VIVS_FE_VERTEX_ELEMENT_CONFIG_ENDIAN(ENDIAN_MODE_NO_SWAP) |
-                    VIVS_FE_VERTEX_ELEMENT_CONFIG_STREAM(0) |
-                    VIVS_FE_VERTEX_ELEMENT_CONFIG_START(dest_offset) |
-                    VIVS_FE_VERTEX_ELEMENT_CONFIG_END(dest_offset + element_size));
-            dest_offset += element_size;
-        }
-        key.nr_elements = num_elements;
-        key.output_stride = align(dest_offset, 4);
-        if((cs->translate = translate_create(&key)) == NULL)
-        {
-            DBG("Error: unable to create translator for vertex buffer");
-            cs->num_elements = 0;
-        }
+        DBG("Error: more vertex buffers used than supported");
+        cs->num_elements = 0;
     } else {
         unsigned start_offset = 0; /* start of current consecutive stretch */
         bool nonconsecutive = true; /* previous value of nonconsecutive */
@@ -1002,10 +899,6 @@ static void etna_pipe_delete_vertex_elements_state(struct pipe_context *pipe, vo
 {
     struct compiled_vertex_elements_state *cs = (struct compiled_vertex_elements_state*)ve;
     //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
-    if(cs->translate)
-    {
-        cs->translate->release(cs->translate);
-    }
     FREE(cs);
 }
 

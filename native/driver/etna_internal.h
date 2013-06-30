@@ -33,8 +33,6 @@
 #define ETNA_NUM_LAYERS (6)
 #define ETNA_MAX_UNIFORMS (256)
 
-struct translate; /* translate/translate.h */
-
 enum etna_surface_layout
 {
     ETNA_LAYOUT_LINEAR = 0,
@@ -205,8 +203,6 @@ struct compiled_vertex_elements_state
 {
     unsigned num_elements;
     uint32_t FE_VERTEX_ELEMENT_CONFIG[VIVS_FE_VERTEX_ELEMENT_CONFIG__LEN];
-    /* optional translator for vertices */
-    struct translate *translate;
 };
 
 /* Compiled context->set_vertex_buffer result */
