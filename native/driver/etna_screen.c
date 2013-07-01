@@ -26,6 +26,7 @@
 #include "etna_translate.h"
 #include "etna_debug.h"
 #include "etna_rs.h"
+#include "etna_fence.h"
 
 #include <etnaviv/viv.h>
 #include <etnaviv/etna.h>
@@ -422,28 +423,6 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
             drawable->addr, drawable->stride,
             drawable->width, drawable->height, ctx);
     etna_flush(ctx);
-}
-
-static void etna_screen_fence_reference( struct pipe_screen *screen,
-                        struct pipe_fence_handle **ptr,
-                        struct pipe_fence_handle *fence )
-{
-    DBG("unimplemented etna_screen_fence_reference");
-}
-
-static boolean etna_screen_fence_signalled( struct pipe_screen *screen,
-                           struct pipe_fence_handle *fence )
-{
-    DBG("unimplemented etna_screen_fence_signalled");
-    return false;
-}
-
-static boolean etna_screen_fence_finish( struct pipe_screen *screen,
-                        struct pipe_fence_handle *fence,
-                        uint64_t timeout )
-{
-    DBG("unimplemented etna_screen_fence_finish");
-    return false;
 }
 
 /* Allocate 2D texture or render target resource 

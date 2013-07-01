@@ -256,7 +256,7 @@ static int switch_next_buffer(struct etna_ctx *ctx)
     printf("Switching to new buffer\n");
 #endif
     int next_buf_id = (ctx->cur_buf + 1) % NUM_COMMAND_BUFFERS;
-    if(viv_user_signal_wait(ctx->conn, ctx->cmdbuf_sig[next_buf_id], SIG_WAIT_INDEFINITE) != 0)
+    if(viv_user_signal_wait(ctx->conn, ctx->cmdbuf_sig[next_buf_id], VIV_WAIT_INDEFINITE) != 0)
     {
 #ifdef DEBUG
         printf("Error waiting for command buffer sync signal\n");
@@ -407,7 +407,7 @@ int etna_finish(struct etna_ctx *ctx)
     printf("finish: Waiting for signal...\n");
 #endif
     /* Wait for signal */
-    if(viv_user_signal_wait(ctx->conn, ctx->sig_id, SIG_WAIT_INDEFINITE) != 0)
+    if(viv_user_signal_wait(ctx->conn, ctx->sig_id, VIV_WAIT_INDEFINITE) != 0)
     {
         return ETNA_INTERNAL_ERROR;
     }

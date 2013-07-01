@@ -64,14 +64,14 @@
 /** Structure definitions */
 
 /* Etna error (return) codes */
-typedef enum _etna_status {
-    ETNA_OK,
-    ETNA_INVALID_ADDR,
-    ETNA_INVALID_VALUE,
-    ETNA_OUT_OF_MEMORY,
-    ETNA_INTERNAL_ERROR,
-    ETNA_ALREADY_LOCKED
-} etna_status;
+enum etna_status {
+    ETNA_OK             = 0,    /* = VIV_STATUS_OK */
+    ETNA_INVALID_ADDR   = 1000, /* Don't overlap with VIV_STATUS_* */
+    ETNA_INVALID_VALUE  = 1001,
+    ETNA_OUT_OF_MEMORY  = 1002,
+    ETNA_INTERNAL_ERROR = 1003,
+    ETNA_ALREADY_LOCKED = 1004
+};
 
 /* HW pipes.
  * Used by GPU to tell front-end what back-end modules to synchronize operations with. 

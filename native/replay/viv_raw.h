@@ -38,7 +38,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#define SIG_WAIT_INDEFINITE (0xffffffff)
+#define VIV_WAIT_INDEFINITE (0xffffffff)
 
 /* one of the features words */
 enum viv_features_word
@@ -158,7 +158,7 @@ int viv_user_signal_create(struct viv_conn *conn, int manualReset, int *id_out);
  */
 int viv_user_signal_signal(struct viv_conn *conn, int sig_id, int state);
 
-/** Wait for signal. Provide time to wait in milliseconds, or SIG_WAIT_INDEFINITE.
+/** Wait for signal. Provide time to wait in milliseconds, or VIV_WAIT_INDEFINITE.
  */
 int viv_user_signal_wait(struct viv_conn *conn, int sig_id, int wait);
 

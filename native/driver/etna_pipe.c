@@ -54,6 +54,7 @@
 #include "etna_bswap.h"
 #include "etna_shader.h"
 #include "etna_debug.h"
+#include "etna_fence.h"
 
 #include "pipe/p_defines.h"
 #include "pipe/p_format.h"
@@ -1289,6 +1290,13 @@ static void etna_pipe_flush(struct pipe_context *pipe,
              enum pipe_flush_flags flags)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    if(fence)
+    {
+        if(etna_fence_new(priv->ctx, fence) != ETNA_OK)
+        {
+            printf("etna_pipe_flush: could not create fence\n");
+        }
+    }
     etna_flush(priv->ctx);
 }
 
@@ -1330,6 +1338,7 @@ static struct pipe_sampler_view *etna_pipe_create_sampler_view(struct pipe_conte
     cs->max_lod = etna_umin(sv->base.u.tex.last_level, res->base.last_level) << 5;
 
     sv->internal = cs;
+    pipe_reference_init(&sv->base.reference, 1);
     return &sv->base;
 }
 

@@ -69,7 +69,7 @@ static void etna_bswap_thread(struct etna_bswap_buffers *bufs)
     while(!bufs->terminate)
     {
         /* wait for "buffer ready" signal for buffer X (and clear it) */
-        if(viv_user_signal_wait(bufs->conn, bufs->buf[cur].sig_id_ready, SIG_WAIT_INDEFINITE) != 0)
+        if(viv_user_signal_wait(bufs->conn, bufs->buf[cur].sig_id_ready, VIV_WAIT_INDEFINITE) != 0)
         {
 #ifdef DEBUG
             fprintf(stderr, "Error waiting for framebuffer sync signal\n");

@@ -25,7 +25,10 @@
 #define ETNA_FENCE_H_
 
 #include "pipe/p_state.h"
+
 struct pipe_screen;
+struct pipe_fence_handle;
+struct etna_ctx;
 
 struct etna_fence
 {
@@ -33,7 +36,13 @@ struct etna_fence
     int signal;
 };
 
-int etna_fence_new(struct etna_context *ctx, struct pipe_fence_handle **fence);
+static INLINE struct etna_fence *
+etna_fence(struct pipe_fence_handle *pfence)
+{
+    return (struct etna_fence *)pfence;
+}
+
+int etna_fence_new(struct etna_ctx *ctx, struct pipe_fence_handle **fence);
 
 void etna_screen_fence_reference( struct pipe_screen *screen,
                         struct pipe_fence_handle **ptr,

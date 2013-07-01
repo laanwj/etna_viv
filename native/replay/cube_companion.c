@@ -262,7 +262,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "Cannot queue GPU signal\n");
         exit(1);
     }
-    if(viv_user_signal_wait(conn, sig_id, SIG_WAIT_INDEFINITE) != 0)
+    if(viv_user_signal_wait(conn, sig_id, VIV_WAIT_INDEFINITE) != 0)
     {
         fprintf(stderr, "Cannot wait for signal\n");
         exit(1);
@@ -411,7 +411,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "Cannot queue GPU signal\n");
         exit(1);
     }
-    if(viv_user_signal_wait(conn, sig_id, SIG_WAIT_INDEFINITE) != 0)
+    if(viv_user_signal_wait(conn, sig_id, VIV_WAIT_INDEFINITE) != 0)
     {
         fprintf(stderr, "Cannot wait for signal\n");
         exit(1);
@@ -457,7 +457,7 @@ int main(int argc, char **argv)
         exit(1);
     }
     /* Wait for signal */
-    if(viv_user_signal_wait(conn, sig_id, SIG_WAIT_INDEFINITE) != 0)
+    if(viv_user_signal_wait(conn, sig_id, VIV_WAIT_INDEFINITE) != 0)
     {
         fprintf(stderr, "Cannot wait for signal\n");
         exit(1);
