@@ -38,7 +38,6 @@
 
 #include "etna_pipe.h"
 #include "util/u_inlines.h"
-#include "etna_tex.h"
 #include "write_bmp.h"
 #include "state_tracker/graw.h"
 #include "fbdemos.h"

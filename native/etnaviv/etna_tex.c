@@ -1,4 +1,4 @@
-#include "etna_tex.h"
+#include <etnaviv/etna_tex.h>
 
 #include <stdint.h>
 #include <stdio.h>
@@ -46,8 +46,9 @@ void etna_texture_tile(void *dest, void *src, unsigned width, unsigned height, u
                     ((uint8_t*)src)[srcy * src_stride + srcx];
             }
         }
-    }else
+    } else
     {
+        /* Tiling is only used for element sizes of 1, 2 and 4 */
         printf("etna_texture_tile: unhandled element size %i\n", elmtsize);
     }
 }

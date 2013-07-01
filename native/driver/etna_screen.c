@@ -393,6 +393,7 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
     struct etna_rs_target *drawable = (struct etna_rs_target *)winsys_drawable_handle;
     struct etna_resource *rt_resource = etna_resource(resource);
     struct etna_pipe_context_priv *priv = ETNA_PIPE(_hack_ctx);
+    assert(level <= resource->last_level && layer < resource->array_size);
     assert(priv);
     struct etna_ctx *ctx = priv->ctx;
     /* XXX set up TS */
@@ -401,8 +402,8 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
     etna_compile_rs_state(&copy_to_screen, &(struct rs_state){
                 .source_format = translate_rt_format(rt_resource->base.format, false),
                 .source_tiling = rt_resource->layout,
-                .source_addr = rt_resource->levels[0].address,
-                .source_stride = rt_resource->levels[0].stride,
+                .source_addr = rt_resource->levels[level].address,
+                .source_stride = rt_resource->levels[level].stride,
                 .dest_format = drawable->rs_format,
                 .dest_tiling = ETNA_LAYOUT_LINEAR,
                 .dest_addr = drawable->addr,
@@ -421,7 +422,6 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
             drawable->addr, drawable->stride,
             drawable->width, drawable->height, ctx);
     etna_flush(ctx);
-    //DBG("unimplemented etna_screen_flush_frontbuffer");
 }
 
 static void etna_screen_fence_reference( struct pipe_screen *screen,
@@ -496,7 +496,7 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     /* determine mipmap levels */
     struct etna_resource *resource = CALLOC_STRUCT(etna_resource);
     int max_mip_level = templat->last_level;
-    if(max_mip_level >= ETNA_NUM_LOD) /* max LOD supported by hw */
+    if(unlikely(max_mip_level >= ETNA_NUM_LOD)) /* max LOD supported by hw */
         max_mip_level = ETNA_NUM_LOD - 1;
 
     /* take care about DXTx formats, which have a divSize of non-1x1
@@ -552,7 +552,7 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
             element_size, divSizeX, divSizeY, rt_size, rt_ts_size, templat->bind, memtype);
 
     struct etna_vidmem *rt = 0;
-    if(etna_vidmem_alloc_linear(priv->dev, &rt, rt_size, memtype, VIV_POOL_DEFAULT, true) != ETNA_OK)
+    if(unlikely(etna_vidmem_alloc_linear(priv->dev, &rt, rt_size, memtype, VIV_POOL_DEFAULT, true) != ETNA_OK))
     {
         printf("Problem allocating video memory for resource\n");
         return NULL;
@@ -560,7 +560,7 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
    
     /* XXX allocate TS for rendertextures? if so, for each level or only the top? */
     struct etna_vidmem *rt_ts = 0;
-    if(rt_ts_size && etna_vidmem_alloc_linear(priv->dev, &rt_ts, rt_ts_size, VIV_SURF_TILE_STATUS, VIV_POOL_DEFAULT, true)!=ETNA_OK)
+    if(rt_ts_size && unlikely(etna_vidmem_alloc_linear(priv->dev, &rt_ts, rt_ts_size, VIV_SURF_TILE_STATUS, VIV_POOL_DEFAULT, true)!=ETNA_OK))
     {
         printf("Problem allocating tile status for resource\n");
         return NULL;
