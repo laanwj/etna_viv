@@ -1567,6 +1567,8 @@ static void etna_set_constant_buffer(struct pipe_context *pipe,
                                 struct pipe_constant_buffer *buf)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    if(buf == NULL) /* Unbinding constant buffer is a no-op as we don't keep a pointer */
+        return;
     assert(buf->buffer == NULL && buf->user_buffer != NULL); 
     /* support only user buffer for now */
     assert(priv->vs && priv->fs);
