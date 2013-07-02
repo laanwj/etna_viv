@@ -954,91 +954,101 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
     struct compiled_framebuffer_state *cs = &priv->framebuffer;
-    struct etna_surface *cbuf = (sv->nr_cbufs > 0) ? etna_surface(sv->cbufs[0]) : NULL;
-    struct etna_surface *zsbuf = etna_surface(sv->zsbuf);
-    /* XXX rendering with only color or only depth should be possible */
-    assert(cbuf != NULL && zsbuf != NULL);
-    uint32_t depth_format = translate_depth_format(zsbuf->base.format, false);
-    unsigned depth_bits = depth_format == VIVS_PE_DEPTH_CONFIG_DEPTH_FORMAT_D16 ? 16 : 24; 
-    assert((cbuf->layout & 1) && (zsbuf->layout & 1)); /* color and depth buffer must be at least tiled */
-    bool color_supertiled = (cbuf->layout & 2)!=0;
-    bool depth_supertiled = (zsbuf->layout & 2)!=0;
 
-    /* acquire or release references to underlying surfaces */
-    if(cbuf != NULL)
-        pipe_surface_reference(&cs->cbuf, &cbuf->base);
-    if(zsbuf != NULL)
-        pipe_surface_reference(&cs->zsbuf, &zsbuf->base);
-
-    /* XXX support multisample 2X/4X, take care that required width/height is doubled */
+    /* XXX support multisample 2X/4X, take care that required width/height is doubled
+     * for both depth and color surfaces.
+     */
     SET_STATE(GL_MULTI_SAMPLE_CONFIG, 
             VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_SAMPLES_NONE
             /* VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_ENABLES(0xf)
             VIVS_GL_MULTI_SAMPLE_CONFIG_UNK12 |
             VIVS_GL_MULTI_SAMPLE_CONFIG_UNK16 */
             );  /* merged with sample_mask */
-    SET_STATE(PE_COLOR_FORMAT, 
-            VIVS_PE_COLOR_FORMAT_FORMAT(translate_rt_format(cbuf->base.format, false)) |
-            (color_supertiled ? VIVS_PE_COLOR_FORMAT_SUPER_TILED : 0) /* XXX depends on layout */
-            /* XXX VIVS_PE_COLOR_FORMAT_OVERWRITE and the rest comes from blend_state / depth_stencil_alpha */
-            ); /* merged with depth_stencil_alpha */
-    SET_STATE(PE_DEPTH_CONFIG, 
-            depth_format |
-            (depth_supertiled ? VIVS_PE_DEPTH_CONFIG_SUPER_TILED : 0) | /* XXX depends on layout */
-            VIVS_PE_DEPTH_CONFIG_DEPTH_MODE_Z /* XXX set to NONE if no Z buffer */
-            /* VIVS_PE_DEPTH_CONFIG_ONLY_DEPTH */
-            ); /* merged with depth_stencil_alpha */
 
-    if (priv->ctx->conn->chip.pixel_pipes == 1)
+    /* Set up TS as well. Warning: this state is used by both the RS and PE */
+    uint32_t ts_mem_config = 0;
+    if(sv->nr_cbufs > 0) /* at least one color buffer? */
     {
-        SET_STATE(PE_DEPTH_ADDR, zsbuf->surf.address);
+        struct etna_surface *cbuf = etna_surface(sv->cbufs[0]);
+        bool color_supertiled = (cbuf->layout & 2)!=0;
+        assert(cbuf->layout & 1); /* Cannot render to linear surfaces */
+        pipe_surface_reference(&cs->cbuf, &cbuf->base);
+        SET_STATE(PE_COLOR_FORMAT, 
+                VIVS_PE_COLOR_FORMAT_FORMAT(translate_rt_format(cbuf->base.format, false)) |
+                (color_supertiled ? VIVS_PE_COLOR_FORMAT_SUPER_TILED : 0) /* XXX depends on layout */
+                /* XXX VIVS_PE_COLOR_FORMAT_OVERWRITE and the rest comes from blend_state / depth_stencil_alpha */
+                ); /* merged with depth_stencil_alpha */
+        if (priv->ctx->conn->chip.pixel_pipes == 1)
+        {
+            SET_STATE(PE_COLOR_ADDR, cbuf->surf.address);
+        }
+        else if (priv->ctx->conn->chip.pixel_pipes == 2)
+        {
+            SET_STATE(PE_PIPE_COLOR_ADDR[0], cbuf->surf.address);
+            SET_STATE(PE_PIPE_COLOR_ADDR[1], cbuf->surf.address);  /* TODO */
+        }
+        SET_STATE(PE_COLOR_STRIDE, cbuf->surf.stride);
+        if(cbuf->surf.ts_address)
+        {
+            ts_mem_config |= VIVS_TS_MEM_CONFIG_COLOR_FAST_CLEAR;
+            SET_STATE(TS_COLOR_CLEAR_VALUE, cbuf->clear_value);
+            SET_STATE(TS_COLOR_STATUS_BASE, cbuf->surf.ts_address);
+            SET_STATE(TS_COLOR_SURFACE_BASE, cbuf->surf.address);
+        }
+        /* XXX ts_mem_config |= VIVS_TS_MEM_CONFIG_MSAA | translate_msaa_format(cbuf->format) */
+    } else {
+        pipe_surface_reference(&cs->cbuf, NULL);
+        SET_STATE(PE_COLOR_FORMAT, 0); /* Is this enough to render without color? */
     }
-    else if (priv->ctx->conn->chip.pixel_pipes == 2)
+
+    if(sv->zsbuf != NULL)
     {
-        SET_STATE(PE_PIPE_DEPTH_ADDR[0], zsbuf->surf.address);
-        SET_STATE(PE_PIPE_DEPTH_ADDR[1], zsbuf->surf.address);  /* TODO */
+        struct etna_surface *zsbuf = etna_surface(sv->zsbuf);
+        pipe_surface_reference(&cs->zsbuf, &zsbuf->base);
+        assert(zsbuf->layout & 1); /* Cannot render to linear surfaces */
+        uint32_t depth_format = translate_depth_format(zsbuf->base.format, false);
+        unsigned depth_bits = depth_format == VIVS_PE_DEPTH_CONFIG_DEPTH_FORMAT_D16 ? 16 : 24; 
+        bool depth_supertiled = (zsbuf->layout & 2)!=0;
+        SET_STATE(PE_DEPTH_CONFIG, 
+                depth_format |
+                (depth_supertiled ? VIVS_PE_DEPTH_CONFIG_SUPER_TILED : 0) | /* XXX depends on layout */
+                VIVS_PE_DEPTH_CONFIG_DEPTH_MODE_Z /* XXX set to NONE if no Z buffer */
+                /* VIVS_PE_DEPTH_CONFIG_ONLY_DEPTH */
+                ); /* merged with depth_stencil_alpha */
+        if (priv->ctx->conn->chip.pixel_pipes == 1)
+        {
+            SET_STATE(PE_DEPTH_ADDR, zsbuf->surf.address);
+        }
+        else if (priv->ctx->conn->chip.pixel_pipes == 2)
+        {
+            SET_STATE(PE_PIPE_DEPTH_ADDR[0], zsbuf->surf.address);
+            SET_STATE(PE_PIPE_DEPTH_ADDR[1], zsbuf->surf.address);  /* TODO */
+        }
+        SET_STATE(PE_DEPTH_STRIDE, zsbuf->surf.stride);
+        SET_STATE(PE_HDEPTH_CONTROL, VIVS_PE_HDEPTH_CONTROL_FORMAT_DISABLED);
+        SET_STATE_F32(PE_DEPTH_NORMALIZE, exp2f(depth_bits) - 1.0f);
+        if(zsbuf->surf.ts_address)
+        {
+            ts_mem_config |= VIVS_TS_MEM_CONFIG_DEPTH_FAST_CLEAR |
+                (depth_bits == 16 ? VIVS_TS_MEM_CONFIG_DEPTH_16BPP : 0) | 
+                VIVS_TS_MEM_CONFIG_DEPTH_COMPRESSION;
+            SET_STATE(TS_DEPTH_CLEAR_VALUE, zsbuf->clear_value);
+            SET_STATE(TS_DEPTH_STATUS_BASE, zsbuf->surf.ts_address);
+            SET_STATE(TS_DEPTH_SURFACE_BASE, zsbuf->surf.address);
+        }
+    } else {
+        pipe_surface_reference(&cs->zsbuf, NULL);
+        SET_STATE(PE_DEPTH_CONFIG, VIVS_PE_DEPTH_CONFIG_DEPTH_MODE_NONE);
     }
-    SET_STATE(PE_DEPTH_STRIDE, zsbuf->surf.stride);
-    SET_STATE(PE_HDEPTH_CONTROL, VIVS_PE_HDEPTH_CONTROL_FORMAT_DISABLED);
-    SET_STATE_F32(PE_DEPTH_NORMALIZE, exp2f(depth_bits) - 1.0f);
-    if (priv->ctx->conn->chip.pixel_pipes == 1)
-    {
-        SET_STATE(PE_COLOR_ADDR, cbuf->surf.address);
-    }
-    else if (priv->ctx->conn->chip.pixel_pipes == 2)
-    {
-        SET_STATE(PE_PIPE_COLOR_ADDR[0], zsbuf->surf.address);
-        SET_STATE(PE_PIPE_COLOR_ADDR[1], zsbuf->surf.address);  /* TODO */
-    }
-    SET_STATE(PE_COLOR_STRIDE, cbuf->surf.stride);
-    
+
     SET_STATE_FIXP(SE_SCISSOR_LEFT, 0); /* affected by rasterizer and scissor state as well */
     SET_STATE_FIXP(SE_SCISSOR_TOP, 0);
     SET_STATE_FIXP(SE_SCISSOR_RIGHT, (sv->width << 16)-1);
     SET_STATE_FIXP(SE_SCISSOR_BOTTOM, (sv->height << 16)-1);
 
-    /* Set up TS as well. Warning: this state is used by both the RS and PE */
-    uint32_t ts_mem_config = 0;
-    if(zsbuf->surf.ts_address)
-    {
-        ts_mem_config |= VIVS_TS_MEM_CONFIG_DEPTH_FAST_CLEAR |
-            (depth_bits == 16 ? VIVS_TS_MEM_CONFIG_DEPTH_16BPP : 0) | 
-            VIVS_TS_MEM_CONFIG_DEPTH_COMPRESSION;
-        SET_STATE(TS_DEPTH_CLEAR_VALUE, zsbuf->clear_value);
-        SET_STATE(TS_DEPTH_STATUS_BASE, zsbuf->surf.ts_address);
-        SET_STATE(TS_DEPTH_SURFACE_BASE, zsbuf->surf.address);
-    }
-    if(cbuf->surf.ts_address)
-    {
-        ts_mem_config |= VIVS_TS_MEM_CONFIG_COLOR_FAST_CLEAR;
-        SET_STATE(TS_COLOR_CLEAR_VALUE, cbuf->clear_value);
-        SET_STATE(TS_COLOR_STATUS_BASE, cbuf->surf.ts_address);
-        SET_STATE(TS_COLOR_SURFACE_BASE, cbuf->surf.address);
-    }
-    /* XXX VIVS_TS_MEM_CONFIG_MSAA | translate_msaa_format(cbuf->format) */
     SET_STATE(TS_MEM_CONFIG, ts_mem_config);
 
-    priv->dirty_bits |= ETNA_STATE_VIEWPORT;
+    priv->dirty_bits |= ETNA_STATE_FRAMEBUFFER;
     priv->framebuffer_s = *sv; /* keep copy of original structure */
 }
 
@@ -1053,7 +1063,7 @@ static void etna_pipe_set_scissor_state( struct pipe_context *pipe,
     SET_STATE_FIXP(SE_SCISSOR_RIGHT, (ss->maxx << 16)-1);
     SET_STATE_FIXP(SE_SCISSOR_BOTTOM, (ss->maxy << 16)-1);
     /* note that this state is only used when rasterizer_state->scissor is on */
-    priv->dirty_bits |= ETNA_STATE_FRAMEBUFFER;
+    priv->dirty_bits |= ETNA_STATE_VIEWPORT;
 }
 
 static void etna_pipe_set_viewport_state( struct pipe_context *pipe,
