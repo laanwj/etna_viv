@@ -217,9 +217,9 @@ static void etna_link_shaders(struct pipe_context *pipe,
     memcpy(&cs->PS_UNIFORMS[fs->imm_base], fs->imm_data, fs->imm_size*4);
 }
     
-/* Weave state. This function merges all the compiled state blocks under the context into 
- * one device register state. Parts of this state that are changed since last call (dirty)
- * will be uploaded as state changes in the command buffer.
+/* Weave state for draw operation. This function merges all the compiled state blocks under 
+ * the context into one device register state. Parts of this state that are changed since 
+ * last call (dirty) will be uploaded as state changes in the command buffer.
  */
 static void sync_context(struct pipe_context *pipe)
 {
@@ -1219,6 +1219,9 @@ static void etna_pipe_clear(struct pipe_context *pipe,
              unsigned stencil)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    /* No need to set up the TS here with sync_context.
+     * RS clear operations (in contrary to resolve and copy) do not require the TS state. 
+     */
     /* Need to update clear command in non-TS (fast clear) case *if*
      * clear value is different from previous time. 
      */
