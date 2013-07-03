@@ -21,6 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 #ifndef H_EGLUTIL
+#include <EGL/egl.h>
 
 /* Get string for EGL error */
 char *eglStrError(EGLint error);

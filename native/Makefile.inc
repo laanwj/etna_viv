@@ -6,7 +6,8 @@ CXX = $(GCCPREFIX)g++
 LD = $(GCCPREFIX)ld
 AR = $(GCCPREFIX)ar
 
-COMMON_FLAGS =  -O2 -g -Wall -Wmissing-prototypes -DGCABI_${GCABI} -I$(TOP)/lib -I$(TOP)/include_$(GCABI) -g -fPIC \
+GCC_CFLAGS = -D_POSIX_C_SOURCE=200809 -D_GNU_SOURCE
+COMMON_FLAGS = -O2 -g -Wall -Wmissing-prototypes -DGCABI_${GCABI} $(GCC_CFLAGS) -I$(TOP)/lib -I$(TOP)/include_$(GCABI) -g -fPIC \
           -I$(TOP)/gallium/include -I$(TOP)/gallium/auxiliary -I$(TOP)
 
 CFLAGS += $(PLATFORM_CFLAGS) $(COMMON_FLAGS) -std=gnu99
