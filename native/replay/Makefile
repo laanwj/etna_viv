@@ -10,7 +10,7 @@ TARGETS = reset viv_info
 TARGETS_GC800 = cube cube_companion cube_etna ps_sandbox_etna etna_test cube_etna2
 TARGETS_GC2000 = cube_etna2_gc2000
 COMPANION_OBJS = ../resources/companion_array.o ../resources/companion_mesh.o ../resources/companion_texture.o
-ETNA_OBJS = ../driver/etna_rs.o ../driver/etna_fb.o ../lib/etna_bswap.o ../driver/etna_tex.o
+ETNA_OBJS = ../lib/etna_bswap.o
 
 all: $(TARGETS)
 

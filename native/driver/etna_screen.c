@@ -25,9 +25,9 @@
 #include "etna_shader.h"
 #include "etna_translate.h"
 #include "etna_debug.h"
-#include "etna_rs.h"
 #include "etna_fence.h"
 
+#include <etnaviv/etna_rs.h>
 #include <etnaviv/viv.h>
 #include <etnaviv/etna.h>
 #include <etnaviv/etna_util.h>

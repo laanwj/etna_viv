@@ -48,9 +48,9 @@
 #include <etnaviv/etna_mem.h>
 #include <etnaviv/etna_util.h>
 #include <etnaviv/etna_tex.h>
+#include <etnaviv/etna_fb.h>
+#include <etnaviv/etna_rs.h>
 
-#include "etna_rs.h"
-#include "etna_fb.h"
 #include "etna_shader.h"
 #include "etna_debug.h"
 #include "etna_fence.h"

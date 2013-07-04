@@ -20,8 +20,8 @@
 #include <etnaviv/etna.h>
 #include <etnaviv/etna_mem.h>
 #include <etnaviv/etna_util.h>
+#include <etnaviv/etna_rs.h>
 #include "write_bmp.h"
-#include "etna_rs.h"
 
 #include "esTransform.h"
 

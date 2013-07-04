@@ -24,8 +24,32 @@
 #ifndef H_FBDEMOS
 #define H_FBDEMOS
 
-#include "etna_fb.h" 
+#include <etnaviv/etna_fb.h>
 #include "etna_bswap.h" 
+
+#define ETNA_FB_MAX_BUFFERS (2) /* double buffering is enough */
+struct pipe_resource;
+struct fb_info
+{
+    int fd;
+    int num_buffers;
+    /* GPU addresses of buffers */
+    size_t physical[ETNA_FB_MAX_BUFFERS];
+    /* CPU addresses of buffers */
+    void *logical[ETNA_FB_MAX_BUFFERS];
+    size_t stride;
+    size_t buffer_stride;
+    struct fb_var_screeninfo fb_var;
+    struct fb_fix_screeninfo fb_fix;
+    void *map;
+
+    struct etna_resource *resource;
+    struct compiled_rs_state copy_to_screen[ETNA_FB_MAX_BUFFERS];
+
+    /* Resolve format (-1 if no match), and swap red/blue bit */
+    int rs_format;
+    bool swap_rb;
+};
 
 struct fbdemos_scaffold
 {
@@ -53,6 +77,22 @@ struct pipe_resource *fbdemo_create_cube(struct pipe_screen *screen, unsigned fl
 void etna_pipe_inline_write(struct pipe_context *pipe, struct pipe_resource *resource, unsigned layer, unsigned level, void *data, size_t size);
 
 void etna_convert_r8g8b8_to_b8g8r8x8(uint32_t *dst, const uint8_t *src, unsigned num_pixels);
+
+/* Open framebuffer and get information */
+int fb_open(int num, struct fb_info *out);
+
+/* Set currently visible buffer id */
+int fb_set_buffer(struct fb_info *fb, int buffer);
+
+/* Close framebuffer */
+int fb_close(struct fb_info *fb);
+
+/* Bind framebuffer to render target resource */
+int etna_fb_bind_resource(struct fb_info *fb, struct pipe_resource *rt_resource);
+
+/* Copy framebuffer from bound render target resource */
+int etna_fb_copy_buffer(struct fb_info *fb, struct etna_ctx *ctx, int buffer);
+
 
 #endif
 

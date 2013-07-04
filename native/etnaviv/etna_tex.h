@@ -22,8 +22,16 @@
  */
 /* Vivante specific surface tiling */
 #ifndef H_ETNA_TEX
+#define H_ETNA_TEX
 
 #include <stdint.h>
+
+enum etna_surface_layout
+{
+    ETNA_LAYOUT_LINEAR = 0,
+    ETNA_LAYOUT_TILED = 1,
+    ETNA_LAYOUT_SUPERTILED = 3 /* 1|2, both tiling and supertiling bit enabled */
+};
 
 void etna_texture_tile(void *dest, void *src, unsigned width, unsigned height, unsigned src_stride, unsigned elmtsize);
 

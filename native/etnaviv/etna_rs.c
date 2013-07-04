@@ -20,9 +20,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#include "etna_rs.h"
-#include "etna_translate.h"
-
+#include <etnaviv/etna_rs.h>
+#include <etnaviv/etna_tex.h>
 #include <etnaviv/etna.h>
 #include <etnaviv/state.xml.h>
 #include <etnaviv/state_3d.xml.h>

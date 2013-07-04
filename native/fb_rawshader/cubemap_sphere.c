@@ -40,9 +40,6 @@
 #include "util/u_inlines.h"
 
 #include "write_bmp.h"
-#include "etna_rs.h"
-#include "etna_fb.h"
-#include "etna_bswap.h"
 #include "fbdemos.h"
 
 #include "esTransform.h"

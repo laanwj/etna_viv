@@ -33,13 +33,6 @@
 #define ETNA_NUM_LAYERS (6)
 #define ETNA_MAX_UNIFORMS (256)
 
-enum etna_surface_layout
-{
-    ETNA_LAYOUT_LINEAR = 0,
-    ETNA_LAYOUT_TILED = 1,
-    ETNA_LAYOUT_SUPERTILED = 3 /* 1|2, both tiling and supertiling bit enabled */
-};
-
 /* GPU chip 3D specs */
 struct etna_pipe_specs
 {
