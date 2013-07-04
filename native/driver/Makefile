@@ -4,7 +4,7 @@ include $(TOP)/Makefile.inc
 
 COMMON_FLAGS += -DRAWSHADER
 LDFLAGS +=
-DRIVER_OBJS = etna_rs.o etna_fb.o etna_bswap.o etna_pipe.o etna_shader.o etna_asm.o etna_screen.o etna_fence.o
+DRIVER_OBJS = etna_rs.o etna_fb.o etna_pipe.o etna_shader.o etna_asm.o etna_screen.o etna_fence.o
 
 TARGETS = libetnadriver.a
 

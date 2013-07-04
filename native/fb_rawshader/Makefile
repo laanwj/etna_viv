@@ -9,7 +9,7 @@ LDFLAGS +=  ../driver/libetnadriver.a ../gallium/libminigallium.a ../etnaviv/lib
 
 TARGETS = mip_cube cubemap_sphere stencil_test alpha_blend cube_companion particle_system displacement etna_gears rotate_cube
 COMPANION_OBJS = ../resources/companion_array.o ../resources/companion_mesh.o ../resources/companion_texture.o
-ETNA_OBJS = ../lib/fbdemos.o
+ETNA_OBJS = ../lib/fbdemos.o ../lib/etna_bswap.o
 
 all: $(TARGETS)
 
