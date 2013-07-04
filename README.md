@@ -299,8 +299,8 @@ where the script is installed, and get the `libEGL.so` and `libGLESv2.so` from t
 
     DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
     export GCCPREFIX="arm-linux-gnueabi-"
-    export PLATFORM_CFLAGS="-I${DIR}/include -D_POSIX_C_SOURCE=200809 -D_GNU_SOURCE"
-    export PLATFORM_CXXFLAGS="-I${DIR}/include -D_POSIX_C_SOURCE=200809 -D_GNU_SOURCE"
+    export PLATFORM_CFLAGS="-I${DIR}/include"
+    export PLATFORM_CXXFLAGS="-I${DIR}/include"
     export PLATFORM_LDFLAGS="-ldl -L${DIR}/lib"
     export PLATFORM_GL_LIBS="-lEGL -lGLESv2 -L${TOP}/lib/egl -Xlinker --allow-shlib-undefined"
     # Set GC kernel ABI to dove (important!)

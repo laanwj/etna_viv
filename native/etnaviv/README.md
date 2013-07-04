@@ -11,3 +11,6 @@ d) register description headers
 Currently used only by the 3D driver in driver/.
 A future 2D or SVG driver can share this code.
 
+This library completely wraps the kernel interface, so that clients don't
+depend on the specific headers.
+
