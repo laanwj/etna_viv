@@ -777,7 +777,8 @@ static void *etna_pipe_create_depth_stencil_alpha_state(struct pipe_context *pip
 
     /* Set operations to KEEP if write mask is 0.
      * When we don't do this, the depth buffer is written for the entire primitive instead of
-     * just where the stencil condition holds. 
+     * just where the stencil condition holds (GC600 rev 0x0019, without feature CORRECT_STENCIL). 
+     * Not sure if this is a hardware bug or just a strange edge case.
      */
     for(i=0; i<2; ++i)
     {

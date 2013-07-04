@@ -371,8 +371,9 @@ static boolean etna_screen_is_video_format_supported( struct pipe_screen *screen
 static boolean etna_screen_can_create_resource(struct pipe_screen *screen,
                               const struct pipe_resource *templat)
 {
-    DBG("unimplemented etna_screen_can_create_resource");
-    return false;
+    /* XXX test against maximum texture size, 
+     * based on TEXTURE_8K / RENDERTARGET_8K features */
+    return true;
 }
                            
 static struct pipe_resource * etna_screen_resource_from_handle(struct pipe_screen *screen,
