@@ -244,6 +244,11 @@ int fb_open(int num, struct fb_info *out)
 int fb_set_buffer(struct fb_info *fb, int buffer)
 {
     fb->fb_var.yoffset = buffer * fb->fb_var.yres;
+    /* Android uses FBIOPUT_VSCREENINFO for this; however on some hardware this does a
+     * reconfiguration of the DC every time it is called which causes flicker and slowness. 
+     * On the other hand, FBIOPAN_DISPLAY causes a smooth scroll on some hardware, 
+     * according to the Android rationale. Choose the least of both evils.
+     */
     if (ioctl(fb->fd, FBIOPAN_DISPLAY, &fb->fb_var))
     {
         printf("Error: failed to run ioctl to pan display: %s\n", strerror(errno));
