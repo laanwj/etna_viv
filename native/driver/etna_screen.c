@@ -394,10 +394,18 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
 {
     struct etna_rs_target *drawable = (struct etna_rs_target *)winsys_drawable_handle;
     struct etna_resource *rt_resource = etna_resource(resource);
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(_hack_ctx);
+    struct pipe_context *pipe_ctx = _hack_ctx;
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe_ctx);
+    struct pipe_fence_handle **fence = 0;
     assert(level <= resource->last_level && layer < resource->array_size);
     assert(priv);
     struct etna_ctx *ctx = priv->ctx;
+
+    /* release previous fence, make reference to fence if we need one */
+    screen->fence_reference(screen, &drawable->fence, NULL);
+    if(drawable->want_fence)
+        fence = &drawable->fence;
+
     /* XXX set up TS */
     /* Kick off RS here */
     struct compiled_rs_state copy_to_screen;
@@ -423,7 +431,7 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
     printf("Queued RS command to flush screen from %08x to %08x stride=%08x width=%i height=%i, ctx %p\n", rt_resource->levels[0].address, 
             drawable->addr, drawable->stride,
             drawable->width, drawable->height, ctx);
-    etna_flush(ctx);
+    pipe_ctx->flush(pipe_ctx, fence, 0);
 }
 
 /* Allocate 2D texture or render target resource 
