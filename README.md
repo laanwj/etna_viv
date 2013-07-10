@@ -3,7 +3,7 @@ Introduction
 
 Project Etnaviv is an attempt to make an open source user-space driver for the Vivante GCxxx series of embedded GPUs.
 
-The projectl is currently mostly of use to developers interested in helping develop open source drivers for the 
+The project is currently mostly of use to developers interested in helping develop open source drivers for the 
 hardware, reverse engineering, or in interfacing with GPU hardware directly.
 
 A Mesa fork based on the etnaviv driver can be found at https://github.com/laanwj/mesa. At the moment, this

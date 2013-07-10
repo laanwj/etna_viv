@@ -11,6 +11,8 @@
 
 /* Possible optimization: keep a pool of signals in etna_screen,
  * instead of creating and destroying them all the time.
+ * Implementation would be u_slab-like, with the difference that new
+ * blocks get a signal id.
  */
 
 int etna_fence_new(struct etna_ctx *ctx, struct pipe_fence_handle **fence_p)
