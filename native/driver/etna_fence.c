@@ -9,10 +9,10 @@
 #include <etnaviv/etna.h>
 #include <etnaviv/etna_queue.h>
 
-int etna_fence_new(struct pipe_screen *pscreen, struct etna_ctx *ctx, struct pipe_fence_handle **fence_p)
+int etna_fence_new(struct pipe_screen *screen_h, struct etna_ctx *ctx, struct pipe_fence_handle **fence_p)
 {
     struct etna_fence *fence = NULL;
-    struct etna_screen *screen = etna_screen(pscreen);
+    struct etna_screen *screen = etna_screen(screen_h);
     int rv;
 
     /* XXX we do not release the fence_p reference here -- neither do the other drivers,
@@ -36,9 +36,10 @@ int etna_fence_new(struct pipe_screen *pscreen, struct etna_ctx *ctx, struct pip
         if((rv = viv_user_signal_signal(ctx->conn, fence->signal, 0)) != VIV_STATUS_OK)
         {
             printf("Error: could not reset signal %i\n", fence->signal);
-            FREE(fence);
+            etna_screen_destroy_fence(screen_h, fence);
             return rv;
         }
+        fence->signalled = false;
     } else {
         fence = CALLOC_STRUCT(etna_fence);
         /* Create signal with manual reset; we want to be able to probe it 
@@ -79,17 +80,24 @@ void etna_screen_fence_reference(struct pipe_screen *screen_h,
     if (pipe_reference_described(&(*ptr)->reference, &fence->reference, 
                                  (debug_reference_descriptor)debug_describe_fence))
     {
-        /* Add old fence to free list, don't actually destroy */
-        pipe_mutex_lock(screen->fence_mutex);
-        old_fence->next_free = screen->fence_freelist;
-        screen->fence_freelist = old_fence;
-        pipe_mutex_unlock(screen->fence_mutex);
+        if(etna_screen_fence_signalled(screen_h, old_fence))
+        {
+            /* If signalled, add old fence to free list, as it can be reused */
+            pipe_mutex_lock(screen->fence_mutex);
+            old_fence->next_free = screen->fence_freelist;
+            screen->fence_freelist = old_fence;
+            pipe_mutex_unlock(screen->fence_mutex);
+        } else {
+            /* If fence is still to be signalled, destroy it, to prevent it from being
+             * reused. */
+            etna_screen_destroy_fence(screen_h, old_fence);
+        }
     }
     *ptr_h = fence_h;
 }
 
 boolean etna_screen_fence_signalled(struct pipe_screen *screen_h,
-                           struct pipe_fence_handle *fence_h )
+                           struct pipe_fence_handle *fence_h)
 {
     return etna_screen_fence_finish(screen_h, fence_h, 0);
 }
@@ -101,6 +109,8 @@ boolean etna_screen_fence_finish(struct pipe_screen *screen_h,
     struct etna_screen *screen = etna_screen(screen_h);
     struct etna_fence *fence = etna_fence(fence_h);
     int rv;
+    if(fence->signalled)
+        return true;
     /* nanoseconds to milliseconds */
     rv = viv_user_signal_wait(screen->dev, fence->signal, 
             timeout == PIPE_TIMEOUT_INFINITE ? VIV_WAIT_INDEFINITE : (timeout / 1000000ULL));
@@ -108,7 +118,18 @@ boolean etna_screen_fence_finish(struct pipe_screen *screen_h,
     {
         printf("%s: error waiting for signal %i", __func__, fence->signal);
     }
-    return rv != VIV_STATUS_TIMEOUT;
+    fence->signalled = (rv != VIV_STATUS_TIMEOUT);
+    return fence->signalled;
+}
+
+void etna_screen_destroy_fence(struct pipe_screen *screen_h, struct etna_fence *fence)
+{
+    struct etna_screen *screen = etna_screen(screen_h);
+    if(viv_user_signal_destroy(screen->dev, fence->signal) != VIV_STATUS_OK)
+    {
+        printf("%s: cannot destroy signal %i\n", __func__, fence->signal);
+    }
+    FREE(fence);
 }
 
 void etna_screen_destroy_fences(struct pipe_screen *screen_h)
@@ -119,11 +140,7 @@ void etna_screen_destroy_fences(struct pipe_screen *screen_h)
     for(fence = screen->fence_freelist; fence != NULL; fence = next)
     {
         next = fence->next_free;
-        if(viv_user_signal_destroy(screen->dev, fence->signal) != VIV_STATUS_OK)
-        {
-            printf("%s: cannot destroy signal %i\n", __func__, fence->signal);
-        }
-        FREE(fence);
+        etna_screen_destroy_fence(screen_h, fence);
     }
     screen->fence_freelist = NULL;
     pipe_mutex_unlock(screen->fence_mutex);

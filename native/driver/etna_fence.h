@@ -34,6 +34,7 @@ struct etna_fence
 {
     struct pipe_reference reference;
     int signal;
+    bool signalled;
     struct etna_fence *next_free;
 };
 
@@ -57,6 +58,8 @@ boolean etna_screen_fence_signalled(struct pipe_screen *screen,
 boolean etna_screen_fence_finish( struct pipe_screen *screen,
                         struct pipe_fence_handle *fence,
                         uint64_t timeout);
+
+void etna_screen_destroy_fence(struct pipe_screen *screen_h, struct etna_fence *fence);
 
 void etna_screen_destroy_fences(struct pipe_screen *screen_h);
 
