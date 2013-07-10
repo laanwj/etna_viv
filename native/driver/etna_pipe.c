@@ -1321,7 +1321,7 @@ static void etna_pipe_flush(struct pipe_context *pipe,
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
     if(fence)
     {
-        if(etna_fence_new(priv->ctx, fence) != ETNA_OK)
+        if(etna_fence_new(pipe->screen, priv->ctx, fence) != ETNA_OK)
         {
             printf("etna_pipe_flush: could not create fence\n");
         }

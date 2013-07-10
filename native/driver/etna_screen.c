@@ -44,6 +44,9 @@ int etna_mesa_debug = ETNA_DBG_MSGS;  /* XXX */
 
 static void etna_screen_destroy( struct pipe_screen *screen )
 {
+    struct etna_screen *priv = etna_screen(screen);
+    etna_screen_destroy_fences(screen);
+    pipe_mutex_destroy(priv->fence_mutex);
     FREE(screen);
 }
 
@@ -619,6 +622,7 @@ etna_screen_create(struct viv_conn *dev)
     screen->specs.shader_core_count = dev->chip.shader_core_count;
     screen->specs.stream_count = dev->chip.stream_count;
 
+    /* Initialize vtable */
     pscreen->destroy = etna_screen_destroy;
     pscreen->get_name = etna_screen_get_name;
     pscreen->get_vendor = etna_screen_get_vendor;
@@ -640,6 +644,8 @@ etna_screen_create(struct viv_conn *dev)
     pscreen->fence_reference = etna_screen_fence_reference;
     pscreen->fence_signalled = etna_screen_fence_signalled;
     pscreen->fence_finish = etna_screen_fence_finish;
+
+    pipe_mutex_init(screen->fence_mutex);
 
     return pscreen;
 }

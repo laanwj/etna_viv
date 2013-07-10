@@ -23,8 +23,10 @@
 #ifndef ETNA_SCREEN_H_
 #define ETNA_SCREEN_H_
 
-#include "pipe/p_screen.h"
 #include "etna_internal.h"
+
+#include "pipe/p_screen.h"
+#include "os/os_thread.h"
 
 struct viv_conn;
 
@@ -33,8 +35,10 @@ struct viv_conn;
 struct etna_screen {
     struct pipe_screen base;
     struct viv_conn *dev;
-    struct etna_ctx *ctx;
     struct etna_pipe_specs specs;
+
+    pipe_mutex fence_mutex;
+    struct etna_fence *fence_freelist;
 };
 
 /* Resolve target.

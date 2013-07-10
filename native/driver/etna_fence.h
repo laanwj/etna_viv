@@ -34,6 +34,7 @@ struct etna_fence
 {
     struct pipe_reference reference;
     int signal;
+    struct etna_fence *next_free;
 };
 
 static INLINE struct etna_fence *
@@ -42,17 +43,22 @@ etna_fence(struct pipe_fence_handle *pfence)
     return (struct etna_fence *)pfence;
 }
 
-int etna_fence_new(struct etna_ctx *ctx, struct pipe_fence_handle **fence);
+int etna_fence_new(struct pipe_screen *screen, 
+                   struct etna_ctx *ctx, 
+                   struct pipe_fence_handle **fence);
 
-void etna_screen_fence_reference( struct pipe_screen *screen,
+void etna_screen_fence_reference(struct pipe_screen *screen,
                         struct pipe_fence_handle **ptr,
-                        struct pipe_fence_handle *fence );
+                        struct pipe_fence_handle *fence);
 
-boolean etna_screen_fence_signalled( struct pipe_screen *screen,
-                           struct pipe_fence_handle *fence );
+boolean etna_screen_fence_signalled(struct pipe_screen *screen,
+                           struct pipe_fence_handle *fence);
 
 boolean etna_screen_fence_finish( struct pipe_screen *screen,
                         struct pipe_fence_handle *fence,
-                        uint64_t timeout );
+                        uint64_t timeout);
+
+void etna_screen_destroy_fences(struct pipe_screen *screen_h);
+
 #endif
 
