@@ -24,10 +24,10 @@ gc800: $(TARGETS_GC800)
 # These specifically replay command streams for gc2000, don't build them by default
 gc2000: $(TARGETS_GC2000)
 
-empty_screen_gc2000: empty_screen_gc2000.o ../lib/write_bmp.o
+empty_screen_gc2000: empty_screen_gc2000.o ../lib/write_bmp.o viv_raw.o
 	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 
-cube_gc2000: cube_gc2000.o ../lib/write_bmp.o
+cube_gc2000: cube_gc2000.o ../lib/write_bmp.o viv_raw.o
 	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 
 cube: cube.o ../lib/write_bmp.o viv_raw.o
@@ -36,7 +36,7 @@ cube: cube.o ../lib/write_bmp.o viv_raw.o
 cube_companion: cube_companion.o viv_raw.o ../lib/write_bmp.o $(COMPANION_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 
-cube_companion_gc2000: cube_companion_gc2000.o ../lib/write_bmp.o $(COMPANION_OBJS)
+cube_companion_gc2000: cube_companion_gc2000.o ../lib/write_bmp.o viv_raw.o $(COMPANION_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 
 cube_etna: cube_etna.o ../lib/write_bmp.o ../lib/esTransform.o viv_raw.o
