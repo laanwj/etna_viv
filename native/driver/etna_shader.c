@@ -42,6 +42,9 @@
  * * Allow loops   
  */
 #include "etna_shader.h"
+#include "etna_asm.h"
+#include "etna_internal.h"
+
 #include "tgsi/tgsi_iterate.h"
 #include "tgsi/tgsi_strings.h"
 #include "pipe/p_shader_tokens.h"
@@ -52,8 +55,6 @@
 #include <etnaviv/etna_util.h>
 #include <etnaviv/isa.xml.h>
 #include <etnaviv/state_3d.xml.h>
-#include "etna_asm.h"
-#include "etna_internal.h"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -1213,18 +1214,6 @@ static void permute_ps_inputs(struct etna_compile_data *cd)
         cd->next_free_native = native_idx;
 }
 
-/* compare two shader inouts by semantic for qsort / bsearch */
-static int compare_inout_semantic_asc(const void *a_, const void *b_)
-{ 
-    const struct etna_shader_inout *a = a_, *b = b_;
-    if(a->semantic.Name < b->semantic.Name) return -1;
-    if(a->semantic.Name > b->semantic.Name) return 1;
-    if(a->semantic.Index < b->semantic.Index) return -1;
-    if(a->semantic.Index > b->semantic.Index) return 1;
-    return 0;
-}
-
-
 /* fill in ps inputs into shader object */
 static void fill_in_ps_inputs(struct etna_shader_object *sobj, struct etna_compile_data *cd)
 {
@@ -1287,6 +1276,28 @@ static void fill_in_vs_inputs(struct etna_shader_object *sobj, struct etna_compi
     sobj->input_count_unk8 = (sobj->num_inputs + 19)/16; /* XXX what is this */
 }
 
+/* build two-level output index [Semantic][Index] for fast linking */
+static void build_output_index(struct etna_shader_object *sobj)
+{
+    int total = 0;
+    int offset = 0;
+    for(int name=0; name<TGSI_SEMANTIC_COUNT; ++name)
+    {
+        total += sobj->output_count_per_semantic[name];
+    }
+    sobj->output_per_semantic_list = CALLOC(total, sizeof(struct etna_shader_inout *));
+    for(int name=0; name<TGSI_SEMANTIC_COUNT; ++name)
+    {
+        sobj->output_per_semantic[name] = &sobj->output_per_semantic_list[offset];
+        offset += sobj->output_count_per_semantic[name];
+    }
+    for(int idx=0; idx<sobj->num_outputs; ++idx)
+    {
+        sobj->output_per_semantic[sobj->outputs[idx].semantic.Name]
+                                 [sobj->outputs[idx].semantic.Index] = &sobj->outputs[idx];
+    }
+}
+
 /* fill in outputs for vs into shader object */
 static void fill_in_vs_outputs(struct etna_shader_object *sobj, struct etna_compile_data *cd)
 {
@@ -1308,10 +1319,14 @@ static void fill_in_vs_outputs(struct etna_shader_object *sobj, struct etna_comp
             sobj->outputs[sobj->num_outputs].semantic = reg->semantic;
             sobj->outputs[sobj->num_outputs].num_components = 4; // XXX reg->num_components;
             sobj->num_outputs++;
+            sobj->output_count_per_semantic[reg->semantic.Name] = MAX2(
+                    reg->semantic.Index + 1,
+                    sobj->output_count_per_semantic[reg->semantic.Name]);
         }
     }
-    /* sort vs outputs lexicographically by semantic, index, for efficient lookup with bsearch */
-    qsort(sobj->outputs, sobj->num_outputs, sizeof(struct etna_shader_inout), compare_inout_semantic_asc);
+    /* build two-level index for linking */
+    build_output_index(sobj);
+
     /* fill in "mystery meat" load balancing value. This value determines how work is scheduled between VS and PS
      * in the unified shader architecture. More precisely, it is determined from the number of VS outputs, as well as chip-specific
      * vertex output buffer size, vertex cache size, and the number of shader cores.
@@ -1408,12 +1423,15 @@ int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct
     /* list declarations */
     for(int x=0; x<cd->total_decls; ++x)
     {
-        printf("%i: %s,%d active=%i first_use=%i last_use=%i native=%i usage_mask=%x has_semantic=%i semantic_name=%i semantic_idx=%i\n", x, tgsi_file_names[cd->decl[x].file], cd->decl[x].idx,
+        printf("%i: %s,%d active=%i first_use=%i last_use=%i native=%i usage_mask=%x has_semantic=%i", x, tgsi_file_names[cd->decl[x].file], cd->decl[x].idx,
                 cd->decl[x].active,
                 cd->decl[x].first_use, cd->decl[x].last_use, cd->decl[x].native.valid?cd->decl[x].native.id:-1,
                 cd->decl[x].usage_mask, 
-                cd->decl[x].has_semantic,
-                cd->decl[x].semantic.Name, cd->decl[x].semantic.Index);
+                cd->decl[x].has_semantic);
+        if(cd->decl[x].has_semantic)
+            printf(" semantic_name=%s semantic_idx=%i",
+                    tgsi_semantic_names[cd->decl[x].semantic.Name], cd->decl[x].semantic.Index);
+        printf("\n");
     }
     /* XXX for PS we need to permute so that inputs are always in temporary 0..N-1.
      * There is no "switchboard" for varyings (AFAIK!). The output color, however, can be routed 
@@ -1427,12 +1445,15 @@ int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct
     /* list declarations */
     for(int x=0; x<cd->total_decls; ++x)
     {
-        printf("%i: %s,%d active=%i first_use=%i last_use=%i native=%i usage_mask=%x has_semantic=%i semantic_name=%i semantic_idx=%i\n", x, tgsi_file_names[cd->decl[x].file], cd->decl[x].idx,
+        printf("%i: %s,%d active=%i first_use=%i last_use=%i native=%i usage_mask=%x has_semantic=%i", x, tgsi_file_names[cd->decl[x].file], cd->decl[x].idx,
                 cd->decl[x].active,
                 cd->decl[x].first_use, cd->decl[x].last_use, cd->decl[x].native.valid?cd->decl[x].native.id:-1,
                 cd->decl[x].usage_mask, 
-                cd->decl[x].has_semantic,
-                cd->decl[x].semantic.Name, cd->decl[x].semantic.Index);
+                cd->decl[x].has_semantic);
+        if(cd->decl[x].has_semantic)
+            printf(" semantic_name=%s semantic_idx=%i",
+                    tgsi_semantic_names[cd->decl[x].semantic.Name], cd->decl[x].semantic.Index);
+        printf("\n");
     }
 
     /* pass 3: generate instructions
@@ -1494,17 +1515,17 @@ void etna_dump_shader_object(const struct etna_shader_object *sobj)
     printf("inputs:\n");
     for(int idx=0; idx<sobj->num_inputs; ++idx)
     {
-        printf(" [%i] name=%i index=%i pa=%08x comps=%i\n", 
+        printf(" [%i] name=%s index=%i pa=%08x comps=%i\n", 
                 sobj->inputs[idx].reg, 
-                sobj->inputs[idx].semantic.Name, sobj->inputs[idx].semantic.Index,
+                tgsi_semantic_names[sobj->inputs[idx].semantic.Name], sobj->inputs[idx].semantic.Index,
                 sobj->inputs[idx].pa_attributes, sobj->inputs[idx].num_components);
     }
     printf("outputs:\n");
     for(int idx=0; idx<sobj->num_outputs; ++idx)
     {
-        printf(" [%i] name=%i index=%i pa=%08x comps=%i\n", 
+        printf(" [%i] name=%s index=%i pa=%08x comps=%i\n", 
                 sobj->outputs[idx].reg, 
-                sobj->outputs[idx].semantic.Name, sobj->outputs[idx].semantic.Index,
+                tgsi_semantic_names[sobj->outputs[idx].semantic.Name], sobj->outputs[idx].semantic.Index,
                 sobj->outputs[idx].pa_attributes, sobj->outputs[idx].num_components);
     }
     printf("special:\n");
@@ -1520,13 +1541,14 @@ void etna_dump_shader_object(const struct etna_shader_object *sobj)
     printf("  input_count_unk8=0x%08x\n", sobj->input_count_unk8);
 }
 
-void etna_destroy_shader_object(struct etna_shader_object *obj)
+void etna_destroy_shader_object(struct etna_shader_object *sobj)
 {
-    if(obj != NULL)
+    if(sobj != NULL)
     {
-        FREE(obj->code);
-        FREE(obj->imm_data);
-        FREE(obj);
+        FREE(sobj->code);
+        FREE(sobj->imm_data);
+        FREE(sobj->output_per_semantic_list);
+        FREE(sobj);
     }
 }
 
@@ -1539,14 +1561,17 @@ int etna_link_shader_objects(struct etna_shader_link_info *info, const struct et
     assert(fs->num_inputs < ETNA_NUM_INPUTS);
     for(int idx=0; idx<fs->num_inputs; ++idx)
     {
-        if(fs->inputs[idx].semantic.Name == TGSI_SEMANTIC_PCOORD)
+        struct tgsi_declaration_semantic semantic = fs->inputs[idx].semantic;
+        if(semantic.Name == TGSI_SEMANTIC_PCOORD)
         {
             info->varyings_vs_reg[idx] = 0; /* replaced by point coord -- doesn't matter */
             continue;
         }
-        struct etna_shader_inout *match = bsearch(
-                &fs->inputs[idx], vs->outputs, vs->num_outputs, sizeof(struct etna_shader_inout),
-                compare_inout_semantic_asc);
+        struct etna_shader_inout *match = NULL;
+        if(semantic.Index < vs->output_count_per_semantic[semantic.Name])
+        {
+            match = vs->output_per_semantic[semantic.Name][semantic.Index];
+        }
         if(match == NULL)
             return 1; /* not found -- link error */
         info->varyings_vs_reg[idx] = match->reg;
