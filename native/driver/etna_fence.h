@@ -33,34 +33,57 @@ struct etna_ctx;
 struct etna_fence
 {
     struct pipe_reference reference;
-    int signal;
-    bool signalled;
-    struct etna_fence *next_free;
+    int signal; /* signal id from kernel */
+    bool signalled; /* cached value of signalled */
+    struct etna_fence *next_free; /* if in free list, reference to next free fence */
 };
 
+/** Convert generic pipe_fence_handle pointer to etna_fence */
 static INLINE struct etna_fence *
 etna_fence(struct pipe_fence_handle *pfence)
 {
     return (struct etna_fence *)pfence;
 }
 
+/**
+ * Create a new fence that will be signalled after GPU completes rendering
+ * after the next flush.
+ */
 int etna_fence_new(struct pipe_screen *screen, 
                    struct etna_ctx *ctx, 
                    struct pipe_fence_handle **fence);
 
+/**
+ * Reference or unreference a fence. Once the reference count falls to zero,
+ * the fence will be destroyed or put in the free list to be reused.
+ */
 void etna_screen_fence_reference(struct pipe_screen *screen,
                         struct pipe_fence_handle **ptr,
                         struct pipe_fence_handle *fence);
 
+/**
+ * Poll whether the fence has been signalled.
+ */
 boolean etna_screen_fence_signalled(struct pipe_screen *screen,
                            struct pipe_fence_handle *fence);
 
+/**
+ * Wait until the fence has been signalled for the specified timeout in nanoseconds,
+ * or PIPE_TIMEOUT_INFINITE.
+ */
 boolean etna_screen_fence_finish( struct pipe_screen *screen,
                         struct pipe_fence_handle *fence,
                         uint64_t timeout);
 
+/**
+ * Destroy a fence. In general, you should call etna_screen_fence_reference instead,
+ * if there may be other references.
+ */
 void etna_screen_destroy_fence(struct pipe_screen *screen_h, struct etna_fence *fence);
 
+/**
+ * Destroy all fences kept around for re-use in the free list.
+ */
 void etna_screen_destroy_fences(struct pipe_screen *screen_h);
 
 #endif

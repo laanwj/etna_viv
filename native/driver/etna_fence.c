@@ -109,7 +109,7 @@ boolean etna_screen_fence_finish(struct pipe_screen *screen_h,
     struct etna_screen *screen = etna_screen(screen_h);
     struct etna_fence *fence = etna_fence(fence_h);
     int rv;
-    if(fence->signalled)
+    if(fence->signalled) /* avoid a kernel roundtrip */
         return true;
     /* nanoseconds to milliseconds */
     rv = viv_user_signal_wait(screen->dev, fence->signal, 

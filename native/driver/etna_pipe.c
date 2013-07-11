@@ -1760,6 +1760,43 @@ static void *etna_pipe_transfer_map(struct pipe_context *pipe,
         return NULL;
     assert(level <= resource->last_level);
 
+    /* XXX we don't handle PIPE_TRANSFER_READ; this needs to be handled separately, and always
+     * requires a sync. */
+    /* XXX we don't handle PIPE_TRANSFER_FLUSH_EXPLICIT; this flag can be ignored when mapping in-place,
+     * but when not in place we need to fire off the copy operation in transfer_flush_region (currently
+     * a no-op) instead of unmap. Need to handle this to support ARB_map_buffer_range extension at least.
+     */ 
+    /* XXX we don't take care of current operations on the resource; which can be, at some point in the pipeline
+       which is not yet executed:
+      
+       - bound as surface
+       - bound through vertex buffer
+       - bound through index buffer
+       - bound in sampler view
+       - used in clear_render_target / clear_depth_stencil operation
+       - used in blit
+       - used in resource_copy_region
+
+       How do other drivers record this information over course of the rendering pipeline?
+       Is it necessary at all? Only in case we want to provide a fast path and map the resource directly
+       (and for PIPE_TRANSFER_MAP_DIRECTLY) and we don't want to force a sync.
+       We also need to know whether the resource is in use to determine if a sync is needed (or just do it
+       always, but that comes at the expense of performance).
+
+       A conservative approximation without too much overhead would be to mark all resources that have 
+       been bound at some point with a flag. A drawback would be that accessing resources that have 
+       been bound but are no longer in use for a while still carry a performance penalty. On the other hand,
+       the program could be using PIPE_TRANSFER_DISCARD_WHOLE_RESOURCE or PIPE_TRANSFER_UNSYNCHRONIZED to 
+       avoid this in the first place...
+       
+       A) We use an (fenced) in-pipe copy engine, and only queue the copy operation after unmap so that the copy 
+          will be performed when all current commands have been executed.
+          Using the RS is possible, not sure if efficient. This can also do any kind of tiling for us.
+          Only possible when PIPE_TRANSFER_DISCARD_RANGE is set.
+       B) We discard the entire resource (or at least, the mipmap level) and allocate new memory for it.
+          Only possible when mapping the entire resource or PIPE_TRANSFER_DISCARD_WHOLE_RESOURCE is set.
+     */
+
     /* No need to allocate a buffer for copying if the resource is not in use,
      * and no tiling is needed, can just return a direct pointer.
      */
@@ -1779,6 +1816,13 @@ static void *etna_pipe_transfer_map(struct pipe_context *pipe,
     } else {
         unsigned divSizeX = util_format_get_blockwidth(format);
         unsigned divSizeY = util_format_get_blockheight(format);
+        if(usage & PIPE_TRANSFER_MAP_DIRECTLY)
+        {
+            /* No in-place transfer possible */
+            util_slab_free(&priv->transfer_pool, ptrans);
+            return NULL;
+        }
+
         ptrans->base.stride = align(box->width, divSizeX) * util_format_get_blocksize(format); /* row stride in bytes */
         ptrans->base.layer_stride = align(box->height, divSizeY) * ptrans->base.stride;
         size_t size = ptrans->base.layer_stride * box->depth;
