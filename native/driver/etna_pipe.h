@@ -20,7 +20,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-/* Gallium state experiments -- WIP
+/* Gallium driver main header file
  */
 #ifndef H_ETNA_PIPE
 #define H_ETNA_PIPE

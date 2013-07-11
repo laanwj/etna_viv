@@ -80,7 +80,7 @@ void etna_screen_fence_reference(struct pipe_screen *screen_h,
     if (pipe_reference_described(&(*ptr)->reference, &fence->reference, 
                                  (debug_reference_descriptor)debug_describe_fence))
     {
-        if(etna_screen_fence_signalled(screen_h, old_fence))
+        if(etna_screen_fence_signalled(screen_h, (struct pipe_fence_handle*)old_fence))
         {
             /* If signalled, add old fence to free list, as it can be reused */
             pipe_mutex_lock(screen->fence_mutex);
