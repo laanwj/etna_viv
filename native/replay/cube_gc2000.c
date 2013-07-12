@@ -365,16 +365,12 @@ int main(int argc, char **argv)
     commandBuffer.startOffset = 0;
     memcpy((void*)((size_t)commandBuffer.logical + commandBuffer.startOffset), cmdbuf1, sizeof(cmdbuf1));
     commandBuffer.offset = commandBuffer.startOffset + sizeof(cmdbuf1);
-    commandBuffer.free -= sizeof(cmdbuf1) + 0x18;
+    commandBuffer.free -= sizeof(cmdbuf1) + 0x08;
     printf("[1] startOffset=%08x, offset=%08x, free=%08x\n", (uint32_t)commandBuffer.startOffset, (uint32_t)commandBuffer.offset, (uint32_t)commandBuffer.free);
     if(viv_commit(conn, &commandBuffer, context) != 0)
     {
         fprintf(stderr, "Error committing first command buffer\n");
         exit(1);
-    }
-    else
-    {
-        fprintf(stderr, "Committed first command buffer\n");
     }
     
     /*
@@ -382,10 +378,10 @@ int main(int argc, char **argv)
      */
     cmdbuf2[35] = color_surface_physical;
     cmdbuf2[37] = color_surface_physical;
-    commandBuffer.startOffset = commandBuffer.offset + 0x18; /* Make space for LINK */
+    commandBuffer.startOffset = commandBuffer.offset + 0x08; /* Make space for LINK */
     memcpy((void*)((size_t)commandBuffer.logical + commandBuffer.startOffset), cmdbuf2, sizeof(cmdbuf2));
     commandBuffer.offset = commandBuffer.startOffset + sizeof(cmdbuf2);
-    commandBuffer.free -= sizeof(cmdbuf2) + 0x18;
+    commandBuffer.free -= sizeof(cmdbuf2) + 0x08;
     
     printf("[2] startOffset=%08x, offset=%08x, free=%08x\n", (uint32_t)commandBuffer.startOffset, (uint32_t)commandBuffer.offset, (uint32_t)commandBuffer.free);
     if(viv_commit(conn, &commandBuffer, context) != 0)
@@ -398,10 +394,10 @@ int main(int argc, char **argv)
      **/
     cmdbuf3[35] = color_surface_physical;
     cmdbuf3[37] = rs_dest_physical;
-    commandBuffer.startOffset = commandBuffer.offset + 0x18;
+    commandBuffer.startOffset = commandBuffer.offset + 0x08;
     memcpy((void*)((size_t)commandBuffer.logical + commandBuffer.startOffset), cmdbuf3, sizeof(cmdbuf3));
     commandBuffer.offset = commandBuffer.startOffset + sizeof(cmdbuf3);
-    commandBuffer.free -= sizeof(cmdbuf3) + 0x18;
+    commandBuffer.free -= sizeof(cmdbuf3) + 0x08;
     printf("[3] startOffset=%08x, offset=%08x, free=%08x\n", (uint32_t)commandBuffer.startOffset, (uint32_t)commandBuffer.offset, (uint32_t)commandBuffer.free);
     if(viv_commit(conn, &commandBuffer, context) != 0)
     {
@@ -455,12 +451,12 @@ int main(int argc, char **argv)
     /* color_surface_physical = cmdbuf2 or cmdbuf1 result, rs_dest_physical - cmdbuf3 result
      * FIXME rs_dest_physical result is bad... why?
      * turning off source tilling in cmdbuf4 helps but don't solve problem. */
-    cmdbuf4[0x19] = color_surface_physical; //color_surface_physical rs_dest_physical
+    cmdbuf4[0x19] = rs_dest_physical; //color_surface_physical rs_dest_physical
     cmdbuf4[0x1b] = bmp_physical;
-    commandBuffer.startOffset = commandBuffer.offset + 0x18;
+    commandBuffer.startOffset = commandBuffer.offset + 0x08;
     memcpy((void*)((size_t)commandBuffer.logical + commandBuffer.startOffset), cmdbuf4, sizeof(cmdbuf4));
     commandBuffer.offset = commandBuffer.startOffset + sizeof(cmdbuf4);
-    commandBuffer.free -= sizeof(cmdbuf4) + 0x18;
+    commandBuffer.free -= sizeof(cmdbuf4) + 0x08;
     printf("[4] startOffset=%08x, offset=%08x, free=%08x\n", (uint32_t)commandBuffer.startOffset, (uint32_t)commandBuffer.offset, (uint32_t)commandBuffer.free);
     if(viv_commit(conn, &commandBuffer, context) != 0)
     {
@@ -481,7 +477,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "Cannot wait for signal\n");
         exit(1);
     }
-    bmp_dump32(bmp_logical, 400, 240, true, "/home/linaro/replay.bmp");
+    bmp_dump32(bmp_logical, 400, 240, false, "/home/linaro/replay.bmp");
     /* Unlock video memory */
     if(viv_unlock_vidmem(conn, bmp_node, gcvSURF_BITMAP, 1) != 0)
     {
