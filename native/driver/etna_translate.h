@@ -39,25 +39,9 @@
 #include "util/u_format.h"
 
 #include <stdio.h>
-#include <math.h>
 
-#define RCPLOG2 (1.4426950408889634f)
 /* Returned when there is no match of pipe value to etna value */
 #define ETNA_NO_MATCH (~0)
-
-/* float to fixp 5.5 */
-static inline uint32_t float_to_fixp55(float f)
-{
-    if(f >= 15.953125f) return 511;
-    if(f < -16.0f) return 512;
-    return (uint32_t) (f * 32.0f + 0.5f);
-}
-
-/* texture size to log2 in fixp 5.5 format */
-static inline uint32_t log2_fixp55(unsigned width)
-{
-    return float_to_fixp55(logf((float)width) * RCPLOG2);
-}
 
 static inline uint32_t translate_cull_face(unsigned cull_face, unsigned front_ccw)
 {

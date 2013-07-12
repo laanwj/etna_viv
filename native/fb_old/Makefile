@@ -9,7 +9,7 @@ LDFLAGS += -lm ../driver/libetnadriver.a ../gallium/libminigallium.a ../etnaviv/
 
 TARGETS = fbtest etna_test rotate_cube cube_companion rstests mip_cube_raw
 COMPANION_OBJS = ../resources/companion_array.o ../resources/companion_mesh.o ../resources/companion_texture.o
-ETNA_OBJS = 
+ETNA_OBJS = ../lib/etna_bswap.o
 
 all: $(TARGETS)
 

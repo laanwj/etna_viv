@@ -119,7 +119,7 @@ int etna_vidmem_queue_unlock(struct etna_queue *queue, struct etna_vidmem *mem)
 
 int etna_vidmem_free(struct viv_conn *conn, struct etna_vidmem *mem)
 {
-    if(mem == NULL) return ETNA_INVALID_ADDR;
+    if(mem == NULL) return ETNA_OK;
     if(mem->logical != NULL)
     {
         if(etna_vidmem_unlock(conn, mem) != ETNA_OK)
@@ -137,7 +137,7 @@ int etna_vidmem_free(struct viv_conn *conn, struct etna_vidmem *mem)
 
 int etna_vidmem_queue_free(struct etna_queue *queue, struct etna_vidmem *mem)
 {
-    if(mem == NULL) return ETNA_INVALID_ADDR;
+    if(mem == NULL) return ETNA_OK;
     if(mem->logical != NULL)
     {
         if(etna_vidmem_queue_unlock(queue, mem) != ETNA_OK)

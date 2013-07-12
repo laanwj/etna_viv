@@ -24,6 +24,8 @@
 #ifndef H_ETNA_INTERNAL
 #define H_ETNA_INTERNAL
 
+#include <stdint.h>
+#include <stdbool.h>
 #include <etnaviv/state.xml.h>
 #include <etnaviv/state_3d.xml.h>
 
@@ -32,15 +34,6 @@
 #define ETNA_NUM_LOD (14)
 #define ETNA_NUM_LAYERS (6)
 #define ETNA_MAX_UNIFORMS (256)
-
-struct translate; /* translate/translate.h */
-
-enum etna_surface_layout
-{
-    ETNA_LAYOUT_LINEAR = 0,
-    ETNA_LAYOUT_TILED = 1,
-    ETNA_LAYOUT_SUPERTILED = 3 /* 1|2, both tiling and supertiling bit enabled */
-};
 
 /* GPU chip 3D specs */
 struct etna_pipe_specs
@@ -205,8 +198,6 @@ struct compiled_vertex_elements_state
 {
     unsigned num_elements;
     uint32_t FE_VERTEX_ELEMENT_CONFIG[VIVS_FE_VERTEX_ELEMENT_CONFIG__LEN];
-    /* optional translator for vertices */
-    struct translate *translate;
 };
 
 /* Compiled context->set_vertex_buffer result */

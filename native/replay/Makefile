@@ -8,9 +8,9 @@ LDFLAGS_ETNA = $(LDFLAGS) -L$(TOP)/etnaviv -letnaviv
 
 TARGETS = reset viv_info
 TARGETS_GC800 = cube cube_companion cube_etna ps_sandbox_etna etna_test cube_etna2
-TARGETS_GC2000 = cube_etna2_gc2000
+TARGETS_GC2000 = cube_etna2_gc2000 empty_screen_gc2000 cube_gc2000 cube_companion_gc2000
 COMPANION_OBJS = ../resources/companion_array.o ../resources/companion_mesh.o ../resources/companion_texture.o
-ETNA_OBJS = ../driver/etna_rs.o ../driver/etna_fb.o ../driver/etna_bswap.o ../driver/etna_tex.o 
+ETNA_OBJS = ../lib/etna_bswap.o
 
 all: $(TARGETS)
 
@@ -24,10 +24,19 @@ gc800: $(TARGETS_GC800)
 # These specifically replay command streams for gc2000, don't build them by default
 gc2000: $(TARGETS_GC2000)
 
+empty_screen_gc2000: empty_screen_gc2000.o ../lib/write_bmp.o viv_raw.o
+	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
+
+cube_gc2000: cube_gc2000.o ../lib/write_bmp.o viv_raw.o
+	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
+
 cube: cube.o ../lib/write_bmp.o viv_raw.o
 	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 
 cube_companion: cube_companion.o viv_raw.o ../lib/write_bmp.o $(COMPANION_OBJS)
+	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
+
+cube_companion_gc2000: cube_companion_gc2000.o ../lib/write_bmp.o viv_raw.o $(COMPANION_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 
 cube_etna: cube_etna.o ../lib/write_bmp.o ../lib/esTransform.o viv_raw.o

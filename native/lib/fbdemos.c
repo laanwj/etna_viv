@@ -23,10 +23,29 @@
 #include "fbdemos.h"
 
 #include "etna_pipe.h"
+#include "etna_translate.h"
 #include "etna_screen.h"
 #include "util/u_memory.h"
 
 #include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <sys/ioctl.h>
+#include <stdarg.h>
+#include <string.h>
+
+#include <errno.h>
+
+#ifdef ANDROID
+#define FBDEV_DEV "/dev/graphics/fb%i"
+#else
+#define FBDEV_DEV "/dev/fb%i"
+#endif
 
 void fbdemo_init(struct fbdemos_scaffold **out)
 {
@@ -141,4 +160,149 @@ void etna_convert_r8g8b8_to_b8g8r8x8(uint32_t *dst, const uint8_t *src, unsigned
     }
 }
 
+/* Open framebuffer and get information */
+int fb_open(int num, struct fb_info *out)
+{
+    char devname[256];
+    memset(out, 0, sizeof(struct fb_info));
+
+    snprintf(devname, 256, FBDEV_DEV, num);
+	
+    int fd = open(devname, O_RDWR);
+    if (fd == -1) {
+        printf("Error: failed to open %s: %s\n",
+                devname, strerror(errno));
+        return errno;
+    }
+
+    if (ioctl(fd, FBIOGET_VSCREENINFO, &out->fb_var) ||
+        ioctl(fd, FBIOGET_FSCREENINFO, &out->fb_fix)) {
+            printf("Error: failed to run ioctl on %s: %s\n",
+                    devname, strerror(errno));
+        close(fd);
+        return errno;
+    }
+
+    printf("fix smem_start %08x\n", (unsigned)out->fb_fix.smem_start);
+    printf("    smem_len %08x\n", (unsigned)out->fb_fix.smem_len);
+    printf("    line_length %08x\n", (unsigned)out->fb_fix.line_length);
+    printf("\n");
+    printf("var x_res %i\n", (unsigned)out->fb_var.xres);
+    printf("    y_res %i\n", (unsigned)out->fb_var.yres);
+    printf("    x_res_virtual %i\n", (unsigned)out->fb_var.xres_virtual);
+    printf("    y_res_virtual %i\n", (unsigned)out->fb_var.yres_virtual);
+    printf("    bits_per_pixel %i\n", (unsigned)out->fb_var.bits_per_pixel);
+    printf("    red.offset %i\n", (unsigned)out->fb_var.red.offset);
+    printf("    red.length %i\n", (unsigned)out->fb_var.red.length);
+    printf("    green.offset %i\n", (unsigned)out->fb_var.green.offset);
+    printf("    green.length %i\n", (unsigned)out->fb_var.green.length);
+    printf("    blue.offset %i\n", (unsigned)out->fb_var.blue.offset);
+    printf("    blue.length %i\n", (unsigned)out->fb_var.blue.length);
+    printf("    transp.offset %i\n", (unsigned)out->fb_var.transp.offset);
+    printf("    transp.length %i\n", (unsigned)out->fb_var.transp.length);
+    
+    out->fd = fd;
+    out->stride = out->fb_fix.line_length;
+    out->buffer_stride = out->stride * out->fb_var.yres;
+    out->num_buffers = out->fb_fix.smem_len / out->buffer_stride;
+    out->map = mmap(NULL, out->fb_fix.smem_len, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+    printf("    mmap: %p\n", out->map);
+
+    if(out->num_buffers > ETNA_FB_MAX_BUFFERS)
+        out->num_buffers = ETNA_FB_MAX_BUFFERS;
+
+    for(int idx=0; idx<out->num_buffers; ++idx)
+    {
+        out->physical[idx] = out->fb_fix.smem_start + idx * out->buffer_stride;
+        out->logical[idx] = (void*)((size_t)out->map + idx * out->buffer_stride);
+    }
+    printf("number of fb buffers: %i\n", out->num_buffers);
+    int req_virth = (out->num_buffers * out->fb_var.yres);
+    if(out->fb_var.yres_virtual < req_virth)
+    {
+        printf("required virtual h is %i, current virtual h is %i: requesting change",
+                req_virth, out->fb_var.yres_virtual);
+        out->fb_var.yres_virtual = req_virth;
+        if (ioctl(out->fd, FBIOPUT_VSCREENINFO, &out->fb_var))
+        {
+            printf("Warning: failed to run ioctl to change virtual height for buffering: %s. Rendering may fail.\n", strerror(errno));
+        }
+    }
+
+    /* determine resolve format */
+    if(!etna_fb_get_format(&out->fb_var, (unsigned*)&out->rs_format, &out->swap_rb))
+    {
+        /* no match */
+        out->rs_format = -1;
+        out->swap_rb = false;
+    }
+
+    return 0;
+}
+
+/* Set currently visible buffer id */
+int fb_set_buffer(struct fb_info *fb, int buffer)
+{
+    fb->fb_var.yoffset = buffer * fb->fb_var.yres;
+    /* Android uses FBIOPUT_VSCREENINFO for this; however on some hardware this does a
+     * reconfiguration of the DC every time it is called which causes flicker and slowness. 
+     * On the other hand, FBIOPAN_DISPLAY causes a smooth scroll on some hardware, 
+     * according to the Android rationale. Choose the least of both evils.
+     */
+    if (ioctl(fb->fd, FBIOPAN_DISPLAY, &fb->fb_var))
+    {
+        printf("Error: failed to run ioctl to pan display: %s\n", strerror(errno));
+        return errno;
+    }
+    return 0;
+}
+
+int fb_close(struct fb_info *fb)
+{
+    if(fb->map)
+        munmap(fb->map, fb->fb_fix.smem_len);
+    close(fb->fd);
+    return 0;
+}
+
+
+int etna_fb_bind_resource(struct fb_info *fb, struct pipe_resource *rt_resource_)
+{
+    struct etna_resource *rt_resource = etna_resource(rt_resource_);
+    fb->resource = rt_resource;
+    assert(rt_resource->base.width0 <= fb->fb_var.xres && rt_resource->base.height0 <= fb->fb_var.yres);
+    for(int bi=0; bi<ETNA_FB_MAX_BUFFERS; ++bi)
+    {
+        etna_compile_rs_state(&fb->copy_to_screen[bi], &(struct rs_state){
+                    .source_format = translate_rt_format(rt_resource->base.format, false),
+                    .source_tiling = rt_resource->layout,
+                    .source_addr = rt_resource->levels[0].address,
+                    .source_stride = rt_resource->levels[0].stride,
+                    .dest_format = fb->rs_format,
+                    .dest_tiling = ETNA_LAYOUT_LINEAR,
+                    .dest_addr = fb->physical[bi],
+                    .dest_stride = fb->fb_fix.line_length,
+                    .swap_rb = fb->swap_rb,
+                    .dither = {0xffffffff, 0xffffffff}, // XXX dither when going from 24 to 16 bit?
+                    .clear_mode = VIVS_RS_CLEAR_CONTROL_MODE_DISABLED,
+                    .width = fb->fb_var.xres,
+                    .height = fb->fb_var.yres
+                });
+    }
+    return 0;
+}
+
+int etna_fb_copy_buffer(struct fb_info *fb, struct etna_ctx *ctx, int buffer)
+{
+    assert(fb->resource && fb->rs_format != -1);
+    /*  XXX assumes TS is still set up correctly for the resource to be copied
+     *  from. Currently this is not the case when another render target has been selected
+     *  before calling this function.
+     */
+    etna_submit_rs_state(ctx, &fb->copy_to_screen[buffer]);
+    /* Flush RS */
+    etna_set_state(ctx, VIVS_RS_FLUSH_CACHE, VIVS_RS_FLUSH_CACHE_FLUSH);
+
+    return 0;
+}
 

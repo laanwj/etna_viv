@@ -23,8 +23,10 @@
 #ifndef ETNA_SCREEN_H_
 #define ETNA_SCREEN_H_
 
-#include "pipe/p_screen.h"
 #include "etna_internal.h"
+
+#include "pipe/p_screen.h"
+#include "os/os_thread.h"
 
 struct viv_conn;
 
@@ -33,8 +35,24 @@ struct viv_conn;
 struct etna_screen {
     struct pipe_screen base;
     struct viv_conn *dev;
-    struct etna_ctx *ctx;
     struct etna_pipe_specs specs;
+
+    pipe_mutex fence_mutex;
+    struct etna_fence *fence_freelist;
+};
+
+/* Resolve target.
+ * Used by etna_screen_flush_frontbuffer
+ */
+struct etna_rs_target
+{
+   unsigned rs_format;
+   bool swap_rb;
+   unsigned width, height;
+   size_t addr; /* GPU address */
+   size_t stride;
+   bool want_fence; /* should flush_frontbuffer return a fence? */
+   struct pipe_fence_handle *fence;
 };
 
 static INLINE struct etna_screen *

@@ -267,7 +267,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="15" low="12" name="SWATH_SIZE_X"/>
             <bitfield high="19" low="16" name="SWATH_SIZE_Y"/>
             <bitfield high="23" low="20" name="SWATH_SIZE_Z"/>
-            <bitfield high="26" low="24" name="VALUE_ORDER"/>
+            <bitfield high="26" low="24" name="VALUE_ORDER" brief="Order in which global/local ids are in temp registers">
+                <doc>At the beginning of a thread the first temporary registers will contain the local and global ids.
+                    This value what ids will be present, and in which order.
+                </doc>
+            </bitfield>
         </reg32>
         <reg32 offset="0x00904" name="GLOBAL_X" type="CL_GLOBAL_DIM" value="0x00000000"/>
         <reg32 offset="0x00908" name="GLOBAL_Y" type="CL_GLOBAL_DIM" value="0x00000000"/>

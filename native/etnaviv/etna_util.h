@@ -27,6 +27,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <math.h>
 
 #define ETNA_MALLOC(_size) malloc(_size)
 #define ETNA_CALLOC_STRUCT(T)   (struct T *) calloc(1, sizeof(struct T))
@@ -67,6 +68,23 @@ static inline uint32_t etna_f32_to_u32(float value)
         float f32;
     } x = { .f32 = value };
     return x.u32;
+}
+
+/* 1/log10(2) */
+#define RCPLOG2 (1.4426950408889634f)
+
+/* float to fixp 5.5 */
+static inline uint32_t float_to_fixp55(float f)
+{
+    if(f >= 15.953125f) return 511;
+    if(f < -16.0f) return 512;
+    return (uint32_t) (f * 32.0f + 0.5f);
+}
+
+/* texture size to log2 in fixp 5.5 format */
+static inline uint32_t log2_fixp55(unsigned width)
+{
+    return float_to_fixp55(logf((float)width) * RCPLOG2);
 }
 
 #endif

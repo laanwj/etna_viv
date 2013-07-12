@@ -263,6 +263,13 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </doc>
     </value>
     <!-- OpenCL (GC2000+) -->
+    <value value="0x2D" name="I2F" brief="Integer to float">
+        <doc>
+            dst := float(src0)
+
+            Convert source operand to a float and put the result in temporary register dst.
+        </doc>
+    </value>
     <value value="0x31" name="CMP" brief="Integer compare"/>
     <value value="0x32" name="LOAD" brief="Memory load"/>
     <value value="0x33" name="STORE" brief="Memory store"/>

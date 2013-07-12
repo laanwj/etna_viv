@@ -74,6 +74,10 @@ struct etna_shader_object
     /* outputs (for linking) */
     unsigned num_outputs;
     struct etna_shader_inout outputs[ETNA_NUM_INPUTS];
+    /* index into outputs (for linking) */
+    int output_count_per_semantic[TGSI_SEMANTIC_COUNT];
+    struct etna_shader_inout **output_per_semantic_list; /* list of pointers to outputs */
+    struct etna_shader_inout **output_per_semantic[TGSI_SEMANTIC_COUNT];
 
     /* special outputs (vs only) */
     int vs_pos_out_reg; /* VS position output */

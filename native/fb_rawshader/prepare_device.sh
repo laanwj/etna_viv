@@ -1,0 +1,1 @@
+/home/orion/projects/android-lowlevel/vivante/scripts/prepare_device.sh

@@ -25,8 +25,9 @@
 #include "etna_shader.h"
 #include "etna_translate.h"
 #include "etna_debug.h"
-#include "etna_rs.h"
+#include "etna_fence.h"
 
+#include <etnaviv/etna_rs.h>
 #include <etnaviv/viv.h>
 #include <etnaviv/etna.h>
 #include <etnaviv/etna_util.h>
@@ -43,6 +44,9 @@ int etna_mesa_debug = ETNA_DBG_MSGS;  /* XXX */
 
 static void etna_screen_destroy( struct pipe_screen *screen )
 {
+    struct etna_screen *priv = etna_screen(screen);
+    etna_screen_destroy_fences(screen);
+    pipe_mutex_destroy(priv->fence_mutex);
     FREE(screen);
 }
 
@@ -89,6 +93,9 @@ static int etna_screen_get_param( struct pipe_screen *screen, enum pipe_cap para
 
     case PIPE_CAP_NPOT_TEXTURES: /* MUST be supported with GLES 2.0 */
             return true; /* VIV_FEATURE(priv->dev, chipMinorFeatures1, NON_POWER_OF_TWO); */
+
+    case PIPE_CAP_MAX_VERTEX_BUFFERS:
+            return priv->specs.stream_count;
 
     /* Unsupported features. */
     case PIPE_CAP_TEXTURE_SWIZZLE: /* XXX supported on gc2000 */
@@ -367,8 +374,9 @@ static boolean etna_screen_is_video_format_supported( struct pipe_screen *screen
 static boolean etna_screen_can_create_resource(struct pipe_screen *screen,
                               const struct pipe_resource *templat)
 {
-    DBG("unimplemented etna_screen_can_create_resource");
-    return false;
+    /* XXX test against maximum texture size, 
+     * based on TEXTURE_8K / RENDERTARGET_8K features */
+    return true;
 }
                            
 static struct pipe_resource * etna_screen_resource_from_handle(struct pipe_screen *screen,
@@ -389,17 +397,26 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
 {
     struct etna_rs_target *drawable = (struct etna_rs_target *)winsys_drawable_handle;
     struct etna_resource *rt_resource = etna_resource(resource);
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(_hack_ctx);
+    struct pipe_context *pipe_ctx = _hack_ctx;
+    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe_ctx);
+    struct pipe_fence_handle **fence = 0;
+    assert(level <= resource->last_level && layer < resource->array_size);
     assert(priv);
     struct etna_ctx *ctx = priv->ctx;
+
+    /* release previous fence, make reference to fence if we need one */
+    screen->fence_reference(screen, &drawable->fence, NULL);
+    if(drawable->want_fence)
+        fence = &drawable->fence;
+
     /* XXX set up TS */
     /* Kick off RS here */
     struct compiled_rs_state copy_to_screen;
     etna_compile_rs_state(&copy_to_screen, &(struct rs_state){
                 .source_format = translate_rt_format(rt_resource->base.format, false),
                 .source_tiling = rt_resource->layout,
-                .source_addr = rt_resource->levels[0].address,
-                .source_stride = rt_resource->levels[0].stride,
+                .source_addr = rt_resource->levels[level].address,
+                .source_stride = rt_resource->levels[level].stride,
                 .dest_format = drawable->rs_format,
                 .dest_tiling = ETNA_LAYOUT_LINEAR,
                 .dest_addr = drawable->addr,
@@ -417,30 +434,7 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
     printf("Queued RS command to flush screen from %08x to %08x stride=%08x width=%i height=%i, ctx %p\n", rt_resource->levels[0].address, 
             drawable->addr, drawable->stride,
             drawable->width, drawable->height, ctx);
-    etna_flush(ctx);
-    //DBG("unimplemented etna_screen_flush_frontbuffer");
-}
-
-static void etna_screen_fence_reference( struct pipe_screen *screen,
-                        struct pipe_fence_handle **ptr,
-                        struct pipe_fence_handle *fence )
-{
-    DBG("unimplemented etna_screen_fence_reference");
-}
-
-static boolean etna_screen_fence_signalled( struct pipe_screen *screen,
-                           struct pipe_fence_handle *fence )
-{
-    DBG("unimplemented etna_screen_fence_signalled");
-    return false;
-}
-
-static boolean etna_screen_fence_finish( struct pipe_screen *screen,
-                        struct pipe_fence_handle *fence,
-                        uint64_t timeout )
-{
-    DBG("unimplemented etna_screen_fence_finish");
-    return false;
+    pipe_ctx->flush(pipe_ctx, fence, 0);
 }
 
 /* Allocate 2D texture or render target resource 
@@ -493,7 +487,7 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     /* determine mipmap levels */
     struct etna_resource *resource = CALLOC_STRUCT(etna_resource);
     int max_mip_level = templat->last_level;
-    if(max_mip_level >= ETNA_NUM_LOD) /* max LOD supported by hw */
+    if(unlikely(max_mip_level >= ETNA_NUM_LOD)) /* max LOD supported by hw */
         max_mip_level = ETNA_NUM_LOD - 1;
 
     /* take care about DXTx formats, which have a divSize of non-1x1
@@ -549,7 +543,7 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
             element_size, divSizeX, divSizeY, rt_size, rt_ts_size, templat->bind, memtype);
 
     struct etna_vidmem *rt = 0;
-    if(etna_vidmem_alloc_linear(priv->dev, &rt, rt_size, memtype, VIV_POOL_DEFAULT, true) != ETNA_OK)
+    if(unlikely(etna_vidmem_alloc_linear(priv->dev, &rt, rt_size, memtype, VIV_POOL_DEFAULT, true) != ETNA_OK))
     {
         printf("Problem allocating video memory for resource\n");
         return NULL;
@@ -557,7 +551,7 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
    
     /* XXX allocate TS for rendertextures? if so, for each level or only the top? */
     struct etna_vidmem *rt_ts = 0;
-    if(rt_ts_size && etna_vidmem_alloc_linear(priv->dev, &rt_ts, rt_ts_size, VIV_SURF_TILE_STATUS, VIV_POOL_DEFAULT, true)!=ETNA_OK)
+    if(rt_ts_size && unlikely(etna_vidmem_alloc_linear(priv->dev, &rt_ts, rt_ts_size, VIV_SURF_TILE_STATUS, VIV_POOL_DEFAULT, true)!=ETNA_OK))
     {
         printf("Problem allocating tile status for resource\n");
         return NULL;
@@ -597,6 +591,12 @@ static void etna_screen_resource_destroy(struct pipe_screen *screen,
     struct etna_resource *resource = etna_resource(resource_);
     if(resource == NULL)
         return;
+    /* XXX should really use etna_vidmem_queue_free to make sure the
+     * resource is only actually released after the command queue
+     * cannot have references to it anymore, but we don't have the context here or
+     * a way to do fencing per-screen.
+     * I suppose the resource could remember what context(s) it was used with.
+     */
     etna_vidmem_free(priv->dev, resource->surface);
     etna_vidmem_free(priv->dev, resource->ts);
     FREE(resource);
@@ -622,6 +622,7 @@ etna_screen_create(struct viv_conn *dev)
     screen->specs.shader_core_count = dev->chip.shader_core_count;
     screen->specs.stream_count = dev->chip.stream_count;
 
+    /* Initialize vtable */
     pscreen->destroy = etna_screen_destroy;
     pscreen->get_name = etna_screen_get_name;
     pscreen->get_vendor = etna_screen_get_vendor;
@@ -643,6 +644,8 @@ etna_screen_create(struct viv_conn *dev)
     pscreen->fence_reference = etna_screen_fence_reference;
     pscreen->fence_signalled = etna_screen_fence_signalled;
     pscreen->fence_finish = etna_screen_fence_finish;
+
+    pipe_mutex_init(screen->fence_mutex);
 
     return pscreen;
 }

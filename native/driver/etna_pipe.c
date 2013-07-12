@@ -47,13 +47,14 @@
 #include <etnaviv/etna.h>
 #include <etnaviv/etna_mem.h>
 #include <etnaviv/etna_util.h>
+#include <etnaviv/etna_tex.h>
+#include <etnaviv/etna_fb.h>
+#include <etnaviv/etna_rs.h>
 
-#include "etna_rs.h"
-#include "etna_fb.h"
-#include "etna_bswap.h"
-#include "etna_tex.h"
 #include "etna_shader.h"
 #include "etna_debug.h"
+#include "etna_fence.h"
+#include "etna_transfer.h"
 
 #include "pipe/p_defines.h"
 #include "pipe/p_format.h"
@@ -65,8 +66,6 @@
 #include "util/u_transfer.h"
 #include "util/u_surface.h"
 #include "util/u_blitter.h"
-#include "translate/translate.h"
-#include "translate/translate_cache.h"
 
 /*********************************************************************/
 /* Macros to define state */
@@ -218,9 +217,9 @@ static void etna_link_shaders(struct pipe_context *pipe,
     memcpy(&cs->PS_UNIFORMS[fs->imm_base], fs->imm_data, fs->imm_size*4);
 }
     
-/* Weave state. This function merges all the compiled state blocks under the context into 
- * one device register state. Parts of this state that are changed since last call (dirty)
- * will be uploaded as state changes in the command buffer.
+/* Weave state for draw operation. This function merges all the compiled state blocks under 
+ * the context into one device register state. Parts of this state that are changed since 
+ * last call (dirty) will be uploaded as state changes in the command buffer.
  */
 static void sync_context(struct pipe_context *pipe)
 {
@@ -594,88 +593,21 @@ static void etna_pipe_draw_vbo(struct pipe_context *pipe,
     if(priv->vertex_elements == NULL || priv->vertex_elements->num_elements == 0)
         return; /* Nothing to do */
     int prims = translate_vertex_count(info->mode, info->count);
-    struct translate *translate = priv->vertex_elements->translate;
     if(unlikely(prims <= 0))
     {
         DBG("Invalid draw primitive mode=%i or no primitives to be drawn\n", info->mode);
         return;
     }
-    if(translate)
+    /* First, sync state, then emit DRAW_PRIMITIVES or DRAW_INDEXED_PRIMITIVES */
+    sync_context(pipe);
+    if(info->indexed)
     {
-        struct compiled_set_vertex_buffer stored_vtxbuf = {};
-        /* Create temporary buffer for translate result.
-         * Always unroll indices, for now.
-         */
-        size_t tempsize = info->count * translate->key.output_stride;
-        struct etna_vidmem *tempmem = NULL;
-        int rv;
-        if((rv = etna_vidmem_alloc_linear(priv->conn, &tempmem, tempsize, VIV_SURF_VERTEX, VIV_POOL_DEFAULT, true)) != ETNA_OK)
-        {
-            DBG("Error allocating %u bytes of temporary memory for rendering\n", (unsigned)tempsize);
-            return;
-        }
-#if 0
-        printf("interleave buffer node=%p logical=%p physical=%08x %u\n", 
-                tempmem->node,
-                tempmem->logical,
-                (unsigned)tempmem->address,
-                (unsigned)tempsize);
-#endif
-        /* Set input buffers */
-        for(int idx=0; idx<PIPE_MAX_ATTRIBS; ++idx)
-        {
-            translate->set_buffer(translate, idx, priv->vertex_buffer[idx].logical,
-                    priv->vertex_buffer_s[idx].stride, 0xffffffff);
-        }
-        /* Translate the vertices from the input buffers */
-        if(info->indexed)
-        {
-            switch(priv->index_buffer_s.index_size)
-            {
-            case 1:
-                translate->run_elts8(translate, priv->index_buffer.logical, info->count, info->start_instance, tempmem->logical);
-                break;
-            case 2:
-                translate->run_elts16(translate, priv->index_buffer.logical, info->count, info->start_instance, tempmem->logical);
-                break;
-            case 4:
-                translate->run_elts(translate, priv->index_buffer.logical, info->count, info->start_instance, tempmem->logical);
-                break;
-            default:
-                DBG("Unsupported index size %i\n", priv->index_buffer_s.index_size);
-            }
-        } else {
-            translate->run(translate, info->start, info->count, info->start_instance, tempmem->logical);
-        }
-        /* Override FE_VERTEX_STREAM_CONTROL / FE_VERTEX_STREAM_BASE_ADDR for first buffer */
-        stored_vtxbuf = priv->vertex_buffer[0];
-        priv->vertex_buffer[0].FE_VERTEX_STREAM_CONTROL = VIVS_FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE(translate->key.output_stride);
-        priv->vertex_buffer[0].FE_VERTEX_STREAM_BASE_ADDR = tempmem->address;
-        priv->dirty_bits |= ETNA_STATE_VERTEX_BUFFERS;
-
-        /* First, sync state, then emit DRAW_PRIMITIVES */
-        sync_context(pipe);
-        etna_draw_primitives(priv->ctx, translate_draw_mode(info->mode), 0, prims);
-
-        /* release temporary buffer (fenced) */
-        etna_vidmem_queue_free(priv->ctx->queue, tempmem);
-        /* Restore FE_VERTEX_STREAM_CONTROL / FE_VERTEX_STREAM_BASE_ADDR for first buffer */
-        priv->vertex_buffer[0] = stored_vtxbuf;
-        priv->dirty_bits |= ETNA_STATE_VERTEX_BUFFERS;
-    }
-    else
+        etna_draw_indexed_primitives(priv->ctx, translate_draw_mode(info->mode), 
+                info->start, prims, info->index_bias);
+    } else
     {
-        /* First, sync state, then emit DRAW_PRIMITIVES or DRAW_INDEXED_PRIMITIVES */
-        sync_context(pipe);
-        if(info->indexed)
-        {
-            etna_draw_indexed_primitives(priv->ctx, translate_draw_mode(info->mode), 
-                    info->start, prims, info->index_bias);
-        } else
-        {
-            etna_draw_primitives(priv->ctx, translate_draw_mode(info->mode), 
-                    info->start, prims);
-        }
+        etna_draw_primitives(priv->ctx, translate_draw_mode(info->mode), 
+                info->start, prims);
     }
 }
 
@@ -834,54 +766,71 @@ static void etna_pipe_delete_rasterizer_state(struct pipe_context *pipe, void *r
 }
 
 static void *etna_pipe_create_depth_stencil_alpha_state(struct pipe_context *pipe,
-                                    const struct pipe_depth_stencil_alpha_state *dsa)
+                                    const struct pipe_depth_stencil_alpha_state *dsa_p)
 {
     //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
     struct compiled_depth_stencil_alpha_state *cs = CALLOC_STRUCT(compiled_depth_stencil_alpha_state);
+    struct pipe_depth_stencil_alpha_state dsa = *dsa_p;
     /* XXX does stencil[0] / stencil[1] order depend on rs->front_ccw? */
-    /* Determine whether to enable early z reject. Don't enable it when any of the stencil functions is used. */
     bool early_z = true;
-    if(dsa->stencil[0].enabled)
+    int i;
+
+    /* Set operations to KEEP if write mask is 0.
+     * When we don't do this, the depth buffer is written for the entire primitive instead of
+     * just where the stencil condition holds (GC600 rev 0x0019, without feature CORRECT_STENCIL). 
+     * Not sure if this is a hardware bug or just a strange edge case.
+     */
+    for(i=0; i<2; ++i)
     {
-        if(dsa->stencil[0].fail_op != PIPE_STENCIL_OP_KEEP || 
-           dsa->stencil[0].zfail_op != PIPE_STENCIL_OP_KEEP ||
-           dsa->stencil[0].zpass_op != PIPE_STENCIL_OP_KEEP)
+        if(dsa.stencil[i].writemask == 0)
+        {
+            dsa.stencil[i].fail_op = dsa.stencil[i].zfail_op = dsa.stencil[i].zpass_op = PIPE_STENCIL_OP_KEEP;
+        }
+    }
+
+    /* Determine whether to enable early z reject. Don't enable it when any of the stencil functions is used. */
+    if(dsa.stencil[0].enabled)
+    {
+        if(dsa.stencil[0].fail_op != PIPE_STENCIL_OP_KEEP || 
+           dsa.stencil[0].zfail_op != PIPE_STENCIL_OP_KEEP ||
+           dsa.stencil[0].zpass_op != PIPE_STENCIL_OP_KEEP)
         {
             early_z = false;
         }
-        else if(dsa->stencil[1].enabled)
+        else if(dsa.stencil[1].enabled)
         {
-            if(dsa->stencil[1].fail_op != PIPE_STENCIL_OP_KEEP || 
-               dsa->stencil[1].zfail_op != PIPE_STENCIL_OP_KEEP ||
-               dsa->stencil[1].zpass_op != PIPE_STENCIL_OP_KEEP)
+            if(dsa.stencil[1].fail_op != PIPE_STENCIL_OP_KEEP || 
+               dsa.stencil[1].zfail_op != PIPE_STENCIL_OP_KEEP ||
+               dsa.stencil[1].zpass_op != PIPE_STENCIL_OP_KEEP)
             {
                 early_z = false;
             }
         }
     }
+
     /* compare funcs have 1 to 1 mapping */
     SET_STATE(PE_DEPTH_CONFIG, 
-            VIVS_PE_DEPTH_CONFIG_DEPTH_FUNC(dsa->depth.enabled ? dsa->depth.func : PIPE_FUNC_ALWAYS) |
-            (dsa->depth.writemask ? VIVS_PE_DEPTH_CONFIG_WRITE_ENABLE : 0) |
+            VIVS_PE_DEPTH_CONFIG_DEPTH_FUNC(dsa.depth.enabled ? dsa.depth.func : PIPE_FUNC_ALWAYS) |
+            (dsa.depth.writemask ? VIVS_PE_DEPTH_CONFIG_WRITE_ENABLE : 0) |
             (early_z ? VIVS_PE_DEPTH_CONFIG_EARLY_Z : 0)
             );
     SET_STATE(PE_ALPHA_OP, 
-            (dsa->alpha.enabled ? VIVS_PE_ALPHA_OP_ALPHA_TEST : 0) |
-            VIVS_PE_ALPHA_OP_ALPHA_FUNC(dsa->alpha.func) |
-            VIVS_PE_ALPHA_OP_ALPHA_REF(etna_cfloat_to_uint8(dsa->alpha.ref_value)));
+            (dsa.alpha.enabled ? VIVS_PE_ALPHA_OP_ALPHA_TEST : 0) |
+            VIVS_PE_ALPHA_OP_ALPHA_FUNC(dsa.alpha.func) |
+            VIVS_PE_ALPHA_OP_ALPHA_REF(etna_cfloat_to_uint8(dsa.alpha.ref_value)));
     SET_STATE(PE_STENCIL_OP, 
-            VIVS_PE_STENCIL_OP_FUNC_FRONT(dsa->stencil[0].func) |
-            VIVS_PE_STENCIL_OP_FUNC_BACK(dsa->stencil[1].func) |
-            VIVS_PE_STENCIL_OP_FAIL_FRONT(translate_stencil_op(dsa->stencil[0].fail_op)) | 
-            VIVS_PE_STENCIL_OP_FAIL_BACK(translate_stencil_op(dsa->stencil[1].fail_op)) |
-            VIVS_PE_STENCIL_OP_DEPTH_FAIL_FRONT(translate_stencil_op(dsa->stencil[0].zfail_op)) |
-            VIVS_PE_STENCIL_OP_DEPTH_FAIL_BACK(translate_stencil_op(dsa->stencil[1].zfail_op)) |
-            VIVS_PE_STENCIL_OP_PASS_FRONT(translate_stencil_op(dsa->stencil[0].zpass_op)) |
-            VIVS_PE_STENCIL_OP_PASS_BACK(translate_stencil_op(dsa->stencil[1].zpass_op)));
+            VIVS_PE_STENCIL_OP_FUNC_FRONT(dsa.stencil[0].func) |
+            VIVS_PE_STENCIL_OP_FUNC_BACK(dsa.stencil[1].func) |
+            VIVS_PE_STENCIL_OP_FAIL_FRONT(translate_stencil_op(dsa.stencil[0].fail_op)) | 
+            VIVS_PE_STENCIL_OP_FAIL_BACK(translate_stencil_op(dsa.stencil[1].fail_op)) |
+            VIVS_PE_STENCIL_OP_DEPTH_FAIL_FRONT(translate_stencil_op(dsa.stencil[0].zfail_op)) |
+            VIVS_PE_STENCIL_OP_DEPTH_FAIL_BACK(translate_stencil_op(dsa.stencil[1].zfail_op)) |
+            VIVS_PE_STENCIL_OP_PASS_FRONT(translate_stencil_op(dsa.stencil[0].zpass_op)) |
+            VIVS_PE_STENCIL_OP_PASS_BACK(translate_stencil_op(dsa.stencil[1].zpass_op)));
     SET_STATE(PE_STENCIL_CONFIG, 
-            translate_stencil_mode(dsa->stencil[0].enabled, dsa->stencil[1].enabled) |
-            VIVS_PE_STENCIL_CONFIG_MASK_FRONT(dsa->stencil[0].valuemask) | 
-            VIVS_PE_STENCIL_CONFIG_WRITE_MASK(dsa->stencil[0].writemask) 
+            translate_stencil_mode(dsa.stencil[0].enabled, dsa.stencil[1].enabled) |
+            VIVS_PE_STENCIL_CONFIG_MASK_FRONT(dsa.stencil[0].valuemask) | 
+            VIVS_PE_STENCIL_CONFIG_WRITE_MASK(dsa.stencil[0].writemask) 
             /* XXX back masks in VIVS_PE_DEPTH_CONFIG_EXT? */
             /* XXX VIVS_PE_STENCIL_CONFIG_REF_FRONT comes from pipe_stencil_ref */
             );
@@ -927,42 +876,8 @@ static void *etna_pipe_create_vertex_elements_state(struct pipe_context *pipe,
     cs->num_elements = num_elements;
     if(incompatible)
     {
-        DBG("Warning: vertex element binding is incompatible with hardware, linearizing");
-        /* create translator and state to interleave elements into one buffer */
-        unsigned dest_offset = 0;
-        struct translate_key key;
-        for(unsigned idx=0; idx<num_elements; ++idx)
-        {
-            unsigned element_size = util_format_get_blocksize(elements[idx].src_format);
-            bool nonconsecutive = (idx == (num_elements-1));
-            /* conversion for element */
-            key.element[idx].type = TRANSLATE_ELEMENT_NORMAL;
-            key.element[idx].input_format = elements[idx].src_format;
-            key.element[idx].output_format = elements[idx].src_format; /* just copy */
-            key.element[idx].input_buffer = elements[idx].vertex_buffer_index;
-            key.element[idx].input_offset = elements[idx].src_offset;
-            key.element[idx].instance_divisor = elements[idx].instance_divisor;
-            key.element[idx].output_offset = dest_offset;
-
-            /* gpu state for element */
-            SET_STATE(FE_VERTEX_ELEMENT_CONFIG[idx],
-                    (nonconsecutive ? VIVS_FE_VERTEX_ELEMENT_CONFIG_NONCONSECUTIVE : 0) |
-                    translate_vertex_format_type(elements[idx].src_format, false) |
-                    VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM(util_format_get_nr_components(elements[idx].src_format)) |
-                    translate_vertex_format_normalize(elements[idx].src_format) |
-                    VIVS_FE_VERTEX_ELEMENT_CONFIG_ENDIAN(ENDIAN_MODE_NO_SWAP) |
-                    VIVS_FE_VERTEX_ELEMENT_CONFIG_STREAM(0) |
-                    VIVS_FE_VERTEX_ELEMENT_CONFIG_START(dest_offset) |
-                    VIVS_FE_VERTEX_ELEMENT_CONFIG_END(dest_offset + element_size));
-            dest_offset += element_size;
-        }
-        key.nr_elements = num_elements;
-        key.output_stride = align(dest_offset, 4);
-        if((cs->translate = translate_create(&key)) == NULL)
-        {
-            DBG("Error: unable to create translator for vertex buffer");
-            cs->num_elements = 0;
-        }
+        DBG("Error: more vertex buffers used than supported");
+        cs->num_elements = 0;
     } else {
         unsigned start_offset = 0; /* start of current consecutive stretch */
         bool nonconsecutive = true; /* previous value of nonconsecutive */
@@ -1002,10 +917,6 @@ static void etna_pipe_delete_vertex_elements_state(struct pipe_context *pipe, vo
 {
     struct compiled_vertex_elements_state *cs = (struct compiled_vertex_elements_state*)ve;
     //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
-    if(cs->translate)
-    {
-        cs->translate->release(cs->translate);
-    }
     FREE(cs);
 }
 
@@ -1060,91 +971,101 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
     struct compiled_framebuffer_state *cs = &priv->framebuffer;
-    struct etna_surface *cbuf = (sv->nr_cbufs > 0) ? etna_surface(sv->cbufs[0]) : NULL;
-    struct etna_surface *zsbuf = etna_surface(sv->zsbuf);
-    /* XXX rendering with only color or only depth should be possible */
-    assert(cbuf != NULL && zsbuf != NULL);
-    uint32_t depth_format = translate_depth_format(zsbuf->base.format, false);
-    unsigned depth_bits = depth_format == VIVS_PE_DEPTH_CONFIG_DEPTH_FORMAT_D16 ? 16 : 24; 
-    assert((cbuf->layout & 1) && (zsbuf->layout & 1)); /* color and depth buffer must be at least tiled */
-    bool color_supertiled = (cbuf->layout & 2)!=0;
-    bool depth_supertiled = (zsbuf->layout & 2)!=0;
 
-    /* acquire or release references to underlying surfaces */
-    if(cbuf != NULL)
-        pipe_surface_reference(&cs->cbuf, &cbuf->base);
-    if(zsbuf != NULL)
-        pipe_surface_reference(&cs->zsbuf, &zsbuf->base);
-
-    /* XXX support multisample 2X/4X, take care that required width/height is doubled */
+    /* XXX support multisample 2X/4X, take care that required width/height is doubled
+     * for both depth and color surfaces.
+     */
     SET_STATE(GL_MULTI_SAMPLE_CONFIG, 
             VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_SAMPLES_NONE
             /* VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_ENABLES(0xf)
             VIVS_GL_MULTI_SAMPLE_CONFIG_UNK12 |
             VIVS_GL_MULTI_SAMPLE_CONFIG_UNK16 */
             );  /* merged with sample_mask */
-    SET_STATE(PE_COLOR_FORMAT, 
-            VIVS_PE_COLOR_FORMAT_FORMAT(translate_rt_format(cbuf->base.format, false)) |
-            (color_supertiled ? VIVS_PE_COLOR_FORMAT_SUPER_TILED : 0) /* XXX depends on layout */
-            /* XXX VIVS_PE_COLOR_FORMAT_OVERWRITE and the rest comes from blend_state / depth_stencil_alpha */
-            ); /* merged with depth_stencil_alpha */
-    SET_STATE(PE_DEPTH_CONFIG, 
-            depth_format |
-            (depth_supertiled ? VIVS_PE_DEPTH_CONFIG_SUPER_TILED : 0) | /* XXX depends on layout */
-            VIVS_PE_DEPTH_CONFIG_DEPTH_MODE_Z /* XXX set to NONE if no Z buffer */
-            /* VIVS_PE_DEPTH_CONFIG_ONLY_DEPTH */
-            ); /* merged with depth_stencil_alpha */
 
-    if (priv->ctx->conn->chip.pixel_pipes == 1)
+    /* Set up TS as well. Warning: this state is used by both the RS and PE */
+    uint32_t ts_mem_config = 0;
+    if(sv->nr_cbufs > 0) /* at least one color buffer? */
     {
-        SET_STATE(PE_DEPTH_ADDR, zsbuf->surf.address);
+        struct etna_surface *cbuf = etna_surface(sv->cbufs[0]);
+        bool color_supertiled = (cbuf->layout & 2)!=0;
+        assert(cbuf->layout & 1); /* Cannot render to linear surfaces */
+        pipe_surface_reference(&cs->cbuf, &cbuf->base);
+        SET_STATE(PE_COLOR_FORMAT, 
+                VIVS_PE_COLOR_FORMAT_FORMAT(translate_rt_format(cbuf->base.format, false)) |
+                (color_supertiled ? VIVS_PE_COLOR_FORMAT_SUPER_TILED : 0) /* XXX depends on layout */
+                /* XXX VIVS_PE_COLOR_FORMAT_OVERWRITE and the rest comes from blend_state / depth_stencil_alpha */
+                ); /* merged with depth_stencil_alpha */
+        if (priv->ctx->conn->chip.pixel_pipes == 1)
+        {
+            SET_STATE(PE_COLOR_ADDR, cbuf->surf.address);
+        }
+        else if (priv->ctx->conn->chip.pixel_pipes == 2)
+        {
+            SET_STATE(PE_PIPE_COLOR_ADDR[0], cbuf->surf.address);
+            SET_STATE(PE_PIPE_COLOR_ADDR[1], cbuf->surf.address);  /* TODO */
+        }
+        SET_STATE(PE_COLOR_STRIDE, cbuf->surf.stride);
+        if(cbuf->surf.ts_address)
+        {
+            ts_mem_config |= VIVS_TS_MEM_CONFIG_COLOR_FAST_CLEAR;
+            SET_STATE(TS_COLOR_CLEAR_VALUE, cbuf->clear_value);
+            SET_STATE(TS_COLOR_STATUS_BASE, cbuf->surf.ts_address);
+            SET_STATE(TS_COLOR_SURFACE_BASE, cbuf->surf.address);
+        }
+        /* XXX ts_mem_config |= VIVS_TS_MEM_CONFIG_MSAA | translate_msaa_format(cbuf->format) */
+    } else {
+        pipe_surface_reference(&cs->cbuf, NULL);
+        SET_STATE(PE_COLOR_FORMAT, 0); /* Is this enough to render without color? */
     }
-    else if (priv->ctx->conn->chip.pixel_pipes == 2)
+
+    if(sv->zsbuf != NULL)
     {
-        SET_STATE(PE_PIPE_DEPTH_ADDR[0], zsbuf->surf.address);
-        SET_STATE(PE_PIPE_DEPTH_ADDR[1], zsbuf->surf.address);  /* TODO */
+        struct etna_surface *zsbuf = etna_surface(sv->zsbuf);
+        pipe_surface_reference(&cs->zsbuf, &zsbuf->base);
+        assert(zsbuf->layout & 1); /* Cannot render to linear surfaces */
+        uint32_t depth_format = translate_depth_format(zsbuf->base.format, false);
+        unsigned depth_bits = depth_format == VIVS_PE_DEPTH_CONFIG_DEPTH_FORMAT_D16 ? 16 : 24; 
+        bool depth_supertiled = (zsbuf->layout & 2)!=0;
+        SET_STATE(PE_DEPTH_CONFIG, 
+                depth_format |
+                (depth_supertiled ? VIVS_PE_DEPTH_CONFIG_SUPER_TILED : 0) | /* XXX depends on layout */
+                VIVS_PE_DEPTH_CONFIG_DEPTH_MODE_Z /* XXX set to NONE if no Z buffer */
+                /* VIVS_PE_DEPTH_CONFIG_ONLY_DEPTH */
+                ); /* merged with depth_stencil_alpha */
+        if (priv->ctx->conn->chip.pixel_pipes == 1)
+        {
+            SET_STATE(PE_DEPTH_ADDR, zsbuf->surf.address);
+        }
+        else if (priv->ctx->conn->chip.pixel_pipes == 2)
+        {
+            SET_STATE(PE_PIPE_DEPTH_ADDR[0], zsbuf->surf.address);
+            SET_STATE(PE_PIPE_DEPTH_ADDR[1], zsbuf->surf.address);  /* TODO */
+        }
+        SET_STATE(PE_DEPTH_STRIDE, zsbuf->surf.stride);
+        SET_STATE(PE_HDEPTH_CONTROL, VIVS_PE_HDEPTH_CONTROL_FORMAT_DISABLED);
+        SET_STATE_F32(PE_DEPTH_NORMALIZE, exp2f(depth_bits) - 1.0f);
+        if(zsbuf->surf.ts_address)
+        {
+            ts_mem_config |= VIVS_TS_MEM_CONFIG_DEPTH_FAST_CLEAR |
+                (depth_bits == 16 ? VIVS_TS_MEM_CONFIG_DEPTH_16BPP : 0) | 
+                VIVS_TS_MEM_CONFIG_DEPTH_COMPRESSION;
+            SET_STATE(TS_DEPTH_CLEAR_VALUE, zsbuf->clear_value);
+            SET_STATE(TS_DEPTH_STATUS_BASE, zsbuf->surf.ts_address);
+            SET_STATE(TS_DEPTH_SURFACE_BASE, zsbuf->surf.address);
+        }
+    } else {
+        pipe_surface_reference(&cs->zsbuf, NULL);
+        SET_STATE(PE_DEPTH_CONFIG, VIVS_PE_DEPTH_CONFIG_DEPTH_MODE_NONE);
     }
-    SET_STATE(PE_DEPTH_STRIDE, zsbuf->surf.stride);
-    SET_STATE(PE_HDEPTH_CONTROL, VIVS_PE_HDEPTH_CONTROL_FORMAT_DISABLED);
-    SET_STATE_F32(PE_DEPTH_NORMALIZE, exp2f(depth_bits) - 1.0f);
-    if (priv->ctx->conn->chip.pixel_pipes == 1)
-    {
-        SET_STATE(PE_COLOR_ADDR, cbuf->surf.address);
-    }
-    else if (priv->ctx->conn->chip.pixel_pipes == 2)
-    {
-        SET_STATE(PE_PIPE_COLOR_ADDR[0], zsbuf->surf.address);
-        SET_STATE(PE_PIPE_COLOR_ADDR[1], zsbuf->surf.address);  /* TODO */
-    }
-    SET_STATE(PE_COLOR_STRIDE, cbuf->surf.stride);
-    
+
     SET_STATE_FIXP(SE_SCISSOR_LEFT, 0); /* affected by rasterizer and scissor state as well */
     SET_STATE_FIXP(SE_SCISSOR_TOP, 0);
     SET_STATE_FIXP(SE_SCISSOR_RIGHT, (sv->width << 16)-1);
     SET_STATE_FIXP(SE_SCISSOR_BOTTOM, (sv->height << 16)-1);
 
-    /* Set up TS as well. Warning: this state is used by both the RS and PE */
-    uint32_t ts_mem_config = 0;
-    if(zsbuf->surf.ts_address)
-    {
-        ts_mem_config |= VIVS_TS_MEM_CONFIG_DEPTH_FAST_CLEAR |
-            (depth_bits == 16 ? VIVS_TS_MEM_CONFIG_DEPTH_16BPP : 0) | 
-            VIVS_TS_MEM_CONFIG_DEPTH_COMPRESSION;
-        SET_STATE(TS_DEPTH_CLEAR_VALUE, zsbuf->clear_value);
-        SET_STATE(TS_DEPTH_STATUS_BASE, zsbuf->surf.ts_address);
-        SET_STATE(TS_DEPTH_SURFACE_BASE, zsbuf->surf.address);
-    }
-    if(cbuf->surf.ts_address)
-    {
-        ts_mem_config |= VIVS_TS_MEM_CONFIG_COLOR_FAST_CLEAR;
-        SET_STATE(TS_COLOR_CLEAR_VALUE, cbuf->clear_value);
-        SET_STATE(TS_COLOR_STATUS_BASE, cbuf->surf.ts_address);
-        SET_STATE(TS_COLOR_SURFACE_BASE, cbuf->surf.address);
-    }
-    /* XXX VIVS_TS_MEM_CONFIG_MSAA | translate_msaa_format(cbuf->format) */
     SET_STATE(TS_MEM_CONFIG, ts_mem_config);
 
-    priv->dirty_bits |= ETNA_STATE_VIEWPORT;
+    priv->dirty_bits |= ETNA_STATE_FRAMEBUFFER;
     priv->framebuffer_s = *sv; /* keep copy of original structure */
 }
 
@@ -1159,7 +1080,7 @@ static void etna_pipe_set_scissor_state( struct pipe_context *pipe,
     SET_STATE_FIXP(SE_SCISSOR_RIGHT, (ss->maxx << 16)-1);
     SET_STATE_FIXP(SE_SCISSOR_BOTTOM, (ss->maxy << 16)-1);
     /* note that this state is only used when rasterizer_state->scissor is on */
-    priv->dirty_bits |= ETNA_STATE_FRAMEBUFFER;
+    priv->dirty_bits |= ETNA_STATE_VIEWPORT;
 }
 
 static void etna_pipe_set_viewport_state( struct pipe_context *pipe,
@@ -1325,6 +1246,9 @@ static void etna_pipe_clear(struct pipe_context *pipe,
              unsigned stencil)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    /* No need to set up the TS here with sync_context.
+     * RS clear operations (in contrary to resolve and copy) do not require the TS state. 
+     */
     /* Need to update clear command in non-TS (fast clear) case *if*
      * clear value is different from previous time. 
      */
@@ -1339,7 +1263,7 @@ static void etna_pipe_clear(struct pipe_context *pipe,
                 priv->framebuffer.TS_COLOR_CLEAR_VALUE = new_clear_value;
                 priv->dirty_bits |= ETNA_STATE_TS;
             }
-            else if(new_clear_value != surf->clear_value) /* Queue normal RS clear for non-TS surfaces */
+            else if(unlikely(new_clear_value != surf->clear_value)) /* Queue normal RS clear for non-TS surfaces */
             {
                 etna_rs_gen_clear_surface(surf, new_clear_value);
             }
@@ -1355,7 +1279,7 @@ static void etna_pipe_clear(struct pipe_context *pipe,
         {
             priv->framebuffer.TS_DEPTH_CLEAR_VALUE = new_clear_value;
             priv->dirty_bits |= ETNA_STATE_TS;
-        } else if(new_clear_value != surf->clear_value) /* Queue normal RS clear for non-TS surfaces */
+        } else if(unlikely(new_clear_value != surf->clear_value)) /* Queue normal RS clear for non-TS surfaces */
         {
             etna_rs_gen_clear_surface(surf, new_clear_value);
         }
@@ -1396,6 +1320,13 @@ static void etna_pipe_flush(struct pipe_context *pipe,
              enum pipe_flush_flags flags)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    if(fence)
+    {
+        if(etna_fence_new(pipe->screen, priv->ctx, fence) != ETNA_OK)
+        {
+            printf("etna_pipe_flush: could not create fence\n");
+        }
+    }
     etna_flush(priv->ctx);
 }
 
@@ -1437,6 +1368,7 @@ static struct pipe_sampler_view *etna_pipe_create_sampler_view(struct pipe_conte
     cs->max_lod = etna_umin(sv->base.u.tex.last_level, res->base.last_level) << 5;
 
     sv->internal = cs;
+    pipe_reference_init(&sv->base.reference, 1);
     return &sv->base;
 }
 
@@ -1652,10 +1584,12 @@ static void etna_set_constant_buffer(struct pipe_context *pipe,
                                 struct pipe_constant_buffer *buf)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    if(buf == NULL) /* Unbinding constant buffer is a no-op as we don't keep a pointer */
+        return;
     assert(buf->buffer == NULL && buf->user_buffer != NULL); 
     /* support only user buffer for now */
     assert(priv->vs && priv->fs);
-    if(index == 0)
+    if(likely(index == 0))
     {
         /* copy only up to shader-specific constant size; never overwrite immediates */
         switch(shader)
@@ -1801,86 +1735,6 @@ static void etna_pipe_set_polygon_stipple(struct pipe_context *pctx,
     /* NOP */
 }
 
-static void *etna_pipe_transfer_map(struct pipe_context *pipe,
-                         struct pipe_resource *resource,
-                         unsigned level,
-                         unsigned usage,  /* a combination of PIPE_TRANSFER_x */
-                         const struct pipe_box *box,
-                         struct pipe_transfer **out_transfer)
-{
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
-    struct etna_transfer *ptrans = util_slab_alloc(&priv->transfer_pool);
-    enum pipe_format format = resource->format;
-    if (!ptrans)
-        return NULL;
-    assert(level <= resource->last_level);
-
-    unsigned divSizeX = util_format_get_blockwidth(format);
-    unsigned divSizeY = util_format_get_blockheight(format);
-
-    ptrans->base.resource = resource;
-    ptrans->base.level = level;
-    ptrans->base.usage = usage;
-    ptrans->base.box = *box;
-    ptrans->base.stride = align(box->width, divSizeX) * util_format_get_blocksize(format); /* row stride in bytes */
-    ptrans->base.layer_stride = align(box->height, divSizeY) * ptrans->base.stride;
-    ptrans->size = ptrans->base.layer_stride * box->depth;
-    /* XXX currently always allocates a buffer for copying; if the resource is not in use,
-     * and no tiling is needed, can just return a direct pointer. 
-     */
-    ptrans->buffer = MALLOC(ptrans->size);
-
-    *out_transfer = &ptrans->base;
-    return ptrans->buffer;
-}
-
-static void etna_pipe_transfer_unmap(struct pipe_context *pipe,
-                      struct pipe_transfer *transfer_)
-{
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
-    struct etna_transfer *ptrans = etna_transfer(transfer_);
-
-    /* XXX 
-     * When writing to a resource that is already in use, replace the resource with a completely new buffer
-     * and free the old one using a fenced free.
-     * The most tricky case to implement will be: tiled or supertiled surface, partial write, target not aligned to 4/64
-     */
-    struct etna_resource *resource = etna_resource(ptrans->base.resource);
-    assert(ptrans->base.level <= resource->base.last_level);
-    struct etna_resource_level *level = &resource->levels[ptrans->base.level];
-
-    if(resource->layout == ETNA_LAYOUT_LINEAR || resource->layout == ETNA_LAYOUT_TILED)
-    {
-        if(resource->layout == ETNA_LAYOUT_TILED && !util_format_is_compressed(resource->base.format))
-        {
-            uint bpe = util_format_get_blocksize(resource->base.format);
-            /* XXX currently only handles multiples of the tile size */
-            void *ptr = level->logical +
-                   ptrans->base.box.z * level->layer_stride +
-                   ptrans->base.box.y / util_format_get_blockheight(resource->base.format) * level->stride +
-                   ptrans->base.box.x / util_format_get_blockwidth(resource->base.format) * bpe;
-            /* XXX pipe_linear_to_tile */
-            etna_texture_tile(ptr, ptrans->buffer, ptrans->base.box.width, ptrans->base.box.height, 
-                    ptrans->base.stride, bpe);
-        } else { /* non-tiled or compressed format */
-            util_copy_box(level->logical,
-              resource->base.format,
-              level->stride, level->layer_stride,
-              ptrans->base.box.x, ptrans->base.box.y, ptrans->base.box.z,
-              ptrans->base.box.width, ptrans->base.box.height, ptrans->base.box.depth,
-              ptrans->buffer,
-              ptrans->base.stride, ptrans->base.layer_stride,
-              0, 0, 0);
-        }
-    } else
-    {
-        printf("etna_pipe_transfer_unmap: unsupported tiling %i\n", resource->layout);
-    }
-
-    FREE(ptrans->buffer);
-    util_slab_free(&priv->transfer_pool, ptrans);
-}
-
 struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct etna_pipe_specs *specs, struct pipe_screen *screen)
 {
     struct pipe_context *pc = CALLOC_STRUCT(pipe_context);
@@ -1981,7 +1835,7 @@ struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct et
     pc->create_surface = etna_pipe_create_surface;
     pc->surface_destroy = etna_pipe_surface_destroy;
     pc->transfer_map = etna_pipe_transfer_map;
-    pc->transfer_flush_region = u_default_transfer_flush_region;
+    pc->transfer_flush_region = etna_pipe_transfer_flush_region;
     pc->transfer_unmap = etna_pipe_transfer_unmap;
     pc->transfer_inline_write = u_default_transfer_inline_write;
     pc->texture_barrier = etna_pipe_texture_barrier;

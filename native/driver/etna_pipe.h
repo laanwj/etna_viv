@@ -20,7 +20,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-/* Gallium state experiments -- WIP
+/* Gallium driver main header file
  */
 #ifndef H_ETNA_PIPE
 #define H_ETNA_PIPE
@@ -28,9 +28,10 @@
 #include <stdint.h>
 #include <etnaviv/etna.h>
 #include <etnaviv/etna_mem.h>
+#include <etnaviv/etna_rs.h>
+#include <etnaviv/etna_tex.h>
 
 #include "etna_internal.h"
-#include "etna_rs.h"
 #include "pipe/p_defines.h"
 #include "pipe/p_format.h"
 #include "pipe/p_shader_tokens.h"
@@ -109,7 +110,6 @@ struct etna_resource
     struct etna_vidmem *ts; /* Tile status video memory */
 
     struct etna_resource_level levels[ETNA_NUM_LOD];
-    /* XXX uint32_t clear_value; */
 };
 
 struct etna_surface
@@ -133,8 +133,12 @@ struct etna_transfer
 {
     struct pipe_transfer base;
 
+    /* Pointer to buffer (same pointer as returned by transfer_map) */
     void *buffer;
-    size_t size;
+    /* If true, transfer happens in-place. buffer is not allocated separately but
+     * points into the actual resource, and thus does not need to be copied or freed.
+     */
+    bool in_place;
 };
 
 /* group all current CSOs, for dirty bits */

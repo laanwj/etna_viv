@@ -28,7 +28,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#define SIG_WAIT_INDEFINITE (0xffffffff)
+#define VIV_WAIT_INDEFINITE (0xffffffff)
 
 /* one of the features words */
 enum viv_features_word
@@ -88,6 +88,48 @@ enum viv_where
 {
     VIV_WHERE_COMMAND,
     VIV_WHERE_PIXEL
+};
+
+/* Status code from kernel.
+ * These numbers must match gcvSTATUS_*.
+ */
+enum viv_status
+{
+    VIV_STATUS_OK                    =   0,
+    VIV_STATUS_TRUE                  =   1,
+    VIV_STATUS_NOT_OUR_INTERRUPT     =   6,
+    VIV_STATUS_CHIP_NOT_READY        =   11,
+    VIV_STATUS_SKIP                  =   13,
+    VIV_STATUS_EXECUTED              =   18,
+    VIV_STATUS_TERMINATE             =   19,
+
+    VIV_STATUS_INVALID_ARGUMENT      =   -1,
+    VIV_STATUS_INVALID_OBJECT        =   -2,
+    VIV_STATUS_OUT_OF_MEMORY         =   -3,
+    VIV_STATUS_MEMORY_LOCKED         =   -4,
+    VIV_STATUS_MEMORY_UNLOCKED       =   -5,
+    VIV_STATUS_HEAP_CORRUPTED        =   -6,
+    VIV_STATUS_GENERIC_IO            =   -7,
+    VIV_STATUS_INVALID_ADDRESS       =   -8,
+    VIV_STATUS_CONTEXT_LOSSED        =   -9,
+    VIV_STATUS_TOO_COMPLEX           =   -10,
+    VIV_STATUS_BUFFER_TOO_SMALL      =   -11,
+    VIV_STATUS_INTERFACE_ERROR       =   -12,
+    VIV_STATUS_NOT_SUPPORTED         =   -13,
+    VIV_STATUS_MORE_DATA             =   -14,
+    VIV_STATUS_TIMEOUT               =   -15,
+    VIV_STATUS_OUT_OF_RESOURCES      =   -16,
+    VIV_STATUS_INVALID_DATA          =   -17,
+    VIV_STATUS_INVALID_MIPMAP        =   -18,
+    VIV_STATUS_NOT_FOUND             =   -19,
+    VIV_STATUS_NOT_ALIGNED           =   -20,
+    VIV_STATUS_INVALID_REQUEST       =   -21,
+    VIV_STATUS_GPU_NOT_RESPONDING    =   -22,
+    VIV_STATUS_TIMER_OVERFLOW        =   -23,
+    VIV_STATUS_VERSION_MISMATCH      =   -24,
+    VIV_STATUS_LOCKED                =   -25,
+    VIV_STATUS_INTERRUPTED           =   -26,
+    VIV_STATUS_DEVICE                =   -27,
 };
 
 /* Type for GPU physical address */
@@ -202,7 +244,7 @@ int viv_user_signal_create(struct viv_conn *conn, int manualReset, int *id_out);
 int viv_user_signal_signal(struct viv_conn *conn, int sig_id, int state);
 
 /** Wait for signal. 
- * @param[in] wait Provide time to wait in milliseconds, or SIG_WAIT_INDEFINITE.
+ * @param[in] wait Provide time to wait in milliseconds, or VIV_WAIT_INDEFINITE.
  */
 int viv_user_signal_wait(struct viv_conn *conn, int sig_id, int wait);
 

@@ -3,12 +3,11 @@ Introduction
 
 Project Etnaviv is an attempt to make an open source user-space driver for the Vivante GCxxx series of embedded GPUs.
 
-The current state of the project is experimental. It is currently only of use to developers interested
-in helping develop open source drivers for the hardware, reverse engineering, or in interfacing with GPU 
-hardware directly. It is NOT usable as a driver for end users.
+The project is currently mostly of use to developers interested in helping develop open source drivers for the 
+hardware, reverse engineering, or in interfacing with GPU hardware directly.
 
-Once the understanding of the hardware is good enough, we'd likely want to fork Mesa/Gallium and create a GL driver.
-All help is appreciated.
+A Mesa fork based on the etnaviv driver can be found at https://github.com/laanwj/mesa. At the moment, this
+provides rudimentary OpenGL ES 2.0 accelerated rendering direct to framebuffer (fbdev).
 
 Devices with Vivante GPU
 =========================
@@ -299,8 +298,8 @@ where the script is installed, and get the `libEGL.so` and `libGLESv2.so` from t
 
     DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
     export GCCPREFIX="arm-linux-gnueabi-"
-    export PLATFORM_CFLAGS="-I${DIR}/include -D_POSIX_C_SOURCE=200809 -D_GNU_SOURCE"
-    export PLATFORM_CXXFLAGS="-I${DIR}/include -D_POSIX_C_SOURCE=200809 -D_GNU_SOURCE"
+    export PLATFORM_CFLAGS="-I${DIR}/include"
+    export PLATFORM_CXXFLAGS="-I${DIR}/include"
     export PLATFORM_LDFLAGS="-ldl -L${DIR}/lib"
     export PLATFORM_GL_LIBS="-lEGL -lGLESv2 -L${TOP}/lib/egl -Xlinker --allow-shlib-undefined"
     # Set GC kernel ABI to dove (important!)
@@ -321,22 +320,13 @@ Run make in `native`, or alternatively in `native/gallium`, `native/etnaviv`, `n
 Compatibility
 ================
 
-Etna_pipe is currently compatible with the following GC chips at least:
+`Etna_pipe` is currently compatible with at least the following GC chips:
 
-- GC600
-- GC800
+- GC600 (Cubox/dove)
+- GC800 (Rockchip/arnova)
+- GC860 (GCW/v2)
 
 GC2000 support is underway.
-
-The command stream on different device GCxxx variants will also likely be slightly different; the features bit system
-allows for a ton of slightly different chips. When porting it, look for:
-
-- Number of bits per tile (2 on my hw), depends on `2BIT_PER_TILE` feature flag
-
-- depth buffer (hierarchical or normal)
-
-- location of shader memory in state space (will be at 0x0C000/0x08000 or 0x20000 for recent models with more than
-     256 shader instructions support)
 
 Miscellaneous
 =============
@@ -350,7 +340,8 @@ Authors
 ========
 
 - Wladimir J. van der Laan
-- Steven J. Hill
+- Steven J. Hill (kernel driver help)
+- Christian Gmeiner (beginnings of GC2000)
 
 Thanks
 =======
