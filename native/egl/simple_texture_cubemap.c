@@ -14,6 +14,7 @@
 //
 #include <stdlib.h>
 #include <stdio.h>
+#include <EGL/egl.h>
 #include "esUtil.h"
 
 #include "esTransform.h"
