@@ -684,8 +684,13 @@ static void *etna_pipe_create_sampler_state(struct pipe_context *pipe,
             (ss->lod_bias != 0.0 ? VIVS_TE_SAMPLER_LOD_CONFIG_BIAS_ENABLE : 0) | 
             VIVS_TE_SAMPLER_LOD_CONFIG_BIAS(float_to_fixp55(ss->lod_bias))
             );
-    cs->min_lod = float_to_fixp55(ss->min_lod);
-    cs->max_lod = float_to_fixp55(ss->max_lod);
+    if(ss->min_mip_filter != PIPE_TEX_MIPFILTER_NONE)
+    {
+        cs->min_lod = float_to_fixp55(ss->min_lod);
+        cs->max_lod = float_to_fixp55(ss->max_lod);
+    } else { /* when not mipmapping, we need to set max/min lod so that always lowest LOD is selected */
+        cs->min_lod = cs->max_lod = float_to_fixp55(ss->min_lod);
+    }
     return cs;
 }
 
