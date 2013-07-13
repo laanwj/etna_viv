@@ -40,7 +40,7 @@
 
 #include <stdio.h>
 
-int etna_mesa_debug = ETNA_DBG_MSGS;  /* XXX */
+int etna_mesa_debug = ETNA_DBG_MSGS | ETNA_RESOURCE_MSGS;  /* XXX */
 
 static void etna_screen_destroy( struct pipe_screen *screen )
 {
@@ -309,8 +309,6 @@ static boolean etna_screen_is_format_supported( struct pipe_screen *screen,
     if ((target >= PIPE_MAX_TEXTURE_TYPES) ||
                 (sample_count > 1) /* TODO add MSAA */) 
     {
-        DBG("not supported: format=%s, target=%d, sample_count=%d, usage=%x",
-                        util_format_name(format), target, sample_count, usage);
         return FALSE;
     }
 
@@ -432,7 +430,7 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
     /* Flush RS */
     etna_set_state(ctx, VIVS_RS_FLUSH_CACHE, VIVS_RS_FLUSH_CACHE_FLUSH);
     DBG_F(ETNA_FRAME_MSGS,
-            "Queued RS command to flush screen from %08x to %08x stride=%08x width=%i height=%i, ctx %p\n",
+            "Queued RS command to flush screen from %08x to %08x stride=%08x width=%i height=%i, ctx %p",
             rt_resource->levels[0].address,
             drawable->addr, drawable->stride,
             drawable->width, drawable->height, ctx);
@@ -543,7 +541,7 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     else if(templat->bind & PIPE_BIND_VERTEX_BUFFER)
         memtype = VIV_SURF_VERTEX;
 
-    printf("Allocate surface of %ix%i (padded to %ix%i) of format %i (%i bpe %ix%i), size %08x ts_size %08x, flags %08x, memtype %i\n",
+    DBG_F(ETNA_RESOURCE_MSGS, "Allocate surface of %ix%i (padded to %ix%i) of format %i (%i bpe %ix%i), size %08x ts_size %08x, flags %08x, memtype %i",
             templat->width0, templat->height0, resource->levels[0].padded_width, resource->levels[0].padded_height, templat->format, 
             element_size, divSizeX, divSizeY, rt_size, rt_ts_size, templat->bind, memtype);
 
@@ -575,7 +573,7 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
         struct etna_resource_level *mip = &resource->levels[ix];
         mip->address = resource->surface->address + mip->offset;
         mip->logical = resource->surface->logical + mip->offset;
-        printf("  %08x level %i: %ix%i (%i) stride=%i layer_stride=%i\n", 
+        DBG_F(ETNA_RESOURCE_MSGS, "  %08x level %i: %ix%i (%i) stride=%i layer_stride=%i", 
                 (int)mip->address, ix, (int)mip->width, (int)mip->height, (int)mip->size,
                 (int)mip->stride, (int)mip->layer_stride);
         memset(mip->logical, 0, mip->size);
@@ -602,6 +600,7 @@ static void etna_screen_resource_destroy(struct pipe_screen *screen,
      * a way to do fencing per-screen.
      * I suppose the resource could remember what context(s) it was used with.
      */
+    DBG_F(ETNA_RESOURCE_MSGS, "%p: resource destroyed (%ix%ix%i)", resource, resource_->width0, resource_->height0, resource_->depth0);
     etna_vidmem_free(priv->dev, resource->surface);
     etna_vidmem_free(priv->dev, resource->ts);
     FREE(resource);

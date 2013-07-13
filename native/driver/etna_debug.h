@@ -29,8 +29,9 @@
 #include <stdlib.h>
 #include "util/u_debug.h"
 
-#define ETNA_DBG_MSGS   0x1
-#define ETNA_FRAME_MSGS 0x2
+#define ETNA_DBG_MSGS      0x1 /* Warnings and non-fatal errors */
+#define ETNA_FRAME_MSGS    0x2
+#define ETNA_RESOURCE_MSGS 0x4
 extern int etna_mesa_debug;
 
 #define DBG_F(flag, fmt, ...) \
