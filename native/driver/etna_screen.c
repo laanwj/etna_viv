@@ -431,7 +431,9 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
     etna_submit_rs_state(ctx, &copy_to_screen);
     /* Flush RS */
     etna_set_state(ctx, VIVS_RS_FLUSH_CACHE, VIVS_RS_FLUSH_CACHE_FLUSH);
-    printf("Queued RS command to flush screen from %08x to %08x stride=%08x width=%i height=%i, ctx %p\n", rt_resource->levels[0].address, 
+    DBG_F(ETNA_FRAME_MSGS,
+            "Queued RS command to flush screen from %08x to %08x stride=%08x width=%i height=%i, ctx %p\n",
+            rt_resource->levels[0].address,
             drawable->addr, drawable->stride,
             drawable->width, drawable->height, ctx);
     /* In texture-heavy workloads, the driver/GPU will hang without this stall (which causes the 
