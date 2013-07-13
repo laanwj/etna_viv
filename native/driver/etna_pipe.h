@@ -162,7 +162,8 @@ enum
     ETNA_STATE_SHADER = (1<<15),
     ETNA_STATE_VS_UNIFORMS = (1<<16),
     ETNA_STATE_PS_UNIFORMS = (1<<17),
-    ETNA_STATE_TS = (1<<18) /* set after clear and when RS blit operations from other surface affect TS */
+    ETNA_STATE_TS = (1<<18), /* set after clear and when RS blit operations from other surface affect TS */
+    ETNA_STATE_TEXTURE_CACHES = (1<<19) /* set when texture has been modified/uploaded */
 };
 
 /* private opaque context structure */

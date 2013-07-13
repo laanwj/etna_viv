@@ -181,6 +181,11 @@ void etna_pipe_transfer_unmap(struct pipe_context *pipe,
         }
         FREE(ptrans->buffer);
     }
+    if(resource->base.bind & PIPE_BIND_SAMPLER_VIEW)
+    {
+        priv->dirty_bits |= ETNA_STATE_TEXTURE_CACHES;
+    }
+
     util_slab_free(&priv->transfer_pool, ptrans);
 }
 
