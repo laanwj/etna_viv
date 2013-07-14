@@ -8,11 +8,11 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- /home/orion/projects/etna_viv/rnndb/state.xml    (  15001 bytes, from 2013-03-03 11:55:38)
-- /home/orion/projects/etna_viv/rnndb/common.xml   (  15985 bytes, from 2013-02-10 12:55:03)
-- /home/orion/projects/etna_viv/rnndb/state_hi.xml (  16736 bytes, from 2013-03-23 07:27:22)
-- /home/orion/projects/etna_viv/rnndb/state_2d.xml (  30577 bytes, from 2013-02-01 10:02:25)
-- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  52534 bytes, from 2013-04-04 19:42:14)
+- /home/linaro/etna_viv/rnndb/state.xml    (  15132 bytes, from 2013-07-14 23:00:58)
+- /home/linaro/etna_viv/rnndb/common.xml   (  15985 bytes, from 2013-06-18 19:41:10)
+- /home/linaro/etna_viv/rnndb/state_hi.xml (  16950 bytes, from 2013-07-14 23:00:58)
+- /home/linaro/etna_viv/rnndb/state_2d.xml (  30607 bytes, from 2013-06-18 19:41:10)
+- /home/linaro/etna_viv/rnndb/state_3d.xml (  53326 bytes, from 2013-07-15 22:04:10)
 
 Copyright (C) 2013
 */
@@ -62,6 +62,7 @@ Copyright (C) 2013
 #define RS_FORMAT_X8R8G8B8					0x00000005
 #define RS_FORMAT_A8R8G8B8					0x00000006
 #define RS_FORMAT_YUY2						0x00000007
+#define TEXTURE_FORMAT_NONE					0x00000000
 #define TEXTURE_FORMAT_A8					0x00000001
 #define TEXTURE_FORMAT_L8					0x00000002
 #define TEXTURE_FORMAT_I8					0x00000003
@@ -484,6 +485,7 @@ Copyright (C) 2013
 #define VIVS_PE_DEPTH_CONFIG_EARLY_Z_MASK			0x00020000
 #define VIVS_PE_DEPTH_CONFIG_ONLY_DEPTH				0x00100000
 #define VIVS_PE_DEPTH_CONFIG_ONLY_DEPTH_MASK			0x00200000
+#define VIVS_PE_DEPTH_CONFIG_UNK24				0x01000000
 #define VIVS_PE_DEPTH_CONFIG_SUPER_TILED			0x04000000
 #define VIVS_PE_DEPTH_CONFIG_SUPER_TILED_MASK			0x08000000
 
@@ -1119,9 +1121,9 @@ Copyright (C) 2013
 #define VIVS_SH_UNK20000__ESIZE					0x00000004
 #define VIVS_SH_UNK20000__LEN					0x00002000
 
-#define VIVS_SH_UNK0C000(i0)				       (0x0000c000 + 0x4*(i0))
-#define VIVS_SH_UNK0C000__ESIZE					0x00000004
-#define VIVS_SH_UNK0C000__LEN					0x00001000
+#define VIVS_SH_INST_MEM(i0)				       (0x0000c000 + 0x4*(i0))
+#define VIVS_SH_INST_MEM__ESIZE					0x00000004
+#define VIVS_SH_INST_MEM__LEN					0x00001000
 
 #define VIVS_SH_UNK0C000_MIRROR(i0)			       (0x00008000 + 0x4*(i0))
 #define VIVS_SH_UNK0C000_MIRROR__ESIZE				0x00000004

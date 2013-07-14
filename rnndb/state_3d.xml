@@ -235,7 +235,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00854" name="UNK00854" value="0x00000100"/>
         <reg32 offset="0x00858" name="UNK00858" value="0x00001005"/>
         <reg32 offset="0x0085C" name="RANGE" value="0x00000000"> <!-- instructionCount > 1024 -->
-            <bitfield high="15" low="0" name="LOW" brief="Index of first VS instruction?"/>
+            <bitfield high="15" low="0" name="LOW" brief="Index of first VS instruction"/>
             <bitfield high="31" low="16" name="HIGH" brief="Index of last VS instruction"/>
         </reg32>
         <reg32 offset="0x00860" name="NEW_UNK00860" value="0x00000000"/> <!-- instructionCount > 1024 -->
@@ -399,8 +399,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x01014" name="PERF_COUNTER" brief="Performance counter control"/>
         <reg32 offset="0x01018" name="START_PC" value="0x01000000"/>
         <reg32 offset="0x0101C" name="RANGE" value="0x00000100"> <!-- instructionCount > 1024 -->
-            <bitfield high="15" low="0" name="LOW" brief="Index of first PS instruction?"/>
-            <bitfield high="31" low="16" name="HIGH" brief="Index of last PS instruction?"/>
+            <bitfield high="15" low="0" name="LOW" brief="Index of first PS instruction"/>
+            <bitfield high="31" low="16" name="HIGH" brief="Index of last PS instruction"/>
         </reg32>
         <reg32 offset="0x06000" name="INST_MEM" value="0x00000000" length="1024" stride="4"> <!-- instructionCount <= 256 -->
             <!-- length="instructionCount * 4" -->
@@ -438,6 +438,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="17" name="EARLY_Z_MASK"/>
             <bitfield pos="20" name="ONLY_DEPTH"/>
             <bitfield pos="21" name="ONLY_DEPTH_MASK"/>
+            <bitfield pos="24" name="UNK24"/>
             <bitfield pos="26" name="SUPER_TILED"/>
             <bitfield pos="27" name="SUPER_TILED_MASK"/>
         </reg32>
@@ -872,7 +873,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x20000" name="UNK20000" value="0x00000000" length="8192" stride="4"> <!-- instructionCount > 1024 -->
             <!-- length="instructionCount * 4" -->
         </reg32>
-        <reg32 offset="0x0C000" name="UNK0C000" value="0x00000000" length="4096" stride="4"> <!-- 256 > instructionCount > 1024 -->
+        <reg32 offset="0x0C000" name="INST_MEM" value="0x00000000" length="4096" stride="4"> <!-- 256 > instructionCount > 1024 -->
             <!-- length="instructionCount * 4" -->
         </reg32>
         <reg32 offset="0x08000" name="UNK0C000_MIRROR" value="0x00000000" length="4096" stride="4"> <!-- 256 > instructionCount > 1024 -->

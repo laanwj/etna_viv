@@ -797,8 +797,7 @@ int main(int argc, char **argv)
     uint32_t ps[] = {
         0x00000000, 0x00000000, 0x00000000, 0x00000000
     };
-
-    etna_set_state_multi(cmdPtr, VIVS_VS_INST_MEM(0), sizeof(vs)/4, vs);
+    etna_set_state_multi(cmdPtr, VIVS_SH_INST_MEM(0), sizeof(vs)/4, vs);
     etna_set_state(cmdPtr, VIVS_RA_CONTROL, 0x1);
     etna_set_state_multi(cmdPtr, VIVS_PS_END_PC, 2, (uint32_t[]){
             /* VIVS_PS_END_PC */ 0x1,
@@ -806,22 +805,27 @@ int main(int argc, char **argv)
     etna_set_state(cmdPtr, VIVS_PS_START_PC, 0x0);
     etna_set_state(cmdPtr, VIVS_PA_SHADER_ATTRIBUTES(0), 0x200);
     etna_set_state(cmdPtr, VIVS_GL_VARYING_NUM_COMPONENTS,  /* one varying, with four components */
-            (4 << VIVS_GL_VARYING_NUM_COMPONENTS_VAR0__SHIFT)
-            );
-    etna_set_state_multi(cmdPtr, VIVS_GL_VARYING_COMPONENT_USE(0), 2, (uint32_t[]){ /* one varying, with four components */
-            (VARYING_COMPONENT_USE_USED << VIVS_GL_VARYING_COMPONENT_USE_COMP0__SHIFT) |
-            (VARYING_COMPONENT_USE_USED << VIVS_GL_VARYING_COMPONENT_USE_COMP1__SHIFT) |
-            (VARYING_COMPONENT_USE_USED << VIVS_GL_VARYING_COMPONENT_USE_COMP2__SHIFT) |
-            (VARYING_COMPONENT_USE_USED << VIVS_GL_VARYING_COMPONENT_USE_COMP3__SHIFT)
-            , 0
-            });
-    etna_set_state_multi(cmdPtr, VIVS_PS_INST_MEM(0), sizeof(ps)/4, ps);
-    etna_set_state(cmdPtr, VIVS_PS_INPUT_COUNT, (31<<8)|2);
-    etna_set_state(cmdPtr, VIVS_PS_TEMP_REGISTER_CONTROL, 
-            (2 << VIVS_PS_TEMP_REGISTER_CONTROL_NUM_TEMPS__SHIFT));
-    etna_set_state(cmdPtr, VIVS_PS_CONTROL, 
-            VIVS_PS_CONTROL_UNK1
-            );
+                   (4 << VIVS_GL_VARYING_NUM_COMPONENTS_VAR0__SHIFT)
+    );
+    etna_set_state(cmdPtr, VIVS_GL_UNK03834, 0x40000);
+    etna_set_state_multi(cmdPtr, VIVS_GL_VARYING_COMPONENT_USE(0), 2, (uint32_t[]){
+        VIVS_GL_VARYING_COMPONENT_USE_COMP0(1) |
+        VIVS_GL_VARYING_COMPONENT_USE_COMP1(1) |
+        VIVS_GL_VARYING_COMPONENT_USE_COMP2(1) |
+        VIVS_GL_VARYING_COMPONENT_USE_COMP3(1),
+        0});
+    etna_set_state(cmdPtr, VIVS_GL_UNK03838, 0x0);
+    etna_set_state(cmdPtr, VIVS_PS_RANGE, VIVS_PS_RANGE_LOW(0x100) | VIVS_PS_RANGE_HIGH(0x100));
+    etna_set_state(cmdPtr, VIVS_PS_START_PC, 0x0);
+    etna_set_state(cmdPtr, VIVS_PS_END_PC, 0x1);
+    
+
+    etna_set_state_multi(cmdPtr, VIVS_SH_INST_MEM(0x100*4), sizeof(ps)/4, ps);
+    etna_set_state_multi(cmdPtr, VIVS_PS_INPUT_COUNT, 3, (uint32_t[]){
+        (31<<8)|2,
+        (2 << VIVS_PS_TEMP_REGISTER_CONTROL_NUM_TEMPS__SHIFT),
+        VIVS_PS_CONTROL_UNK1});
+
     etna_set_state(cmdPtr, VIVS_PA_ATTRIBUTE_ELEMENT_COUNT, 0x100);
     etna_set_state(cmdPtr, VIVS_GL_VARYING_TOTAL_COMPONENTS,  /* one varying, with four components */
             (4 << VIVS_GL_VARYING_TOTAL_COMPONENTS_NUM__SHIFT)
