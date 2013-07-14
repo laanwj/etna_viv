@@ -777,9 +777,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield high="2" low="0" name="TYPE" type="TEXTURE_TYPE"/>
         <bitfield high="4" low="3" name="UWRAP" type="TEXTURE_WRAPMODE"/>
         <bitfield high="6" low="5" name="VWRAP" type="TEXTURE_WRAPMODE"/>
-        <bitfield high="8" low="7" name="MIN" type="TEXTURE_FILTER"/>
-        <bitfield high="10" low="9" name="MIP" type="TEXTURE_FILTER"/>
-        <bitfield high="12" low="11" name="MAG" type="TEXTURE_FILTER"/>
+        <bitfield high="8" low="7" name="MIN" type="TEXTURE_FILTER" brief="Filter for minimization"/>
+        <bitfield high="10" low="9" name="MIP" type="TEXTURE_FILTER" brief="Filter for filtering between mipmap levels">
+            To disable mipmapping, set this to NONE as well as set the minimum and maximum LOD level to 0..0.
+        </bitfield>
+        <bitfield high="12" low="11" name="MAG" type="TEXTURE_FILTER" brief="Filter for magnification"/>
         <bitfield high="17" low="13" name="FORMAT" type="TEXTURE_FORMAT"/>
         <bitfield high="19" low="19" name="ROUND_UV"/>
         <bitfield high="23" low="22" name="ENDIAN" type="ENDIAN_MODE"/>

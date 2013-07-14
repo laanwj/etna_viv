@@ -60,7 +60,6 @@ typedef struct
     uint32_t out_buf_size;
 } vivante_ioctl_data_t;
 
-
 /* Call ioctl interface with structure cmd as input and output.
  * @returns status (gcvSTATUS_xxx)
  */

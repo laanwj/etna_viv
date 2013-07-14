@@ -137,7 +137,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="15" low="14" name="CAL_STATE"/>
             <bitfield high="17" low="16" name="VE_REQ_STATE"/>
         </reg32>
-        <reg32 offset="0x00664" name="DMA_ADDRESS" brief="The current command decoder address (r/o)"/>
+        <reg32 offset="0x00664" name="DMA_ADDRESS" brief="The current command decoder address (r/o)">
+            <doc>This is useful for debugging a stuck command queue.</doc>
+        </reg32>
         <reg32 offset="0x00668" name="DMA_LOW"/>
         <reg32 offset="0x0066C" name="DMA_HIGH"/>
         <reg32 offset="0x00670" name="AUTO_FLUSH" value="0x00000000" brief="Auto flush cycles"/>

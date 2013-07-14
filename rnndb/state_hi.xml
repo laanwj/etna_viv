@@ -65,22 +65,24 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="31" name="AXI_LP" brief="AXI bus in low power mode"/>
         </reg32>
         <reg32 offset="0x00008" name="AXI_CONFIG" brief="AXI bus configuration">
-          <bitfield high="3" low="0" name="AWID"/>
-          <bitfield high="7" low="4" name="ARID"/>
-          <bitfield high="11" low="8" name="AWCACHE"/>
-          <bitfield high="15" low="12" name="ARCACHE"/>
+            <bitfield high="3" low="0" name="AWID"/>
+            <bitfield high="7" low="4" name="ARID"/>
+            <bitfield high="11" low="8" name="AWCACHE"/>
+            <bitfield high="15" low="12" name="ARCACHE"/>
         </reg32>
         <reg32 offset="0x0000C" name="AXI_STATUS" brief="AXI bus status">
-          <bitfield high="3" low="0" name="WR_ERR_ID"/>
-          <bitfield high="7" low="4" name="RD_ERR_ID"/>
-          <bitfield high="8" low="8" name="DET_WR_ERR"/>
-          <bitfield high="9" low="9" name="DET_RD_ERR"/>
+            <bitfield high="3" low="0" name="WR_ERR_ID"/>
+            <bitfield high="7" low="4" name="RD_ERR_ID"/>
+            <bitfield high="8" low="8" name="DET_WR_ERR"/>
+            <bitfield high="9" low="9" name="DET_RD_ERR"/>
         </reg32>
         <reg32 offset="0x00010" name="INTR_ACKNOWLEDGE">
-          <bitfield high="31" low="0" name="INTR_VEC"/>
+            <bitfield high="30" low="0" name="INTR_VEC" brief="Event signal interrupt bits"/>
+            <bitfield pos="31" name="AXI_BUS_ERROR" brief="AXI bus error interrupt"/>
+            <doc>Reading this register clears the interrupt flags.</doc>
         </reg32>
         <reg32 offset="0x00014" name="INTR_ENBL">
-          <bitfield high="31" low="0" name="INTR_ENBL_VEC"/>
+           <bitfield high="31" low="0" name="INTR_ENBL_VEC"/>
         </reg32>
         <reg32 offset="0x00018" name="CHIP_IDENTITY"/>
         <reg32 offset="0x0001C" name="CHIP_FEATURE" type="chipFeatures" brief="Chip features"/>
