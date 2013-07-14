@@ -46,6 +46,14 @@
 #include "gc_hal_types.h"
 #include "etna_enum_convert.h"
 
+#ifdef ETNAVIV_HOOK
+/* If set, command stream will be logged to environment variable ETNAVIV_FDR */
+#include "viv_hook.h"
+#define open my_open
+#define mmap my_mmap
+#define munmap my_munmap
+#define ioctl my_ioctl
+#endif
 //#define DEBUG
 
 const char *galcore_device[] = {"/dev/galcore", "/dev/graphics/galcore", NULL};
@@ -88,6 +96,9 @@ int viv_close(struct viv_conn *conn)
         return -1;
     close(conn->fd);
     free(conn);
+#ifdef ETNAVIV_HOOK
+    close_hook();
+#endif
     return 0;
 }
 
@@ -134,6 +145,11 @@ int viv_open(enum viv_hw_type hw_type, struct viv_conn **out)
     int err = 0;
     if(conn == NULL)
         return -1;
+#ifdef ETNAVIV_HOOK
+    char *fdr_out = getenv("ETNAVIV_FDR");
+    if(fdr_out)
+       hook_start_logging(fdr_out);
+#endif
     conn->hw_type = hw_type;
     gcsHAL_INTERFACE id = {};
     /* try galcore devices */
