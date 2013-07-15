@@ -434,9 +434,6 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
             rt_resource->levels[0].address,
             drawable->addr, drawable->stride,
             drawable->width, drawable->height, ctx);
-    /* In texture-heavy workloads, the driver/GPU will hang without this stall (which causes the 
-     * command processor to wait for the Pixel Engine to finish) on my GC600 -- unsure why */
-    etna_stall(ctx, SYNC_RECIPIENT_FE, SYNC_RECIPIENT_PE);
     pipe_ctx->flush(pipe_ctx, fence, 0);
 }
 

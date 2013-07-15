@@ -566,9 +566,10 @@ static void sync_context(struct pipe_context *pipe)
         /* clear texture cache (both fragment and vertex) */
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_TEXTURE | VIVS_GL_FLUSH_CACHE_TEXTUREVS);
     }
-    if(dirty & (ETNA_STATE_FRAMEBUFFER | ETNA_STATE_TS))
+    if(dirty & (ETNA_STATE_FRAMEBUFFER | ETNA_STATE_TS | ETNA_STATE_TEXTURE_CACHES))
     {
-        /* wait rasterizer until RS (PE) finished configuration */
+        /* Wait rasterizer until RS (PE) finished configuration.
+         * Also wait after texture cache was flushed, otherwise rendering may hang. */
         etna_stall(ctx, SYNC_RECIPIENT_RA, SYNC_RECIPIENT_PE);
     }
 
@@ -1451,6 +1452,7 @@ static void etna_pipe_texture_barrier(struct pipe_context *pipe)
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
     /* clear texture cache */
     etna_set_state(priv->ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_TEXTURE | VIVS_GL_FLUSH_CACHE_TEXTUREVS);
+    etna_stall(priv->ctx, SYNC_RECIPIENT_RA, SYNC_RECIPIENT_PE);
 }
 
 #ifdef RAWSHADER
