@@ -330,7 +330,7 @@ int main(int argc, char **argv)
 
     /* allocate main render target */
     gcuVIDMEM_NODE_PTR rt_node = 0;
-    if(viv_alloc_linear_vidmem(conn, (padded_width * padded_height * 4) + 0x3000, 0x40, gcvSURF_RENDER_TARGET, gcvPOOL_DEFAULT, &rt_node, NULL)!=0)
+    if(viv_alloc_linear_vidmem(conn, (padded_width * padded_height * 4), 0x40, gcvSURF_RENDER_TARGET, gcvPOOL_DEFAULT, &rt_node, NULL)!=0)
     {
         fprintf(stderr, "Error allocating render target buffer memory\n");
         exit(1);
@@ -349,7 +349,7 @@ int main(int argc, char **argv)
 
     /* allocate tile status for main render target */
     gcuVIDMEM_NODE_PTR rt_ts_node = 0;
-    uint32_t rt_ts_size = align_up((padded_width * padded_height * 4 + 0x3000)/0x100, 0x100);
+    uint32_t rt_ts_size = align_up((padded_width * padded_height * 4)/0x100, 0x100);
     if(viv_alloc_linear_vidmem(conn, rt_ts_size, 0x40, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, &rt_ts_node, NULL)!=0)
     {
         fprintf(stderr, "Error allocating render target tile status memory\n");
@@ -368,7 +368,7 @@ int main(int argc, char **argv)
 
     /* allocate depth for main render target */
     gcuVIDMEM_NODE_PTR z_node = 0;
-    if(viv_alloc_linear_vidmem(conn, padded_width * padded_height * 2 + 0x7000, 0x40, gcvSURF_DEPTH, gcvPOOL_DEFAULT, &z_node, NULL)!=0)
+    if(viv_alloc_linear_vidmem(conn, padded_width * padded_height * 2, 0x40, gcvSURF_DEPTH, gcvPOOL_DEFAULT, &z_node, NULL)!=0)
     {
         fprintf(stderr, "Error allocating depth memory\n");
         exit(1);
@@ -386,7 +386,7 @@ int main(int argc, char **argv)
 
     /* allocate depth ts for main render target */
     gcuVIDMEM_NODE_PTR z_ts_node = 0;
-    uint32_t z_ts_size = align_up((padded_width * padded_height * 2 + 0x7000)/0x100, 0x100);
+    uint32_t z_ts_size = align_up((padded_width * padded_height * 2)/0x100, 0x100);
     if(viv_alloc_linear_vidmem(conn, z_ts_size, 0x40, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, &z_ts_node, NULL)!=0)
     {
         fprintf(stderr, "Error allocating depth memory\n");
@@ -594,7 +594,6 @@ int main(int argc, char **argv)
                    VIVS_TS_MEM_CONFIG_DEPTH_COMPRESSION);
     
     
-    //FIXME
     /*   Compute transform matrices in the same way as cube egl demo */ 
     ESMatrix modelview;
     esMatrixLoadIdentity(&modelview);
@@ -701,7 +700,7 @@ int main(int argc, char **argv)
     etna_set_state(cmdPtr, VIVS_GL_SEMAPHORE_TOKEN, 
                    (SYNC_RECIPIENT_FE<<VIVS_GL_SEMAPHORE_TOKEN_FROM__SHIFT)|
                    (SYNC_RECIPIENT_PE<<VIVS_GL_SEMAPHORE_TOKEN_TO__SHIFT));
-    etna_stall_9(cmdPtr); //why not VIVS_GL_STALL_TOKEN?
+    etna_stall_9(cmdPtr);
     
     /* shader setup */
     etna_set_state_multi(cmdPtr, VIVS_VS_INPUT_COUNT, 3, (uint32_t[]){
@@ -748,12 +747,7 @@ int main(int argc, char **argv)
     uint32_t ps[] = {
         0x00000000, 0x00000000, 0x00000000, 0x00000000
     };
-<<<<<<< HEAD
     etna_set_state_multi(cmdPtr, VIVS_SH_INST_MEM(0), sizeof(vs)/4, vs);
-=======
-    
-    etna_set_state_multi(cmdPtr, VIVS_SH_INST_MEM_V(0), sizeof(vs)/4, vs);
->>>>>>> 6dda8c1... cube_etna replay on GC880
     etna_set_state(cmdPtr, VIVS_RA_CONTROL, 0x1);
     etna_set_state(cmdPtr, VIVS_PS_OUTPUT_REG, 0x1);
     etna_set_state(cmdPtr, VIVS_PA_SHADER_ATTRIBUTES(0), 0x200);
@@ -773,11 +767,7 @@ int main(int argc, char **argv)
     etna_set_state(cmdPtr, VIVS_PS_END_PC, 0x1);
     
 
-<<<<<<< HEAD
     etna_set_state_multi(cmdPtr, VIVS_SH_INST_MEM(0x100*4), sizeof(ps)/4, ps);
-=======
-    etna_set_state_multi(cmdPtr, VIVS_SH_INST_MEM_P(0), sizeof(ps)/4, ps);
->>>>>>> 6dda8c1... cube_etna replay on GC880
     etna_set_state_multi(cmdPtr, VIVS_PS_INPUT_COUNT, 3, (uint32_t[]){
         (31<<8)|2,
         (2 << VIVS_PS_TEMP_REGISTER_CONTROL_NUM_TEMPS__SHIFT),
