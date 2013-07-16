@@ -235,6 +235,7 @@ static inline void etna_set_state(struct etna_ctx *cmdbuf, uint32_t address, uin
 
 static inline void etna_set_state_multi(struct etna_ctx *cmdbuf, uint32_t base, uint32_t num, const uint32_t *values)
 {
+    if(num == 0) return;
     etna_reserve(cmdbuf, 1 + num + 1); /* 1 extra for potential alignment */
     ETNA_EMIT_LOAD_STATE(cmdbuf, base >> 2, num, 0);
     memcpy(&cmdbuf->buf[cmdbuf->offset], values, 4*num);

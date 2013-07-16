@@ -194,16 +194,6 @@ static void etna_link_shaders(struct pipe_context *pipe,
     SET_STATE(GL_VARYING_COMPONENT_USE[1], component_use[1]);
     
     /* reference instruction memory */
-#if 0
-    {
-        int fd=creat("/tmp/shader_vs.bin", 0777);
-        write(fd, vs->code, vs->code_size*4);
-        close(fd);
-        fd=creat("/tmp/shader_ps.bin", 0777);
-        write(fd, fs->code, fs->code_size*4);
-        close(fd);
-    }
-#endif
     cs->vs_inst_mem_size = vs->code_size;
     cs->VS_INST_MEM = vs->code;
     cs->ps_inst_mem_size = fs->code_size;
@@ -530,31 +520,23 @@ static void sync_context(struct pipe_context *pipe)
         {
             /*03828*/ EMIT_STATE(GL_VARYING_COMPONENT_USE(x), GL_VARYING_COMPONENT_USE[x], e->shader_state.GL_VARYING_COMPONENT_USE[x]);
         }
-        for(int x=0; x<e->shader_state.vs_inst_mem_size; ++x)
-        {
-            /*04000*/ EMIT_STATE(VS_INST_MEM(x), VS_INST_MEM[x], e->shader_state.VS_INST_MEM[x]);
-        }
+        /*04000*/
+        etna_set_state_multi(ctx, VIVS_VS_INST_MEM(0), e->shader_state.vs_inst_mem_size, e->shader_state.VS_INST_MEM);
     }
     if(dirty & (ETNA_STATE_VS_UNIFORMS))
     {
-        for(int x=0; x<e->shader_state.vs_uniforms_size; ++x)
-        {
-            /*05000*/ EMIT_STATE(VS_UNIFORMS(x), VS_UNIFORMS[x], e->shader_state.VS_UNIFORMS[x]);
-        }
+        /*05000*/
+        etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(0), e->shader_state.vs_uniforms_size, e->shader_state.VS_UNIFORMS);
     } 
     if(dirty & (ETNA_STATE_SHADER))
     {
-        for(int x=0; x<e->shader_state.ps_inst_mem_size; ++x)
-        {
-            /*06000*/ EMIT_STATE(PS_INST_MEM(x), PS_INST_MEM[x], e->shader_state.PS_INST_MEM[x]);
-        }
+        /*06000*/
+        etna_set_state_multi(ctx, VIVS_PS_INST_MEM(0), e->shader_state.ps_inst_mem_size, e->shader_state.PS_INST_MEM);
     }    
     if(dirty & (ETNA_STATE_PS_UNIFORMS))
     {
-        for(int x=0; x<e->shader_state.ps_uniforms_size; ++x)
-        {
-            /*07000*/ EMIT_STATE(PS_UNIFORMS(x), PS_UNIFORMS[x], e->shader_state.PS_UNIFORMS[x]);
-        }
+        /*07000*/
+        etna_set_state_multi(ctx, VIVS_PS_UNIFORMS(0), e->shader_state.ps_uniforms_size, e->shader_state.PS_UNIFORMS);
     }
 #undef EMIT_STATE
 #if 0
@@ -1266,8 +1248,11 @@ static void etna_pipe_clear(struct pipe_context *pipe,
             uint32_t new_clear_value = translate_clear_color(surf->base.format, &color[idx]);
             if(surf->surf.ts_address) /* TS: use precompiled clear command */
             {
-                priv->framebuffer.TS_COLOR_CLEAR_VALUE = new_clear_value;
-                priv->dirty_bits |= ETNA_STATE_TS;
+                if(unlikely(priv->framebuffer.TS_COLOR_CLEAR_VALUE != new_clear_value))
+                {
+                    priv->framebuffer.TS_COLOR_CLEAR_VALUE = new_clear_value;
+                    priv->dirty_bits |= ETNA_STATE_TS;
+                }
             }
             else if(unlikely(new_clear_value != surf->clear_value)) /* Queue normal RS clear for non-TS surfaces */
             {
@@ -1283,8 +1268,11 @@ static void etna_pipe_clear(struct pipe_context *pipe,
         uint32_t new_clear_value = translate_clear_depth_stencil(surf->base.format, depth, stencil);
         if(surf->surf.ts_address) /* TS: use precompiled clear command */
         {
-            priv->framebuffer.TS_DEPTH_CLEAR_VALUE = new_clear_value;
-            priv->dirty_bits |= ETNA_STATE_TS;
+            if(unlikely(priv->framebuffer.TS_COLOR_CLEAR_VALUE != new_clear_value))
+            {
+                priv->framebuffer.TS_DEPTH_CLEAR_VALUE = new_clear_value;
+                priv->dirty_bits |= ETNA_STATE_TS;
+            }
         } else if(unlikely(new_clear_value != surf->clear_value)) /* Queue normal RS clear for non-TS surfaces */
         {
             etna_rs_gen_clear_surface(surf, new_clear_value);
