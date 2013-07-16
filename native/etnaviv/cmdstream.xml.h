@@ -8,8 +8,8 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- /home/orion/projects/etna_viv/rnndb/cmdstream.xml (  11642 bytes, from 2013-02-01 10:02:25)
-- /home/orion/projects/etna_viv/rnndb/common.xml    (  15985 bytes, from 2013-02-10 12:55:03)
+- /home/linaro/etna_viv/rnndb/cmdstream.xml (  11642 bytes, from 2013-06-18 19:41:10)
+- /home/linaro/etna_viv/rnndb/common.xml    (  15985 bytes, from 2013-06-18 19:41:10)
 
 Copyright (C) 2013
 */

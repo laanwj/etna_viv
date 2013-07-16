@@ -426,7 +426,7 @@ int main(int argc, char **argv)
      
      
     /* Submit command buffer 7 */
-    cmdbuf7[0x19] = color_surface_physical; //color_surface_physical or rs_dest_physical
+    cmdbuf7[0x19] = rs_dest_physical; //color_surface_physical or rs_dest_physical
     cmdbuf7[0x1b] = bmp_physical;
 
     commandBuffer.startOffset = commandBuffer.offset + 0x08;

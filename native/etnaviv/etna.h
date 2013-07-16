@@ -253,6 +253,14 @@ static inline void etna_set_state_fixp(struct etna_ctx *cmdbuf, uint32_t address
     ETNA_EMIT_LOAD_STATE(cmdbuf, address >> 2, 1, 1);
     ETNA_EMIT(cmdbuf, value);
 }
+static inline void etna_set_state_fixp_multi(struct etna_ctx *cmdbuf, uint32_t address, uint32_t num, uint32_t *values)
+{
+    etna_reserve(cmdbuf, 1 + num + 1); /* 1 extra for potential alignment */
+    ETNA_EMIT_LOAD_STATE(cmdbuf, address >> 2, num, 1);
+    memcpy(&cmdbuf->buf[cmdbuf->offset], values, 4*num);
+    cmdbuf->offset += num;
+    ETNA_ALIGN(cmdbuf);
+}
 static inline void etna_draw_primitives(struct etna_ctx *cmdbuf, uint32_t primitive_type, uint32_t start, uint32_t count)
 {
 #ifdef CMD_DEBUG

@@ -8,7 +8,7 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- /home/orion/projects/etna_viv/rnndb/isa.xml (  18597 bytes, from 2013-03-29 15:02:55)
+- /home/linaro/etna_viv/rnndb/isa.xml (  18824 bytes, from 2013-07-14 23:00:58)
 
 Copyright (C) 2013
 */
@@ -53,6 +53,7 @@ Copyright (C) 2013
 #define INST_OPCODE_FLOOR					0x00000025
 #define INST_OPCODE_CEIL					0x00000026
 #define INST_OPCODE_SIGN					0x00000027
+#define INST_OPCODE_I2F						0x0000002d
 #define INST_OPCODE_CMP						0x00000031
 #define INST_OPCODE_LOAD					0x00000032
 #define INST_OPCODE_STORE					0x00000033
