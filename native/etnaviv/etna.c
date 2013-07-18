@@ -300,6 +300,11 @@ int _etna_reserve_internal(struct etna_ctx *ctx, size_t n)
 #ifdef DEBUG
     printf("Buffer full\n");
 #endif
+    if((ctx->offset*4 + END_COMMIT_CLEARANCE) > COMMAND_BUFFER_SIZE)
+    {
+        printf("%s: Command buffer overflow!\n", __func__);
+        exit(1);
+    }
     if(ctx->cur_buf != -1)
     {
 #ifdef DEBUG
