@@ -259,6 +259,15 @@ struct etna_3d_state
     uint32_t /*00648*/ FE_INDEX_STREAM_CONTROL;
     uint32_t /*0064C*/ FE_VERTEX_STREAM_BASE_ADDR;
     uint32_t /*00650*/ FE_VERTEX_STREAM_CONTROL;
+
+    uint32_t /*00800*/ VS_END_PC;
+    uint32_t /*00804*/ VS_OUTPUT_COUNT;
+    uint32_t /*00808*/ VS_INPUT_COUNT;
+    uint32_t /*0080C*/ VS_TEMP_REGISTER_CONTROL;
+    uint32_t /*00810*/ VS_OUTPUT[VIVS_VS_OUTPUT__LEN];
+    uint32_t /*00820*/ VS_INPUT[VIVS_VS_INPUT__LEN];
+    uint32_t /*00830*/ VS_LOAD_BALANCING;
+    uint32_t /*00838*/ VS_START_PC;
     
     uint32_t /*00A00*/ PA_VIEWPORT_SCALE_X;
     uint32_t /*00A04*/ PA_VIEWPORT_SCALE_Y;
@@ -268,7 +277,11 @@ struct etna_3d_state
     uint32_t /*00A14*/ PA_VIEWPORT_OFFSET_Z;
     uint32_t /*00A18*/ PA_LINE_WIDTH;
     uint32_t /*00A1C*/ PA_POINT_SIZE;
+    uint32_t /*00A28*/ PA_SYSTEM_MODE;
+    uint32_t /*00A2C*/ PA_W_CLIP_LIMIT;
+    uint32_t /*00A30*/ PA_ATTRIBUTE_ELEMENT_COUNT;
     uint32_t /*00A34*/ PA_CONFIG;
+    uint32_t /*00A40*/ PA_SHADER_ATTRIBUTES[VIVS_PA_SHADER_ATTRIBUTES__LEN];
 
     uint32_t /*00C00*/ SE_SCISSOR_LEFT; // fixp
     uint32_t /*00C04*/ SE_SCISSOR_TOP; // fixp
@@ -277,6 +290,15 @@ struct etna_3d_state
     uint32_t /*00C10*/ SE_DEPTH_SCALE;
     uint32_t /*00C14*/ SE_DEPTH_BIAS;
     uint32_t /*00C18*/ SE_CONFIG;
+
+    uint32_t /*00E00*/ RA_CONTROL;
+
+    uint32_t /*01000*/ PS_END_PC;
+    uint32_t /*01004*/ PS_OUTPUT_REG;
+    uint32_t /*01008*/ PS_INPUT_COUNT;
+    uint32_t /*0100C*/ PS_TEMP_REGISTER_CONTROL;
+    uint32_t /*01010*/ PS_CONTROL;
+    uint32_t /*01018*/ PS_START_PC;
 
     uint32_t /*01400*/ PE_DEPTH_CONFIG;
     uint32_t /*01404*/ PE_DEPTH_NEAR;
@@ -326,8 +348,15 @@ struct etna_3d_state
     uint32_t /*02080*/ TE_SAMPLER_LOG_SIZE[VIVS_TE_SAMPLER__LEN];
     uint32_t /*020C0*/ TE_SAMPLER_LOD_CONFIG[VIVS_TE_SAMPLER__LEN];
     uint32_t /*02400*/ TE_SAMPLER_LOD_ADDR[VIVS_TE_SAMPLER_LOD_ADDR__LEN][VIVS_TE_SAMPLER__LEN];
-    
+   
+    uint32_t /*03814*/ GL_VERTEX_ELEMENT_CONFIG;
     uint32_t /*03818*/ GL_MULTI_SAMPLE_CONFIG;
+    uint32_t /*0381C*/ GL_VARYING_TOTAL_COMPONENTS;
+    uint32_t /*03820*/ GL_VARYING_NUM_COMPONENTS;
+    uint32_t /*03828*/ GL_VARYING_COMPONENT_USE[VIVS_GL_VARYING_COMPONENT_USE__LEN];
+
+    uint32_t /*05000*/ VS_UNIFORMS[VIVS_VS_UNIFORMS__LEN];
+    uint32_t /*07000*/ PS_UNIFORMS[VIVS_PS_UNIFORMS__LEN];
 };
 
 
