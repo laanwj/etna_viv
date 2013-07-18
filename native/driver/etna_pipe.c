@@ -234,9 +234,11 @@ static void sync_context(struct pipe_context *pipe)
     /* XXX todo: 
      * - group consecutive states into one LOAD_STATE command stream
      * - update context: libetnaviv needs to provide interface for this
+     * - don't check e->gpu3d.initialized for every state update, but use specialized
+     *   function for state initialization
      */
 #define EMIT_STATE_GEN(state_name, dest_field, src_value, fixp) \
-    if(e->gpu3d.dest_field != (src_value)) { \
+    if(!e->gpu3d.initialized || e->gpu3d.dest_field != (src_value)) { \
         ETNA_EMIT_LOAD_STATE(ctx, (VIVS_##state_name) >> 2, 1, (fixp));  \
         ETNA_EMIT(ctx, src_value); \
         e->gpu3d.dest_field = (src_value); \
@@ -578,6 +580,7 @@ static void sync_context(struct pipe_context *pipe)
     }
 
     e->dirty_bits = 0;
+    e->gpu3d.initialized = true;
 }
 /*********************************************************************/
 static void etna_pipe_destroy(struct pipe_context *pipe)

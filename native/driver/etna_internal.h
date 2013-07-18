@@ -252,8 +252,9 @@ struct compiled_shader_state
 /* state of all 3d and common registers relevant to etna driver */
 struct etna_3d_state
 {
+    bool initialized;
     unsigned num_vertex_elements; /* number of elements in FE_VERTEX_ELEMENT_CONFIG */
-    
+
     uint32_t /*00600*/ FE_VERTEX_ELEMENT_CONFIG[VIVS_FE_VERTEX_ELEMENT_CONFIG__LEN];
     uint32_t /*00644*/ FE_INDEX_STREAM_BASE_ADDR;
     uint32_t /*00648*/ FE_INDEX_STREAM_CONTROL;
@@ -268,7 +269,7 @@ struct etna_3d_state
     uint32_t /*00820*/ VS_INPUT[VIVS_VS_INPUT__LEN];
     uint32_t /*00830*/ VS_LOAD_BALANCING;
     uint32_t /*00838*/ VS_START_PC;
-    
+
     uint32_t /*00A00*/ PA_VIEWPORT_SCALE_X;
     uint32_t /*00A04*/ PA_VIEWPORT_SCALE_Y;
     uint32_t /*00A08*/ PA_VIEWPORT_SCALE_Z;
@@ -322,7 +323,7 @@ struct etna_3d_state
     uint32_t /*01464*/ PE_PIPE_1_COLOR_ADDR;
     uint32_t /*01480*/ PE_PIPE_0_DEPTH_ADDR;
     uint32_t /*01484*/ PE_PIPE_1_DEPTH_ADDR;
-    
+
     uint32_t /*01604*/ RS_CONFIG;
     uint32_t /*01608*/ RS_SOURCE_ADDR;
     uint32_t /*0160C*/ RS_SOURCE_STRIDE;
@@ -340,15 +341,15 @@ struct etna_3d_state
     uint32_t /*01664*/ TS_DEPTH_STATUS_BASE;
     uint32_t /*01668*/ TS_DEPTH_SURFACE_BASE;
     uint32_t /*0166C*/ TS_DEPTH_CLEAR_VALUE;
-    
+
     uint32_t /*016A0*/ RS_EXTRA_CONFIG;
-    
+
     uint32_t /*02000*/ TE_SAMPLER_CONFIG0[VIVS_TE_SAMPLER__LEN];
     uint32_t /*02040*/ TE_SAMPLER_SIZE[VIVS_TE_SAMPLER__LEN];
     uint32_t /*02080*/ TE_SAMPLER_LOG_SIZE[VIVS_TE_SAMPLER__LEN];
     uint32_t /*020C0*/ TE_SAMPLER_LOD_CONFIG[VIVS_TE_SAMPLER__LEN];
     uint32_t /*02400*/ TE_SAMPLER_LOD_ADDR[VIVS_TE_SAMPLER_LOD_ADDR__LEN][VIVS_TE_SAMPLER__LEN];
-   
+
     uint32_t /*03814*/ GL_VERTEX_ELEMENT_CONFIG;
     uint32_t /*03818*/ GL_MULTI_SAMPLE_CONFIG;
     uint32_t /*0381C*/ GL_VARYING_TOTAL_COMPONENTS;
