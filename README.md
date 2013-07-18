@@ -342,6 +342,7 @@ Authors
 - Wladimir J. van der Laan
 - Steven J. Hill (kernel driver help)
 - Christian Gmeiner (beginnings of GC2000)
+- Michał Ściubidło (GC880)
 
 Thanks
 =======
