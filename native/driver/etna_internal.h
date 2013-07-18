@@ -252,7 +252,6 @@ struct compiled_shader_state
 /* state of all 3d and common registers relevant to etna driver */
 struct etna_3d_state
 {
-    bool initialized;
     unsigned num_vertex_elements; /* number of elements in FE_VERTEX_ELEMENT_CONFIG */
 
     uint32_t /*00600*/ FE_VERTEX_ELEMENT_CONFIG[VIVS_FE_VERTEX_ELEMENT_CONFIG__LEN];
@@ -260,6 +259,8 @@ struct etna_3d_state
     uint32_t /*00648*/ FE_INDEX_STREAM_CONTROL;
     uint32_t /*0064C*/ FE_VERTEX_STREAM_BASE_ADDR;
     uint32_t /*00650*/ FE_VERTEX_STREAM_CONTROL;
+    uint32_t /*00680*/ FE_VERTEX_STREAMS_BASE_ADDR[VIVS_FE_VERTEX_STREAMS__LEN];
+    uint32_t /*006A0*/ FE_VERTEX_STREAMS_CONTROL[VIVS_FE_VERTEX_STREAMS__LEN];
 
     uint32_t /*00800*/ VS_END_PC;
     uint32_t /*00804*/ VS_OUTPUT_COUNT;
@@ -319,10 +320,8 @@ struct etna_3d_state
     uint32_t /*014A0*/ PE_STENCIL_CONFIG_EXT;
     uint32_t /*014A4*/ PE_LOGIC_OP;
     uint32_t /*014A8*/ PE_DITHER[2];
-    uint32_t /*01460*/ PE_PIPE_0_COLOR_ADDR;
-    uint32_t /*01464*/ PE_PIPE_1_COLOR_ADDR;
-    uint32_t /*01480*/ PE_PIPE_0_DEPTH_ADDR;
-    uint32_t /*01484*/ PE_PIPE_1_DEPTH_ADDR;
+    uint32_t /*01460*/ PE_PIPE_COLOR_ADDR[VIVS_PE_PIPE__LEN];
+    uint32_t /*01480*/ PE_PIPE_DEPTH_ADDR[VIVS_PE_PIPE__LEN];
 
     uint32_t /*01604*/ RS_CONFIG;
     uint32_t /*01608*/ RS_SOURCE_ADDR;
@@ -356,7 +355,9 @@ struct etna_3d_state
     uint32_t /*03820*/ GL_VARYING_NUM_COMPONENTS;
     uint32_t /*03828*/ GL_VARYING_COMPONENT_USE[VIVS_GL_VARYING_COMPONENT_USE__LEN];
 
+    // XX uint32_t /*04000*/ VS_INST_MEM[VIVS_VS_INST_MEM__LEN];
     uint32_t /*05000*/ VS_UNIFORMS[VIVS_VS_UNIFORMS__LEN];
+    // XX uint32_t /*06000*/ PS_INST_MEM[VIVS_PS_INST_MEM__LEN];
     uint32_t /*07000*/ PS_UNIFORMS[VIVS_PS_UNIFORMS__LEN];
 };
 

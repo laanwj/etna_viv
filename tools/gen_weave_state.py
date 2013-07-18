@@ -111,7 +111,8 @@ def main():
             #print(field, '%05x' % offset, strides)
             field_by_offset[offset] = (field, path, strides)
             recs_by_offset[offset].append(rec_info)
-    # Emit output
+    # Emit weave state
+    print('/* Weave state */')
     offsets = sorted(field_by_offset.keys())
     last_dirty_bits = None
     indent = 1
@@ -184,6 +185,64 @@ def main():
         indent -= 1
         out.write('    ' * indent)
         out.write('}\n')
+
+    # Emit reset state function
+    # This function pushes the current context structure to the gpu
+    print()
+    print('/* Reset state */')
+    indent = 1
+    for offset in offsets:
+        (name, path, strides) = field_by_offset[offset]
+        # strides is a list of (stride,length) tuples
+        name = name.replace('.', '_')
+        recs = recs_by_offset[offset]
+
+        # build target state
+        target_state = name
+        target_state_sub = ', '.join(('{%i}' % (src_idx)) for src_idx,_ in enumerate(strides))
+        if target_state_sub:
+            target_state += '('+target_state_sub+')'
+
+        # build target field reference
+        target_field = name
+        #   to sort destination state addresses in order, sort array indices by decreasing stride
+        dest_strides = sorted([(idx,stride,length) for idx,(stride,length) in enumerate(strides)], key=lambda x:-x[1])
+        for src_idx,stride,length in dest_strides:
+            target_field += '[{%i}]' % (src_idx)
+
+        fieldrefs = []
+        dirty_bits = set()
+        for rec in recs:
+            source_field = name
+            for idx,(stride,length) in enumerate(strides):
+                iname = '{%i}' % idx
+                if not iname in rec[1]: # if quantifier not already used in record name itself
+                    source_field += '[' + iname + ']'
+            fieldrefs.append('%s%s%s' % (SRC_SPEC,rec[1],source_field))
+            dirty_bits.add(rec[2])
+
+        for src_idx,stride,length in dest_strides:
+            out.write('    ' * indent)
+            out.write('for(int {0}=0; {0}<{1}; ++{0})\n'.format(VARNAMES[src_idx], length))
+            out.write('    ' * indent)
+            out.write('{\n')
+            indent += 1
+
+        macro = 'EMIT_STATE'
+        if isinstance(path[-1].type, BaseType) and path[-1].type.kind == 'fixedp':
+            macro += '_FIXP'
+
+        out.write('    ' * indent)
+        out.write('/*%05X*/ %s(%s, %s);\n' % (
+            offset,
+            macro,
+            target_state.format(*VARNAMES),
+            target_field.format(*VARNAMES)))
+
+        for src_idx,stride,length in dest_strides:
+            indent -= 1
+            out.write('    ' * indent)
+            out.write('}\n')
 
 
 if __name__ == '__main__':
