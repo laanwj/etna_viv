@@ -1307,7 +1307,8 @@ static void etna_pipe_set_fragment_sampler_views(struct pipe_context *pipe,
     for(idx=0; idx<num_views; ++idx)
     {
         pipe_sampler_view_reference(&priv->sampler_view_s[idx], info[idx]);
-        priv->sampler_view[idx] = *etna_sampler_view(info[idx])->internal;
+        if(info[idx])
+            priv->sampler_view[idx] = *etna_sampler_view(info[idx])->internal;
     }
     for(; idx<priv->specs.fragment_sampler_count; ++idx)
     {
@@ -1327,7 +1328,8 @@ static void etna_pipe_set_vertex_sampler_views(struct pipe_context *pipe,
     for(idx=0; idx<num_views; ++idx)
     {
         pipe_sampler_view_reference(&priv->sampler_view_s[offset + idx], info[idx]);
-        priv->sampler_view[offset + idx] = *etna_sampler_view(info[idx])->internal;
+        if(info[idx])
+            priv->sampler_view[offset + idx] = *etna_sampler_view(info[idx])->internal;
     }
     for(; idx<priv->specs.vertex_sampler_count; ++idx)
     {
@@ -1819,7 +1821,7 @@ static void etna_pipe_bind_fs_state(struct pipe_context *pipe, void *fss_)
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
     struct etna_shader_object *fss = (struct etna_shader_object*)fss_;
     priv->dirty_bits |= ETNA_STATE_SHADER | ETNA_STATE_PS_UNIFORMS;
-    assert(fss->processor == TGSI_PROCESSOR_FRAGMENT);
+    assert(fss == NULL || fss->processor == TGSI_PROCESSOR_FRAGMENT);
     priv->fs = fss;
 }
 
@@ -1828,7 +1830,7 @@ static void etna_pipe_bind_vs_state(struct pipe_context *pipe, void *vss_)
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
     struct etna_shader_object *vss = (struct etna_shader_object*)vss_;
     priv->dirty_bits |= ETNA_STATE_SHADER | ETNA_STATE_VS_UNIFORMS;
-    assert(vss->processor == TGSI_PROCESSOR_VERTEX);
+    assert(vss == NULL || vss->processor == TGSI_PROCESSOR_VERTEX);
     priv->vs = vss;
 }
 
