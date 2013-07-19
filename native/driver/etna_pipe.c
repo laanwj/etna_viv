@@ -423,6 +423,7 @@ static void sync_context(struct pipe_context *pipe)
      * - num samplers
      * - texture lod 
      * - ETNA_STATE_TS
+     * - removed ETNA_STATE_BASE_SETUP statements -- these are guaranteed to not change anyway
      */
     if(dirty & (ETNA_STATE_VERTEX_ELEMENTS))
     {
@@ -484,10 +485,6 @@ static void sync_context(struct pipe_context *pipe)
         /*00A18*/ EMIT_STATE(PA_LINE_WIDTH, PA_LINE_WIDTH, e->rasterizer->PA_LINE_WIDTH);
         /*00A1C*/ EMIT_STATE(PA_POINT_SIZE, PA_POINT_SIZE, e->rasterizer->PA_POINT_SIZE);
         /*00A28*/ EMIT_STATE(PA_SYSTEM_MODE, PA_SYSTEM_MODE, e->rasterizer->PA_SYSTEM_MODE);
-    }
-    if(dirty & (ETNA_STATE_BASE_SETUP))
-    {
-        /*00A2C*/ EMIT_STATE(PA_W_CLIP_LIMIT, PA_W_CLIP_LIMIT, e->base_setup.PA_W_CLIP_LIMIT);
     }
     if(dirty & (ETNA_STATE_SHADER))
     {
@@ -679,10 +676,6 @@ static void sync_context(struct pipe_context *pipe)
                 }
             }
         }
-    }
-    if(dirty & (ETNA_STATE_BASE_SETUP))
-    {
-        /*03814*/ EMIT_STATE(GL_VERTEX_ELEMENT_CONFIG, GL_VERTEX_ELEMENT_CONFIG, e->base_setup.GL_VERTEX_ELEMENT_CONFIG);
     }
     if(dirty & (ETNA_STATE_FRAMEBUFFER | ETNA_STATE_SAMPLE_MASK))
     {
@@ -1960,9 +1953,9 @@ struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct et
                      16, UTIL_SLAB_SINGLETHREADED);
 
     /*  Set sensible defaults for state */
-    priv->base_setup.PA_W_CLIP_LIMIT = priv->gpu3d.PA_W_CLIP_LIMIT = 0x34000001;
-    priv->base_setup.GL_VERTEX_ELEMENT_CONFIG = priv->gpu3d.GL_VERTEX_ELEMENT_CONFIG = 0x1;
-    priv->base_setup.GL_API_MODE = priv->gpu3d.GL_API_MODE = VIVS_GL_API_MODE_OPENGL;
+    priv->gpu3d.PA_W_CLIP_LIMIT = 0x34000001;
+    priv->gpu3d.GL_VERTEX_ELEMENT_CONFIG = 0x1;
+    priv->gpu3d.GL_API_MODE = VIVS_GL_API_MODE_OPENGL;
 
     /* fill in vtable entries one by one */
     pc->destroy = etna_pipe_destroy;

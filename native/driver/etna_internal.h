@@ -65,14 +65,6 @@ struct etna_pipe_specs
 /** Compiled Gallium state. All the different compiled state atoms are woven together and uploaded
  * only when it is necessary to synchronize the state, for example before rendering. */
 
-/* Registers that don't fit into any other category but that are needed for setup */
-struct compiled_base_setup_state
-{
-    uint32_t PA_W_CLIP_LIMIT;
-    uint32_t GL_VERTEX_ELEMENT_CONFIG;
-    uint32_t GL_API_MODE;
-};
-
 /* Compiled pipe_rasterizer_state */
 struct compiled_rasterizer_state
 {

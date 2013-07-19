@@ -144,7 +144,6 @@ struct etna_transfer
 /* group all current CSOs, for dirty bits */
 enum
 {
-    ETNA_STATE_BASE_SETUP = (1<<0), /* basic openGL setup */
     ETNA_STATE_BLEND = (1<<1),
     ETNA_STATE_SAMPLERS = (1<<2),
     ETNA_STATE_RASTERIZER = (1<<3),
@@ -175,9 +174,6 @@ struct etna_pipe_context_priv
     struct etna_pipe_specs specs;
     struct util_slab_mempool transfer_pool;
     struct blitter_context *blitter;
-
-    /* constant */
-    struct compiled_base_setup_state base_setup;
 
     /* bindable state */
     struct compiled_blend_state *blend;
