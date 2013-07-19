@@ -26,6 +26,7 @@ from __future__ import print_function, division, unicode_literals
 import argparse
 from collections import defaultdict
 import sys
+import operator
 # Parse rules-ng-ng format for state space
 from etnaviv.util import rnndb_path
 from etnaviv.parse_rng import parse_rng_file, format_path, BitSet, Domain, Stripe, Register, Array, BaseType
@@ -76,23 +77,50 @@ def rnn_strides(path):
             raise ValueError
     return offset, strides
 
+class FieldAttributes(object):
+    def __init__(self):
+        # Set defaults
+        # Mark large, dynamically sized state areas such as shader code
+        # and parameters with DYNAMIC.
+        self.dynamic = False
+
+    def __eq__(self, other):
+        return self.dynamic == other.dynamic
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+def parse_field_attributes(line):
+    field_attributes = FieldAttributes()
+    for token in line:
+        if token == 'DYNAMIC':
+            field_attributes.dynamic = True
+        else:
+            print('Unknown field attribute %s' % token)
+            exit(1)
+    return field_attributes
+
 def main():
     args = parse_args()
     state_xml = parse_rng_file(args.rules_file)
     state_map = state_xml.lookup_domain('VIVS')
     out = sys.stdout
+
     # Read input file
     with open(args.input, 'r') as f:
         fields = None
         recordname = None
         data = []
         for line in f:
+            (line, _, _) = line.partition('#')
             line = line.rstrip()
-            if not line or line.startswith('#'):
+            if not line:
                 continue
             if line.startswith('    '):
+                # If line starts with four spaces this is a field
+                # specification.
                 line = line.strip().split()
-                fields.append(line[0])
+                field_attr = parse_field_attributes(line[1:])
+                fields.append((line[0], field_attr))
             else:
                 if recordname is not None:
                     data.append([recordname, fields])
@@ -100,18 +128,28 @@ def main():
                 recordname = line.strip()
         if recordname is not None:
             data.append([recordname, fields])
-    # Preprocess input file, look up field names and sort by offset
+
+    # Preprocess input file, look up field names and sort by register offset
     recs_by_offset = defaultdict(list)
     field_by_offset = {}
+    field_attrs_by_offset = {}
     for rec in data:
         rec_info = rec[0].split()
-        for field in rec[1]:
+        for field,field_attr in rec[1]:
             path = rnn_lookup(state_map, field)
             offset, strides = rnn_strides(path)
-            #print(field, '%05x' % offset, strides)
             field_by_offset[offset] = (field, path, strides)
             recs_by_offset[offset].append(rec_info)
-    # Emit weave state
+            if not offset in field_attrs_by_offset:
+                field_attrs_by_offset[offset] = field_attr
+            else:
+                # if this field is specified in multiple state atoms,
+                # the attributes must be equal for each
+                if field_attrs_by_offset[offset] != field_attr:
+                    print('Field attribute conflict for %s' % field)
+                    exit(1)
+
+    # Emit weave state code
     print('/* Weave state */')
     offsets = sorted(field_by_offset.keys())
     last_dirty_bits = None
@@ -186,7 +224,7 @@ def main():
         out.write('    ' * indent)
         out.write('}\n')
 
-    # Emit reset state function
+    # Emit reset state function code
     # This function pushes the current context structure to the gpu
     print()
     print('/* Reset state */')
@@ -243,6 +281,24 @@ def main():
             indent -= 1
             out.write('    ' * indent)
             out.write('}\n')
+
+    # Generate statistics
+    total_updates_fixed = 0
+    total_updates_dynamic = 0
+    for offset in offsets:
+        (name, path, strides) = field_by_offset[offset]
+        state_count = reduce(operator.mul, (length for (stride,length) in strides), 1)
+        attrs = field_attrs_by_offset[offset]
+
+        if not attrs.dynamic:
+            total_updates_fixed += state_count
+        else:
+            total_updates_dynamic += state_count
+    print()
+    print('/* Statistics')
+    print('   Total state updates (fixed): %i' % total_updates_fixed)
+    print('   Maximum state updates (dynamic): %i' % total_updates_dynamic)
+    print('*/')
 
 
 if __name__ == '__main__':

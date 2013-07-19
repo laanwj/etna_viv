@@ -2,6 +2,9 @@
 # <struct_name> <source_spec> <dirtybit>
 # TODO: specify how to combine fields (if not simply |)
 
+# Mark large, dynamically sized state areas such as shader code
+# and parameters with DYNAMIC.
+
 base_setup_state base_setup. ETNA_STATE_BASE_SETUP
     PA.W_CLIP_LIMIT
     GL.VERTEX_ELEMENT_CONFIG
@@ -19,7 +22,7 @@ rasterizer_state rasterizer-> ETNA_STATE_RASTERIZER
     SE.SCISSOR_TOP
     SE.SCISSOR_RIGHT
     SE.SCISSOR_BOTTOM
-    VS.OUTPUT_COUNT      Added to shader state output count
+    VS.OUTPUT_COUNT      # Added to shader state output count
 
 depth_stencil_alpha_state depth_stencil_alpha-> ETNA_STATE_DSA
     PE.DEPTH_CONFIG
@@ -60,15 +63,15 @@ sample_mask sample_mask. ETNA_STATE_SAMPLE_MASK
     GL.MULTI_SAMPLE_CONFIG
 
 sampler_state sampler[{0}]-> ETNA_STATE_SAMPLERS
-    TE.SAMPLER.CONFIG0        Set to 0 for inactive samplers
-    TE.SAMPLER.LOD_CONFIG     Only set for active samplers
+    TE.SAMPLER.CONFIG0        # Set to 0 for inactive samplers
+    TE.SAMPLER.LOD_CONFIG     # Only set for active samplers
 
 sampler_view sampler_view[{0}]. ETNA_STATE_SAMPLER_VIEWS
-    TE.SAMPLER.CONFIG0        Only set for active samplers
-    TE.SAMPLER.LOD_CONFIG     Only set for active samplers
-    TE.SAMPLER.SIZE           Only set for active samplers
-    TE.SAMPLER.LOG_SIZE       Only set for active samplers
-    TE.SAMPLER.LOD_ADDR       Only set for active samplers
+    TE.SAMPLER.CONFIG0        # Only set for active samplers
+    TE.SAMPLER.LOD_CONFIG     # Only set for active samplers
+    TE.SAMPLER.SIZE           # Only set for active samplers
+    TE.SAMPLER.LOG_SIZE       # Only set for active samplers
+    TE.SAMPLER.LOD_ADDR       # Only set for active samplers
 
 framebuffer_state framebuffer. ETNA_STATE_FRAMEBUFFER
     GL.MULTI_SAMPLE_CONFIG
@@ -128,12 +131,12 @@ shader_state shader_state. ETNA_STATE_SHADER
     GL.VARYING_TOTAL_COMPONENTS
     GL.VARYING_NUM_COMPONENTS
     GL.VARYING_COMPONENT_USE
-    VS.INST_MEM
-    PS.INST_MEM
+    VS.INST_MEM                 DYNAMIC
+    PS.INST_MEM                 DYNAMIC
 
 shader_state shader_state-> ETNA_STATE_VS_UNIFORMS
-    VS.UNIFORMS
+    VS.UNIFORMS                 DYNAMIC
 
 shader_state shader_state-> ETNA_STATE_PS_UNIFORMS
-    PS.UNIFORMS
+    PS.UNIFORMS                 DYNAMIC
 
