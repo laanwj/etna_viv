@@ -428,6 +428,7 @@ static void sync_context(struct pipe_context *pipe)
     {
         /* Special case: vertex elements must always be sent in full */
         /*00600*/ etna_set_state_multi(ctx, VIVS_FE_VERTEX_ELEMENT_CONFIG(0), e->vertex_elements->num_elements, e->vertex_elements->FE_VERTEX_ELEMENT_CONFIG);
+        memcpy(e->gpu3d.FE_VERTEX_ELEMENT_CONFIG, e->vertex_elements->FE_VERTEX_ELEMENT_CONFIG,  e->vertex_elements->num_elements * 4);
     }
     uint32_t last_reg, last_fixp, span_start;
     ETNA_COALESCE_STATE_OPEN(400); /* worst case */
@@ -706,6 +707,9 @@ static void sync_context(struct pipe_context *pipe)
         /*05000*/ etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(0), e->shader_state.vs_uniforms_size, e->shader_state.VS_UNIFORMS);
         /*06000*/ etna_set_state_multi(ctx, VIVS_PS_INST_MEM(0), e->shader_state.ps_inst_mem_size, e->shader_state.PS_INST_MEM);
         /*07000*/ etna_set_state_multi(ctx, VIVS_PS_UNIFORMS(0), e->shader_state.ps_uniforms_size, e->shader_state.PS_UNIFORMS);
+
+        memcpy(e->gpu3d.VS_UNIFORMS, e->shader_state.VS_UNIFORMS, e->shader_state.vs_uniforms_size * 4);
+        memcpy(e->gpu3d.PS_UNIFORMS, e->shader_state.PS_UNIFORMS, e->shader_state.ps_uniforms_size * 4);
     }
     else
     {
