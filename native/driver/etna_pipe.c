@@ -208,6 +208,7 @@ static void etna_link_shaders(struct pipe_context *pipe,
 }
 
 /* Reset / re-upload context.
+ *
  * This pushes the current register state in pipe->gpu3d to the GPU.
  * The function is used to initialize the GPU in a predictable state
  * at the beginning of the rendering, as well as to create a context
@@ -356,12 +357,13 @@ static void reset_context(struct pipe_context *pipe)
     {
         /*03828*/ EMIT_STATE(GL_VARYING_COMPONENT_USE(x), GL_VARYING_COMPONENT_USE[x]);
     }
+    /*0384C*/ EMIT_STATE(GL_API_MODE, GL_API_MODE);
     ETNA_COALESCE_STATE_CLOSE();
     /* end only EMIT_STATE */
 #undef EMIT_STATE
 #undef EMIT_STATE_FIXP
     /* XXX re-submit shader program and uniforms, these have dynamic sizes which must
-     * also be kept in the etna_3d_state structure. */
+     * also be kept in the etna_3d_state structure to be submitted as part of the context. */
 }
 
 /* Weave state before draw operation. This function merges all the compiled state blocks under
@@ -380,8 +382,7 @@ static void sync_context(struct pipe_context *pipe)
 
     if((dirty & ETNA_STATE_SHADER) && e->vs && e->fs)
     {
-        /* re-link vs and fs if needed 
-         */
+        /* re-link vs and fs if needed */
         etna_link_shaders(pipe, &e->shader_state, e->vs, e->fs);
     }
 
@@ -1957,6 +1958,7 @@ struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct et
     /*  Set sensible defaults for state */
     priv->base_setup.PA_W_CLIP_LIMIT = priv->gpu3d.PA_W_CLIP_LIMIT = 0x34000001;
     priv->base_setup.GL_VERTEX_ELEMENT_CONFIG = priv->gpu3d.GL_VERTEX_ELEMENT_CONFIG = 0x1;
+    priv->base_setup.GL_API_MODE = priv->gpu3d.GL_API_MODE = VIVS_GL_API_MODE_OPENGL;
 
     /* fill in vtable entries one by one */
     pc->destroy = etna_pipe_destroy;

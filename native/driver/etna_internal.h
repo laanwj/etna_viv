@@ -70,6 +70,7 @@ struct compiled_base_setup_state
 {
     uint32_t PA_W_CLIP_LIMIT;
     uint32_t GL_VERTEX_ELEMENT_CONFIG;
+    uint32_t GL_API_MODE;
 };
 
 /* Compiled pipe_rasterizer_state */
@@ -354,6 +355,7 @@ struct etna_3d_state
     uint32_t /*0381C*/ GL_VARYING_TOTAL_COMPONENTS;
     uint32_t /*03820*/ GL_VARYING_NUM_COMPONENTS;
     uint32_t /*03828*/ GL_VARYING_COMPONENT_USE[VIVS_GL_VARYING_COMPONENT_USE__LEN];
+    uint32_t /*0384C*/ GL_API_MODE;
 
     // XX uint32_t /*04000*/ VS_INST_MEM[VIVS_VS_INST_MEM__LEN];
     uint32_t /*05000*/ VS_UNIFORMS[VIVS_VS_UNIFORMS__LEN];

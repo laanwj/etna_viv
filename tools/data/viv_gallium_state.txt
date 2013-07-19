@@ -5,6 +5,7 @@
 base_setup_state base_setup. ETNA_STATE_BASE_SETUP
     PA.W_CLIP_LIMIT
     GL.VERTEX_ELEMENT_CONFIG
+    GL.API_MODE
 
 rasterizer_state rasterizer-> ETNA_STATE_RASTERIZER
     PA.CONFIG
