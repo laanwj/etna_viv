@@ -1339,8 +1339,8 @@ static void fill_in_vs_outputs(struct etna_shader_object *sobj, struct etna_comp
     assert(half_out);
     uint32_t b = ((20480/(cd->specs->vertex_output_buffer_size-2*half_out*cd->specs->vertex_cache_size))+9)/10;
     uint32_t a = (b+256/(cd->specs->shader_core_count*half_out))/2;
-    sobj->vs_load_balancing = VIVS_VS_LOAD_BALANCING_A(etna_umin(a,255)) |
-                              VIVS_VS_LOAD_BALANCING_B(etna_umin(b,255)) |
+    sobj->vs_load_balancing = VIVS_VS_LOAD_BALANCING_A(MIN2(a,255)) |
+                              VIVS_VS_LOAD_BALANCING_B(MIN2(b,255)) |
                               VIVS_VS_LOAD_BALANCING_C(0x3f) |
                               VIVS_VS_LOAD_BALANCING_D(0x0f);
 }

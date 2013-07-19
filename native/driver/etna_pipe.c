@@ -80,8 +80,8 @@
 static uint32_t active_samplers_bits(struct pipe_context *pipe)
 {
     struct etna_pipe_context_priv *restrict e = ETNA_PIPE(pipe);
-    unsigned num_fragment_samplers = etna_umin(e->num_fragment_samplers, e->num_fragment_sampler_views);
-    unsigned num_vertex_samplers = etna_umin(e->num_vertex_samplers, e->num_vertex_sampler_views);
+    unsigned num_fragment_samplers = MIN2(e->num_fragment_samplers, e->num_fragment_sampler_views);
+    unsigned num_vertex_samplers = MIN2(e->num_vertex_samplers, e->num_vertex_sampler_views);
     uint32_t active_samplers = etna_bits_ones(num_fragment_samplers) |
                                etna_bits_ones(num_vertex_samplers) << e->specs.vertex_sampler_offset;
     return active_samplers;
@@ -164,7 +164,7 @@ static void etna_link_shaders(struct pipe_context *pipe,
                               VIVS_PS_INPUT_COUNT_UNK8(fs->input_count_unk8));
     SET_STATE(PS_TEMP_REGISTER_CONTROL,
                               VIVS_PS_TEMP_REGISTER_CONTROL_NUM_TEMPS(fs->num_temps));
-    SET_STATE(PS_CONTROL, VIVS_PS_CONTROL_UNK1);
+    SET_STATE(PS_CONTROL, VIVS_PS_CONTROL_UNK1); /* XXX when can we set BYPASS? */
     SET_STATE(PS_START_PC, 0);
 
     uint32_t total_components = 0;
@@ -517,10 +517,10 @@ static void sync_context(struct pipe_context *pipe)
         uint32_t scissor_bottom = e->framebuffer.SE_SCISSOR_BOTTOM;
         if(e->rasterizer->scissor)
         {
-            scissor_left = etna_umax(e->scissor.SE_SCISSOR_LEFT, scissor_left);
-            scissor_top = etna_umax(e->scissor.SE_SCISSOR_TOP, scissor_top);
-            scissor_right = etna_umax(e->scissor.SE_SCISSOR_RIGHT, scissor_right);
-            scissor_bottom = etna_umax(e->scissor.SE_SCISSOR_RIGHT, scissor_bottom);
+            scissor_left = MAX2(e->scissor.SE_SCISSOR_LEFT, scissor_left);
+            scissor_top = MAX2(e->scissor.SE_SCISSOR_TOP, scissor_top);
+            scissor_right = MAX2(e->scissor.SE_SCISSOR_RIGHT, scissor_right);
+            scissor_bottom = MAX2(e->scissor.SE_SCISSOR_RIGHT, scissor_bottom);
         }
         /*00C00*/ EMIT_STATE_FIXP(SE_SCISSOR_LEFT, SE_SCISSOR_LEFT, scissor_left);
         /*00C04*/ EMIT_STATE_FIXP(SE_SCISSOR_TOP, SE_SCISSOR_TOP, scissor_top);
@@ -664,8 +664,8 @@ static void sync_context(struct pipe_context *pipe)
                 /* min and max lod is determined both by the sampler and the view */
                 /*020C0*/ EMIT_STATE(TE_SAMPLER_LOD_CONFIG(x), TE_SAMPLER_LOD_CONFIG[x], 
                         e->sampler[x]->TE_SAMPLER_LOD_CONFIG | 
-                        VIVS_TE_SAMPLER_LOD_CONFIG_MAX(etna_umin(e->sampler[x]->max_lod, e->sampler_view[x].max_lod)) | 
-                        VIVS_TE_SAMPLER_LOD_CONFIG_MIN(etna_umax(e->sampler[x]->min_lod, e->sampler_view[x].min_lod))); 
+                        VIVS_TE_SAMPLER_LOD_CONFIG_MAX(MIN2(e->sampler[x]->max_lod, e->sampler_view[x].max_lod)) | 
+                        VIVS_TE_SAMPLER_LOD_CONFIG_MIN(MAX2(e->sampler[x]->min_lod, e->sampler_view[x].min_lod))); 
             }
         }
     }
@@ -1556,7 +1556,7 @@ static struct pipe_sampler_view *etna_pipe_create_sampler_view(struct pipe_conte
         SET_STATE(TE_SAMPLER_LOD_ADDR[lod], res->levels[lod].address);
     }
     cs->min_lod = sv->base.u.tex.first_level << 5;
-    cs->max_lod = etna_umin(sv->base.u.tex.last_level, res->base.last_level) << 5;
+    cs->max_lod = MIN2(sv->base.u.tex.last_level, res->base.last_level) << 5;
 
     sv->internal = cs;
     pipe_reference_init(&sv->base.reference, 1);
@@ -1787,11 +1787,11 @@ static void etna_set_constant_buffer(struct pipe_context *pipe,
         switch(shader)
         {
         case PIPE_SHADER_VERTEX:
-            memcpy(priv->shader_state.VS_UNIFORMS, buf->user_buffer, etna_umin(buf->buffer_size, priv->vs->const_size * 4));
+            memcpy(priv->shader_state.VS_UNIFORMS, buf->user_buffer, MIN2(buf->buffer_size, priv->vs->const_size * 4));
             priv->dirty_bits |= ETNA_STATE_VS_UNIFORMS;
             break;
         case PIPE_SHADER_FRAGMENT:
-            memcpy(priv->shader_state.PS_UNIFORMS, buf->user_buffer, etna_umin(buf->buffer_size, priv->fs->const_size * 4));
+            memcpy(priv->shader_state.PS_UNIFORMS, buf->user_buffer, MIN2(buf->buffer_size, priv->fs->const_size * 4));
             priv->dirty_bits |= ETNA_STATE_PS_UNIFORMS;
             break;
         default: printf("Unhandled shader type %i\n", shader);
