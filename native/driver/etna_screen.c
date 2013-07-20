@@ -627,6 +627,17 @@ etna_screen_create(struct viv_conn *dev)
     screen->specs.shader_core_count = dev->chip.shader_core_count;
     screen->specs.stream_count = dev->chip.stream_count;
     screen->specs.has_sin_cos_sqrt = VIV_FEATURE(dev, chipMinorFeatures0, HAS_SQRT_TRIG);
+    screen->specs.has_shader_range_registers = dev->chip.chip_model >= 0x1000 || dev->chip.chip_model == 0x880;    
+    if (dev->chip.chip_model < 0x1000 && dev->chip.chip_model != 0x880)
+    {
+        screen->specs.vs_offset = 0x4000;
+        screen->specs.ps_offset = 0x6000;
+    }
+    else
+    {
+        screen->specs.vs_offset = 0xC000;
+        screen->specs.ps_offset = 0xD000; //like vivante driver
+    }
 
     /* Initialize vtable */
     pscreen->destroy = etna_screen_destroy;
