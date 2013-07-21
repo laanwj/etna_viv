@@ -370,7 +370,18 @@ int etna_flush(struct etna_ctx *ctx)
     /* TODO: if context was used, queue it to be freed later, and initialize new context buffer */
     cur_buf->startOffset = cur_buf->offset + END_COMMIT_CLEARANCE;
     cur_buf->offset = cur_buf->startOffset + BEGIN_COMMIT_CLEARANCE;
-    ctx->offset = cur_buf->offset / 4;
+    if((cur_buf->offset + END_COMMIT_CLEARANCE) >= COMMAND_BUFFER_SIZE)
+    {
+        /* nothing more fits in buffer, prevent warning about buffer overflow
+           on next etna_reserve.
+         */
+        ctx->cur_buf = -1;
+        ctx->buf = 0;
+        ctx->offset = 0;
+    } else {
+        /* set writing offset for next etna_reserve */
+        ctx->offset = cur_buf->offset / 4;
+    }
 #ifdef DEBUG
 #ifdef GCABI_HAS_CONTEXT
     printf("  New start offset: %x New offset: %x Contextbuffer used: %i\n", cur_buf->startOffset, cur_buf->offset, *ctx->ctx.inUse);
