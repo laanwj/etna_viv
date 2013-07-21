@@ -21,9 +21,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/* TGSI->Vivante shader ISA conversion -- WIP */
+/* TGSI->Vivante shader ISA conversion */
 
-/* What should the compiler return (see etna_shader_object)?
+/* What does the compiler return (see etna_shader_object)?
  *  1) instruction data
  *  2) input-to-temporary mapping (fixed for ps)
  *      *) in case of ps, semantic -> varying id mapping
@@ -269,6 +269,7 @@ static void assign_inouts_to_temporaries(struct etna_compile_data *cd, uint file
 static struct etna_inst_src alloc_imm_u32(struct etna_compile_data *cd, uint32_t value)
 {
     int idx;
+    /* Could use a hash table to speed this up */
     for(idx = 0; idx<cd->imm_size; ++idx)
     {
         if(cd->imm_data[idx] == value)
@@ -761,7 +762,7 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                 inst_out.src[2].neg = !inst_out.src[2].neg;
                 emit_inst(cd, &inst_out);
                 } break;
-            case TGSI_OPCODE_LRP: assert(0); break;
+            case TGSI_OPCODE_LRP: assert(0); break; /* lowered by mesa to (op2 * (1.0f - op0)) + (op1 * op0) */
             case TGSI_OPCODE_CND: assert(0); break;
             case TGSI_OPCODE_SQRT: /* XXX if HAS_SQRT_TRIG */
                 emit_inst(cd, &(struct etna_inst) {
@@ -822,7 +823,7 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         .src[2] = convert_src(cd, &inst->Src[0]), 
                         });
                 break;
-            case TGSI_OPCODE_POW: assert(0); break;
+            case TGSI_OPCODE_POW: assert(0); break; /* lowered by mesa to ex2(y*lg2(x)) */
             case TGSI_OPCODE_XPD: assert(0); break;
             case TGSI_OPCODE_ABS: /* XXX can be propagated into uses of destination operand */
                 emit_inst(cd, &(struct etna_inst) {
@@ -837,7 +838,8 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
             case TGSI_OPCODE_DPH: assert(0); break; /* src0.x * src1.x + src0.y * src1.y + src0.z * src1.z + src1.w */ 
             case TGSI_OPCODE_COS: /* XXX HAS_SQRT_TRIG */
             case TGSI_OPCODE_SIN: /* XXX HAS_SQRT_TRIG */
-                /* TODO divide by PI/2, re-use dest register */
+                assert(0); /* doesn't work now as-is */
+                /* TODO add divide by PI/2, re-use dest register */
                 emit_inst(cd, &(struct etna_inst) {
                         .opcode = inst->Instruction.Opcode == TGSI_OPCODE_COS ? INST_OPCODE_COS : INST_OPCODE_SIN,
                         .sat = sat,

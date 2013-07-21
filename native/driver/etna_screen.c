@@ -250,8 +250,12 @@ static int etna_screen_get_shader_param( struct pipe_screen *screen, unsigned sh
     case PIPE_SHADER_CAP_SUBROUTINES:
             return 0;
     case PIPE_SHADER_CAP_TGSI_SQRT_SUPPORTED:
-            return 1; /* Depends on HAS_SQRT_TRIG cap */
-    case PIPE_SHADER_CAP_INTEGERS: /* XXX supported on gc2000 */
+            return VIV_FEATURE(priv->dev, chipMinorFeatures0, HAS_SQRT_TRIG);
+    case PIPE_SHADER_CAP_TGSI_POW_SUPPORTED:
+            return false;
+    case PIPE_SHADER_CAP_TGSI_LRP_SUPPORTED:
+            return false;
+    case PIPE_SHADER_CAP_INTEGERS: /* XXX supported on gc2000 but not yet implemented */
             return 0;
     case PIPE_SHADER_CAP_MAX_TEXTURE_SAMPLERS:
             return shader==PIPE_SHADER_FRAGMENT ? priv->specs.fragment_sampler_count : 
