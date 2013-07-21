@@ -99,10 +99,12 @@ static void etna_link_shaders(struct pipe_context *pipe,
     assert(vs->processor == TGSI_PROCESSOR_VERTEX);
     assert(fs->processor == TGSI_PROCESSOR_FRAGMENT);
 #ifdef DEBUG
-    etna_dump_shader_object(vs);
-    etna_dump_shader_object(fs);
+    if(DBG_ENABLED(ETNA_DUMP_SHADERS))
+    {
+        etna_dump_shader_object(vs);
+        etna_dump_shader_object(fs);
+    }
 #endif
-
     /* set last_varying_2x flag if the last varying has 1 or 2 components */
     bool last_varying_2x = false;
     if(fs->num_inputs>0 && fs->inputs[fs->num_inputs-1].num_components <= 2)
@@ -128,10 +130,10 @@ static void etna_link_shaders(struct pipe_context *pipe,
     {
         assert(0); /* linking failed: some fs inputs do not have corresponding vs outputs */
     }
-    printf("link result:\n");
+    DBG_F(ETNA_COMPILER_MSGS, "link result:\n");
     for(int idx=0; idx<fs->num_inputs; ++idx)
     {
-        printf("  %i -> %i\n", link.varyings_vs_reg[idx], idx+1);
+        DBG_F(ETNA_COMPILER_MSGS,"  %i -> %i\n", link.varyings_vs_reg[idx], idx+1);
     }
 
     /* vs outputs (varyings) */ 
@@ -1925,7 +1927,6 @@ static void etna_pipe_blit(struct pipe_context *pipe, const struct pipe_blit_inf
                     priv->num_fragment_sampler_views, priv->sampler_view_s);
 
     util_blitter_blit(priv->blitter, &info);
-
 }
 
 static void etna_pipe_set_polygon_stipple(struct pipe_context *pctx,

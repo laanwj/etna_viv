@@ -40,7 +40,7 @@
 
 #include <stdio.h>
 
-int etna_mesa_debug = ETNA_DBG_MSGS | ETNA_RESOURCE_MSGS;  /* XXX */
+int etna_mesa_debug = ETNA_DBG_MSGS | ETNA_RESOURCE_MSGS | ETNA_COMPILER_MSGS;  /* XXX */
 
 static void etna_screen_destroy( struct pipe_screen *screen )
 {
