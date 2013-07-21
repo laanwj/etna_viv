@@ -595,7 +595,7 @@ static void etna_screen_resource_destroy(struct pipe_screen *screen,
     struct etna_resource *resource = etna_resource(resource_);
     if(resource == NULL)
         return;
-    /* XXX should really use etna_vidmem_queue_free to make sure the
+    /* XXX should use etna_vidmem_queue_free to make sure the
      * resource is only actually released after the command queue
      * cannot have references to it anymore, but we don't have the context here or
      * a way to do fencing per-screen.
@@ -618,7 +618,7 @@ etna_screen_create(struct viv_conn *dev)
     screen->specs.can_supertile = VIV_FEATURE(dev, chipMinorFeatures0, SUPER_TILED);
     screen->specs.bits_per_tile = VIV_FEATURE(dev, chipMinorFeatures0, 2BITPERTILE)?2:4;
     screen->specs.ts_clear_value = VIV_FEATURE(dev, chipMinorFeatures0, 2BITPERTILE)?0x55555555:0x11111111;
-    screen->specs.vertex_sampler_offset = 8; /* vertex and fragment samplers live in one address space */
+    screen->specs.vertex_sampler_offset = 8; /* vertex and fragment samplers live in one address space, with vertex shaders at this offset */
     screen->specs.fragment_sampler_count = 8;
     screen->specs.vertex_sampler_count = 4;
     screen->specs.vs_need_z_div = dev->chip.chip_model < 0x1000 && dev->chip.chip_model != 0x880;
@@ -626,6 +626,7 @@ etna_screen_create(struct viv_conn *dev)
     screen->specs.vertex_cache_size = dev->chip.vertex_cache_size;
     screen->specs.shader_core_count = dev->chip.shader_core_count;
     screen->specs.stream_count = dev->chip.stream_count;
+    screen->specs.has_sin_cos_sqrt = VIV_FEATURE(dev, chipMinorFeatures0, HAS_SQRT_TRIG);
 
     /* Initialize vtable */
     pscreen->destroy = etna_screen_destroy;

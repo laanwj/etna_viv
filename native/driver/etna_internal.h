@@ -60,6 +60,8 @@ struct etna_pipe_specs
     unsigned shader_core_count;
     /* number of vertex streams */
     unsigned stream_count;
+    /* supports trigonometric instructions */
+    bool has_sin_cos_sqrt;
 };
 
 /** Compiled Gallium state. All the different compiled state atoms are woven together and uploaded
