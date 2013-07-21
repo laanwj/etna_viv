@@ -3,7 +3,6 @@ TOP=..
 include $(TOP)/Makefile.inc
 
 COMMON_FLAGS += -I$(TOP)/resources -I$(TOP)/driver
-LDFLAGS += -lm
 LDFLAGS_ETNA = $(LDFLAGS) -L$(TOP)/etnaviv -letnaviv
 
 TARGETS = reset viv_info
@@ -16,7 +15,7 @@ all: $(TARGETS)
 
 clean:
 	rm -f *.o ../lib/*.o ../driver/*.o
-	rm -f $(TARGETS)
+	rm -f $(TARGETS) $(TARGETS_GC800) $(TARGETS_GC2000)
 
 # These specifically replay command streams for gc800, don't build them by default
 gc800: $(TARGETS_GC800)
