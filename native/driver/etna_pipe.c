@@ -55,6 +55,7 @@
 #include "etna_debug.h"
 #include "etna_fence.h"
 #include "etna_transfer.h"
+#include "etna_screen.h" /* for etna_screen_resource_alloc_ts */
 
 #include "pipe/p_defines.h"
 #include "pipe/p_format.h"
@@ -1590,6 +1591,10 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
 
     pipe_reference_init(&surf->base.reference, 1);
     pipe_resource_reference(&surf->base.texture, &resource->base);
+
+    /* Allocate a TS for the resource if there isn't one yet */
+    if(!resource->ts)
+        etna_screen_resource_alloc_ts(pipe->screen, resource);
 
     surf->base.texture = &resource->base;
     surf->base.format = resource->base.format;

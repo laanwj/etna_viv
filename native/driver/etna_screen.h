@@ -64,5 +64,14 @@ etna_screen(struct pipe_screen *pscreen)
 struct pipe_screen *
 etna_screen_create(struct viv_conn *dev);
 
+/* XXX this should be in a separate etna_resource.h */
+struct pipe_screen;
+struct etna_resource;
+/* Allocate Tile Status for an etna resource.
+ * Tile status is a cache of the clear status per tile. This means a smaller surface
+ * has to be cleared which is faster. This is also called "fast clear".
+ */
+bool etna_screen_resource_alloc_ts(struct pipe_screen *screen, struct etna_resource *resource);
+
 #endif
 
