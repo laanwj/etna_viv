@@ -420,7 +420,7 @@ gears_reshape(struct pipe_context *pipe, int width, int height)
     esPerspective(&ProjectionMatrix, 60.0, width / (float)height, 1.0, 1024.0);
     
     /* Set the viewport */
-    pipe->set_viewport_state(pipe, &(struct pipe_viewport_state){
+    pipe->set_viewport_states(pipe, 0, 1, &(struct pipe_viewport_state){
             .scale = {width/2.0f, height/2.0f, 0.5f, 1.0f},
             .translate = {width/2.0f, height/2.0f, 0.5f, 1.0f}
             });
@@ -611,7 +611,7 @@ main(int argc, char *argv[])
             .cbufs[0] = cbuf,
             .zsbuf = zsbuf
             });
-    pipe->set_scissor_state(pipe, &(struct pipe_scissor_state){
+    pipe->set_scissor_states(pipe, 0, 1, &(struct pipe_scissor_state){
             .minx = 0,
             .miny = 0,
             .maxx = 65535,
