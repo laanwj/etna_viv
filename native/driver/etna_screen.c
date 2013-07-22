@@ -151,6 +151,8 @@ static int etna_screen_get_param( struct pipe_screen *screen, enum pipe_cap para
             return 7;
     case PIPE_CAP_TEXTURE_BORDER_COLOR_QUIRK:
             return 0;
+    case PIPE_CAP_MAX_TEXTURE_BUFFER_SIZE:
+            return 65536;
 
     /* Render targets. */
     case PIPE_CAP_MAX_RENDER_TARGETS:
