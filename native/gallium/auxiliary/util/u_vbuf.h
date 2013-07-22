@@ -49,6 +49,9 @@ struct u_vbuf_caps {
    unsigned format_norm32:1;     /* PIPE_FORMAT_*32*NORM */
    unsigned format_scaled32:1;   /* PIPE_FORMAT_*32*SCALED */
 
+   /* Index format CAPs. */
+   unsigned index_uint32:1;      /* PIPE_FORMAT_I32_UINT */
+
    /* Whether vertex fetches don't have to be 4-byte-aligned. */
    /* TRUE if hardware supports it. */
    unsigned buffer_offset_unaligned:1;
@@ -57,6 +60,9 @@ struct u_vbuf_caps {
 
    /* Whether the driver supports user vertex buffers. */
    unsigned user_vertex_buffers:1;
+
+   /* Maximum number of vertex buffers */
+   unsigned max_vertex_buffers:7;
 };
 
 

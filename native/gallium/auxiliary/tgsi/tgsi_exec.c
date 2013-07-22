@@ -339,20 +339,20 @@ micro_rsq(union tgsi_exec_channel *dst,
    assert(src->f[2] != 0.0f);
    assert(src->f[3] != 0.0f);
 #endif
-   dst->f[0] = 1.0f / sqrtf(fabsf(src->f[0]));
-   dst->f[1] = 1.0f / sqrtf(fabsf(src->f[1]));
-   dst->f[2] = 1.0f / sqrtf(fabsf(src->f[2]));
-   dst->f[3] = 1.0f / sqrtf(fabsf(src->f[3]));
+   dst->f[0] = 1.0f / sqrtf(src->f[0]);
+   dst->f[1] = 1.0f / sqrtf(src->f[1]);
+   dst->f[2] = 1.0f / sqrtf(src->f[2]);
+   dst->f[3] = 1.0f / sqrtf(src->f[3]);
 }
 
 static void
 micro_sqrt(union tgsi_exec_channel *dst,
            const union tgsi_exec_channel *src)
 {
-   dst->f[0] = sqrtf(fabsf(src->f[0]));
-   dst->f[1] = sqrtf(fabsf(src->f[1]));
-   dst->f[2] = sqrtf(fabsf(src->f[2]));
-   dst->f[3] = sqrtf(fabsf(src->f[3]));
+   dst->f[0] = sqrtf(src->f[0]);
+   dst->f[1] = sqrtf(src->f[1]);
+   dst->f[2] = sqrtf(src->f[2]);
+   dst->f[3] = sqrtf(src->f[3]);
 }
 
 static void
@@ -1578,8 +1578,8 @@ store_dest(struct tgsi_exec_machine *mach,
  * Kill fragment if any of the four values is less than zero.
  */
 static void
-exec_kil(struct tgsi_exec_machine *mach,
-         const struct tgsi_full_instruction *inst)
+exec_kill_if(struct tgsi_exec_machine *mach,
+             const struct tgsi_full_instruction *inst)
 {
    uint uniquemask;
    uint chan_index;
@@ -1614,16 +1614,15 @@ exec_kil(struct tgsi_exec_machine *mach,
 }
 
 /**
- * Execute NVIDIA-style KIL which is predicated by a condition code.
- * Kill fragment if the condition code is TRUE.
+ * Unconditional fragment kill/discard.
  */
 static void
-exec_kilp(struct tgsi_exec_machine *mach,
+exec_kill(struct tgsi_exec_machine *mach,
           const struct tgsi_full_instruction *inst)
 {
    uint kilmask; /* bit 0 = pixel 0, bit 1 = pixel 1, etc */
 
-   /* "unconditional" kil */
+   /* kill fragment for all fragments currently executing */
    kilmask = mach->ExecMask;
    mach->Temps[TEMP_KILMASK_I].xyzw[TEMP_KILMASK_C].u[0] |= kilmask;
 }
@@ -1780,200 +1779,85 @@ exec_tex(struct tgsi_exec_machine *mach,
          uint modifier, uint sampler)
 {
    const uint unit = inst->Src[sampler].Register.Index;
-   union tgsi_exec_channel r[4], cubearraycomp, cubelod;
-   const union tgsi_exec_channel *lod = &ZeroVec;
+   const union tgsi_exec_channel *args[5], *proj = NULL;
+   union tgsi_exec_channel r[5];
    enum tgsi_sampler_control control =  tgsi_sampler_lod_none;
    uint chan;
    int8_t offsets[3];
+   int dim, shadow_ref, i;
 
    /* always fetch all 3 offsets, overkill but keeps code simple */
    fetch_texel_offsets(mach, inst, offsets);
 
    assert(modifier != TEX_MODIFIER_LEVEL_ZERO);
+   assert(inst->Texture.Texture != TGSI_TEXTURE_BUFFER);
 
-   if (modifier != TEX_MODIFIER_NONE && (sampler == 1)) {
-      FETCH(&r[3], 0, TGSI_CHAN_W);
+   dim = tgsi_util_get_texture_coord_dim(inst->Texture.Texture, &shadow_ref);
+
+   assert(dim <= 4);
+   if (shadow_ref >= 0)
+      assert(shadow_ref >= dim && shadow_ref < Elements(args));
+
+   /* fetch modifier to the last argument */
+   if (modifier != TEX_MODIFIER_NONE) {
+      const int last = Elements(args) - 1;
+
+      /* fetch modifier from src0.w or src1.x */
+      if (sampler == 1) {
+         assert(dim <= TGSI_CHAN_W && shadow_ref != TGSI_CHAN_W);
+         FETCH(&r[last], 0, TGSI_CHAN_W);
+      }
+      else {
+         assert(shadow_ref != 4);
+         FETCH(&r[last], 1, TGSI_CHAN_X);
+      }
+
       if (modifier != TEX_MODIFIER_PROJECTED) {
-         lod = &r[3];
+         args[last] = &r[last];
       }
+      else {
+         proj = &r[last];
+         args[last] = &ZeroVec;
+      }
+
+      /* point unused arguments to zero vector */
+      for (i = dim; i < last; i++)
+         args[i] = &ZeroVec;
+
+      if (modifier == TEX_MODIFIER_EXPLICIT_LOD)
+         control = tgsi_sampler_lod_explicit;
+      else if (modifier == TEX_MODIFIER_LOD_BIAS)
+         control = tgsi_sampler_lod_bias;
+   }
+   else {
+      for (i = dim; i < Elements(args); i++)
+         args[i] = &ZeroVec;
    }
 
-   if (modifier == TEX_MODIFIER_EXPLICIT_LOD) {
-      control = tgsi_sampler_lod_explicit;
-   } else if (modifier == TEX_MODIFIER_LOD_BIAS){
-      control = tgsi_sampler_lod_bias;
+   /* fetch coordinates */
+   for (i = 0; i < dim; i++) {
+      FETCH(&r[i], 0, TGSI_CHAN_X + i);
+
+      if (proj)
+         micro_div(&r[i], &r[i], proj);
+
+      args[i] = &r[i];
    }
 
-   switch (inst->Texture.Texture) {
-   case TGSI_TEXTURE_1D:
-      FETCH(&r[0], 0, TGSI_CHAN_X);
+   /* fetch reference value */
+   if (shadow_ref >= 0) {
+      FETCH(&r[shadow_ref], shadow_ref / 4, TGSI_CHAN_X + (shadow_ref % 4));
 
-      if (modifier == TEX_MODIFIER_PROJECTED) {
-         micro_div(&r[0], &r[0], &r[3]);
-      }
+      if (proj)
+         micro_div(&r[shadow_ref], &r[shadow_ref], proj);
 
-      fetch_texel(mach->Sampler, unit, unit,
-                  &r[0], &ZeroVec, &ZeroVec, &ZeroVec, lod, /* S, T, P, C, LOD */
-                  NULL, offsets, control,
-                  &r[0], &r[1], &r[2], &r[3]);     /* R, G, B, A */
-      break;
-
-   case TGSI_TEXTURE_SHADOW1D:
-      FETCH(&r[0], 0, TGSI_CHAN_X);
-      FETCH(&r[2], 0, TGSI_CHAN_Z);
-
-      if (modifier == TEX_MODIFIER_PROJECTED) {
-         micro_div(&r[0], &r[0], &r[3]);
-         micro_div(&r[2], &r[2], &r[3]);
-      }
-
-      fetch_texel(mach->Sampler, unit, unit,
-                  &r[0], &ZeroVec, &r[2], &ZeroVec, lod, /* S, T, P, C, LOD */
-                  NULL, offsets, control,
-                  &r[0], &r[1], &r[2], &r[3]);     /* R, G, B, A */
-      break;
-
-   case TGSI_TEXTURE_2D:
-   case TGSI_TEXTURE_RECT:
-      FETCH(&r[0], 0, TGSI_CHAN_X);
-      FETCH(&r[1], 0, TGSI_CHAN_Y);
-
-      if (modifier == TEX_MODIFIER_PROJECTED) {
-         micro_div(&r[0], &r[0], &r[3]);
-         micro_div(&r[1], &r[1], &r[3]);
-      }
-
-      fetch_texel(mach->Sampler, unit, unit,
-                  &r[0], &r[1], &ZeroVec, &ZeroVec, lod,    /* S, T, P, C, LOD */
-                  NULL, offsets, control,
-                  &r[0], &r[1], &r[2], &r[3]);  /* outputs */
-      break;
-
-   case TGSI_TEXTURE_SHADOW2D:
-   case TGSI_TEXTURE_SHADOWRECT:
-      FETCH(&r[0], 0, TGSI_CHAN_X);
-      FETCH(&r[1], 0, TGSI_CHAN_Y);
-      FETCH(&r[2], 0, TGSI_CHAN_Z);
-
-      if (modifier == TEX_MODIFIER_PROJECTED) {
-         micro_div(&r[0], &r[0], &r[3]);
-         micro_div(&r[1], &r[1], &r[3]);
-         micro_div(&r[2], &r[2], &r[3]);
-      }
-
-      fetch_texel(mach->Sampler, unit, unit,
-                  &r[0], &r[1], &r[2], &ZeroVec, lod,    /* S, T, P, C, LOD */
-                  NULL, offsets, control,
-                  &r[0], &r[1], &r[2], &r[3]);  /* outputs */
-      break;
-
-   case TGSI_TEXTURE_1D_ARRAY:
-      FETCH(&r[0], 0, TGSI_CHAN_X);
-      FETCH(&r[1], 0, TGSI_CHAN_Y);
-
-      if (modifier == TEX_MODIFIER_PROJECTED) {
-         micro_div(&r[0], &r[0], &r[3]);
-      }
-
-      fetch_texel(mach->Sampler, unit, unit,
-                  &r[0], &r[1], &ZeroVec, &ZeroVec, lod,   /* S, T, P, C, LOD */
-                  NULL, offsets, control,
-                  &r[0], &r[1], &r[2], &r[3]);  /* outputs */
-      break;
-   case TGSI_TEXTURE_SHADOW1D_ARRAY:
-      FETCH(&r[0], 0, TGSI_CHAN_X);
-      FETCH(&r[1], 0, TGSI_CHAN_Y);
-      FETCH(&r[2], 0, TGSI_CHAN_Z);
-
-      if (modifier == TEX_MODIFIER_PROJECTED) {
-         micro_div(&r[0], &r[0], &r[3]);
-         micro_div(&r[2], &r[2], &r[3]);
-      }
-
-      fetch_texel(mach->Sampler, unit, unit,
-                  &r[0], &r[1], &r[2], &ZeroVec, lod,   /* S, T, P, C, LOD */
-                  NULL, offsets, control,
-                  &r[0], &r[1], &r[2], &r[3]);  /* outputs */
-      break;
-
-   case TGSI_TEXTURE_2D_ARRAY:
-      FETCH(&r[0], 0, TGSI_CHAN_X);
-      FETCH(&r[1], 0, TGSI_CHAN_Y);
-      FETCH(&r[2], 0, TGSI_CHAN_Z);
-
-      if (modifier == TEX_MODIFIER_PROJECTED) {
-         micro_div(&r[0], &r[0], &r[3]);
-         micro_div(&r[1], &r[1], &r[3]);
-      }
-
-      fetch_texel(mach->Sampler, unit, unit,
-                  &r[0], &r[1], &r[2], &ZeroVec, lod,   /* S, T, P, C, LOD */
-                  NULL, offsets, control,
-                  &r[0], &r[1], &r[2], &r[3]);  /* outputs */
-      break;
-   case TGSI_TEXTURE_SHADOW2D_ARRAY:
-   case TGSI_TEXTURE_SHADOWCUBE:
-      FETCH(&r[0], 0, TGSI_CHAN_X);
-      FETCH(&r[1], 0, TGSI_CHAN_Y);
-      FETCH(&r[2], 0, TGSI_CHAN_Z);
-      FETCH(&r[3], 0, TGSI_CHAN_W);
-
-      fetch_texel(mach->Sampler, unit, unit,
-                  &r[0], &r[1], &r[2], &r[3], &ZeroVec,    /* S, T, P, C, LOD */
-                  NULL, offsets, control,
-                  &r[0], &r[1], &r[2], &r[3]);  /* outputs */
-      break;
-   case TGSI_TEXTURE_CUBE_ARRAY:
-      FETCH(&r[0], 0, TGSI_CHAN_X);
-      FETCH(&r[1], 0, TGSI_CHAN_Y);
-      FETCH(&r[2], 0, TGSI_CHAN_Z);
-      FETCH(&r[3], 0, TGSI_CHAN_W);
-
-      if (modifier == TEX_MODIFIER_EXPLICIT_LOD ||
-          modifier == TEX_MODIFIER_LOD_BIAS)
-         FETCH(&cubelod, 1, TGSI_CHAN_X);
-      else
-         cubelod = ZeroVec;
-
-      fetch_texel(mach->Sampler, unit, unit,
-                  &r[0], &r[1], &r[2], &r[3], &cubelod,    /* S, T, P, C, LOD */
-                  NULL, offsets, control,
-                  &r[0], &r[1], &r[2], &r[3]);  /* outputs */
-      break;
-   case TGSI_TEXTURE_3D:
-   case TGSI_TEXTURE_CUBE:
-      FETCH(&r[0], 0, TGSI_CHAN_X);
-      FETCH(&r[1], 0, TGSI_CHAN_Y);
-      FETCH(&r[2], 0, TGSI_CHAN_Z);
-
-      if (modifier == TEX_MODIFIER_PROJECTED) {
-         micro_div(&r[0], &r[0], &r[3]);
-         micro_div(&r[1], &r[1], &r[3]);
-         micro_div(&r[2], &r[2], &r[3]);
-      }
-
-      fetch_texel(mach->Sampler, unit, unit,
-                  &r[0], &r[1], &r[2], &ZeroVec, lod,
-                  NULL, offsets, control,
-                  &r[0], &r[1], &r[2], &r[3]);
-      break;
-
-   case TGSI_TEXTURE_SHADOWCUBE_ARRAY:
-      FETCH(&r[0], 0, TGSI_CHAN_X);
-      FETCH(&r[1], 0, TGSI_CHAN_Y);
-      FETCH(&r[2], 0, TGSI_CHAN_Z);
-      FETCH(&r[3], 0, TGSI_CHAN_W);
-
-      FETCH(&cubearraycomp, 1, TGSI_CHAN_X);
-
-      fetch_texel(mach->Sampler, unit, unit,
-                  &r[0], &r[1], &r[2], &r[3], &cubearraycomp, /* S, T, P, C, LOD */
-                  NULL, offsets, control,
-                  &r[0], &r[1], &r[2], &r[3]);  /* outputs */
-      break;
-   default:
-      assert(0);
+      args[shadow_ref] = &r[shadow_ref];
    }
+
+   fetch_texel(mach->Sampler, unit, unit,
+         args[0], args[1], args[2], args[3], args[4],
+         NULL, offsets, control,
+         &r[0], &r[1], &r[2], &r[3]);     /* R, G, B, A */
 
 #if 0
    debug_printf("fetch r: %g %g %g %g\n",
@@ -2636,7 +2520,7 @@ exec_scalar_binary(struct tgsi_exec_machine *mach,
    union tgsi_exec_channel dst;
 
    fetch_source(mach, &src[0], &inst->Src[0], TGSI_CHAN_X, src_datatype);
-   fetch_source(mach, &src[1], &inst->Src[1], TGSI_CHAN_Y, src_datatype);
+   fetch_source(mach, &src[1], &inst->Src[1], TGSI_CHAN_X, src_datatype);
    op(&dst, &src[0], &src[1]);
    for (chan = 0; chan < TGSI_NUM_CHANNELS; chan++) {
       if (inst->Dst[0].Register.WriteMask & (1 << chan)) {
@@ -3677,7 +3561,7 @@ exec_instruction(
       break;
 
    case TGSI_OPCODE_SQRT:
-      exec_vector_unary(mach, inst, micro_sqrt, TGSI_EXEC_DATA_FLOAT, TGSI_EXEC_DATA_FLOAT);
+      exec_scalar_unary(mach, inst, micro_sqrt, TGSI_EXEC_DATA_FLOAT, TGSI_EXEC_DATA_FLOAT);
       break;
 
    case TGSI_OPCODE_DP2A:
@@ -3740,12 +3624,12 @@ exec_instruction(
       exec_vector_unary(mach, inst, micro_ddy, TGSI_EXEC_DATA_FLOAT, TGSI_EXEC_DATA_FLOAT);
       break;
 
-   case TGSI_OPCODE_KILP:
-      exec_kilp (mach, inst);
+   case TGSI_OPCODE_KILL:
+      exec_kill (mach, inst);
       break;
 
-   case TGSI_OPCODE_KIL:
-      exec_kil (mach, inst);
+   case TGSI_OPCODE_KILL_IF:
+      exec_kill_if (mach, inst);
       break;
 
    case TGSI_OPCODE_PK2H:

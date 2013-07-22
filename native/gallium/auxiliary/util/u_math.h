@@ -48,6 +48,7 @@ extern "C" {
 
 
 #include <math.h>
+#include <float.h>
 #include <stdarg.h>
 
 #ifdef PIPE_OS_UNIX
@@ -132,6 +133,9 @@ roundf(float x)
 {
    return x >= 0.0f ? floorf(x + 0.5f) : ceilf(x - 0.5f);
 }
+
+#define INFINITY (DBL_MAX + DBL_MAX)
+#define NAN (INFINITY - INFINITY)
 
 #endif /* _MSC_VER */
 
@@ -540,14 +544,13 @@ ubyte_to_float(ubyte ub)
 static INLINE ubyte
 float_to_ubyte(float f)
 {
-   const int ieee_0996 = 0x3f7f0000;   /* 0.996 or so */
    union fi tmp;
 
    tmp.f = f;
    if (tmp.i < 0) {
       return (ubyte) 0;
    }
-   else if (tmp.i >= ieee_0996) {
+   else if (tmp.i >= 0x3f800000 /* 1.0f */) {
       return (ubyte) 255;
    }
    else {
@@ -763,6 +766,13 @@ static INLINE int32_t util_signed_fixed(float value, unsigned frac_bits)
 {
    return (int32_t)(value * (1<<frac_bits));
 }
+
+unsigned
+util_fpstate_get(void);
+unsigned
+util_fpstate_set_denorms_to_zero(unsigned current_fpstate);
+void
+util_fpstate_set(unsigned fpstate);
 
 
 

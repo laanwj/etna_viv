@@ -131,6 +131,26 @@ util_format_is_pure_uint(enum pipe_format format)
    return (desc->channel[i].type == UTIL_FORMAT_TYPE_UNSIGNED && desc->channel[i].pure_integer) ? TRUE : FALSE;
 }
 
+/**
+ * Returns true if all non-void channels are normalized signed.
+ */
+boolean
+util_format_is_snorm(enum pipe_format format)
+{
+   const struct util_format_description *desc = util_format_description(format);
+   int i;
+
+   if (desc->is_mixed)
+      return FALSE;
+
+   i = util_format_get_first_non_void_channel(format);
+   if (i == -1)
+      return FALSE;
+
+   return desc->channel[i].type == UTIL_FORMAT_TYPE_SIGNED &&
+          !desc->channel[i].pure_integer &&
+          desc->channel[i].normalized;
+}
 
 boolean
 util_format_is_luminance_alpha(enum pipe_format format)
@@ -277,7 +297,7 @@ util_format_read_4ui(enum pipe_format format,
 {
    const struct util_format_description *format_desc;
    const uint8_t *src_row;
-   unsigned *dst_row;
+   uint32_t *dst_row;
 
    format_desc = util_format_description(format);
 
@@ -298,7 +318,7 @@ util_format_write_4ui(enum pipe_format format,
 {
    const struct util_format_description *format_desc;
    uint8_t *dst_row;
-   const unsigned *src_row;
+   const uint32_t *src_row;
 
    format_desc = util_format_description(format);
 
@@ -319,7 +339,7 @@ util_format_read_4i(enum pipe_format format,
 {
    const struct util_format_description *format_desc;
    const uint8_t *src_row;
-   int *dst_row;
+   int32_t *dst_row;
 
    format_desc = util_format_description(format);
 
@@ -340,7 +360,7 @@ util_format_write_4i(enum pipe_format format,
 {
    const struct util_format_description *format_desc;
    uint8_t *dst_row;
-   const int *src_row;
+   const int32_t *src_row;
 
    format_desc = util_format_description(format);
 
