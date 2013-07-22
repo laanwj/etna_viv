@@ -62,6 +62,12 @@ struct etna_pipe_specs
     unsigned stream_count;
     /* supports trigonometric instructions */
     bool has_sin_cos_sqrt;
+    /* can use VS_RANGE, PS_RANGE registers*/
+    bool has_shader_range_registers;
+    /* vertex shader memory address*/
+    uint32_t vs_offset;
+    /* pixel shader memory address*/
+    uint32_t ps_offset;
 };
 
 /** Compiled Gallium state. All the different compiled state atoms are woven together and uploaded
@@ -265,6 +271,7 @@ struct etna_3d_state
     uint32_t /*00820*/ VS_INPUT[VIVS_VS_INPUT__LEN];
     uint32_t /*00830*/ VS_LOAD_BALANCING;
     uint32_t /*00838*/ VS_START_PC;
+    uint32_t /*0085C*/ VS_RANGE;
 
     uint32_t /*00A00*/ PA_VIEWPORT_SCALE_X;
     uint32_t /*00A04*/ PA_VIEWPORT_SCALE_Y;
@@ -296,6 +303,7 @@ struct etna_3d_state
     uint32_t /*0100C*/ PS_TEMP_REGISTER_CONTROL;
     uint32_t /*01010*/ PS_CONTROL;
     uint32_t /*01018*/ PS_START_PC;
+    uint32_t /*0101C*/ PS_RANGE;
 
     uint32_t /*01400*/ PE_DEPTH_CONFIG;
     uint32_t /*01404*/ PE_DEPTH_NEAR;

@@ -263,6 +263,10 @@ static void reset_context(struct pipe_context *pipe)
     }
     /*00830*/ EMIT_STATE(VS_LOAD_BALANCING, VS_LOAD_BALANCING);
     /*00838*/ EMIT_STATE(VS_START_PC, VS_START_PC);
+    if (e->specs.has_shader_range_registers)
+    {
+        /*0085C*/ EMIT_STATE(VS_RANGE, VS_RANGE);
+    }
     /*00A00*/ EMIT_STATE(PA_VIEWPORT_SCALE_X, PA_VIEWPORT_SCALE_X);
     /*00A04*/ EMIT_STATE(PA_VIEWPORT_SCALE_Y, PA_VIEWPORT_SCALE_Y);
     /*00A08*/ EMIT_STATE(PA_VIEWPORT_SCALE_Z, PA_VIEWPORT_SCALE_Z);
@@ -293,6 +297,10 @@ static void reset_context(struct pipe_context *pipe)
     /*0100C*/ EMIT_STATE(PS_TEMP_REGISTER_CONTROL, PS_TEMP_REGISTER_CONTROL);
     /*01010*/ EMIT_STATE(PS_CONTROL, PS_CONTROL);
     /*01018*/ EMIT_STATE(PS_START_PC, PS_START_PC);
+    if (e->specs.has_shader_range_registers)
+    {
+        /*0101C*/ EMIT_STATE(PS_RANGE, PS_RANGE);
+    }
     /*01400*/ EMIT_STATE(PE_DEPTH_CONFIG, PE_DEPTH_CONFIG);
     /*01404*/ EMIT_STATE(PE_DEPTH_NEAR, PE_DEPTH_NEAR);
     /*01408*/ EMIT_STATE(PE_DEPTH_FAR, PE_DEPTH_FAR);
@@ -452,6 +460,11 @@ static void sync_context(struct pipe_context *pipe)
     {
         /*0064C*/ EMIT_STATE(FE_VERTEX_STREAM_BASE_ADDR, FE_VERTEX_STREAM_BASE_ADDR, e->vertex_buffer[0].FE_VERTEX_STREAM_BASE_ADDR);
         /*00650*/ EMIT_STATE(FE_VERTEX_STREAM_CONTROL, FE_VERTEX_STREAM_CONTROL, e->vertex_buffer[0].FE_VERTEX_STREAM_CONTROL);
+        if (e->specs.has_shader_range_registers)
+        {
+            /*00680*/ EMIT_STATE(FE_VERTEX_STREAMS_BASE_ADDR(0), FE_VERTEX_STREAMS_BASE_ADDR[0], e->vertex_buffer[0].FE_VERTEX_STREAM_BASE_ADDR);
+            /*006A0*/ EMIT_STATE(FE_VERTEX_STREAMS_CONTROL(0), FE_VERTEX_STREAMS_CONTROL[0], e->vertex_buffer[0].FE_VERTEX_STREAM_CONTROL);
+        }
     }
     if(dirty & (ETNA_STATE_SHADER))
     {
@@ -478,6 +491,10 @@ static void sync_context(struct pipe_context *pipe)
         }
         /*00830*/ EMIT_STATE(VS_LOAD_BALANCING, VS_LOAD_BALANCING, e->shader_state.VS_LOAD_BALANCING);
         /*00838*/ EMIT_STATE(VS_START_PC, VS_START_PC, e->shader_state.VS_START_PC);
+        if (e->specs.has_shader_range_registers)
+        {
+            /*0085C*/ EMIT_STATE(VS_RANGE, VS_RANGE, (e->shader_state.vs_inst_mem_size/4-1)<<16);
+        }
     }
     if(dirty & (ETNA_STATE_VIEWPORT))
     {
@@ -546,6 +563,10 @@ static void sync_context(struct pipe_context *pipe)
         /*0100C*/ EMIT_STATE(PS_TEMP_REGISTER_CONTROL, PS_TEMP_REGISTER_CONTROL, e->shader_state.PS_TEMP_REGISTER_CONTROL);
         /*01010*/ EMIT_STATE(PS_CONTROL, PS_CONTROL, e->shader_state.PS_CONTROL);
         /*01018*/ EMIT_STATE(PS_START_PC, PS_START_PC, e->shader_state.PS_START_PC);
+        if (e->specs.has_shader_range_registers)
+        {
+            /*0101C*/ EMIT_STATE(PS_RANGE, PS_RANGE, ((e->shader_state.ps_inst_mem_size/4-1+0x100)<<16) | 0x100);
+        }
     }
     if(dirty & (ETNA_STATE_DSA | ETNA_STATE_FRAMEBUFFER))
     {
@@ -563,7 +584,7 @@ static void sync_context(struct pipe_context *pipe)
         if (ctx->conn->chip.pixel_pipes == 1)
         {
             /*01410*/ EMIT_STATE(PE_DEPTH_ADDR, PE_DEPTH_ADDR, e->framebuffer.PE_DEPTH_ADDR);
-        } /* for multiple pixel-pipe case, COLOR_ADDR and DEPTH_ADDR are submitted together below */
+        }
 
         /*01414*/ EMIT_STATE(PE_DEPTH_STRIDE, PE_DEPTH_STRIDE, e->framebuffer.PE_DEPTH_STRIDE);
     }
@@ -598,6 +619,11 @@ static void sync_context(struct pipe_context *pipe)
             /*01430*/ EMIT_STATE(PE_COLOR_ADDR, PE_COLOR_ADDR, e->framebuffer.PE_COLOR_ADDR);
             /*01434*/ EMIT_STATE(PE_COLOR_STRIDE, PE_COLOR_STRIDE, e->framebuffer.PE_COLOR_STRIDE);
             /*01454*/ EMIT_STATE(PE_HDEPTH_CONTROL, PE_HDEPTH_CONTROL, e->framebuffer.PE_HDEPTH_CONTROL);
+            if (e->specs.has_shader_range_registers)
+            {
+                /*01460*/ EMIT_STATE(PE_PIPE_COLOR_ADDR(0), PE_PIPE_COLOR_ADDR[0], e->framebuffer.PE_PIPE_COLOR_ADDR[0]);
+                /*01480*/ EMIT_STATE(PE_PIPE_DEPTH_ADDR(0), PE_PIPE_DEPTH_ADDR[0], e->framebuffer.PE_PIPE_DEPTH_ADDR[0]);
+            }
         }
         else if (ctx->conn->chip.pixel_pipes == 2)
         {
@@ -704,9 +730,11 @@ static void sync_context(struct pipe_context *pipe)
     if(dirty & (ETNA_STATE_SHADER))
     {
         /* Special case: a new shader was loaded; simply re-load all uniforms and shader code at once */
-        /*04000*/ etna_set_state_multi(ctx, VIVS_VS_INST_MEM(0), e->shader_state.vs_inst_mem_size, e->shader_state.VS_INST_MEM);
+        /*04000 or 0C000*/
+        etna_set_state_multi(ctx, e->specs.vs_offset, e->shader_state.vs_inst_mem_size, e->shader_state.VS_INST_MEM);
+        /*06000 or 0D000*/
+        etna_set_state_multi(ctx, e->specs.ps_offset, e->shader_state.ps_inst_mem_size, e->shader_state.PS_INST_MEM);
         /*05000*/ etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(0), e->shader_state.vs_uniforms_size, e->shader_state.VS_UNIFORMS);
-        /*06000*/ etna_set_state_multi(ctx, VIVS_PS_INST_MEM(0), e->shader_state.ps_inst_mem_size, e->shader_state.PS_INST_MEM);
         /*07000*/ etna_set_state_multi(ctx, VIVS_PS_UNIFORMS(0), e->shader_state.ps_uniforms_size, e->shader_state.PS_UNIFORMS);
 
         memcpy(e->gpu3d.VS_UNIFORMS, e->shader_state.VS_UNIFORMS, e->shader_state.vs_uniforms_size * 4);
@@ -1186,6 +1214,10 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
         if (priv->ctx->conn->chip.pixel_pipes == 1)
         {
             SET_STATE(PE_COLOR_ADDR, cbuf->surf.address);
+            if (priv->specs.has_shader_range_registers)
+            {
+                SET_STATE(PE_PIPE_COLOR_ADDR[0], cbuf->surf.address);
+            }
         }
         else if (priv->ctx->conn->chip.pixel_pipes == 2)
         {
@@ -1223,6 +1255,10 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
         if (priv->ctx->conn->chip.pixel_pipes == 1)
         {
             SET_STATE(PE_DEPTH_ADDR, zsbuf->surf.address);
+            if (priv->specs.has_shader_range_registers)
+            {
+                SET_STATE(PE_PIPE_DEPTH_ADDR[0], zsbuf->surf.address);
+            }
         }
         else if (priv->ctx->conn->chip.pixel_pipes == 2)
         {
