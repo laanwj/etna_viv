@@ -1461,7 +1461,7 @@ int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct
     /* list declarations */
     for(int x=0; x<cd->total_decls; ++x)
     {
-        DBG_F(ETNA_COMPILER_MSGS, "%i: %s,%d active=%i first_use=%i last_use=%i native=%i usage_mask=%x has_semantic=%i", x, tgsi_file_names[cd->decl[x].file], cd->decl[x].idx,
+        DBG_F(ETNA_COMPILER_MSGS, "%i: %s,%d active=%i first_use=%i last_use=%i native=%i usage_mask=%x has_semantic=%i", x, tgsi_file_name(cd->decl[x].file), cd->decl[x].idx,
                 cd->decl[x].active,
                 cd->decl[x].first_use, cd->decl[x].last_use, cd->decl[x].native.valid?cd->decl[x].native.id:-1,
                 cd->decl[x].usage_mask, 
@@ -1483,7 +1483,7 @@ int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct
     /* list declarations */
     for(int x=0; x<cd->total_decls; ++x)
     {
-        DBG_F(ETNA_COMPILER_MSGS, "%i: %s,%d active=%i first_use=%i last_use=%i native=%i usage_mask=%x has_semantic=%i", x, tgsi_file_names[cd->decl[x].file], cd->decl[x].idx,
+        DBG_F(ETNA_COMPILER_MSGS, "%i: %s,%d active=%i first_use=%i last_use=%i native=%i usage_mask=%x has_semantic=%i", x, tgsi_file_name(cd->decl[x].file), cd->decl[x].idx,
                 cd->decl[x].active,
                 cd->decl[x].first_use, cd->decl[x].last_use, cd->decl[x].native.valid?cd->decl[x].native.id:-1,
                 cd->decl[x].usage_mask, 
