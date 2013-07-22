@@ -890,8 +890,8 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         .src[2] = convert_src(cd, &inst->Src[0]), 
                         });
                 break;
-            case TGSI_OPCODE_KIL: assert(0); break;/* XXX INST_OPCODE_TEXKILL */
-            case TGSI_OPCODE_KILP: assert(0); break; /* XXX INST_OPCODE_TEXKILL */
+            case TGSI_OPCODE_KILL_IF: assert(0); break;/* XXX INST_OPCODE_TEXKILL */
+            case TGSI_OPCODE_KILL: assert(0); break; /* XXX INST_OPCODE_TEXKILL */
             case TGSI_OPCODE_PK2H: assert(0); break;
             case TGSI_OPCODE_PK2US: assert(0); break;
             case TGSI_OPCODE_PK4B: assert(0); break;
