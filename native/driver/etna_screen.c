@@ -118,7 +118,6 @@ static int etna_screen_get_param( struct pipe_screen *screen, enum pipe_cap para
     case PIPE_CAP_TGSI_FS_COORD_ORIGIN_LOWER_LEFT:
     case PIPE_CAP_TGSI_FS_COORD_PIXEL_CENTER_INTEGER:
     case PIPE_CAP_SCALED_RESOLVE: /* Should be possible to support */
-    case PIPE_CAP_TGSI_CAN_COMPACT_VARYINGS: /* Don't skip strict max varying limit check */
     case PIPE_CAP_TGSI_CAN_COMPACT_CONSTANTS: /* Don't skip strict max uniform limit check */
     case PIPE_CAP_FRAGMENT_COLOR_CLAMPED:
     case PIPE_CAP_VERTEX_COLOR_CLAMPED:
