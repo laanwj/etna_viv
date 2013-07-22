@@ -158,6 +158,10 @@ static int etna_screen_get_param( struct pipe_screen *screen, enum pipe_cap para
     case PIPE_CAP_MAX_RENDER_TARGETS:
             return 1;
 
+    /* Viewports and scissors. */
+    case PIPE_CAP_MAX_VIEWPORTS:
+            return 1;
+
     /* Timer queries. */
     case PIPE_CAP_QUERY_TIME_ELAPSED:
     case PIPE_CAP_OCCLUSION_QUERY:

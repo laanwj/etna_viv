@@ -1257,7 +1257,9 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
     priv->framebuffer_s = *sv; /* keep copy of original structure */
 }
 
-static void etna_pipe_set_scissor_state( struct pipe_context *pipe,
+static void etna_pipe_set_scissor_states( struct pipe_context *pipe,
+                          unsigned start_slot,
+                          unsigned num_scissors,
                           const struct pipe_scissor_state *ss)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
@@ -1271,7 +1273,9 @@ static void etna_pipe_set_scissor_state( struct pipe_context *pipe,
     priv->dirty_bits |= ETNA_STATE_VIEWPORT;
 }
 
-static void etna_pipe_set_viewport_state( struct pipe_context *pipe,
+static void etna_pipe_set_viewport_states( struct pipe_context *pipe,
+                           unsigned start_slot,
+                           unsigned num_scissors,
                            const struct pipe_viewport_state *vs)
 {
     struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
@@ -2013,8 +2017,8 @@ struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct et
     pc->set_constant_buffer = etna_set_constant_buffer;
     pc->set_framebuffer_state = etna_pipe_set_framebuffer_state;
     pc->set_polygon_stipple = etna_pipe_set_polygon_stipple;
-    pc->set_scissor_state = etna_pipe_set_scissor_state;
-    pc->set_viewport_state = etna_pipe_set_viewport_state;
+    pc->set_scissor_states = etna_pipe_set_scissor_states;
+    pc->set_viewport_states = etna_pipe_set_viewport_states;
     pc->set_fragment_sampler_views = etna_pipe_set_fragment_sampler_views;
     pc->set_vertex_sampler_views = etna_pipe_set_vertex_sampler_views;
     /* XXX set_geometry_sampler_views */
