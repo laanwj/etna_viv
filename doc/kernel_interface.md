@@ -423,8 +423,9 @@ To enable profiling, the kernel most have been built with `VIVANTE_PROFILER` ena
     
 HW profiling registers can be read using the command `READ_ALL_PROFILE_REGISTERS`.
 
-There are also the commands `GET_PROFILE_SETTING` and `SET_PROFILE_SETTING`, apparently for logging to files, 
-but these aren't even implemented in the kernel drivers.
+There are also the commands `GET_PROFILE_SETTING` and `SET_PROFILE_SETTING`, which set a flag for 
+logging to a file (`vprofiler.xml` by default), but this flag doesn't do anything in the kernel driver,
+likely it's meant to be read out by the user space driver.
 
 This will return a structure `gcsPROFILER_COUNTERS`, defined in `GC_HAL_PROFILER.h`, which has the following timers:
 

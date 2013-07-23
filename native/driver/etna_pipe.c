@@ -1559,10 +1559,13 @@ static void etna_pipe_flush(struct pipe_context *pipe,
     {
         if(etna_fence_new(pipe->screen, priv->ctx, fence) != ETNA_OK)
         {
-            printf("etna_pipe_flush: could not create fence\n");
+            printf("Error: %s: could not create fence\n", __func__);
         }
     }
-    etna_flush(priv->ctx);
+    if(etna_flush(priv->ctx) != ETNA_OK)
+    {
+        printf("Error: %s: etna_flush failed, GPU may be in unpredictable state\n", __func__);
+    }
 }
 
 static struct pipe_sampler_view *etna_pipe_create_sampler_view(struct pipe_context *pipe,

@@ -104,6 +104,8 @@ struct etna_ctx {
     struct _gcoCMDBUF *cmdbuf[NUM_COMMAND_BUFFERS];
     /* sync signals for command buffers */
     int cmdbuf_sig[NUM_COMMAND_BUFFERS];
+    /* number of unsignalled flushes (used to work around kernel bug) */
+    int flushes;
     /* context */
     void *ctx;
     /* command queue */
