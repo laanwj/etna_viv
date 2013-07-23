@@ -252,10 +252,10 @@ static void clear_buffer(gcoCMDBUF cmdbuf)
 /* Switch to next buffer, optionally wait for it to be available */
 static int switch_next_buffer(struct etna_ctx *ctx)
 {
-#ifdef DEBUG
-    printf("Switching to new buffer\n");
-#endif
     int next_buf_id = (ctx->cur_buf + 1) % NUM_COMMAND_BUFFERS;
+#if 0
+    printf("Switching to new buffer %i\n", next_buf_id);
+#endif
     if(viv_user_signal_wait(ctx->conn, ctx->cmdbuf_sig[next_buf_id], VIV_WAIT_INDEFINITE) != 0)
     {
 #ifdef DEBUG
@@ -375,9 +375,7 @@ int etna_flush(struct etna_ctx *ctx)
         /* nothing more fits in buffer, prevent warning about buffer overflow
            on next etna_reserve.
          */
-        ctx->cur_buf = -1;
-        ctx->buf = 0;
-        ctx->offset = 0;
+        ctx->offset = (COMMAND_BUFFER_SIZE - END_COMMIT_CLEARANCE) / 4;
     } else {
         /* set writing offset for next etna_reserve */
         ctx->offset = cur_buf->offset / 4;
