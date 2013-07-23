@@ -20,22 +20,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-/* Gallium state experiments -- WIP
+/* Gallium pipe driver
  */
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
-#include <stdarg.h>
-#include <assert.h>
-#include <math.h>
-
-#include <errno.h>
-
 #include "etna_pipe.h"
 #include "etna_translate.h"
 
@@ -51,7 +37,7 @@
 #include <etnaviv/etna_fb.h>
 #include <etnaviv/etna_rs.h>
 
-#include "etna_shader.h"
+#include "etna_compiler.h"
 #include "etna_debug.h"
 #include "etna_fence.h"
 #include "etna_transfer.h"
@@ -67,6 +53,19 @@
 #include "util/u_transfer.h"
 #include "util/u_surface.h"
 #include "util/u_blitter.h"
+
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <stdarg.h>
+#include <assert.h>
+#include <math.h>
+#include <errno.h>
 
 /*********************************************************************/
 /* Macros to define state */

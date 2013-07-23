@@ -42,7 +42,7 @@
  * * Allow loops   
  * * Use an instruction scheduler
  */
-#include "etna_shader.h"
+#include "etna_compiler.h"
 #include "etna_asm.h"
 #include "etna_internal.h"
 #include "etna_debug.h"

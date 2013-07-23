@@ -22,7 +22,7 @@
  */
 #include "etna_screen.h"
 #include "etna_pipe.h"
-#include "etna_shader.h"
+#include "etna_compiler.h"
 #include "etna_translate.h"
 #include "etna_debug.h"
 #include "etna_fence.h"
