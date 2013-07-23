@@ -1305,7 +1305,7 @@ static void etna_pipe_set_scissor_states( struct pipe_context *pipe,
     SET_STATE_FIXP(SE_SCISSOR_RIGHT, (ss->maxx << 16)-1);
     SET_STATE_FIXP(SE_SCISSOR_BOTTOM, (ss->maxy << 16)-1);
     /* note that this state is only used when rasterizer_state->scissor is on */
-    priv->dirty_bits |= ETNA_STATE_VIEWPORT;
+    priv->dirty_bits |= ETNA_STATE_SCISSOR;
 }
 
 static void etna_pipe_set_viewport_states( struct pipe_context *pipe,
@@ -1335,7 +1335,7 @@ static void etna_pipe_set_viewport_states( struct pipe_context *pipe,
 
     SET_STATE_F32(PE_DEPTH_NEAR, 0.0); /* not affected if depth mode is Z (as in GL) */
     SET_STATE_F32(PE_DEPTH_FAR, 1.0);
-    priv->dirty_bits |= ETNA_STATE_SCISSOR;
+    priv->dirty_bits |= ETNA_STATE_VIEWPORT;
 }
 
 static void etna_pipe_set_fragment_sampler_views(struct pipe_context *pipe,
