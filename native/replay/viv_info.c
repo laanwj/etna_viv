@@ -18,14 +18,6 @@
 
 const char *galcore_device[] = {"/dev/galcore", "/dev/graphics/galcore", NULL};
 
-typedef struct 
-{
-    void *in_buf;
-    uint32_t in_buf_size;
-    void *out_buf;
-    uint32_t out_buf_size;
-} vivante_ioctl_data_t;
-
 const char *vivante_chipFeatures[32] = {
     /*0 */ "FAST_CLEAR",
     /*1 */ "SPECIAL_ANTI_ALIASING",
@@ -288,6 +280,11 @@ int main()
     printf("Num constants: 0x%08x\n", id.u.QueryChipIdentity.numConstants);
     printf("Buffer size: 0x%08x\n", id.u.QueryChipIdentity.bufferSize);
 #endif
+#ifdef GCABI_IMX_V4
+    printf("Number of varyings: 0x%08x\n", id.u.QueryChipIdentity.varyingsCount);
+    printf("Supertile layout style in hardware: 0x%08x\n", id.u.QueryChipIdentity.superTileMode);
+#endif
+    
     printf("\n");
 
     memset((void*)&id, 0, sizeof(id));

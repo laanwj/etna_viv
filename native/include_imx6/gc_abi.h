@@ -35,3 +35,12 @@
 
 // Chip identity has pixelPipes, instructionCount, numConstants, bufferSize
 #define GCABI_CHIPIDENTITY_EXT
+
+/* IOCTL structure for userspace driver*/
+typedef struct 
+{
+    void *in_buf;
+    uint32_t in_buf_size;
+    void *out_buf;
+    uint32_t out_buf_size;
+} vivante_ioctl_data_t;

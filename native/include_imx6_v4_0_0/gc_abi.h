@@ -35,3 +35,15 @@
 
 // Chip identity has pixelPipes, instructionCount, numConstants, bufferSize
 #define GCABI_CHIPIDENTITY_EXT
+
+// imx6 v4 kernel driver
+#define GCABI_IMX_V4
+
+/* IOCTL structure for userspace driver*/
+typedef struct 
+{
+    unsigned long long *in_buf;
+    unsigned long long in_buf_size;
+    unsigned long long *out_buf;
+    unsigned long long out_buf_size;
+} vivante_ioctl_data_t;
