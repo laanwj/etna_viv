@@ -618,11 +618,6 @@ static void sync_context(struct pipe_context *pipe)
             /*01430*/ EMIT_STATE(PE_COLOR_ADDR, PE_COLOR_ADDR, e->framebuffer.PE_COLOR_ADDR);
             /*01434*/ EMIT_STATE(PE_COLOR_STRIDE, PE_COLOR_STRIDE, e->framebuffer.PE_COLOR_STRIDE);
             /*01454*/ EMIT_STATE(PE_HDEPTH_CONTROL, PE_HDEPTH_CONTROL, e->framebuffer.PE_HDEPTH_CONTROL);
-            if (e->specs.has_shader_range_registers)
-            {
-                /*01460*/ EMIT_STATE(PE_PIPE_COLOR_ADDR(0), PE_PIPE_COLOR_ADDR[0], e->framebuffer.PE_PIPE_COLOR_ADDR[0]);
-                /*01480*/ EMIT_STATE(PE_PIPE_DEPTH_ADDR(0), PE_PIPE_DEPTH_ADDR[0], e->framebuffer.PE_PIPE_DEPTH_ADDR[0]);
-            }
         }
         else if (ctx->conn->chip.pixel_pipes == 2)
         {
@@ -1213,10 +1208,6 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
         if (priv->ctx->conn->chip.pixel_pipes == 1)
         {
             SET_STATE(PE_COLOR_ADDR, cbuf->surf.address);
-            if (priv->specs.has_shader_range_registers)
-            {
-                SET_STATE(PE_PIPE_COLOR_ADDR[0], cbuf->surf.address);
-            }
         }
         else if (priv->ctx->conn->chip.pixel_pipes == 2)
         {
@@ -1254,10 +1245,6 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
         if (priv->ctx->conn->chip.pixel_pipes == 1)
         {
             SET_STATE(PE_DEPTH_ADDR, zsbuf->surf.address);
-            if (priv->specs.has_shader_range_registers)
-            {
-                SET_STATE(PE_PIPE_DEPTH_ADDR[0], zsbuf->surf.address);
-            }
         }
         else if (priv->ctx->conn->chip.pixel_pipes == 2)
         {

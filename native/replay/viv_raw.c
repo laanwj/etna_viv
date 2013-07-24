@@ -40,15 +40,6 @@
 #define GALCORE_DEVICE "/dev/galcore"
 #define INTERFACE_SIZE (sizeof(gcsHAL_INTERFACE))
 
-/* IOCTL structure for IOCTL_GCHAL_INTERFACE */
-typedef struct 
-{
-    void *in_buf;
-    uint32_t in_buf_size;
-    void *out_buf;
-    uint32_t out_buf_size;
-} vivante_ioctl_data_t;
-
 int viv_invoke(struct viv_conn *conn, gcsHAL_INTERFACE *cmd)
 {
     vivante_ioctl_data_t ic = {
