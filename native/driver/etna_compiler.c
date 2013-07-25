@@ -49,6 +49,7 @@
 
 #include "tgsi/tgsi_iterate.h"
 #include "tgsi/tgsi_strings.h"
+#include "tgsi/tgsi_util.h"
 #include "pipe/p_shader_tokens.h"
 #include "util/u_memory.h"
 #include "util/u_math.h"
@@ -391,7 +392,7 @@ static void etna_compile_pass_check_usage(struct etna_compile_data *cd, const st
             decl = &ctx.FullToken.FullDeclaration;
             for(int idx=decl->Range.First; idx<=decl->Range.Last; ++idx)
             {
-                cd->file[decl->Declaration.File][idx].usage_mask = decl->Declaration.UsageMask;
+                cd->file[decl->Declaration.File][idx].usage_mask = 0; // we'll compute this ourselves
                 cd->file[decl->Declaration.File][idx].has_semantic = decl->Declaration.Semantic;
                 cd->file[decl->Declaration.File][idx].semantic = decl->Semantic;
                 cd->file[decl->Declaration.File][idx].interp = decl->Interp;
@@ -419,6 +420,7 @@ static void etna_compile_pass_check_usage(struct etna_compile_data *cd, const st
                     reg_desc->first_use = inst_idx;
                 reg_desc->last_use = inst_idx;
                 reg_desc->active = true;
+                reg_desc->usage_mask |= tgsi_util_get_inst_usage_mask(inst, idx);
             }
             inst_idx += 1;
             break;
@@ -1270,7 +1272,7 @@ static void fill_in_ps_inputs(struct etna_shader_object *sobj, struct etna_compi
                 sobj->inputs[input_id].pa_attributes = 0x2f1; 
             else
                 sobj->inputs[input_id].pa_attributes = 0x200;
-            sobj->inputs[input_id].num_components = 4; /* XXX this is wasteful, set based on used components mask */
+            sobj->inputs[input_id].num_components = util_last_bit(reg->usage_mask);
         }
     }
     sobj->input_count_unk8 = 31; /* XXX what is this */

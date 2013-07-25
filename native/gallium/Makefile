@@ -13,6 +13,7 @@ GALLIUM_OBJS = auxiliary/tgsi/tgsi_dump.o \
 	auxiliary/tgsi/tgsi_build.o \
 	auxiliary/tgsi/tgsi_sanity.o \
 	auxiliary/tgsi/tgsi_ureg.o \
+	auxiliary/tgsi/tgsi_util.o \
 	auxiliary/util/u_blitter.o \
 	auxiliary/util/u_debug.o \
 	auxiliary/util/u_format.o \
