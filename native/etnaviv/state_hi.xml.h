@@ -8,11 +8,11 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- /home/linaro/etna_viv/rnndb/state.xml    (  15132 bytes, from 2013-07-14 23:00:58)
-- /home/linaro/etna_viv/rnndb/common.xml   (  15985 bytes, from 2013-06-18 19:41:10)
-- /home/linaro/etna_viv/rnndb/state_hi.xml (  16950 bytes, from 2013-07-14 23:00:58)
-- /home/linaro/etna_viv/rnndb/state_2d.xml (  30607 bytes, from 2013-06-18 19:41:10)
-- /home/linaro/etna_viv/rnndb/state_3d.xml (  53326 bytes, from 2013-07-15 22:04:10)
+- /home/orion/projects/etna_viv/rnndb/state.xml    (  17286 bytes, from 2013-07-25 15:32:33)
+- /home/orion/projects/etna_viv/rnndb/common.xml   (  15985 bytes, from 2013-02-10 12:55:03)
+- /home/orion/projects/etna_viv/rnndb/state_hi.xml (  17017 bytes, from 2013-07-25 15:34:05)
+- /home/orion/projects/etna_viv/rnndb/state_2d.xml (  30607 bytes, from 2013-04-16 17:48:29)
+- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  53323 bytes, from 2013-07-17 06:01:42)
 
 Copyright (C) 2013
 */
@@ -37,6 +37,9 @@ Copyright (C) 2013
 #define VIVS_HI_CLOCK_CONTROL_IDLE_2D				0x00020000
 #define VIVS_HI_CLOCK_CONTROL_IDLE_VG				0x00040000
 #define VIVS_HI_CLOCK_CONTROL_ISOLATE_GPU			0x00080000
+#define VIVS_HI_CLOCK_CONTROL_DEBUG_PIXEL_PIPE__MASK		0x00f00000
+#define VIVS_HI_CLOCK_CONTROL_DEBUG_PIXEL_PIPE__SHIFT		20
+#define VIVS_HI_CLOCK_CONTROL_DEBUG_PIXEL_PIPE(x)		(((x) << VIVS_HI_CLOCK_CONTROL_DEBUG_PIXEL_PIPE__SHIFT) & VIVS_HI_CLOCK_CONTROL_DEBUG_PIXEL_PIPE__MASK)
 
 #define VIVS_HI_IDLE_STATE					0x00000004
 #define VIVS_HI_IDLE_STATE_FE					0x00000001

@@ -16,7 +16,7 @@ ARM-based:
 - Marvell Armada 510 has a GC600: [CuBox](http://www.solid-run.com/cubox)
 - Rockchip 2918 has a GC800: some Arnova tablets
 - Freescale i.MX6 Quad has a GC2000 + GC320 + GC355
-- Freescale i.MX6 DualLite and Solo have a GC880
+- Freescale i.MX6 DualLite and Solo have a GC880 + GC320
 - Actions Semiconductor ATM7029 has a GC1000
 
 MIPS-based:
@@ -25,7 +25,7 @@ MIPS-based:
 
 See also [wikipedia](https://en.wikipedia.org/wiki/Vivante_Corporation).
 
-For the Vivante GPUs on many platforms the detailed features and specs are known, these can be found in 
+For the Vivante GPUs on many platforms feature bits have been determined, these can be found in 
 [doc/gpus_comparison.html](http://dev.visucore.com/etna_viv/gpus_comparison.html).
 
 Compatibility

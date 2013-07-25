@@ -129,19 +129,68 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="16" name="ENABLE" brief="Enable the command parser"/>
         </reg32>
         <reg32 offset="0x0065C" name="DMA_STATUS"/>
-        <reg32 offset="0x00660" name="DMA_DEBUG_STATE">
-            <bitfield high="4" low="0" name="CMD_STATE"/>
-            <bitfield high="9" low="8" name="CMD_DMA_STATE"/>
-            <bitfield high="11" low="10" name="CMD_FETCH_STATE"/>
-            <bitfield high="13" low="12" name="REQ_DMA_STATE"/>
-            <bitfield high="15" low="14" name="CAL_STATE"/>
-            <bitfield high="17" low="16" name="VE_REQ_STATE"/>
+        <reg32 offset="0x00660" name="DMA_DEBUG_STATE" brief="DMA debug status">
+            <bitfield high="4" low="0" name="CMD_STATE" brief="Command state">
+                <value value="0" name="IDLE"/>
+                <value value="1" name="DEC"/>
+                <value value="2" name="ADR0"/>
+                <value value="3" name="LOAD0"/>
+                <value value="4" name="ADR1"/>
+                <value value="5" name="LOAD1"/>
+                <value value="6" name="3DADR"/>
+                <value value="7" name="3DCMD"/>
+                <value value="8" name="3DCNTL"/>
+                <value value="9" name="3DIDXCNTL"/>
+                <value value="10" name="INITREQDMA"/>
+                <value value="11" name="DRAWIDX"/>
+                <value value="12" name="DRAW"/>
+                <value value="13" name="2DRECT0"/>
+                <value value="14" name="2DRECT1"/>
+                <value value="15" name="2DDATA0"/>
+                <value value="16" name="2DDATA1"/>
+                <value value="17" name="WAITFIFO"/>
+                <value value="18" name="WAIT"/>
+                <value value="19" name="LINK"/>
+                <value value="20" name="END"/>
+                <value value="21" name="STALL"/>
+            </bitfield>
+            <bitfield high="9" low="8" name="CMD_DMA_STATE" brief="Command DMA state">
+                <value value="0" name="IDLE"/>
+                <value value="1" name="START"/>
+                <value value="2" name="REQ"/>
+                <value value="3" name="END"/>
+            </bitfield>
+            <bitfield high="11" low="10" name="CMD_FETCH_STATE" brief="Command fetch state">
+                <value value="0" name="IDLE"/>
+                <value value="1" name="RAMVALID"/>
+                <value value="2" name="VALID"/>
+            </bitfield>
+            <bitfield high="13" low="12" name="REQ_DMA_STATE" brief="DMA request state">
+                <value value="0" name="IDLE"/>
+                <value value="1" name="WAITIDX"/>
+                <value value="2" name="CAL"/>
+            </bitfield>
+            <bitfield high="15" low="14" name="CAL_STATE" brief="Cal state">
+                <value value="0" name="IDLE"/>
+                <value value="1" name="LDADR"/>
+                <value value="2" name="IDXCALC"/>
+            </bitfield>
+            <bitfield high="17" low="16" name="VE_REQ_STATE" brief="VE request state">
+                <value value="0" name="IDLE"/>
+                <value value="1" name="CKCACHE"/>
+                <value value="2" name="MISS"/>
+            </bitfield>
         </reg32>
         <reg32 offset="0x00664" name="DMA_ADDRESS" brief="The current command decoder address (r/o)">
             <doc>This is useful for debugging a stuck command queue.</doc>
         </reg32>
-        <reg32 offset="0x00668" name="DMA_LOW"/>
-        <reg32 offset="0x0066C" name="DMA_HIGH"/>
+        <reg32 offset="0x00668" name="DMA_LOW" brief="FE fetched word 0">
+            <doc>
+                The GPU's DMA engine fetches 64-bit words at once. This register will read the lower
+                32 bits (word 0) of the last-fetched DMA word.
+            </doc>
+        </reg32>
+        <reg32 offset="0x0066C" name="DMA_HIGH" brief="FE fetched word 1"/>
         <reg32 offset="0x00670" name="AUTO_FLUSH" value="0x00000000" brief="Auto flush cycles"/>
         <reg32 offset="0x00678" name="UNK00678" value="0x00000000"/>
         <reg32 offset="0x0067C" name="UNK0067C" value="0xFFFFFFFF"/>
