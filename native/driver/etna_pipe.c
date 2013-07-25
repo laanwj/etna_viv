@@ -79,7 +79,7 @@
  */
 static uint32_t active_samplers_bits(struct pipe_context *pipe)
 {
-    struct etna_pipe_context_priv *restrict e = ETNA_PIPE(pipe);
+    struct etna_pipe_context *restrict e = etna_pipe_context(pipe);
     unsigned num_fragment_samplers = MIN2(e->num_fragment_samplers, e->num_fragment_sampler_views);
     unsigned num_vertex_samplers = MIN2(e->num_vertex_samplers, e->num_vertex_sampler_views);
     uint32_t active_samplers = etna_bits_ones(num_fragment_samplers) |
@@ -218,7 +218,7 @@ static void etna_link_shaders(struct pipe_context *pipe,
  */
 static void reset_context(struct pipe_context *pipe)
 {
-    struct etna_pipe_context_priv *restrict e = ETNA_PIPE(pipe);
+    struct etna_pipe_context *restrict e = etna_pipe_context(pipe);
     struct etna_ctx *restrict ctx = e->ctx;
 
 #define EMIT_STATE(state_name, dest_field) \
@@ -382,7 +382,7 @@ static void reset_context(struct pipe_context *pipe)
  */
 static void sync_context(struct pipe_context *pipe)
 {
-    struct etna_pipe_context_priv *restrict e = ETNA_PIPE(pipe);
+    struct etna_pipe_context *restrict e = etna_pipe_context(pipe);
     struct etna_ctx *restrict ctx = e->ctx;
     uint32_t active_samplers = active_samplers_bits(pipe);
     uint32_t dirty = e->dirty_bits;
@@ -781,7 +781,7 @@ static void sync_context(struct pipe_context *pipe)
 /*********************************************************************/
 static void etna_pipe_destroy(struct pipe_context *pipe)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     if (priv->blitter)
         util_blitter_destroy(priv->blitter);
 
@@ -793,7 +793,7 @@ static void etna_pipe_destroy(struct pipe_context *pipe)
 static void etna_pipe_draw_vbo(struct pipe_context *pipe,
                  const struct pipe_draw_info *info)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     if(priv->vertex_elements == NULL || priv->vertex_elements->num_elements == 0)
         return; /* Nothing to do */
     int prims = translate_vertex_count(info->mode, info->count);
@@ -818,7 +818,7 @@ static void etna_pipe_draw_vbo(struct pipe_context *pipe,
 static void *etna_pipe_create_blend_state(struct pipe_context *pipe,
                             const struct pipe_blend_state *bs)
 {
-    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    //struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct compiled_blend_state *cs = CALLOC_STRUCT(compiled_blend_state);
     const struct pipe_rt_blend_state *rt0 = &bs->rt[0];
     bool enable = rt0->blend_enable && !(rt0->rgb_src_factor == PIPE_BLENDFACTOR_ONE && rt0->rgb_dst_factor == PIPE_BLENDFACTOR_ZERO &&
@@ -858,21 +858,21 @@ static void *etna_pipe_create_blend_state(struct pipe_context *pipe,
 
 static void etna_pipe_bind_blend_state(struct pipe_context *pipe, void *bs)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     priv->dirty_bits |= ETNA_STATE_BLEND;
     priv->blend = bs;
 }
 
 static void etna_pipe_delete_blend_state(struct pipe_context *pipe, void *bs)
 {
-    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    //struct etna_pipe_context *priv = etna_pipe_context(pipe);
     FREE(bs);
 }
 
 static void *etna_pipe_create_sampler_state(struct pipe_context *pipe,
                               const struct pipe_sampler_state *ss)
 {
-    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    //struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct compiled_sampler_state *cs = CALLOC_STRUCT(compiled_sampler_state);
     SET_STATE(TE_SAMPLER_CONFIG0, 
                 /* XXX get from sampler view: VIVS_TE_SAMPLER_CONFIG0_TYPE(TEXTURE_TYPE_2D)| */
@@ -902,7 +902,7 @@ static void etna_pipe_bind_fragment_sampler_states(struct pipe_context *pipe,
                                       unsigned num_samplers,
                                       void **samplers)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     priv->dirty_bits |= ETNA_STATE_SAMPLERS;
     priv->num_fragment_samplers = num_samplers;
     for(int idx=0; idx<num_samplers; ++idx)
@@ -913,7 +913,7 @@ static void etna_pipe_bind_vertex_sampler_states(struct pipe_context *pipe,
                                       unsigned num_samplers,
                                       void **samplers)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     priv->dirty_bits |= ETNA_STATE_SAMPLERS;
     priv->num_vertex_samplers = num_samplers;
     for(int idx=0; idx<num_samplers; ++idx)
@@ -922,14 +922,14 @@ static void etna_pipe_bind_vertex_sampler_states(struct pipe_context *pipe,
 
 static void etna_pipe_delete_sampler_state(struct pipe_context *pipe, void *ss)
 {
-    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    //struct etna_pipe_context *priv = etna_pipe_context(pipe);
     FREE(ss);
 }
 
 static void *etna_pipe_create_rasterizer_state(struct pipe_context *pipe,
                                  const struct pipe_rasterizer_state *rs)
 {
-    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    //struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct compiled_rasterizer_state *cs = CALLOC_STRUCT(compiled_rasterizer_state);
     if(rs->fill_front != rs->fill_back)
     {
@@ -963,21 +963,21 @@ static void *etna_pipe_create_rasterizer_state(struct pipe_context *pipe,
 
 static void etna_pipe_bind_rasterizer_state(struct pipe_context *pipe, void *rs)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     priv->dirty_bits |= ETNA_STATE_RASTERIZER;
     priv->rasterizer = rs;
 }
 
 static void etna_pipe_delete_rasterizer_state(struct pipe_context *pipe, void *rs)
 {
-    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    //struct etna_pipe_context *priv = etna_pipe_context(pipe);
     FREE(rs);
 }
 
 static void *etna_pipe_create_depth_stencil_alpha_state(struct pipe_context *pipe,
                                     const struct pipe_depth_stencil_alpha_state *dsa_p)
 {
-    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    //struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct compiled_depth_stencil_alpha_state *cs = CALLOC_STRUCT(compiled_depth_stencil_alpha_state);
     struct pipe_depth_stencil_alpha_state dsa = *dsa_p;
     /* XXX does stencil[0] / stencil[1] order depend on rs->front_ccw? */
@@ -1050,14 +1050,14 @@ static void *etna_pipe_create_depth_stencil_alpha_state(struct pipe_context *pip
 
 static void etna_pipe_bind_depth_stencil_alpha_state(struct pipe_context *pipe, void *dsa)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     priv->dirty_bits |= ETNA_STATE_DSA;
     priv->depth_stencil_alpha = dsa;
 }
 
 static void etna_pipe_delete_depth_stencil_alpha_state(struct pipe_context *pipe, void *dsa)
 {
-    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    //struct etna_pipe_context *priv = etna_pipe_context(pipe);
     FREE(dsa);
 }
 
@@ -1065,7 +1065,7 @@ static void *etna_pipe_create_vertex_elements_state(struct pipe_context *pipe,
                                       unsigned num_elements,
                                       const struct pipe_vertex_element *elements)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct compiled_vertex_elements_state *cs = CALLOC_STRUCT(compiled_vertex_elements_state);
     /* XXX could minimize number of consecutive stretches here by sorting, and 
      * permuting in shader or does Mesa do this already? */
@@ -1117,7 +1117,7 @@ static void *etna_pipe_create_vertex_elements_state(struct pipe_context *pipe,
 
 static void etna_pipe_bind_vertex_elements_state(struct pipe_context *pipe, void *ve)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     priv->dirty_bits |= ETNA_STATE_VERTEX_ELEMENTS;
     priv->vertex_elements = ve;
 }
@@ -1125,14 +1125,14 @@ static void etna_pipe_bind_vertex_elements_state(struct pipe_context *pipe, void
 static void etna_pipe_delete_vertex_elements_state(struct pipe_context *pipe, void *ve)
 {
     struct compiled_vertex_elements_state *cs = (struct compiled_vertex_elements_state*)ve;
-    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    //struct etna_pipe_context *priv = etna_pipe_context(pipe);
     FREE(cs);
 }
 
 static void etna_pipe_set_blend_color(struct pipe_context *pipe,
                         const struct pipe_blend_color *bc)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct compiled_blend_color *cs = &priv->blend_color;
     SET_STATE(PE_ALPHA_BLEND_COLOR, 
             VIVS_PE_ALPHA_BLEND_COLOR_R(etna_cfloat_to_uint8(bc->color[0])) |
@@ -1146,7 +1146,7 @@ static void etna_pipe_set_blend_color(struct pipe_context *pipe,
 static void etna_pipe_set_stencil_ref(struct pipe_context *pipe,
                         const struct pipe_stencil_ref *sr)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct compiled_stencil_ref *cs = &priv->stencil_ref;
 
     priv->stencil_ref_s = *sr;
@@ -1164,7 +1164,7 @@ static void etna_pipe_set_stencil_ref(struct pipe_context *pipe,
 static void etna_pipe_set_sample_mask(struct pipe_context *pipe,
                         unsigned sample_mask)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct compiled_sample_mask *cs = &priv->sample_mask;
 
     priv->sample_mask_s = sample_mask;
@@ -1178,7 +1178,7 @@ static void etna_pipe_set_sample_mask(struct pipe_context *pipe,
 static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
                               const struct pipe_framebuffer_state *sv)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct compiled_framebuffer_state *cs = &priv->framebuffer;
 
     /* XXX support multisample 2X/4X, take care that required width/height is doubled
@@ -1283,7 +1283,7 @@ static void etna_pipe_set_scissor_states( struct pipe_context *pipe,
                           unsigned num_scissors,
                           const struct pipe_scissor_state *ss)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct compiled_scissor_state *cs = &priv->scissor;
     priv->scissor_s = *ss;
     SET_STATE_FIXP(SE_SCISSOR_LEFT, (ss->minx << 16));
@@ -1299,7 +1299,7 @@ static void etna_pipe_set_viewport_states( struct pipe_context *pipe,
                            unsigned num_scissors,
                            const struct pipe_viewport_state *vs)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct compiled_viewport_state *cs = &priv->viewport;
     priv->viewport_s = *vs;
     /**
@@ -1328,7 +1328,7 @@ static void etna_pipe_set_fragment_sampler_views(struct pipe_context *pipe,
                                   unsigned num_views,
                                   struct pipe_sampler_view **info)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     unsigned idx;
     priv->dirty_bits |= ETNA_STATE_SAMPLER_VIEWS;
     priv->num_fragment_sampler_views = num_views;
@@ -1348,7 +1348,7 @@ static void etna_pipe_set_vertex_sampler_views(struct pipe_context *pipe,
                                   unsigned num_views,
                                   struct pipe_sampler_view **info)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     unsigned idx;
     unsigned offset = priv->specs.vertex_sampler_offset;
     priv->dirty_bits |= ETNA_STATE_SAMPLER_VIEWS;
@@ -1370,7 +1370,7 @@ static void etna_pipe_set_vertex_buffers( struct pipe_context *pipe,
                            unsigned num_buffers,
                            const struct pipe_vertex_buffer *vb)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     assert((start_slot + num_buffers) <= PIPE_MAX_ATTRIBS);
     struct pipe_vertex_buffer zero_vb = {};
     for(unsigned idx=0; idx<num_buffers; ++idx)
@@ -1403,7 +1403,7 @@ static void etna_pipe_set_vertex_buffers( struct pipe_context *pipe,
 static void etna_pipe_set_index_buffer( struct pipe_context *pipe,
                          const struct pipe_index_buffer *ib)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct compiled_set_index_buffer *cs = &priv->index_buffer;
     if(ib == NULL)
     {
@@ -1460,7 +1460,7 @@ static void etna_pipe_clear(struct pipe_context *pipe,
              double depth,
              unsigned stencil)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     /* No need to set up the TS here with sync_context.
      * RS clear operations (in contrary to resolve and copy) do not require the TS state. 
      */
@@ -1518,7 +1518,7 @@ static void etna_pipe_clear_render_target(struct pipe_context *pipe,
                            unsigned dstx, unsigned dsty,
                            unsigned width, unsigned height)
 {
-    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    //struct etna_pipe_context *priv = etna_pipe_context(pipe);
     /* TODO fill me in */
     printf("Warning: unimplemented clear_render_target\n");
 }
@@ -1531,7 +1531,7 @@ static void etna_pipe_clear_depth_stencil(struct pipe_context *pipe,
                            unsigned dstx, unsigned dsty,
                            unsigned width, unsigned height)
 {
-    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    //struct etna_pipe_context *priv = etna_pipe_context(pipe);
     /* TODO fill me in */
     printf("Warning: unimplemented clear_depth_stencil\n");
 }
@@ -1540,7 +1540,7 @@ static void etna_pipe_flush(struct pipe_context *pipe,
              struct pipe_fence_handle **fence,
              enum pipe_flush_flags flags)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     if(fence)
     {
         if(etna_fence_new(pipe->screen, priv->ctx, fence) != ETNA_OK)
@@ -1560,7 +1560,7 @@ static struct pipe_sampler_view *etna_pipe_create_sampler_view(struct pipe_conte
                                                  struct pipe_resource *texture,
                                                  const struct pipe_sampler_view *templat)
 {
-    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    //struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct etna_sampler_view *sv = CALLOC_STRUCT(etna_sampler_view);
     sv->base = *templat;
     sv->base.context = pipe;
@@ -1601,7 +1601,7 @@ static struct pipe_sampler_view *etna_pipe_create_sampler_view(struct pipe_conte
 static void etna_pipe_sampler_view_destroy(struct pipe_context *pipe,
                             struct pipe_sampler_view *view)
 {
-    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    //struct etna_pipe_context *priv = etna_pipe_context(pipe);
     pipe_resource_reference(&view->texture, NULL);
     FREE(etna_sampler_view(view)->internal);
     FREE(view);
@@ -1611,7 +1611,7 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
                                       struct pipe_resource *resource_,
                                       const struct pipe_surface *templat)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct etna_surface *surf = CALLOC_STRUCT(etna_surface);
     struct etna_resource *resource = etna_resource(resource_);
     assert(templat->u.tex.first_layer == templat->u.tex.last_layer);
@@ -1666,14 +1666,14 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
 
 static void etna_pipe_surface_destroy(struct pipe_context *pipe, struct pipe_surface *surf)
 {
-    //struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    //struct etna_pipe_context *priv = etna_pipe_context(pipe);
     pipe_resource_reference(&surf->texture, NULL);
     FREE(surf);
 }
 
 static void etna_pipe_texture_barrier(struct pipe_context *pipe)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     /* clear texture cache */
     etna_set_state(priv->ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_TEXTURE | VIVS_GL_FLUSH_CACHE_TEXTUREVS);
     etna_stall(priv->ctx, SYNC_RECIPIENT_RA, SYNC_RECIPIENT_PE);
@@ -1776,7 +1776,7 @@ void *etna_create_shader_state(struct pipe_context *pipe, const struct etna_shad
 /* XXX to be removed: test entry point */
 void etna_bind_shader_state(struct pipe_context *pipe, void *sh)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     priv->dirty_bits |= ETNA_STATE_SHADER | ETNA_STATE_PS_UNIFORMS | ETNA_STATE_VS_UNIFORMS;
     priv->shader_state = *((struct compiled_shader_state*)sh);
 }
@@ -1793,7 +1793,7 @@ void etna_delete_shader_state(struct pipe_context *pipe, void *sh_)
 /* XXX to be removed: test entry point */
 void etna_set_uniforms(struct pipe_context *pipe, unsigned type, unsigned offset, unsigned count, const uint32_t *values)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     assert((offset + count) <= ETNA_MAX_UNIFORMS*4);
     switch(type)
     {
@@ -1814,7 +1814,7 @@ static void etna_set_constant_buffer(struct pipe_context *pipe,
                                 uint shader, uint index,
                                 struct pipe_constant_buffer *buf)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     if(buf == NULL) /* Unbinding constant buffer is a no-op as we don't keep a pointer */
         return;
     assert(buf->buffer == NULL && buf->user_buffer != NULL); 
@@ -1842,7 +1842,7 @@ static void etna_set_constant_buffer(struct pipe_context *pipe,
 
 static void *etna_pipe_create_shader_state(struct pipe_context *pipe, const struct pipe_shader_state *pss)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct etna_shader_object *out = NULL;
     etna_compile_shader_object(&priv->specs, pss->tokens, &out);
     return out;
@@ -1855,7 +1855,7 @@ static void etna_pipe_delete_shader_state(struct pipe_context *pipe, void *ss)
 
 static void etna_pipe_bind_fs_state(struct pipe_context *pipe, void *fss_)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct etna_shader_object *fss = (struct etna_shader_object*)fss_;
     priv->dirty_bits |= ETNA_STATE_SHADER | ETNA_STATE_PS_UNIFORMS;
     assert(fss == NULL || fss->processor == TGSI_PROCESSOR_FRAGMENT);
@@ -1864,7 +1864,7 @@ static void etna_pipe_bind_fs_state(struct pipe_context *pipe, void *fss_)
 
 static void etna_pipe_bind_vs_state(struct pipe_context *pipe, void *vss_)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct etna_shader_object *vss = (struct etna_shader_object*)vss_;
     priv->dirty_bits |= ETNA_STATE_SHADER | ETNA_STATE_VS_UNIFORMS;
     assert(vss == NULL || vss->processor == TGSI_PROCESSOR_VERTEX);
@@ -1912,7 +1912,7 @@ static void etna_pipe_blit(struct pipe_context *pipe, const struct pipe_blit_inf
      * For the rest, fall back to util_blitter
      */
     struct pipe_blit_info info = *blit_info;
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     if (info.src.resource->nr_samples > 1 &&
                 info.dst.resource->nr_samples <= 1 &&
                 !util_format_is_depth_or_stencil(info.src.resource->format) &&
@@ -1965,40 +1965,33 @@ static void etna_pipe_set_polygon_stipple(struct pipe_context *pctx,
     /* NOP */
 }
 
-struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct etna_pipe_specs *specs, struct pipe_screen *screen)
+struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct etna_pipe_specs *specs, struct pipe_screen *screen, void *priv)
 {
-    struct pipe_context *pc = CALLOC_STRUCT(pipe_context);
-    if(pc == NULL)
+    struct etna_pipe_context *ectx = CALLOC_STRUCT(etna_pipe_context);
+    if(ectx == NULL)
         return NULL;
+    struct pipe_context *pc = &ectx->base;
 
-    pc->priv = CALLOC_STRUCT(etna_pipe_context_priv);
-    if(pc->priv == NULL)
-    {
-        FREE(pc);
-        return NULL;
-    }
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pc);
-
+    pc->priv = priv;
     pc->screen = screen;
 
-    if(etna_create(dev, &priv->ctx) < 0)
+    if(etna_create(dev, &ectx->ctx) < 0)
     {
-        FREE(pc->priv);
         FREE(pc);
         return NULL;
     }
 
-    /* context private setup */
-    priv->dirty_bits = 0xffffffff;
-    priv->conn = dev;
-    priv->specs = *specs;
-    util_slab_create(&priv->transfer_pool, sizeof(struct etna_transfer),
+    /* context ctxate setup */
+    ectx->dirty_bits = 0xffffffff;
+    ectx->conn = dev;
+    ectx->specs = *specs;
+    util_slab_create(&ectx->transfer_pool, sizeof(struct etna_transfer),
                      16, UTIL_SLAB_SINGLETHREADED);
 
     /*  Set sensible defaults for state */
-    priv->gpu3d.PA_W_CLIP_LIMIT = 0x34000001;
-    priv->gpu3d.GL_VERTEX_ELEMENT_CONFIG = 0x1;
-    priv->gpu3d.GL_API_MODE = VIVS_GL_API_MODE_OPENGL;
+    ectx->gpu3d.PA_W_CLIP_LIMIT = 0x34000001;
+    ectx->gpu3d.GL_VERTEX_ELEMENT_CONFIG = 0x1;
+    ectx->gpu3d.GL_API_MODE = VIVS_GL_API_MODE_OPENGL;
 
     /* fill in vtable entries one by one */
     pc->destroy = etna_pipe_destroy;
@@ -2079,7 +2072,7 @@ struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct et
     /* XXX set_global_binding */
     /* XXX launch_grid */
 
-    priv->blitter = util_blitter_create(pc);
+    ectx->blitter = util_blitter_create(pc);
 
     /* Reset GPU to initial state */
     reset_context(pc);
@@ -2088,7 +2081,7 @@ struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct et
 
 struct etna_ctx *etna_pipe_get_etna_context(struct pipe_context *pipe)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     return priv->ctx;
 }
 

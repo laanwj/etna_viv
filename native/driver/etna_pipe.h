@@ -166,8 +166,9 @@ enum
 };
 
 /* private opaque context structure */
-struct etna_pipe_context_priv
+struct etna_pipe_context
 {
+    struct pipe_context base;
     struct viv_conn *conn;
     struct etna_ctx *ctx;
     unsigned dirty_bits;
@@ -214,6 +215,12 @@ struct etna_pipe_context_priv
     struct etna_3d_state gpu3d;
 };
 
+static INLINE struct etna_pipe_context *
+etna_pipe_context(struct pipe_context *p)
+{
+    return (struct etna_pipe_context *)p;
+}
+
 static INLINE struct etna_resource *
 etna_resource(struct pipe_resource *p)
 {
@@ -238,9 +245,9 @@ etna_transfer(struct pipe_transfer *p)
     return (struct etna_transfer *)p;
 }
 
-#define ETNA_PIPE(pipe) ((struct etna_pipe_context_priv*)(pipe)->priv)
+struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct etna_pipe_specs *specs, struct pipe_screen *scr, void *priv);
 
-struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct etna_pipe_specs *specs, struct pipe_screen *scr);
+struct etna_ctx *etna_pipe_get_etna_context(struct pipe_context *pipe);
 
 #ifdef RAWSHADER
 /* raw shader methods -- used by fb_rawshader demos */
@@ -249,8 +256,6 @@ void etna_bind_shader_state(struct pipe_context *pipe, void *sh);
 void etna_delete_shader_state(struct pipe_context *pipe, void *sh_);
 void etna_set_uniforms(struct pipe_context *pipe, unsigned type, unsigned offset, unsigned count, const uint32_t *values);
 #endif
-
-struct etna_ctx *etna_pipe_get_etna_context(struct pipe_context *pipe);
 
 #endif
 

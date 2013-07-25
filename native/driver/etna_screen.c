@@ -302,7 +302,7 @@ static struct pipe_context * etna_screen_context_create( struct pipe_screen *scr
                                         void *priv )
 {
     struct etna_screen *es = etna_screen(screen);
-    struct pipe_context *ctx = etna_new_pipe_context(es->dev, &es->specs, screen);
+    struct pipe_context *ctx = etna_new_pipe_context(es->dev, &es->specs, screen, priv);
     _hack_ctx = ctx;
     return ctx;
 }
@@ -405,11 +405,11 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
     struct etna_rs_target *drawable = (struct etna_rs_target *)winsys_drawable_handle;
     struct etna_resource *rt_resource = etna_resource(resource);
     struct pipe_context *pipe_ctx = _hack_ctx;
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe_ctx);
+    struct etna_pipe_context *ectx = etna_pipe_context(pipe_ctx);
     struct pipe_fence_handle **fence = 0;
     assert(level <= resource->last_level && layer < resource->array_size);
-    assert(priv);
-    struct etna_ctx *ctx = priv->ctx;
+    assert(ectx);
+    struct etna_ctx *ctx = ectx->ctx;
 
     /* release previous fence, make reference to fence if we need one */
     screen->fence_reference(screen, &drawable->fence, NULL);

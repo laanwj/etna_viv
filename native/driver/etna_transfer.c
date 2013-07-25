@@ -50,7 +50,7 @@ void *etna_pipe_transfer_map(struct pipe_context *pipe,
                          const struct pipe_box *box,
                          struct pipe_transfer **out_transfer)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct etna_transfer *ptrans = util_slab_alloc(&priv->transfer_pool);
     struct etna_resource *resource_priv = etna_resource(resource);
     enum pipe_format format = resource->format;
@@ -141,7 +141,7 @@ void etna_pipe_transfer_flush_region(struct pipe_context *pipe,
 void etna_pipe_transfer_unmap(struct pipe_context *pipe,
                       struct pipe_transfer *transfer_)
 {
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct etna_transfer *ptrans = etna_transfer(transfer_);
 
     /* XXX 
