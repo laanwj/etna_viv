@@ -1170,7 +1170,7 @@ static void assign_constants_and_immediates(struct etna_compile_data *cd)
         cd->file[TGSI_FILE_IMMEDIATE][idx].native.rgroup = INST_RGROUP_UNIFORM_0;
         cd->file[TGSI_FILE_IMMEDIATE][idx].native.id = cd->imm_base/4 + idx;
     }
-    DBG_F(ETNA_COMPILER_MSGS, "imm base: %i size: %i\n", cd->imm_base, cd->imm_size);
+    DBG_F(ETNA_COMPILER_MSGS, "imm base: %i size: %i", cd->imm_base, cd->imm_size);
 }
 
 /* Assign declared samplers to native texture units */
@@ -1471,7 +1471,6 @@ int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct
         if(cd->decl[x].has_semantic)
             DBG_F(ETNA_COMPILER_MSGS, " semantic_name=%s semantic_idx=%i",
                     tgsi_semantic_names[cd->decl[x].semantic.Name], cd->decl[x].semantic.Index);
-        DBG_F(ETNA_COMPILER_MSGS, "\n");
     }
     /* XXX for PS we need to permute so that inputs are always in temporary 0..N-1.
      * There is no "switchboard" for varyings (AFAIK!). The output color, however, can be routed 
@@ -1493,7 +1492,6 @@ int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct
         if(cd->decl[x].has_semantic)
             DBG_F(ETNA_COMPILER_MSGS, " semantic_name=%s semantic_idx=%i",
                     tgsi_semantic_names[cd->decl[x].semantic.Name], cd->decl[x].semantic.Index);
-        DBG_F(ETNA_COMPILER_MSGS, "\n");
     }
 
     /* pass 3: generate instructions

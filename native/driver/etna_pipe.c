@@ -129,10 +129,10 @@ static void etna_link_shaders(struct pipe_context *pipe,
     {
         assert(0); /* linking failed: some fs inputs do not have corresponding vs outputs */
     }
-    DBG_F(ETNA_COMPILER_MSGS, "link result:\n");
+    DBG_F(ETNA_COMPILER_MSGS, "link result:");
     for(int idx=0; idx<fs->num_inputs; ++idx)
     {
-        DBG_F(ETNA_COMPILER_MSGS,"  %i -> %i\n", link.varyings_vs_reg[idx], idx+1);
+        DBG_F(ETNA_COMPILER_MSGS,"  %i -> %i", link.varyings_vs_reg[idx], idx+1);
     }
 
     /* vs outputs (varyings) */ 
@@ -799,7 +799,7 @@ static void etna_pipe_draw_vbo(struct pipe_context *pipe,
     int prims = translate_vertex_count(info->mode, info->count);
     if(unlikely(prims <= 0))
     {
-        DBG("Invalid draw primitive mode=%i or no primitives to be drawn\n", info->mode);
+        DBG("Invalid draw primitive mode=%i or no primitives to be drawn", info->mode);
         return;
     }
     /* First, sync state, then emit DRAW_PRIMITIVES or DRAW_INDEXED_PRIMITIVES */
