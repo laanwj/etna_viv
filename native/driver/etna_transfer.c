@@ -183,6 +183,8 @@ void etna_pipe_transfer_unmap(struct pipe_context *pipe,
     }
     if(resource->base.bind & PIPE_BIND_SAMPLER_VIEW)
     {
+        /* XXX do we need to flush the CPU cache too or start a write barrier
+         * to make sure the GPU sees it? */
         priv->dirty_bits |= ETNA_STATE_TEXTURE_CACHES;
     }
 

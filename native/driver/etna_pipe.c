@@ -778,6 +778,30 @@ static void sync_context(struct pipe_context *pipe)
 
     e->dirty_bits = 0;
 }
+
+/* Save current state for blitter operation */
+static void etna_pipe_blit_save_state(struct pipe_context *pipe)
+{
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
+    util_blitter_save_vertex_buffer_slot(priv->blitter, &priv->vertex_buffer_s[0]);
+    util_blitter_save_vertex_elements(priv->blitter, priv->vertex_elements);
+    util_blitter_save_vertex_shader(priv->blitter, priv->vs);
+    util_blitter_save_rasterizer(priv->blitter, priv->rasterizer);
+    util_blitter_save_viewport(priv->blitter, &priv->viewport_s);
+    util_blitter_save_scissor(priv->blitter, &priv->scissor_s);
+    util_blitter_save_fragment_shader(priv->blitter, priv->fs);
+    util_blitter_save_blend(priv->blitter, priv->blend);
+    util_blitter_save_depth_stencil_alpha(priv->blitter, priv->depth_stencil_alpha);
+    util_blitter_save_stencil_ref(priv->blitter, &priv->stencil_ref_s);
+    util_blitter_save_sample_mask(priv->blitter, priv->sample_mask_s);
+    util_blitter_save_framebuffer(priv->blitter, &priv->framebuffer_s);
+    util_blitter_save_fragment_sampler_states(priv->blitter,
+                    priv->num_fragment_samplers,
+                    (void **)priv->sampler);
+    util_blitter_save_fragment_sampler_views(priv->blitter,
+                    priv->num_fragment_sampler_views, priv->sampler_view_s);
+}
+
 /*********************************************************************/
 static void etna_pipe_destroy(struct pipe_context *pipe)
 {
@@ -1518,9 +1542,10 @@ static void etna_pipe_clear_render_target(struct pipe_context *pipe,
                            unsigned dstx, unsigned dsty,
                            unsigned width, unsigned height)
 {
-    //struct etna_pipe_context *priv = etna_pipe_context(pipe);
-    /* TODO fill me in */
-    printf("Warning: unimplemented clear_render_target\n");
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
+    /* XXX could fall back to RS when target area is full screen / resolveable and no TS. */
+    etna_pipe_blit_save_state(pipe);
+    util_blitter_clear_render_target(priv->blitter, dst, color, dstx, dsty, width, height);
 }
 
 static void etna_pipe_clear_depth_stencil(struct pipe_context *pipe,
@@ -1531,9 +1556,10 @@ static void etna_pipe_clear_depth_stencil(struct pipe_context *pipe,
                            unsigned dstx, unsigned dsty,
                            unsigned width, unsigned height)
 {
-    //struct etna_pipe_context *priv = etna_pipe_context(pipe);
-    /* TODO fill me in */
-    printf("Warning: unimplemented clear_depth_stencil\n");
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
+    /* XXX could fall back to RS when target area is full screen / resolveable and no TS. */
+    etna_pipe_blit_save_state(pipe);
+    util_blitter_clear_depth_stencil(priv->blitter, dst, clear_flags, depth, stencil, dstx, dsty, width, height);
 }
 
 static void etna_pipe_flush(struct pipe_context *pipe,
@@ -1884,6 +1910,7 @@ static void etna_pipe_resource_copy_region(struct pipe_context *pipe,
                             unsigned src_level,
                             const struct pipe_box *src_box)
 {
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     /* The resource must be of the same format. */
     assert(src->format == dst->format);
     /* Resources with nr_samples > 1 are not allowed. */
@@ -1894,6 +1921,9 @@ static void etna_pipe_resource_copy_region(struct pipe_context *pipe,
      * from non-aligned: can fall back to rendering-based copy?
      * to non-aligned: can fall back to rendering-based copy?
      */
+    etna_pipe_blit_save_state(pipe);
+    util_blitter_copy_texture(priv->blitter, dst, dst_level, dstx, dsty, dstz, src, src_level, src_box,
+               PIPE_MASK_RGBA, false);
 }
 
 static void etna_pipe_blit(struct pipe_context *pipe, const struct pipe_blit_info *blit_info)
@@ -1937,25 +1967,7 @@ static void etna_pipe_blit(struct pipe_context *pipe, const struct pipe_blit_inf
         return;
     }
 
-    /* save current state */
-    util_blitter_save_vertex_buffer_slot(priv->blitter, &priv->vertex_buffer_s[0]);
-    util_blitter_save_vertex_elements(priv->blitter, priv->vertex_elements);
-    util_blitter_save_vertex_shader(priv->blitter, priv->vs);
-    util_blitter_save_rasterizer(priv->blitter, priv->rasterizer);
-    util_blitter_save_viewport(priv->blitter, &priv->viewport_s);
-    util_blitter_save_scissor(priv->blitter, &priv->scissor_s);
-    util_blitter_save_fragment_shader(priv->blitter, priv->fs);
-    util_blitter_save_blend(priv->blitter, priv->blend);
-    util_blitter_save_depth_stencil_alpha(priv->blitter, priv->depth_stencil_alpha);
-    util_blitter_save_stencil_ref(priv->blitter, &priv->stencil_ref_s);
-    util_blitter_save_sample_mask(priv->blitter, priv->sample_mask_s);
-    util_blitter_save_framebuffer(priv->blitter, &priv->framebuffer_s);
-    util_blitter_save_fragment_sampler_states(priv->blitter,
-                    priv->num_fragment_samplers,
-                    (void **)priv->sampler);
-    util_blitter_save_fragment_sampler_views(priv->blitter,
-                    priv->num_fragment_sampler_views, priv->sampler_view_s);
-
+    etna_pipe_blit_save_state(pipe);
     util_blitter_blit(priv->blitter, &info);
 }
 
