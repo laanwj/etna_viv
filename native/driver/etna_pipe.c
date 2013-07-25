@@ -760,7 +760,6 @@ static void sync_context(struct pipe_context *pipe)
 #undef EMIT_STATE
 #undef EMIT_STATE_FIXP
     /**** Start of flushes ****/
-    /* XXX etna_update_context(ctx, ...) -- update context buffer using emitted command buffer */
 #if 0
     etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_TEXTURE | VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
     etna_set_state(ctx, VIVS_RS_FLUSH_CACHE, VIVS_RS_FLUSH_CACHE_FLUSH);
@@ -1553,6 +1552,8 @@ static void etna_pipe_flush(struct pipe_context *pipe,
     {
         printf("Error: %s: etna_flush failed, GPU may be in unpredictable state\n", __func__);
     }
+    /* XXX Update context here so that next flush will start with current context */
+    /* XXX etna_update_context(ctx, ...) -- update context buffer using gpu3d structure */
 }
 
 static struct pipe_sampler_view *etna_pipe_create_sampler_view(struct pipe_context *pipe,

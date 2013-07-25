@@ -34,7 +34,7 @@
 typedef struct 
 {
     void *in_buf;
-    uint32_t in_buf_size;
+    unsigned int in_buf_size;
     void *out_buf;
-    uint32_t out_buf_size;
+    unsigned int out_buf_size;
 } vivante_ioctl_data_t;

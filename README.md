@@ -15,7 +15,7 @@ ARM-based:
 - Marvell Armada 1500 has a GC1000: Google TV, OLPC
 - Marvell Armada 510 has a GC600: [CuBox](http://www.solid-run.com/cubox)
 - Rockchip 2918 has a GC800: some Arnova tablets
-- Freescale i.MX6 Quad has a GC2000 + GC320 + GC355 or GC880
+- Freescale i.MX6 Quad has a GC2000 + GC320 + GC355
 - Freescale i.MX6 DualLite and Solo have a GC880
 - Actions Semiconductor ATM7029 has a GC1000
 
