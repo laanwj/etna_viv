@@ -53,14 +53,6 @@
 
 flightrec_t _fdr;
 
-typedef struct 
-{
-    void *in_buf;
-    uint32_t in_buf_size;
-    void *out_buf;
-    uint32_t out_buf_size;
-} vivante_ioctl_data_t;
-
 static int _galcore_handle = 0;
 
 /* keep track of mapped video memory (not mapped through mmap) */

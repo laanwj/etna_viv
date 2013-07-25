@@ -8,4 +8,4 @@ simple_texture_cubemap
 particle_system_x11
 stencil_test
 displacement
-
+clear_surface
