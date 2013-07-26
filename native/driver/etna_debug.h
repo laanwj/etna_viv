@@ -33,7 +33,8 @@
 #define ETNA_FRAME_MSGS    0x2
 #define ETNA_RESOURCE_MSGS 0x4
 #define ETNA_COMPILER_MSGS 0x8
-#define ETNA_DUMP_SHADERS  0x10
+#define ETNA_LINKER_MSGS   0x10
+#define ETNA_DUMP_SHADERS  0x20
 
 extern int etna_mesa_debug;
 

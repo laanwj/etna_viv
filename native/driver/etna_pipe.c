@@ -88,8 +88,11 @@ static uint32_t active_samplers_bits(struct pipe_context *pipe)
 }
 
 /* Link vs and fs together: fill in shader_state from vs and fs
- * as this function is called every time a new fs or vs is bound, the goal is to do little code as possible here,
- * and to precompute as much as possible in the vs/fs shader_object.
+ * as this function is called every time a new fs or vs is bound, the goal is to do 
+ * little processing as possible here, and to precompute as much as possible in the 
+ * vs/fs shader_object.
+ * XXX we could cache the link result for a certain set of VS/PS; usually a pair
+ * of VS and PS will be used together anyway.
  */
 static void etna_link_shaders(struct pipe_context *pipe,
                               struct compiled_shader_state *cs, 
@@ -129,10 +132,10 @@ static void etna_link_shaders(struct pipe_context *pipe,
     {
         assert(0); /* linking failed: some fs inputs do not have corresponding vs outputs */
     }
-    DBG_F(ETNA_COMPILER_MSGS, "link result:");
+    DBG_F(ETNA_LINKER_MSGS, "link result:");
     for(int idx=0; idx<fs->num_inputs; ++idx)
     {
-        DBG_F(ETNA_COMPILER_MSGS,"  %i -> %i", link.varyings_vs_reg[idx], idx+1);
+        DBG_F(ETNA_LINKER_MSGS,"  %i -> %i", link.varyings_vs_reg[idx], idx+1);
     }
 
     /* vs outputs (varyings) */ 
@@ -538,8 +541,8 @@ static void sync_context(struct pipe_context *pipe)
         {
             scissor_left = MAX2(e->scissor.SE_SCISSOR_LEFT, scissor_left);
             scissor_top = MAX2(e->scissor.SE_SCISSOR_TOP, scissor_top);
-            scissor_right = MAX2(e->scissor.SE_SCISSOR_RIGHT, scissor_right);
-            scissor_bottom = MAX2(e->scissor.SE_SCISSOR_RIGHT, scissor_bottom);
+            scissor_right = MIN2(e->scissor.SE_SCISSOR_RIGHT, scissor_right);
+            scissor_bottom = MIN2(e->scissor.SE_SCISSOR_BOTTOM, scissor_bottom);
         }
         /*00C00*/ EMIT_STATE_FIXP(SE_SCISSOR_LEFT, SE_SCISSOR_LEFT, scissor_left);
         /*00C04*/ EMIT_STATE_FIXP(SE_SCISSOR_TOP, SE_SCISSOR_TOP, scissor_top);
@@ -1920,6 +1923,7 @@ static void etna_pipe_resource_copy_region(struct pipe_context *pipe,
      * how to handle the case where a resource is copied from/to a non-aligned position?
      * from non-aligned: can fall back to rendering-based copy?
      * to non-aligned: can fall back to rendering-based copy?
+     * XXX this goes wrong when source surface is supertiled.
      */
     etna_pipe_blit_save_state(pipe);
     util_blitter_copy_texture(priv->blitter, dst, dst_level, dstx, dsty, dstz, src, src_level, src_box,
@@ -1940,6 +1944,7 @@ static void etna_pipe_blit(struct pipe_context *pipe, const struct pipe_blit_inf
      *   convert between a limited number of pixel formats
      *
      * For the rest, fall back to util_blitter
+     * XXX this goes wrong when source surface is supertiled.
      */
     struct pipe_blit_info info = *blit_info;
     struct etna_pipe_context *priv = etna_pipe_context(pipe);
