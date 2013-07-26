@@ -21,8 +21,8 @@
  * DEALINGS IN THE SOFTWARE.
  */
 /* Interface to shader compiler */
-#ifndef H_ETNA_SHADER
-#define H_ETNA_SHADER
+#ifndef H_ETNA_COMPILER
+#define H_ETNA_COMPILER
 #include <stdint.h>
 #include "pipe/p_compiler.h"
 #include "pipe/p_shader_tokens.h"

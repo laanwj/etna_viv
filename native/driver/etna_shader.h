@@ -20,14 +20,28 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-/* Pipe memory transfer
+/* Shader state handling.
  */
-#ifndef H_ETNA_TRANSFER
-#define H_ETNA_TRANSFER
+#ifndef H_ETNA_SHADER
 
 #include "pipe/p_state.h"
 
-void etna_pipe_transfer_init(struct pipe_context *pipe);
+struct etna_shader_program;
+struct etna_shader_object;
+struct compiled_shader_state;
+
+#ifdef RAWSHADER
+/* raw shader methods -- used by fb_rawshader demos */
+void *etna_create_shader_state(struct pipe_context *pipe, const struct etna_shader_program *rs);
+void etna_bind_shader_state(struct pipe_context *pipe, void *sh);
+void etna_delete_shader_state(struct pipe_context *pipe, void *sh_);
+void etna_set_uniforms(struct pipe_context *pipe, unsigned type, unsigned offset, unsigned count, const uint32_t *values);
+#endif
+
+void etna_link_shaders(struct pipe_context *pipe,
+                              struct compiled_shader_state *cs, 
+                              const struct etna_shader_object *vs, const struct etna_shader_object *fs);
+void etna_pipe_shader_init(struct pipe_context *pipe);
 
 #endif
 

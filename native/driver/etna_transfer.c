@@ -31,6 +31,7 @@
 #include "util/u_format.h"
 #include "util/u_memory.h"
 #include "util/u_surface.h"
+#include "util/u_transfer.h"
 
 /* Compute offset into a 1D/2D/3D buffer of a certain box.
  * This box must be aligned to the block width and height of the underlying format.
@@ -43,7 +44,7 @@ static inline size_t etna_compute_offset(enum pipe_format format, const struct p
            box->x / util_format_get_blockwidth(format) * util_format_get_blocksize(format);
 }
 
-void *etna_pipe_transfer_map(struct pipe_context *pipe,
+static void *etna_pipe_transfer_map(struct pipe_context *pipe,
                          struct pipe_resource *resource,
                          unsigned level,
                          unsigned usage,  /* a combination of PIPE_TRANSFER_x */
@@ -131,14 +132,14 @@ void *etna_pipe_transfer_map(struct pipe_context *pipe,
     return ptrans->buffer;
 }
    
-void etna_pipe_transfer_flush_region(struct pipe_context *pipe,
+static void etna_pipe_transfer_flush_region(struct pipe_context *pipe,
 				  struct pipe_transfer *transfer_,
 				  const struct pipe_box *box)
 {
     /* NOOP for now */
 }
 
-void etna_pipe_transfer_unmap(struct pipe_context *pipe,
+static void etna_pipe_transfer_unmap(struct pipe_context *pipe,
                       struct pipe_transfer *transfer_)
 {
     struct etna_pipe_context *priv = etna_pipe_context(pipe);
@@ -189,5 +190,13 @@ void etna_pipe_transfer_unmap(struct pipe_context *pipe,
     }
 
     util_slab_free(&priv->transfer_pool, ptrans);
+}
+
+void etna_pipe_transfer_init(struct pipe_context *pc)
+{
+    pc->transfer_map = etna_pipe_transfer_map;
+    pc->transfer_flush_region = etna_pipe_transfer_flush_region;
+    pc->transfer_unmap = etna_pipe_transfer_unmap;
+    pc->transfer_inline_write = u_default_transfer_inline_write;
 }
 

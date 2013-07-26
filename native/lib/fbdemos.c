@@ -80,7 +80,7 @@ void fbdemo_init(struct fbdemos_scaffold **out)
         printf("Unable to create etna context\n");
         exit(1);
     }
-    fbs->ctx = etna_pipe_get_etna_context(fbs->pipe);
+    fbs->ctx = etna_pipe_context(fbs->pipe)->ctx;
     
     if(etna_bswap_create(fbs->ctx, &fbs->buffers, fbs->fb.num_buffers, (etna_set_buffer_cb_t)&fb_set_buffer, (etna_copy_buffer_cb_t)&etna_fb_copy_buffer, &fbs->fb) != ETNA_OK)
     {

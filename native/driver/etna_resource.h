@@ -20,14 +20,25 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-/* Pipe memory transfer
+/* Resource handling.
  */
-#ifndef H_ETNA_TRANSFER
-#define H_ETNA_TRANSFER
+#ifndef H_ETNA_RESOURCE
+#define H_ETNA_RESOURCE
 
 #include "pipe/p_state.h"
 
-void etna_pipe_transfer_init(struct pipe_context *pipe);
+struct pipe_screen;
+struct etna_resource;
+
+void etna_resource_touch(struct pipe_context *pipe, struct pipe_resource *resource_);
+
+/* Allocate Tile Status for an etna resource.
+ * Tile status is a cache of the clear status per tile. This means a smaller surface
+ * has to be cleared which is faster. This is also called "fast clear".
+ */
+bool etna_screen_resource_alloc_ts(struct pipe_screen *screen, struct etna_resource *resource);
+
+void etna_screen_resource_init(struct pipe_screen *screen);
 
 #endif
 
