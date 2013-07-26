@@ -805,6 +805,17 @@ static void etna_pipe_blit_save_state(struct pipe_context *pipe)
                     priv->num_fragment_sampler_views, priv->sampler_view_s);
 }
 
+/* Associate an resource with this context when it is bound in any way
+ * (vertex buffer, index buffer, texture, surface, blit). 
+ */
+static void etna_resource_touch(struct pipe_context *pipe, struct pipe_resource *resource_)
+{
+    struct etna_pipe_context *ectx = etna_pipe_context(pipe);
+    struct etna_resource *resource = etna_resource(resource_);
+    if(resource == NULL)
+        return;
+    resource->last_ctx = ectx;
+}
 /*********************************************************************/
 static void etna_pipe_destroy(struct pipe_context *pipe)
 {
@@ -1422,6 +1433,8 @@ static void etna_pipe_set_vertex_buffers( struct pipe_context *pipe,
         /* compiled state */
         SET_STATE(FE_VERTEX_STREAM_CONTROL, VIVS_FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE(vbi->stride));
         SET_STATE(FE_VERTEX_STREAM_BASE_ADDR, gpu_addr);
+        
+        etna_resource_touch(pipe, vbi->buffer);
     }
     
     priv->dirty_bits |= ETNA_STATE_VERTEX_BUFFERS;
@@ -1450,6 +1463,8 @@ static void etna_pipe_set_index_buffer( struct pipe_context *pipe,
                 translate_index_size(ib->index_size));
         SET_STATE(FE_INDEX_STREAM_BASE_ADDR, etna_resource(ib->buffer)->levels[0].address + ib->offset);
         cs->logical = etna_resource(ib->buffer)->levels[0].logical + ib->offset;
+        
+        etna_resource_touch(pipe, ib->buffer);
     }
     priv->dirty_bits |= ETNA_STATE_INDEX_BUFFER;
 }
@@ -1690,6 +1705,7 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
     } else {
         etna_rs_gen_clear_surface(surf, surf->clear_value);
     }
+    etna_resource_touch(pipe, surf->base.texture);
     return &surf->base;
 }
 
@@ -1928,6 +1944,8 @@ static void etna_pipe_resource_copy_region(struct pipe_context *pipe,
     etna_pipe_blit_save_state(pipe);
     util_blitter_copy_texture(priv->blitter, dst, dst_level, dstx, dsty, dstz, src, src_level, src_box,
                PIPE_MASK_RGBA, false);
+    etna_resource_touch(pipe, dst);
+    etna_resource_touch(pipe, src);
 }
 
 static void etna_pipe_blit(struct pipe_context *pipe, const struct pipe_blit_info *blit_info)
@@ -1974,6 +1992,8 @@ static void etna_pipe_blit(struct pipe_context *pipe, const struct pipe_blit_inf
 
     etna_pipe_blit_save_state(pipe);
     util_blitter_blit(priv->blitter, &info);
+    etna_resource_touch(pipe, info.src.resource);
+    etna_resource_touch(pipe, info.dst.resource);
 }
 
 static void etna_pipe_set_polygon_stipple(struct pipe_context *pctx,

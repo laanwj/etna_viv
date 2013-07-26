@@ -110,6 +110,7 @@ struct etna_resource
     struct etna_vidmem *ts; /* Tile status video memory */
 
     struct etna_resource_level levels[ETNA_NUM_LOD];
+    struct etna_pipe_context *last_ctx; /* Last bound context */
 };
 
 struct etna_surface

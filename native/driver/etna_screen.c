@@ -296,14 +296,11 @@ static uint64_t etna_screen_get_timestamp(struct pipe_screen *screen)
     return 0;
 }
 
-static struct pipe_context *_hack_ctx;
-
 static struct pipe_context * etna_screen_context_create( struct pipe_screen *screen,
                                         void *priv )
 {
     struct etna_screen *es = etna_screen(screen);
     struct pipe_context *ctx = etna_new_pipe_context(es->dev, &es->specs, screen, priv);
-    _hack_ctx = ctx;
     return ctx;
 }
 
@@ -404,8 +401,7 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
 {
     struct etna_rs_target *drawable = (struct etna_rs_target *)winsys_drawable_handle;
     struct etna_resource *rt_resource = etna_resource(resource);
-    struct pipe_context *pipe_ctx = _hack_ctx;
-    struct etna_pipe_context *ectx = etna_pipe_context(pipe_ctx);
+    struct etna_pipe_context *ectx = rt_resource->last_ctx;
     struct pipe_fence_handle **fence = 0;
     assert(level <= resource->last_level && layer < resource->array_size);
     assert(ectx);
@@ -443,7 +439,7 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
             rt_resource->levels[0].address,
             drawable->addr, drawable->stride,
             drawable->width, drawable->height, ctx);
-    pipe_ctx->flush(pipe_ctx, fence, 0);
+    ectx->base.flush(&ectx->base, fence, 0);
 }
 
 bool etna_screen_resource_alloc_ts(struct pipe_screen *screen, struct etna_resource *resource)
@@ -608,15 +604,21 @@ static void etna_screen_resource_destroy(struct pipe_screen *screen,
     struct etna_resource *resource = etna_resource(resource_);
     if(resource == NULL)
         return;
-    /* XXX should use etna_vidmem_queue_free to make sure the
-     * resource is only actually released after the command queue
-     * cannot have references to it anymore, but we don't have the context here or
-     * a way to do fencing per-screen.
-     * I suppose the resource could remember what context(s) it was used with.
-     */
-    DBG_F(ETNA_RESOURCE_MSGS, "%p: resource destroyed (%ix%ix%i)", resource, resource_->width0, resource_->height0, resource_->depth0);
-    etna_vidmem_free(priv->dev, resource->surface);
-    etna_vidmem_free(priv->dev, resource->ts);
+    if(resource->last_ctx != NULL)
+    {
+        /* XXX This could fail when multiple contexts share this resource,
+         * (the last one to bind it will "own" it) or fail miserably if 
+         * the context was since destroyed.
+         */
+        struct etna_pipe_context *ectx = resource->last_ctx;
+        DBG_F(ETNA_RESOURCE_MSGS, "%p: resource queued destroyed (%ix%ix%i)", resource, resource_->width0, resource_->height0, resource_->depth0);
+        etna_vidmem_queue_free(ectx->ctx->queue, resource->surface);
+        etna_vidmem_queue_free(ectx->ctx->queue, resource->ts);
+    } else {
+        DBG_F(ETNA_RESOURCE_MSGS, "%p: resource destroyed (%ix%ix%i)", resource, resource_->width0, resource_->height0, resource_->depth0);
+        etna_vidmem_free(priv->dev, resource->surface);
+        etna_vidmem_free(priv->dev, resource->ts);
+    }
     FREE(resource);
 }
 
