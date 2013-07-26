@@ -49,7 +49,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <value value="5" name="TRIANGLE_STRIP" brief="Triangle strip (GL_TRIANGLE_STRIP)"/>
     <value value="6" name="TRIANGLE_FAN" brief="Triangle fan (GL_TRIANGLE_FAN)"/>
     <value value="7" name="LINE_LOOP" brief="Line loop (GL_LINE_LOOP)"/>
-    <value value="8" name="QUADS" brief="Quadliterals (GL_QUADS)"/>
+    <value value="8" name="QUADS" brief="Quadliterals (GL_QUADS)">
+        <doc>Only supported when RECT_PRIMITIVE feature bit is st.</doc>
+    </value>
 </enum>
 <domain name="VIVS"/>
 

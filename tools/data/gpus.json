@@ -109,7 +109,7 @@
         }]
     },
     {
-        "platform": "Freescale i.MX 6",
+        "platform": "Freescale i.MX 6 Quad",
         "chips": [{
             "type": "GC2000",
             "chipModel": "0x2000",
@@ -167,6 +167,52 @@
             "instructionCount": "0",
             "numConstants": "0",
             "bufferSize": "0"
+        }]
+    },
+    {
+        "platform": "Freescale i.MX 6 DualLite",
+        "chips": [{
+            "type": "GC880",
+            "chipModel": "0x0880",
+            "chipRevision": "0x5106",
+            "chipFeatures": "0xe02864ad",
+            "chipMinorFeatures": "0xc1f99eff",
+            "chipMinorFeatures1": "0xeefbf2d9",
+            "chipMinorFeatures2": "0x02100284",
+            "chipMinorFeatures3": "0x00000000",
+            "streamCount": "8",
+            "registerMax": "64",
+            "threadCount": "256",
+            "shaderCoreCount": "1",
+            "vertexCacheSize": "8",
+            "vertexOutputBufferSize": "512",
+            "pixelPipes": "1",
+            "instructionCount": "512",
+            "numConstants": "256",
+            "bufferSize": "0",
+            "numVaryings": "12",
+            "superTileLayout": "1"
+        }, {
+            "type": "GC320",
+            "chipModel": "0x0320",
+            "chipRevision": "0x5007",
+            "chipFeatures": "0xe02c7eca",
+            "chipMinorFeatures": "0xc1399eff",
+            "chipMinorFeatures1": "0x020fb2db",
+            "chipMinorFeatures2": "0x00000000",
+            "chipMinorFeatures3": "0x00000000",
+            "streamCount": "1",
+            "registerMax": "64",
+            "threadCount": "1024",
+            "shaderCoreCount": "4",
+            "vertexCacheSize": "16",
+            "vertexOutputBufferSize": "1024",
+            "pixelPipes": "2",
+            "instructionCount": "256",
+            "numConstants": "256",
+            "bufferSize": "8",
+            "numVaryings": "8",
+            "superTileLayout": "0"
         }]
     }
 ]
