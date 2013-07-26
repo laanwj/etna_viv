@@ -383,24 +383,6 @@ static inline uint32_t translate_draw_mode(unsigned mode)
     }
 }
 
-/* translate vertex count to primitive count */
-static inline int translate_vertex_count(unsigned mode, int vertex_count)
-{
-    /* almost equal to u_gs_prims_for_vertices but cannot replace it due to PIPE_PRIM_QUADS */
-    switch(mode)
-    {
-    case PIPE_PRIM_POINTS: return vertex_count;
-    case PIPE_PRIM_LINES: return vertex_count / 2;
-    case PIPE_PRIM_LINE_LOOP: return vertex_count;
-    case PIPE_PRIM_LINE_STRIP: return vertex_count - 1;
-    case PIPE_PRIM_TRIANGLES: return vertex_count / 3;
-    case PIPE_PRIM_TRIANGLE_STRIP: return vertex_count - 2; 
-    case PIPE_PRIM_TRIANGLE_FAN: return vertex_count - 2;
-    case PIPE_PRIM_QUADS: return vertex_count / 4;
-    default: DBG("Unhandled draw mode primitive %i\n", mode); return 0;
-    }
-}
-
 /* get size multiple for size of texture/rendertarget with a certain layout */
 static inline unsigned etna_layout_multiple(unsigned layout)
 {

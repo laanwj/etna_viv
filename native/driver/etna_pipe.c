@@ -53,6 +53,7 @@
 #include "util/u_memory.h"
 #include "util/u_surface.h"
 #include "util/u_blitter.h"
+#include "util/u_prim.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -698,7 +699,7 @@ static void etna_pipe_draw_vbo(struct pipe_context *pipe,
     struct etna_pipe_context *priv = etna_pipe_context(pipe);
     if(priv->vertex_elements == NULL || priv->vertex_elements->num_elements == 0)
         return; /* Nothing to do */
-    int prims = translate_vertex_count(info->mode, info->count);
+    int prims = u_decomposed_prims_for_vertices(info->mode, info->count);
     if(unlikely(prims <= 0))
     {
         DBG("Invalid draw primitive mode=%i or no primitives to be drawn", info->mode);
