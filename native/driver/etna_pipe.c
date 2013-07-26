@@ -824,7 +824,6 @@ static void etna_pipe_destroy(struct pipe_context *pipe)
         util_blitter_destroy(priv->blitter);
 
     etna_free(priv->ctx);
-    FREE(priv);
     FREE(pipe);
 }
 
