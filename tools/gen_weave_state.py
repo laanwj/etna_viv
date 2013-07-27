@@ -169,7 +169,8 @@ def main():
         # build target field reference
         target_field = name
         #   to sort destination state addresses in order, sort array indices by decreasing stride
-        dest_strides = sorted([(idx,stride,length) for idx,(stride,length) in enumerate(strides)], key=lambda x:-x[1]) 
+        dest_strides = sorted([(idx,stride,length) for idx,(stride,length) in enumerate(strides)], 
+                key=lambda x:-x[1]) 
         for src_idx,stride,length in dest_strides:
             target_field += '[{%i}]' % (src_idx)
 

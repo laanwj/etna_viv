@@ -611,6 +611,8 @@ static void sync_context(struct pipe_context *pipe)
         /*05000*/ etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(0), e->shader_state.vs_uniforms_size, e->shader_state.VS_UNIFORMS);
         /*07000*/ etna_set_state_multi(ctx, VIVS_PS_UNIFORMS(0), e->shader_state.ps_uniforms_size, e->shader_state.PS_UNIFORMS);
 
+        /* Copy uniforms to gpu3d, so that incremental updates to uniforms are possible as long as the
+         * same shader remains bound */
         memcpy(e->gpu3d.VS_UNIFORMS, e->shader_state.VS_UNIFORMS, e->shader_state.vs_uniforms_size * 4);
         memcpy(e->gpu3d.PS_UNIFORMS, e->shader_state.PS_UNIFORMS, e->shader_state.ps_uniforms_size * 4);
     }

@@ -73,6 +73,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="3" name="POINTCOORD_Y" brief="glPointCoord.y"/>
     </enum>
 
+    <bitset name="FE_VERTEX_STREAM_CONTROL">
+        <bitfield high="7" low="0" name="VERTEX_STRIDE"/>
+    </bitset>
+
     <!-- State ranges -->
     <stripe name="FE" brief="Fetch Engine"> <!-- Also known as Front End or DMA engine -->
         <doc>DMA engine. This is the frontend from the CPU to the GPU, and
@@ -118,9 +122,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             </bitfield>
         </reg32>
         <reg32 offset="0x0064C" name="VERTEX_STREAM_BASE_ADDR" value="0x00000000" type="VIVM"/> <!-- streamCount == 1 -->
-        <reg32 offset="0x00650" name="VERTEX_STREAM_CONTROL" value="0x00000000"> <!-- streamCount == 1 -->
-            <bitfield high="7" low="0" name="VERTEX_STRIDE"/>
-        </reg32>
+        <reg32 offset="0x00650" name="VERTEX_STREAM_CONTROL" value="0x00000000" type="FE_VERTEX_STREAM_CONTROL"/> <!-- streamCount == 1 -->
         <reg32 offset="0x00654" name="COMMAND_ADDRESS" brief="Base address for the command buffer">
             <doc>The address must be 64-bit aligned and it is always physical. This register cannot be read.</doc>
         </reg32>
@@ -196,7 +198,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x0067C" name="UNK0067C" value="0xFFFFFFFF"/>
         <stripe name="VERTEX_STREAMS" length="8" stride="4"> <!-- streamCount > 1 -->
             <reg32 offset="0x00680" name="BASE_ADDR" value="0x00000000" type="VIVM"/>
-            <reg32 offset="0x006A0" name="CONTROL" value="0x00000000"/>
+            <reg32 offset="0x006A0" name="CONTROL" value="0x00000000" type="FE_VERTEX_STREAM_CONTROL"/>
         </stripe>
         <reg32 offset="0x00700" name="UNK00700" value="0x00000000" length="16" stride="4"/>
         <reg32 offset="0x00740" name="UNK00740" value="0x00000000" length="16" stride="4"/>
