@@ -3,11 +3,12 @@
 #include <stdint.h>
 #include <stdio.h>
 
-void etna_texture_tile(void *dest, void *src, unsigned width, unsigned height, unsigned src_stride, unsigned elmtsize)
-{
 #define TEX_TILE_WIDTH (4)
 #define TEX_TILE_HEIGHT (4)
 #define TEX_TILE_WORDS (TEX_TILE_WIDTH*TEX_TILE_HEIGHT)
+
+void etna_texture_tile(void *dest, void *src, unsigned width, unsigned height, unsigned src_stride, unsigned elmtsize)
+{
     //unsigned ytiles = (height + TEX_TILE_HEIGHT - 1) / TEX_TILE_HEIGHT;
     unsigned xtiles = (width + TEX_TILE_WIDTH - 1) / TEX_TILE_WIDTH;
     unsigned dst_stride = xtiles * TEX_TILE_WORDS;
@@ -52,4 +53,52 @@ void etna_texture_tile(void *dest, void *src, unsigned width, unsigned height, u
         printf("etna_texture_tile: unhandled element size %i\n", elmtsize);
     }
 }
+
+void etna_texture_untile(void *dest, void *src, unsigned width, unsigned height, unsigned dst_stride, unsigned elmtsize)
+{
+    //unsigned ytiles = (height + TEX_TILE_HEIGHT - 1) / TEX_TILE_HEIGHT;
+    unsigned xtiles = (width + TEX_TILE_WIDTH - 1) / TEX_TILE_WIDTH;
+    unsigned src_stride = xtiles * TEX_TILE_WORDS;
+    if(elmtsize == 4)
+    {
+        dst_stride >>= 2;
+        for(unsigned dsty=0; dsty<height; ++dsty)
+        {
+            unsigned ty = (dsty/TEX_TILE_HEIGHT) * src_stride + (dsty%TEX_TILE_HEIGHT) * TEX_TILE_WIDTH;
+            for(unsigned dstx=0; dstx<width; ++dstx)
+            {
+                ((uint32_t*)dest)[dsty * dst_stride + dstx] = 
+                    ((uint32_t*)src)[ty + (dstx/TEX_TILE_WIDTH)*TEX_TILE_WORDS + (dstx%TEX_TILE_WIDTH)];
+            }
+        }
+    } else if(elmtsize == 2)
+    {
+        dst_stride >>= 1;
+        for(unsigned dsty=0; dsty<height; ++dsty)
+        {
+            unsigned ty = (dsty/TEX_TILE_HEIGHT) * src_stride + (dsty%TEX_TILE_HEIGHT) * TEX_TILE_WIDTH;
+            for(unsigned dstx=0; dstx<width; ++dstx)
+            {
+                ((uint16_t*)dest)[dsty * dst_stride + dstx] =
+                    ((uint16_t*)src)[ty + (dstx/TEX_TILE_WIDTH)*TEX_TILE_WORDS + (dstx%TEX_TILE_WIDTH)];
+            }
+        }
+    } else if(elmtsize == 1)
+    {
+        for(unsigned dsty=0; dsty<height; ++dsty)
+        {
+            unsigned ty = (dsty/TEX_TILE_HEIGHT) * src_stride + (dsty%TEX_TILE_HEIGHT) * TEX_TILE_WIDTH;
+            for(unsigned dstx=0; dstx<width; ++dstx)
+            {
+                ((uint8_t*)dest)[dsty * dst_stride + dstx] =
+                    ((uint8_t*)src)[ty + (dstx/TEX_TILE_WIDTH)*TEX_TILE_WORDS + (dstx%TEX_TILE_WIDTH)];
+            }
+        }
+    } else
+    {
+        /* Tiling is only used for element sizes of 1, 2 and 4 */
+        printf("etna_texture_tile: unhandled element size %i\n", elmtsize);
+    }
+}
+
 
