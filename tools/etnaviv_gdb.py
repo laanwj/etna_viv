@@ -154,6 +154,7 @@ class GPUState(gdb.Command):
         self.print_uniforms_for(sys.stdout, 'ps', gpu3d['PS_UNIFORMS'], int(pipe['shader_state']['ps_uniforms_size']))
 
     def invoke(self, arg, from_tty):
+        self.dont_repeat()
         (pipe, screen) = lookup_etna_state()
         gpu3d = pipe['gpu3d']
         
@@ -199,6 +200,7 @@ class GPUDisassemble(gdb.Command):
         self.isa = parse_rng_file(rnndb_path('isa.xml'))
  
     def invoke(self, arg, from_tty):
+        self.dont_repeat()
         (pipe, screen) = lookup_etna_state()
         shader_state = pipe['shader_state']
         vs_inst_size = int(shader_state['vs_inst_mem_size'])
