@@ -207,6 +207,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <value value="1" name="PIXEL_COUNT_KILLED_BY_DEPTH_PIPE"/>
                 <value value="2" name="PIXEL_COUNT_DRAWN_BY_COLOR_PIPE"/>
                 <value value="3" name="PIXEL_COUNT_DRAWN_BY_DEPTH_PIPE"/>
+                <value value="11" name="PIXELS_RENDERED_2D"/>
                 <value value="15" name="RESET"/>
             </bitfield>
             <bitfield high="27" low="24" name="SH">
