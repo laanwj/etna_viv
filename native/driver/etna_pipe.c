@@ -341,8 +341,14 @@ static void sync_context(struct pipe_context *pipe)
         /*00650*/ EMIT_STATE(FE_VERTEX_STREAM_CONTROL, FE_VERTEX_STREAM_CONTROL, e->vertex_buffer[0].FE_VERTEX_STREAM_CONTROL);
         if (e->specs.has_shader_range_registers)
         {
-            /*00680*/ EMIT_STATE(FE_VERTEX_STREAMS_BASE_ADDR(0), FE_VERTEX_STREAMS_BASE_ADDR[0], e->vertex_buffer[0].FE_VERTEX_STREAM_BASE_ADDR);
-            /*006A0*/ EMIT_STATE(FE_VERTEX_STREAMS_CONTROL(0), FE_VERTEX_STREAMS_CONTROL[0], e->vertex_buffer[0].FE_VERTEX_STREAM_CONTROL);
+            for(int x=0; x<8; ++x)
+            {
+                /*00680*/ EMIT_STATE(FE_VERTEX_STREAMS_BASE_ADDR(x), FE_VERTEX_STREAMS_BASE_ADDR[x], e->vertex_buffer[x].FE_VERTEX_STREAM_BASE_ADDR);
+            }
+            for(int x=0; x<8; ++x)
+            {
+                /*006A0*/ EMIT_STATE(FE_VERTEX_STREAMS_CONTROL(x), FE_VERTEX_STREAMS_CONTROL[x], e->vertex_buffer[x].FE_VERTEX_STREAM_CONTROL);
+            }
         }
     }
     if(dirty & (ETNA_STATE_SHADER))
