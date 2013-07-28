@@ -36,6 +36,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 
          Overall the ISA seems to be based on DirectX shader assembly. This is pretty obvious in retrospect
          as Vivante started by marketing DirectX-compatible GPUs for playing desktop PC games.
+
+         Restrictions:
+         - only one argument can source from uniform, must use a temp
      -->
     <doc>
         Unused operands of an instruction should have their use flag at 0.
@@ -136,7 +139,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     </value>
     <value value="0x0F" name="SELECT" brief="Choose input based on condition">
         <doc>
-            dst := src1 COND src0 ? src2 : src1
+            dst := src1 COND src0 ? src2 : src1 (binary condition)
+            dst := COND(src0) ? src1 : src2 (unary condition)
 
             Sets temporary register dst to src2 if (src1 COND src0) holds, otherwise to src1.
             This operation is performed per-component. It is used to implement MIN(a,b) and MAX(a,b)

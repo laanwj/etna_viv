@@ -41,6 +41,7 @@
  * TODO
  * * Allow loops   
  * * Use an instruction scheduler
+ * * Avoid using more than one uniform argument in one instruction
  */
 #include "etna_compiler.h"
 #include "etna_asm.h"
@@ -923,8 +924,15 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
             case TGSI_OPCODE_CAL: assert(0); break; /* CALL */
             case TGSI_OPCODE_RET: assert(0); break;
             case TGSI_OPCODE_CMP: /* componentwise dst = (src0 < 0) ? src1 : src2 */
-                /* XXX implement using SELECT */
-                assert(0);
+                emit_inst(cd, &(struct etna_inst) {
+                        .opcode = INST_OPCODE_SELECT,
+                        .cond = INST_CONDITION_LZ,
+                        .sat = sat,
+                        .dst = convert_dst(cd, &inst->Dst[0]),
+                        .src[0] = convert_src(cd, &inst->Src[0]),
+                        .src[1] = convert_src(cd, &inst->Src[1]), 
+                        .src[2] = convert_src(cd, &inst->Src[2]), 
+                        });
                 break;
             case TGSI_OPCODE_SCS: assert(0); break;
             case TGSI_OPCODE_NRM: assert(0); break;

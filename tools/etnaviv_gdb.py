@@ -90,17 +90,26 @@ def lookup_etna_state():
     @returns a tuple (pipe, screen)
     '''
     glapi_context_sym,_ = gdb.lookup_symbol('_glapi_Context') 
-    gl_context_type = gdb.lookup_type('struct gl_context').pointer()
+    fbs_sym,_ = gdb.lookup_symbol('_fbs')
     etna_pipe_context_type = gdb.lookup_type('struct etna_pipe_context').pointer()
     etna_screen_type = gdb.lookup_type('struct etna_screen').pointer()
+    if glapi_context_sym is not None: # Mesa
+        gl_context_type = gdb.lookup_type('struct gl_context').pointer()
 
-    glapi_context = glapi_context_sym.value()
-    glapi_context = glapi_context.cast(gl_context_type)
-    pipe = glapi_context['st']['cso_context']['pipe']
-    screen = pipe['screen']
-    # case to specific types
+        glapi_context = glapi_context_sym.value()
+        glapi_context = glapi_context.cast(gl_context_type)
+        pipe = glapi_context['st']['cso_context']['pipe']
+        screen = pipe['screen']
+    elif fbs_sym is not None: # fbs scaffold
+        fbs_sym = fbs_sym.value()
+        pipe = fbs_sym['pipe']
+        screen = fbs_sym['screen']
+    else:
+        print("Unable to find etna context")
+        return (None, None)
+    # cast to specific types
     pipe = pipe.cast(etna_pipe_context_type)
-    screen = pipe.cast(etna_screen_type)
+    screen = screen.cast(etna_screen_type)
     return (pipe, screen)
 
 ### gpu-state ###

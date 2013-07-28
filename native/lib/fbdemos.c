@@ -46,6 +46,7 @@
 #else
 #define FBDEV_DEV "/dev/fb%i"
 #endif
+struct fbdemos_scaffold *_fbs; /* for gdb */
 
 void fbdemo_init(struct fbdemos_scaffold **out)
 {
@@ -87,7 +88,7 @@ void fbdemo_init(struct fbdemos_scaffold **out)
         printf("Unable to create buffer swapper\n");
         exit(1);
     }
-
+    _fbs = fbs;
     *out = fbs;
 }
 
