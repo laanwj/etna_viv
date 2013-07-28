@@ -76,6 +76,12 @@ uint32_t viv_get_num_profile_counters(void);
  */
 struct viv_profile_counter_info *viv_get_profile_counter_info(enum viv_profile_counter id);
 
+/** Read and reset 2D profile counters.
+ *  This will return VIV_STATUS_NOT_SUPPORTED if built without profiling support.
+ *  Call viv_get_num_profile_counters() to determine how many uint32_ts to reserve for output buffer.
+ */
+int viv_read_profile_counters_2d(struct viv_conn *conn, uint32_t *out);
+
 /** Read and reset 3D profile counters.
  *  This will return VIV_STATUS_NOT_SUPPORTED if built without profiling support.
  *  Call viv_get_num_profile_counters() to determine how many uint32_ts to reserve for output buffer.

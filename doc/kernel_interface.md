@@ -419,8 +419,15 @@ uninteresting from a viewpoint of understanding the kernel interface.
 Profiling
 ===============
 
-To enable profiling, the kernel most have been built with `VIVANTE_PROFILER` enabled in `gc_hal_options.h`.
-    
+To enable profiling, the kernel most have been built with `VIVANTE_PROFILER` enabled in `gc_hal_options.h` or the appropriate
+`config` file.
+   
+    USE_PROFILER                        = 1
+
+Vivante also recommends disabling power management features while profiling,
+
+    USE_POWER_MANAGEMENT                = 0
+
 HW profiling registers can be read using the command `READ_ALL_PROFILE_REGISTERS`.
 
 There are also the commands `GET_PROFILE_SETTING` and `SET_PROFILE_SETTING`, which set a flag for 

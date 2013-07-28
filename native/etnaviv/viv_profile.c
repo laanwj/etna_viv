@@ -158,3 +158,24 @@ int viv_read_profile_counters_3d(struct viv_conn *conn, uint32_t *out)
 #endif
 }
 
+int viv_read_profile_counters_2d(struct viv_conn *conn, uint32_t *out)
+{
+#if VIVANTE_PROFILER
+    gcsHAL_INTERFACE id = {
+        .command = gcvHAL_PROFILE_REGISTERS_2D,
+        .u = {
+        }
+    };
+    int rv = viv_invoke(conn, &id);
+    if(rv < 0)
+        return rv;
+    gcs2D_PROFILE_PTR *counters = &id.u.RegisterProfileData2D.hwProfile2D;
+
+    out[VIV_PROF_GPU_CYCLES_COUNTER] = counters->cycleCount;
+    out[VIV_PROF_PE_PIXELS_RENDERED_2D] = counters->pixelsRendered;
+    return 0;
+#else
+    return VIV_STATUS_NOT_SUPPORTED;
+#endif
+}
+
