@@ -862,25 +862,25 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
             case TGSI_OPCODE_SIN:
                 if(cd->specs->has_sin_cos_sqrt)
                 {
+                    /* add divide by PI/2, re-use dest register */
+                    emit_inst(cd, &(struct etna_inst) {
+                        .opcode = INST_OPCODE_MUL,
+                        .sat = 0,
+                        .dst = convert_dst(cd, &inst->Dst[0]),
+                              .src[0] = convert_src(cd, &inst->Src[0]), /* any swizzling happens here */
+                              .src[1] = alloc_imm_u32(cd, 2.0f/M_PI),
+                    });
+                    emit_inst(cd, &(struct etna_inst) {
+                        .opcode = inst->Instruction.Opcode == TGSI_OPCODE_COS ? INST_OPCODE_COS : INST_OPCODE_SIN,
+                        .sat = sat,
+                        .dst = convert_dst(cd, &inst->Dst[0]),
+                              .src[2] = convert_dst_to_src(cd, &inst->Dst[0]),
+                    });
+                } else {
                     /* XXX fall back to Taylor series if not HAS_SQRT_TRIG,
                      * see i915_fragprog.c for a good example.
                      */
                     assert(0);
-                } else {
-                    /* add divide by PI/2, re-use dest register */
-                    emit_inst(cd, &(struct etna_inst) {
-                            .opcode = INST_OPCODE_MUL,
-                            .sat = 0,
-                            .dst = convert_dst(cd, &inst->Dst[0]),
-                            .src[0] = convert_src(cd, &inst->Src[0]), /* any swizzling happens here */
-                            .src[1] = alloc_imm_u32(cd, 2.0f/M_PI),
-                            });
-                    emit_inst(cd, &(struct etna_inst) {
-                            .opcode = inst->Instruction.Opcode == TGSI_OPCODE_COS ? INST_OPCODE_COS : INST_OPCODE_SIN,
-                            .sat = sat,
-                            .dst = convert_dst(cd, &inst->Dst[0]),
-                            .src[2] = convert_dst_to_src(cd, &inst->Dst[0]),
-                            });
                 }
                 break;
             case TGSI_OPCODE_DDX:
