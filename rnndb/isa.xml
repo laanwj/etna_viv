@@ -38,7 +38,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
          as Vivante started by marketing DirectX-compatible GPUs for playing desktop PC games.
 
          Restrictions:
-         - only one argument can source from uniform, must use a temp
+         - only one uniform can be read per instruction, however this single uniform can be used in 
+           multiple arguments.
+            - when violating this restriction it will be as if the uniform in the last source register
+              is broadcasted to all arguments that use an uniform.
      -->
     <doc>
         Unused operands of an instruction should have their use flag at 0.

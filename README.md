@@ -39,7 +39,7 @@ Compatibility
 - GC860 (GCW Zero/v2)
 - GC880 (i.MX6)
 
-Support for GC2000 (i.MX6) and others with multiple pixel pipes planned.
+Support for GC2000 (i.MX6) and others with multiple pixel pipes requires a few changes.
 
 Building
 =========
@@ -60,8 +60,8 @@ of headers is most similar, and adapt that.
 
 General
 --------
-If you just need `libetnaviv.a` for building Mesa and are not planning to do reverse engineering,
-it is sufficient to run make in `native/etnaviv`.
+If the goal is to build Mesa and you are not planning to do reverse engineering, only `libetnaviv.a` needs to be built.
+In this case it is sufficient to run make in `native/etnaviv`.
 
 Otherwise, run `make` and `make rev` in `native/` (see the README.md in `native` for a description of all the directories contained within).
 
@@ -208,6 +208,31 @@ from the madness of kernel-specific headers and defines.
 - converting surfaces and textures from and to Vivante specific tiling formats
 
 Currently used only by the 3D driver in `native/driver`. A future 2D, SVG or OpenCL driver can share this code.
+
+Debugging support
+------------------
+
+Etnaviv comes with a GDB plugin for `etna` driver debugging. GDB 7.5+ with Python support (usually enabled
+by default in distributions) is needed for it to work. This plugin adds a few custom commands.
+
+Usage (from gdb):
+
+    source /path/to/etnaviv_gdb.py
+
+Commands:
+
+- gpu-state [&lt;prefix&gt;]
+  gpu-state uniforms
+
+  Show full GPU state by default or a subset of the registers with a certain prefix.
+  The special prefix 'uniforms' shows the shader uniforms.
+
+- gpu-dis
+
+  Disassemble the currently bound fragment and vertex shaders.
+
+These commands will automatically find the gallium pipe and screen from the current Mesa
+context.
 
 State map 
 ----------

@@ -41,7 +41,7 @@
  * TODO
  * * Allow loops   
  * * Use an instruction scheduler
- * * Avoid using more than one uniform argument in one instruction
+ * * Avoid using more than one uniform in one instruction (can be used in multiple arguments)
  */
 #include "etna_compiler.h"
 #include "etna_asm.h"
