@@ -47,6 +47,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="17" low="17" name="IDLE_2D"/>
             <bitfield high="18" low="18" name="IDLE_VG"/>
             <bitfield high="19" low="19" name="ISOLATE_GPU"/>
+            <bitfield high="23" low="20" name="DEBUG_PIXEL_PIPE"/>
         </reg32>
         <reg32 offset="0x00004" name="IDLE_STATE" brief="Idle state">
             <doc>Bits are 1 if the module is idle, 0 otherwise.</doc>
@@ -65,22 +66,24 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="31" name="AXI_LP" brief="AXI bus in low power mode"/>
         </reg32>
         <reg32 offset="0x00008" name="AXI_CONFIG" brief="AXI bus configuration">
-          <bitfield high="3" low="0" name="AWID"/>
-          <bitfield high="7" low="4" name="ARID"/>
-          <bitfield high="11" low="8" name="AWCACHE"/>
-          <bitfield high="15" low="12" name="ARCACHE"/>
+            <bitfield high="3" low="0" name="AWID"/>
+            <bitfield high="7" low="4" name="ARID"/>
+            <bitfield high="11" low="8" name="AWCACHE"/>
+            <bitfield high="15" low="12" name="ARCACHE"/>
         </reg32>
         <reg32 offset="0x0000C" name="AXI_STATUS" brief="AXI bus status">
-          <bitfield high="3" low="0" name="WR_ERR_ID"/>
-          <bitfield high="7" low="4" name="RD_ERR_ID"/>
-          <bitfield high="8" low="8" name="DET_WR_ERR"/>
-          <bitfield high="9" low="9" name="DET_RD_ERR"/>
+            <bitfield high="3" low="0" name="WR_ERR_ID"/>
+            <bitfield high="7" low="4" name="RD_ERR_ID"/>
+            <bitfield high="8" low="8" name="DET_WR_ERR"/>
+            <bitfield high="9" low="9" name="DET_RD_ERR"/>
         </reg32>
         <reg32 offset="0x00010" name="INTR_ACKNOWLEDGE">
-          <bitfield high="31" low="0" name="INTR_VEC"/>
+            <bitfield high="30" low="0" name="INTR_VEC" brief="Event signal interrupt bits"/>
+            <bitfield pos="31" name="AXI_BUS_ERROR" brief="AXI bus error interrupt"/>
+            <doc>Reading this register clears the interrupt flags.</doc>
         </reg32>
         <reg32 offset="0x00014" name="INTR_ENBL">
-          <bitfield high="31" low="0" name="INTR_ENBL_VEC"/>
+           <bitfield high="31" low="0" name="INTR_ENBL_VEC"/>
         </reg32>
         <reg32 offset="0x00018" name="CHIP_IDENTITY"/>
         <reg32 offset="0x0001C" name="CHIP_FEATURE" type="chipFeatures" brief="Chip features"/>
@@ -173,7 +176,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00428" name="MEMORY_BASE_ADDR_PE"/>
         <reg32 offset="0x0042C" name="MEMORY_TIMING_CONTROL"/>
         <reg32 offset="0x00430" name="MEMORY_FLUSH"/>
-        <reg32 offset="0x00438" name="PROFILE_CYCLE_COUNTER"/>
+        <reg32 offset="0x00438" name="PROFILE_CYCLE_COUNTER" brief="Cycles counter"/>
         <reg32 offset="0x0043C" name="DEBUG_READ0"/>
         <reg32 offset="0x00440" name="DEBUG_READ1"/>
         <reg32 offset="0x00444" name="DEBUG_WRITE"/>
@@ -204,6 +207,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <value value="1" name="PIXEL_COUNT_KILLED_BY_DEPTH_PIPE"/>
                 <value value="2" name="PIXEL_COUNT_DRAWN_BY_COLOR_PIPE"/>
                 <value value="3" name="PIXEL_COUNT_DRAWN_BY_DEPTH_PIPE"/>
+                <value value="11" name="PIXELS_RENDERED_2D"/>
                 <value value="15" name="RESET"/>
             </bitfield>
             <bitfield high="27" low="24" name="SH">
@@ -252,6 +256,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <value value="1" name="TOTAL_TRILINEAR_REQUESTS"/>
                 <value value="2" name="TOTAL_DISCARDED_TEXTURE_REQUESTS"/>
                 <value value="3" name="TOTAL_TEXTURE_REQUESTS"/>
+                <value value="4" name="UNKNOWN"/>
                 <value value="5" name="MEM_READ_COUNT"/>
                 <value value="6" name="MEM_READ_IN_8B_COUNT"/>
                 <value value="7" name="CACHE_MISS_COUNT"/>

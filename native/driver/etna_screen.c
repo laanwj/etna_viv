@@ -22,10 +22,11 @@
  */
 #include "etna_screen.h"
 #include "etna_pipe.h"
-#include "etna_shader.h"
+#include "etna_compiler.h"
 #include "etna_translate.h"
 #include "etna_debug.h"
 #include "etna_fence.h"
+#include "etna_resource.h"
 
 #include <etnaviv/etna_rs.h>
 #include <etnaviv/viv.h>
@@ -40,7 +41,7 @@
 
 #include <stdio.h>
 
-int etna_mesa_debug = ETNA_DBG_MSGS;  /* XXX */
+int etna_mesa_debug = ETNA_DBG_MSGS | ETNA_RESOURCE_MSGS | ETNA_COMPILER_MSGS;  /* XXX */
 
 static void etna_screen_destroy( struct pipe_screen *screen )
 {
@@ -118,7 +119,6 @@ static int etna_screen_get_param( struct pipe_screen *screen, enum pipe_cap para
     case PIPE_CAP_TGSI_FS_COORD_ORIGIN_LOWER_LEFT:
     case PIPE_CAP_TGSI_FS_COORD_PIXEL_CENTER_INTEGER:
     case PIPE_CAP_SCALED_RESOLVE: /* Should be possible to support */
-    case PIPE_CAP_TGSI_CAN_COMPACT_VARYINGS: /* Don't skip strict max varying limit check */
     case PIPE_CAP_TGSI_CAN_COMPACT_CONSTANTS: /* Don't skip strict max uniform limit check */
     case PIPE_CAP_FRAGMENT_COLOR_CLAMPED:
     case PIPE_CAP_VERTEX_COLOR_CLAMPED:
@@ -152,9 +152,15 @@ static int etna_screen_get_param( struct pipe_screen *screen, enum pipe_cap para
             return 7;
     case PIPE_CAP_TEXTURE_BORDER_COLOR_QUIRK:
             return 0;
+    case PIPE_CAP_MAX_TEXTURE_BUFFER_SIZE:
+            return 65536;
 
     /* Render targets. */
     case PIPE_CAP_MAX_RENDER_TARGETS:
+            return 1;
+
+    /* Viewports and scissors. */
+    case PIPE_CAP_MAX_VIEWPORTS:
             return 1;
 
     /* Timer queries. */
@@ -250,8 +256,12 @@ static int etna_screen_get_shader_param( struct pipe_screen *screen, unsigned sh
     case PIPE_SHADER_CAP_SUBROUTINES:
             return 0;
     case PIPE_SHADER_CAP_TGSI_SQRT_SUPPORTED:
-            return 1; /* Depends on HAS_SQRT_TRIG cap */
-    case PIPE_SHADER_CAP_INTEGERS: /* XXX supported on gc2000 */
+            return VIV_FEATURE(priv->dev, chipMinorFeatures0, HAS_SQRT_TRIG);
+    case PIPE_SHADER_CAP_TGSI_POW_SUPPORTED:
+            return false;
+    case PIPE_SHADER_CAP_TGSI_LRP_SUPPORTED:
+            return false;
+    case PIPE_SHADER_CAP_INTEGERS: /* XXX supported on gc2000 but not yet implemented */
             return 0;
     case PIPE_SHADER_CAP_MAX_TEXTURE_SAMPLERS:
             return shader==PIPE_SHADER_FRAGMENT ? priv->specs.fragment_sampler_count : 
@@ -287,14 +297,11 @@ static uint64_t etna_screen_get_timestamp(struct pipe_screen *screen)
     return 0;
 }
 
-static struct pipe_context *_hack_ctx;
-
 static struct pipe_context * etna_screen_context_create( struct pipe_screen *screen,
                                         void *priv )
 {
     struct etna_screen *es = etna_screen(screen);
-    struct pipe_context *ctx = etna_new_pipe_context(es->dev, &es->specs, screen);
-    _hack_ctx = ctx;
+    struct pipe_context *ctx = etna_new_pipe_context(es->dev, &es->specs, screen, priv);
     return ctx;
 }
 
@@ -309,8 +316,6 @@ static boolean etna_screen_is_format_supported( struct pipe_screen *screen,
     if ((target >= PIPE_MAX_TEXTURE_TYPES) ||
                 (sample_count > 1) /* TODO add MSAA */) 
     {
-        DBG("not supported: format=%s, target=%d, sample_count=%d, usage=%x",
-                        util_format_name(format), target, sample_count, usage);
         return FALSE;
     }
 
@@ -371,22 +376,6 @@ static boolean etna_screen_is_video_format_supported( struct pipe_screen *screen
     return false;
 }
 
-static boolean etna_screen_can_create_resource(struct pipe_screen *screen,
-                              const struct pipe_resource *templat)
-{
-    /* XXX test against maximum texture size, 
-     * based on TEXTURE_8K / RENDERTARGET_8K features */
-    return true;
-}
-                           
-static struct pipe_resource * etna_screen_resource_from_handle(struct pipe_screen *screen,
-                                              const struct pipe_resource *templat,
-                                              struct winsys_handle *handle)
-{
-    DBG("unimplemented etna_screen_resource_from_handle");
-    return NULL;
-}
-
 /* XXX this should use a blit or resource copy, when implemented, instead
  * of programming the RS directly.
  */
@@ -397,12 +386,11 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
 {
     struct etna_rs_target *drawable = (struct etna_rs_target *)winsys_drawable_handle;
     struct etna_resource *rt_resource = etna_resource(resource);
-    struct pipe_context *pipe_ctx = _hack_ctx;
-    struct etna_pipe_context_priv *priv = ETNA_PIPE(pipe_ctx);
+    struct etna_pipe_context *ectx = rt_resource->last_ctx;
     struct pipe_fence_handle **fence = 0;
     assert(level <= resource->last_level && layer < resource->array_size);
-    assert(priv);
-    struct etna_ctx *ctx = priv->ctx;
+    assert(ectx);
+    struct etna_ctx *ctx = ectx->ctx;
 
     /* release previous fence, make reference to fence if we need one */
     screen->fence_reference(screen, &drawable->fence, NULL);
@@ -431,175 +419,35 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
     etna_submit_rs_state(ctx, &copy_to_screen);
     /* Flush RS */
     etna_set_state(ctx, VIVS_RS_FLUSH_CACHE, VIVS_RS_FLUSH_CACHE_FLUSH);
-    printf("Queued RS command to flush screen from %08x to %08x stride=%08x width=%i height=%i, ctx %p\n", rt_resource->levels[0].address, 
+    DBG_F(ETNA_FRAME_MSGS,
+            "Queued RS command to flush screen from %08x to %08x stride=%08x width=%i height=%i, ctx %p",
+            rt_resource->levels[0].address,
             drawable->addr, drawable->stride,
             drawable->width, drawable->height, ctx);
-    pipe_ctx->flush(pipe_ctx, fence, 0);
+    ectx->base.flush(&ectx->base, fence, 0);
 }
 
-/* Allocate 2D texture or render target resource 
- */
-static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *screen,
-                                         const struct pipe_resource *templat)
+bool etna_screen_resource_alloc_ts(struct pipe_screen *screen, struct etna_resource *resource)
 {
     struct etna_screen *priv = etna_screen(screen);
-    assert(templat);
-    unsigned element_size = util_format_get_blocksize(templat->format);
-    if(!element_size)
-        return NULL;
-    
-    /* Check input */
-    if(templat->target == PIPE_TEXTURE_CUBE)
-    {
-        assert(templat->array_size == 6);
-    } else if (templat->target == PIPE_BUFFER)
-    {
-        assert(templat->format == PIPE_FORMAT_R8_UNORM); /* bytes; want TYPELESS or similar */
-        assert(templat->array_size == 1);
-        assert(templat->height0 == 1);
-        assert(templat->depth0 == 1);
-        assert(templat->array_size == 1);
-        assert(templat->last_level == 0);
-    } else
-    {
-        assert(templat->array_size == 1);
-    }
-    assert(templat->nr_samples <= 1);
-    assert(templat->width0 != 0);
-    assert(templat->height0 != 0);
-    assert(templat->depth0 != 0);
-    assert(templat->array_size != 0);
-    
-    /* Figure out what tiling to use -- for now, assume that textures cannot be supertiled, and cannot be linear.
-     * There is a feature flag SUPERTILED_TEXTURE that may allow this, as well as TEXTURE_LINEAR, but not sure how it works. 
-     * Buffers always have LINEAR layout.
-     */
-    unsigned layout = ETNA_LAYOUT_LINEAR;
-    if(templat->target != PIPE_BUFFER)
-    {
-        if(!(templat->bind & PIPE_BIND_SAMPLER_VIEW) && priv->specs.can_supertile) 
-            layout = ETNA_LAYOUT_SUPERTILED;
-        else
-            layout = ETNA_LAYOUT_TILED;
-    }
-    unsigned padding = etna_layout_multiple(layout);
-    
-    /* determine mipmap levels */
-    struct etna_resource *resource = CALLOC_STRUCT(etna_resource);
-    int max_mip_level = templat->last_level;
-    if(unlikely(max_mip_level >= ETNA_NUM_LOD)) /* max LOD supported by hw */
-        max_mip_level = ETNA_NUM_LOD - 1;
+    size_t rt_ts_size;
+    assert(!resource->ts);
+    /* TS only for level 0 -- XXX is this formula correct? */
+    rt_ts_size = align(resource->levels[0].size*priv->specs.bits_per_tile/0x80, 0x100);
+    if(rt_ts_size == 0)
+        return true;
 
-    /* take care about DXTx formats, which have a divSize of non-1x1
-     * also: lower mipmaps are still 4x4 due to tiling. In as sense, compressed formats are already tiled.
-     * XXX UYVY formats?
-     */
-    unsigned divSizeX = util_format_get_blockwidth(templat->format);
-    unsigned divSizeY = util_format_get_blockheight(templat->format);
-    unsigned ix = 0;
-    unsigned x = templat->width0, y = templat->height0;
-    unsigned offset = 0;
-    while(true)
-    {
-        struct etna_resource_level *mip = &resource->levels[ix];
-        mip->width = x;
-        mip->height = y;
-        mip->padded_width = align(x, padding);
-        mip->padded_height = align(y, padding);
-        mip->stride = align(resource->levels[ix].padded_width, divSizeX)/divSizeX * element_size;
-        mip->offset = offset;
-        mip->layer_stride = align(mip->padded_width, divSizeX)/divSizeX * 
-                      align(mip->padded_height, divSizeY)/divSizeY * element_size;
-        mip->size = templat->array_size * mip->layer_stride;
-        offset += mip->size;
-        if(ix == max_mip_level || (x == 1 && y == 1))
-            break; // stop at last level
-        x = (x+1)>>1;
-        y = (y+1)>>1;
-        ix += 1;
-    }
-
-    /* Determine memory size, and whether to create a tile status */
-    size_t rt_size = offset;
-    size_t rt_ts_size = 0;
-    if(templat->bind & PIPE_BIND_RENDER_TARGET) /* TS only for level 0 -- XXX is this formula correct? */
-        rt_ts_size = align(resource->levels[0].size*priv->specs.bits_per_tile/0x80, 0x100);
-    
-    /* determine memory type */
-    enum viv_surf_type memtype = VIV_SURF_UNKNOWN;
-    if(templat->bind & PIPE_BIND_RENDER_TARGET)
-        memtype = VIV_SURF_RENDER_TARGET;
-    else if(templat->bind & PIPE_BIND_SAMPLER_VIEW)
-        memtype = VIV_SURF_TEXTURE;
-    else if(templat->bind & PIPE_BIND_DEPTH_STENCIL)
-        memtype = VIV_SURF_DEPTH;
-    else if(templat->bind & PIPE_BIND_INDEX_BUFFER) 
-        memtype = VIV_SURF_INDEX;
-    else if(templat->bind & PIPE_BIND_VERTEX_BUFFER)
-        memtype = VIV_SURF_VERTEX;
-
-    printf("Allocate surface of %ix%i (padded to %ix%i) of format %i (%i bpe %ix%i), size %08x ts_size %08x, flags %08x, memtype %i\n",
-            templat->width0, templat->height0, resource->levels[0].padded_width, resource->levels[0].padded_height, templat->format, 
-            element_size, divSizeX, divSizeY, rt_size, rt_ts_size, templat->bind, memtype);
-
-    struct etna_vidmem *rt = 0;
-    if(unlikely(etna_vidmem_alloc_linear(priv->dev, &rt, rt_size, memtype, VIV_POOL_DEFAULT, true) != ETNA_OK))
-    {
-        printf("Problem allocating video memory for resource\n");
-        return NULL;
-    }
-   
-    /* XXX allocate TS for rendertextures? if so, for each level or only the top? */
+    DBG_F(ETNA_RESOURCE_MSGS, "%p: Allocating tile status of size %i", resource, rt_ts_size);
     struct etna_vidmem *rt_ts = 0;
-    if(rt_ts_size && unlikely(etna_vidmem_alloc_linear(priv->dev, &rt_ts, rt_ts_size, VIV_SURF_TILE_STATUS, VIV_POOL_DEFAULT, true)!=ETNA_OK))
+    if(unlikely(etna_vidmem_alloc_linear(priv->dev, &rt_ts, rt_ts_size, VIV_SURF_TILE_STATUS, VIV_POOL_DEFAULT, true)!=ETNA_OK))
     {
         printf("Problem allocating tile status for resource\n");
-        return NULL;
+        return false;
     }
-
-    resource->base = *templat;
-    resource->base.last_level = ix; /* real last mipmap level */
-    resource->base.screen = screen;
-    resource->layout = layout;
-    resource->surface = rt;
     resource->ts = rt_ts;
-    pipe_reference_init(&resource->base.reference, 1);
-
-    for(unsigned ix=0; ix<=resource->base.last_level; ++ix)
-    {
-        struct etna_resource_level *mip = &resource->levels[ix];
-        mip->address = resource->surface->address + mip->offset;
-        mip->logical = resource->surface->logical + mip->offset;
-        printf("  %08x level %i: %ix%i (%i) stride=%i layer_stride=%i\n", 
-                (int)mip->address, ix, (int)mip->width, (int)mip->height, (int)mip->size,
-                (int)mip->stride, (int)mip->layer_stride);
-        memset(mip->logical, 0, mip->size);
-    }
-    if(resource->ts) /* TS, if requested, only for level 0 */
-    {
-        resource->levels[0].ts_address = resource->ts->address;
-        resource->levels[0].ts_size = resource->ts->size;
-    }
-
-    return &resource->base;
-}
-
-static void etna_screen_resource_destroy(struct pipe_screen *screen,
-                        struct pipe_resource *resource_)
-{
-    struct etna_screen *priv = etna_screen(screen);
-    struct etna_resource *resource = etna_resource(resource_);
-    if(resource == NULL)
-        return;
-    /* XXX should really use etna_vidmem_queue_free to make sure the
-     * resource is only actually released after the command queue
-     * cannot have references to it anymore, but we don't have the context here or
-     * a way to do fencing per-screen.
-     * I suppose the resource could remember what context(s) it was used with.
-     */
-    etna_vidmem_free(priv->dev, resource->surface);
-    etna_vidmem_free(priv->dev, resource->ts);
-    FREE(resource);
+    resource->levels[0].ts_address = resource->ts->address;
+    resource->levels[0].ts_size = resource->ts->size;
+    return true;
 }
 
 struct pipe_screen *
@@ -613,7 +461,7 @@ etna_screen_create(struct viv_conn *dev)
     screen->specs.can_supertile = VIV_FEATURE(dev, chipMinorFeatures0, SUPER_TILED);
     screen->specs.bits_per_tile = VIV_FEATURE(dev, chipMinorFeatures0, 2BITPERTILE)?2:4;
     screen->specs.ts_clear_value = VIV_FEATURE(dev, chipMinorFeatures0, 2BITPERTILE)?0x55555555:0x11111111;
-    screen->specs.vertex_sampler_offset = 8; /* vertex and fragment samplers live in one address space */
+    screen->specs.vertex_sampler_offset = 8; /* vertex and fragment samplers live in one address space, with vertex shaders at this offset */
     screen->specs.fragment_sampler_count = 8;
     screen->specs.vertex_sampler_count = 4;
     screen->specs.vs_need_z_div = dev->chip.chip_model < 0x1000 && dev->chip.chip_model != 0x880;
@@ -621,6 +469,18 @@ etna_screen_create(struct viv_conn *dev)
     screen->specs.vertex_cache_size = dev->chip.vertex_cache_size;
     screen->specs.shader_core_count = dev->chip.shader_core_count;
     screen->specs.stream_count = dev->chip.stream_count;
+    screen->specs.has_sin_cos_sqrt = VIV_FEATURE(dev, chipMinorFeatures0, HAS_SQRT_TRIG);
+    screen->specs.has_shader_range_registers = dev->chip.chip_model >= 0x1000 || dev->chip.chip_model == 0x880;    
+    if (dev->chip.chip_model < 0x1000 && dev->chip.chip_model != 0x880)
+    {
+        screen->specs.vs_offset = 0x4000;
+        screen->specs.ps_offset = 0x6000;
+    }
+    else
+    {
+        screen->specs.vs_offset = 0xC000;
+        screen->specs.ps_offset = 0xD000; //like vivante driver
+    }
 
     /* Initialize vtable */
     pscreen->destroy = etna_screen_destroy;
@@ -635,15 +495,10 @@ etna_screen_create(struct viv_conn *dev)
     pscreen->context_create = etna_screen_context_create;
     pscreen->is_format_supported = etna_screen_is_format_supported;
     pscreen->is_video_format_supported = etna_screen_is_video_format_supported;
-    pscreen->can_create_resource = etna_screen_can_create_resource;
-    pscreen->resource_create = etna_screen_resource_create;
-    pscreen->resource_from_handle = etna_screen_resource_from_handle;
-    pscreen->resource_get_handle = u_default_resource_get_handle;
-    pscreen->resource_destroy = etna_screen_resource_destroy;
     pscreen->flush_frontbuffer = etna_screen_flush_frontbuffer;
-    pscreen->fence_reference = etna_screen_fence_reference;
-    pscreen->fence_signalled = etna_screen_fence_signalled;
-    pscreen->fence_finish = etna_screen_fence_finish;
+
+    etna_screen_fence_init(pscreen);
+    etna_screen_resource_init(pscreen);
 
     pipe_mutex_init(screen->fence_mutex);
 

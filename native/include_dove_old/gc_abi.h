@@ -29,3 +29,12 @@
 // One of these must be set:
 #define GCABI_HAS_CONTEXT
 //#define GCABI_HAS_STATE_DELTAS
+
+/* IOCTL structure for userspace driver*/
+typedef struct 
+{
+    void *in_buf;
+    unsigned int in_buf_size;
+    void *out_buf;
+    unsigned int out_buf_size;
+} vivante_ioctl_data_t;

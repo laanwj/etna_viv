@@ -20,6 +20,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+#include "viv_hook.h"
 #include "elf_hook.h"
 #include "flightrecorder.h"
 /* hooking / logging functionality for Vivante GL driver
@@ -48,16 +49,9 @@
 #include <stdint.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#include <pthread.h>
 
 flightrec_t _fdr;
-
-typedef struct 
-{
-    void *in_buf;
-    uint32_t in_buf_size;
-    void *out_buf;
-    uint32_t out_buf_size;
-} vivante_ioctl_data_t;
 
 static int _galcore_handle = 0;
 
@@ -88,7 +82,7 @@ int my_open(const char* path, int flags, ...)
         ret = open(path, flags);
     }
     
-    if(ret >= 0 && strcmp(path, "/dev/galcore") == 0)
+    if(ret >= 0 && (!strcmp(path, "/dev/galcore") || !strcmp(path, "/dev/graphics/galcore") == 0))
     {
         _galcore_handle = ret;
         printf("opened galcore: %i\n", ret);
@@ -99,7 +93,7 @@ int my_open(const char* path, int flags, ...)
 
 void *my_mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset)
 {
-    if(fd == _galcore_handle)
+    if(_fdr != NULL && fd == _galcore_handle)
     {
         flightrec_event_t evctx = fdr_new_event(_fdr, "MMAP_BEFORE");
         fdr_event_add_parameter(evctx, "addr",(size_t)addr);
@@ -112,7 +106,7 @@ void *my_mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offs
         fdr_log_event(_fdr, evctx);
     }  
     void *ret = mmap(addr, length, prot, flags, fd, offset);
-    if(fd == _galcore_handle)
+    if(_fdr != NULL && fd == _galcore_handle)
     {
         printf("new mapping %p %d\n", ret, (int)length);
         flightrec_event_t evctx = fdr_new_event(_fdr, "MMAP_AFTER");
@@ -141,32 +135,34 @@ void *my_mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offs
 
 int my_munmap(void *addr, size_t length)
 {
+    if(_fdr != NULL)
     {
-    flightrec_event_t evctx = fdr_new_event(_fdr, "MUNMAP_BEFORE");
-    fdr_event_add_parameter(evctx, "addr",(size_t)addr);
-    fdr_event_add_parameter(evctx, "length",(size_t)length);
-    fdr_event_add_parameter(evctx, "thread", (size_t)pthread_self());
-    fdr_log_event(_fdr, evctx);
+        flightrec_event_t evctx = fdr_new_event(_fdr, "MUNMAP_BEFORE");
+        fdr_event_add_parameter(evctx, "addr",(size_t)addr);
+        fdr_event_add_parameter(evctx, "length",(size_t)length);
+        fdr_event_add_parameter(evctx, "thread", (size_t)pthread_self());
+        fdr_log_event(_fdr, evctx);
     }
 
     printf("removed mapping %p %d\n", addr, (int)length);
     //fdr_remove_monitored_range(_fdr, addr, length);
     int ret = munmap(addr, length);
     
+    if(_fdr != NULL)
     {
-    flightrec_event_t evctx = fdr_new_event(_fdr, "MUNMAP_AFTER");
-    fdr_event_add_parameter(evctx, "addr",(size_t)addr);
-    fdr_event_add_parameter(evctx, "length",(size_t)length);
-    fdr_event_add_parameter(evctx, "thread", (size_t)pthread_self());
-    fdr_event_add_parameter(evctx, "ret", (size_t)ret);
-    fdr_log_event(_fdr, evctx);
+        flightrec_event_t evctx = fdr_new_event(_fdr, "MUNMAP_AFTER");
+        fdr_event_add_parameter(evctx, "addr",(size_t)addr);
+        fdr_event_add_parameter(evctx, "length",(size_t)length);
+        fdr_event_add_parameter(evctx, "thread", (size_t)pthread_self());
+        fdr_event_add_parameter(evctx, "ret", (size_t)ret);
+        fdr_log_event(_fdr, evctx);
     }
     return ret;
 }
 
 /* Log contents of HAL_INTERFACE (input) child pointers.
  * Assumes that the parent structure id was already added. */
-void log_interface_in(flightrec_event_t evctx, gcsHAL_INTERFACE *id)
+static void log_interface_in(flightrec_event_t evctx, gcsHAL_INTERFACE *id)
 {
     switch(id->command)
     {
@@ -224,7 +220,7 @@ void log_interface_in(flightrec_event_t evctx, gcsHAL_INTERFACE *id)
 
 /* Log contents of HAL_INTERFACE (output) child pointers.
  * Assumes that the parent structure id was already added. */
-void log_interface_out(flightrec_event_t evctx, gcsHAL_INTERFACE *id)
+static void log_interface_out(flightrec_event_t evctx, gcsHAL_INTERFACE *id)
 {
     switch(id->command)
     {
@@ -261,9 +257,10 @@ void log_interface_out(flightrec_event_t evctx, gcsHAL_INTERFACE *id)
     }
 }
 
-int my_ioctl(int d, int request, vivante_ioctl_data_t *ptr)
+int my_ioctl(int d, int request, void *ptr_)
 {
-#if 0 /* UGH, this handle gets passed in instead of opened for i.mx6 blobster */
+    vivante_ioctl_data_t *ptr = (vivante_ioctl_data_t*) ptr_;
+#if 0 /* UGH, this handle gets passed in some other way instead of open() for i.mx6 blobster */
     if(d != _galcore_handle)
     {
         printf("unhandled ioctl %08x on fd %i\n", request, d);
@@ -271,36 +268,51 @@ int my_ioctl(int d, int request, vivante_ioctl_data_t *ptr)
     }
 #endif
     int ret=0;
-    if(request == IOCTL_GCHAL_INTERFACE)
+    if(_fdr != NULL)
     {
-        flightrec_event_t evctx = fdr_new_event(_fdr, "IOCTL_BEFORE");
-        fdr_event_add_parameter(evctx, "d", (size_t)d);
-        fdr_event_add_parameter(evctx, "request",(size_t)request);
-        fdr_event_add_parameter(evctx, "ptr",(size_t)ptr);
-        fdr_event_add_parameter(evctx, "thread", (size_t)pthread_self());
-        fdr_event_add_oneshot_range(evctx, ptr, sizeof(vivante_ioctl_data_t));
-        fdr_event_add_oneshot_range(evctx, ptr->in_buf, ptr->in_buf_size);
-        log_interface_in(evctx, ptr->in_buf);
-        fdr_log_event(_fdr, evctx);
-    } else {
-        printf("unhandled ioctl %08x on fd %i\n", request, d);
-        return -1;
+        if(request == IOCTL_GCHAL_INTERFACE)
+        {
+            flightrec_event_t evctx = fdr_new_event(_fdr, "IOCTL_BEFORE");
+            fdr_event_add_parameter(evctx, "d", (size_t)d);
+            fdr_event_add_parameter(evctx, "request",(size_t)request);
+            fdr_event_add_parameter(evctx, "ptr",(size_t)ptr);
+            fdr_event_add_parameter(evctx, "thread", (size_t)pthread_self());
+            fdr_event_add_oneshot_range(evctx, ptr, sizeof(vivante_ioctl_data_t));
+            fdr_event_add_oneshot_range(evctx, ptr->in_buf, ptr->in_buf_size);
+            log_interface_in(evctx, ptr->in_buf);
+            fdr_log_event(_fdr, evctx);
+        } else {
+            printf("unhandled ioctl %08x on fd %i\n", request, d);
+            return -1;
+        }
     }
     ret = ioctl(d, request, ptr);
-    if(request == IOCTL_GCHAL_INTERFACE)
+    if(_fdr != NULL)
     {
-        flightrec_event_t evctx = fdr_new_event(_fdr, "IOCTL_AFTER");
-        fdr_event_add_parameter(evctx, "d", (size_t)d);
-        fdr_event_add_parameter(evctx, "request",(size_t)request);
-        fdr_event_add_parameter(evctx, "ptr",(size_t)ptr);
-        fdr_event_add_parameter(evctx, "thread", (size_t)pthread_self());
-        fdr_event_add_parameter(evctx, "ret", (size_t)ret);
-        fdr_event_add_oneshot_range(evctx, ptr, sizeof(vivante_ioctl_data_t));
-        fdr_event_add_oneshot_range(evctx, ptr->out_buf, ptr->out_buf_size);
-        log_interface_out(evctx, ptr->out_buf);
-        fdr_log_event(_fdr, evctx);
+        if(request == IOCTL_GCHAL_INTERFACE)
+        {
+            flightrec_event_t evctx = fdr_new_event(_fdr, "IOCTL_AFTER");
+            fdr_event_add_parameter(evctx, "d", (size_t)d);
+            fdr_event_add_parameter(evctx, "request",(size_t)request);
+            fdr_event_add_parameter(evctx, "ptr",(size_t)ptr);
+            fdr_event_add_parameter(evctx, "thread", (size_t)pthread_self());
+            fdr_event_add_parameter(evctx, "ret", (size_t)ret);
+            fdr_event_add_oneshot_range(evctx, ptr, sizeof(vivante_ioctl_data_t));
+            fdr_event_add_oneshot_range(evctx, ptr->out_buf, ptr->out_buf_size);
+            log_interface_out(evctx, ptr->out_buf);
+            fdr_log_event(_fdr, evctx);
+        }
     }
     return ret;
+}
+
+void hook_start_logging(const char *filename)
+{
+    if(_fdr == NULL)
+    {
+        printf("viv_hook: logging to %s\n", filename);
+        _fdr = fdr_open(filename);
+    }
 }
 
 void the_hook(const char *filename)
@@ -309,7 +321,7 @@ void the_hook(const char *filename)
     void *mali_base = NULL;
     char *gal_names[] = {"libGAL.so", "libGAL-fb.so", 0};
 
-    _fdr = fdr_open(filename);
+    hook_start_logging(filename);
 
     int i=0;
     while (gal_names[i] != 0)

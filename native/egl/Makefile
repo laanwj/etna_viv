@@ -3,9 +3,16 @@ TOP=..
 include $(TOP)/Makefile.inc
 
 COMMON_FLAGS += -I../resources 
-CFLAGS += $(COMMON_FLAGS)
-CXXFLAGS += $(COMMON_FLAGS) 
-LDFLAGS += 
+
+ifeq ($(USE_DIRECTFB),1)
+	DIRECTFB_FLAGS = -DLINUX -DEGL_API_DFB -I/usr/include/directfb/
+else
+	DIRECTFB_FLAGS =
+endif
+
+CFLAGS += $(COMMON_FLAGS) $(DIRECTFB_FLAGS)
+CXXFLAGS += $(COMMON_FLAGS) $(DIRECTFB_FLAGS)
+LDFLAGS += -ldl
 
 GL_LIBS = $(PLATFORM_GL_LIBS)
 TARGETS = cube cube_companion ps_sandbox eglinfo cube_companion_idx simple_texture_cubemap displacement

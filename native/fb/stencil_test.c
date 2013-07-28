@@ -173,7 +173,7 @@ int main(int argc, char **argv)
     /* compile gallium3d states */
     void *blend = pipe->create_blend_state(pipe, &(struct pipe_blend_state) {
                 .rt[0] = {
-                    .blend_enable = 1,
+                    .blend_enable = 0,
                     .rgb_func = PIPE_BLEND_ADD,
                     .rgb_src_factor = PIPE_BLENDFACTOR_SRC_ALPHA,
                     .rgb_dst_factor = PIPE_BLENDFACTOR_INV_SRC_ALPHA,
@@ -265,13 +265,13 @@ int main(int argc, char **argv)
             .cbufs[0] = cbuf,
             .zsbuf = zsbuf
             });
-    pipe->set_scissor_state(pipe, &(struct pipe_scissor_state){
+    pipe->set_scissor_states(pipe, 0, 1, &(struct pipe_scissor_state){
             .minx = 0,
             .miny = 0,
             .maxx = 65535,
             .maxy = 65535
             });
-    pipe->set_viewport_state(pipe, &(struct pipe_viewport_state){
+    pipe->set_viewport_states(pipe, 0, 1, &(struct pipe_viewport_state){
             .scale = {width/2.0f, height/2.0f, 0.5f, 1.0f},
             .translate = {width/2.0f, height/2.0f, 0.5f, 1.0f}
             });

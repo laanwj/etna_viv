@@ -96,10 +96,12 @@ struct pipe_context {
    /**
     * Predicate subsequent rendering on occlusion query result
     * \param query  the query predicate, or NULL if no predicate
+    * \param condition whether to skip on FALSE or TRUE query results
     * \param mode  one of PIPE_RENDER_COND_x
     */
    void (*render_condition)( struct pipe_context *pipe,
                              struct pipe_query *query,
+                             boolean condition,
                              uint mode );
 
    /**
@@ -211,11 +213,15 @@ struct pipe_context {
    void (*set_polygon_stipple)( struct pipe_context *,
 				const struct pipe_poly_stipple * );
 
-   void (*set_scissor_state)( struct pipe_context *,
-                              const struct pipe_scissor_state * );
+   void (*set_scissor_states)( struct pipe_context *,
+                               unsigned start_slot,
+                               unsigned num_scissors,
+                               const struct pipe_scissor_state * );
 
-   void (*set_viewport_state)( struct pipe_context *,
-                               const struct pipe_viewport_state * );
+   void (*set_viewport_states)( struct pipe_context *,
+                                unsigned start_slot,
+                                unsigned num_viewports,
+                                const struct pipe_viewport_state *);
 
    void (*set_fragment_sampler_views)(struct pipe_context *,
                                       unsigned num_views,
@@ -349,10 +355,12 @@ struct pipe_context {
                                unsigned width, unsigned height);
 
    /** Flush draw commands
+    *
+    * \param flags  bitfield of enum pipe_flush_flags values.
     */
    void (*flush)(struct pipe_context *pipe,
                  struct pipe_fence_handle **fence,
-                 enum pipe_flush_flags flags);
+                 unsigned flags);
 
    /**
     * Create a view on a texture to be used by a shader stage.

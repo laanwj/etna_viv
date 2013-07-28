@@ -9,6 +9,15 @@
 #include <etnaviv/etna.h>
 #include <etnaviv/etna_queue.h>
 
+static void etna_screen_fence_reference(struct pipe_screen *screen_h,
+                        struct pipe_fence_handle **ptr_h,
+                        struct pipe_fence_handle *fence_h );
+static boolean etna_screen_fence_signalled(struct pipe_screen *screen_h,
+                           struct pipe_fence_handle *fence_h);
+static boolean etna_screen_fence_finish(struct pipe_screen *screen_h,
+                        struct pipe_fence_handle *fence_h,
+                        uint64_t timeout );
+
 int etna_fence_new(struct pipe_screen *screen_h, struct etna_ctx *ctx, struct pipe_fence_handle **fence_p)
 {
     struct etna_fence *fence = NULL;
@@ -69,7 +78,11 @@ debug_describe_fence(char* buf, const struct etna_fence *fence)
     util_sprintf(buf, "etna_fence<%i>", fence->signal);
 }
 
-void etna_screen_fence_reference(struct pipe_screen *screen_h,
+/**
+ * Reference or unreference a fence. Once the reference count falls to zero,
+ * the fence will be destroyed or put in the free list to be reused.
+ */
+static void etna_screen_fence_reference(struct pipe_screen *screen_h,
                         struct pipe_fence_handle **ptr_h,
                         struct pipe_fence_handle *fence_h )
 {
@@ -96,13 +109,20 @@ void etna_screen_fence_reference(struct pipe_screen *screen_h,
     *ptr_h = fence_h;
 }
 
-boolean etna_screen_fence_signalled(struct pipe_screen *screen_h,
+/**
+ * Poll whether the fence has been signalled.
+ */
+static boolean etna_screen_fence_signalled(struct pipe_screen *screen_h,
                            struct pipe_fence_handle *fence_h)
 {
     return etna_screen_fence_finish(screen_h, fence_h, 0);
 }
 
-boolean etna_screen_fence_finish(struct pipe_screen *screen_h,
+/**
+ * Wait until the fence has been signalled for the specified timeout in nanoseconds,
+ * or PIPE_TIMEOUT_INFINITE.
+ */
+static boolean etna_screen_fence_finish(struct pipe_screen *screen_h,
                         struct pipe_fence_handle *fence_h,
                         uint64_t timeout )
 {
@@ -145,4 +165,12 @@ void etna_screen_destroy_fences(struct pipe_screen *screen_h)
     screen->fence_freelist = NULL;
     pipe_mutex_unlock(screen->fence_mutex);
 }
+
+void etna_screen_fence_init(struct pipe_screen *pscreen)
+{
+    pscreen->fence_reference = etna_screen_fence_reference;
+    pscreen->fence_signalled = etna_screen_fence_signalled;
+    pscreen->fence_finish = etna_screen_fence_finish;
+}
+
 

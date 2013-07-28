@@ -32,3 +32,11 @@
 
 #define GCABI_HAS_HARDWARE_TYPE
 
+/* IOCTL structure for userspace driver*/
+typedef struct 
+{
+    void *in_buf;
+    unsigned int in_buf_size;
+    void *out_buf;
+    unsigned int out_buf_size;
+} vivante_ioctl_data_t;

@@ -322,7 +322,7 @@ parse_file( const char **pcur, uint *file )
    for (i = 0; i < TGSI_FILE_COUNT; i++) {
       const char *cur = *pcur;
 
-      if (str_match_nocase_whole( &cur, tgsi_file_names[i] )) {
+      if (str_match_nocase_whole( &cur, tgsi_file_name(i) )) {
          *pcur = cur;
          *file = i;
          return TRUE;
@@ -1129,8 +1129,13 @@ static boolean parse_declaration( struct translate_ctx *ctx )
       cur2 = cur;
       cur2++;
       eat_opt_white( &cur2 );
-      if (str_match_nocase_whole( &cur2, "ARRAY(" )) {
+      if (str_match_nocase_whole( &cur2, "ARRAY" )) {
          int arrayid;
+         if (*cur2 != '(') {
+            report_error( ctx, "Expected `('" );
+            return FALSE;
+         }
+         cur2++;
          eat_opt_white( &cur2 );
          if (!parse_int( &cur2, &arrayid )) {
             report_error( ctx, "Expected `,'" );
@@ -1138,12 +1143,13 @@ static boolean parse_declaration( struct translate_ctx *ctx )
          }
          eat_opt_white( &cur2 );
          if (*cur2 != ')') {
-            report_error( ctx, "Expected `,'" );
+            report_error( ctx, "Expected `)'" );
             return FALSE;
          }
+         cur2++;
          decl.Declaration.Array = 1;
          decl.Array.ArrayID = arrayid;
-         cur = cur2;
+         ctx->cur = cur = cur2;
       }
    }
 

@@ -46,6 +46,124 @@ On a Freescale i.MX6 (GK802) device the parameters are:
     signal            48
     baseAddress       0 
 
+Diagnostics
+==============
+
+There are various ways to get information about the current status of the GPU from user space.
+One of these is the file /proc/driver/gc, which has the following contents (on dove):
+
+    Marvell Technology Group Ltd(GC Ver0.8.0.3184-1)
+    DEBUG VERSION
+    idle register: 0xfe, hardware is busy
+    clockControl register: 0x100
+    print mode:     Pid(0) Reset(1) DumpCmdBuf(0)
+    GC memory usage profile:
+    Total reserved video memory: 65535 KB
+    Used video mem: 0 KB    contiguous: 0 KB        virtual: 0 KB
+    MMU Entries usage(PageCount): Total(32768), Used(0)
+
+This shows the value of the idle register (`IDLE_STATE`, 0x0004), along with the clock
+control register (`CLOCK_CONTROL`, 0x0000), various debug/print flags,
+and memory usage information.
+
+/proc/driver/gc can also be used to control the driver, with various commands (`gc_hal_kernel_driver`).
+
+    echo xx > /proc/driver/gc
+
+    printPID
+
+Toggle print PID status.
+
+    powerDebug
+
+Toggle power debug status.
+
+    profile <step> <timeSlice> <tailTimeSlice> <idleThreshold>
+
+Set profiling settings.
+
+    hang
+
+Toggle hang status.
+
+    reset2
+
+Reset GPU.
+
+    memFail <0xFFFFFFFF>
+
+Set memory random fail rate.
+
+    irq <0|1>
+
+Enable or disable GC interrupt line.
+
+    log <0|1|2|3>
+
+Set logging verbosity:
+
+- `0` print nothing
+- `1` print error log only
+- `2` print warning log only
+- `3` print error and warning info
+
+    silentReset <0|1>
+
+Enable (1) or disable (0) silent reset.
+
+    dumpCmdBuf <0|1>
+
+Enable (1) or disable (0) dump command buffer.
+
+    dumpall
+
+Dump all command buffers (only if kernel compiled with `MRVL_PRINT_CMD_BUFFER`).
+
+    offidle
+
+Toggle power off when idle state.
+
+    su
+
+Turn off device power.
+
+    re
+
+Turn on device power.
+
+    stress <count>
+
+Stress test (enable and disable device power) count times.
+
+    debug <level> <zone>
+
+Change debug level. Level is one of:
+
+- `NONE` -1
+- `ERROR` 0
+- `WARNING` 1
+- `INFO` 2
+- `VERBOSE` 3
+
+Zone is a bitfield consisting of:
+
+- OS              1
+- HARDWARE        2
+- HEAP            4
+- KERNEL          8
+- VIDMEM          16
+- COMMAND         32
+- DRIVER          64
+- CMODEL          128
+- MMU             256
+- EVENT           512
+- DEVICE          1024
+
+The reply in dmesg will show `INFO`, `WARNING` or `ERROR` as `NONE`.
+
+    1 / 2 / 4 / 8 / 16 / 32 / 64
+
+Change frequency to 1/x, use `1` to change to full speed.
 
 User to kernel interface
 ========================
@@ -82,8 +200,8 @@ which is a pointer to the following structure:
 When used by the blob, `in_buf` and `out_buf` point to the same memory address: a `gcsHAL_INTERFACE` structure that is 
 used both for input and output arguments.
 
-gcsHAL_INTERFACE
------------------
+Command structure
+------------------
 The `gcsHAL_INTERFACE` (defined in `gc_hal_driver`) is the structure used by the driver to communicate with the 
 kernel. It can be seen as a communication packet with a command opcode and an union with parameters. 
 Depending on the `command` a different field of this union is used. The same structure is used both for input and output
@@ -301,12 +419,20 @@ uninteresting from a viewpoint of understanding the kernel interface.
 Profiling
 ===============
 
-To enable profiling, the kernel most have been built with `VIVANTE_PROFILER` enabled in `gc_hal_options.h`.
-    
+To enable profiling, the kernel most have been built with `VIVANTE_PROFILER` enabled in `gc_hal_options.h` or the appropriate
+`config` file.
+   
+    USE_PROFILER                        = 1
+
+Vivante also recommends disabling power management features while profiling,
+
+    USE_POWER_MANAGEMENT                = 0
+
 HW profiling registers can be read using the command `READ_ALL_PROFILE_REGISTERS`.
 
-There are also the commands `GET_PROFILE_SETTING` and `SET_PROFILE_SETTING`, apparently for logging to files, 
-but these aren't even implemented in the kernel drivers.
+There are also the commands `GET_PROFILE_SETTING` and `SET_PROFILE_SETTING`, which set a flag for 
+logging to a file (`vprofiler.xml` by default), but this flag doesn't do anything in the kernel driver,
+likely it's meant to be read out by the user space driver.
 
 This will return a structure `gcsPROFILER_COUNTERS`, defined in `GC_HAL_PROFILER.h`, which has the following timers:
 
@@ -651,5 +777,29 @@ TODO: input/output arguments.
         Broadcast GPU stuck.
 
         Calls: gckOS_Broadcast 
+
+Crash recovery
+================
+
+The GPU sometimes crashes when fed with invalid addresses or commands. In these cases it seems like
+rebooting the device is the only way to get control over the GPU back. However the kernel does appear
+to contain stuck detection and recovery, which will be researched in this section.
+Kernel needs to be compiled with `gcdENABLE_TIMEOUT_DETECTION` enabled in `gc_hal_options.h` for this to work.
+
+- `gckCOMMAND_Stall` broadcasts `BROADCAST_GPU_STUCK` when the stall times out.
+- `gckEVENT_Submit` broadcasts GPU stuck when no event IDs are available, and the request time out.
+
+This will print the following message:
+
+    !!FATAL!! GPU Stuck
+      idle=0x%08X axi=0x%08X cmd=0x%08X
+
+The contents of the `IDLE_STATE`, `AXI_STATUS` and `DMA_ADDRESS` will be printed and then the function
+`gckKERNEL_Recovery` is called which tries to recover the GPU from a fatal error.
+
+- Try to do a a soft reset (`gckHARDWARE_Reset`)
+- If not supported, set power management state to `gcvPOWER_OFF_RECOVERY`
+
+XXX how to trigger from user space?
 
 

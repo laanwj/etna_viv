@@ -429,13 +429,13 @@ int main(int argc, char **argv)
             .cbufs[0] = cbuf,
             .zsbuf = zsbuf
             });
-    pipe->set_scissor_state(pipe, &(struct pipe_scissor_state){
+    pipe->set_scissor_states(pipe, 0, 1, &(struct pipe_scissor_state){
             .minx = 0,
             .miny = 0,
             .maxx = 65535,
             .maxy = 65535
             });
-    pipe->set_viewport_state(pipe, &(struct pipe_viewport_state){
+    pipe->set_viewport_states(pipe, 0, 1, &(struct pipe_viewport_state){
             .scale = {width/2.0f, height/2.0f, 0.5f, 1.0f},
             .translate = {width/2.0f, height/2.0f, 0.5f, 1.0f}
             });

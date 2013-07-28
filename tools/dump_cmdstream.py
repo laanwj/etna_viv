@@ -39,6 +39,7 @@ from etnaviv.extract_structure import extract_structure, ResolverBase, UNRESOLVE
 from etnaviv.dump_structure import dump_structure, print_address
 # Parse rules-ng-ng format for state space
 from etnaviv.parse_rng import parse_rng_file, format_path, BitSet, Domain
+from etnaviv.dump_cmdstream_util import int_as_float, fixp_as_float
 
 DEBUG = False
 
@@ -131,14 +132,6 @@ class Counter(object):
             self.d[key] = rv
             self.c += 1
             return rv
-
-def int_as_float(i):
-    '''Return float with binary representation of unsigned int i'''
-    return struct.unpack(b'f', struct.pack(b'I', i))[0]
-
-def fixp_as_float(i):
-    '''Return float from 16.16 fixed-point value of i'''
-    return i / 65536.0
 
 COMPS = 'xyzw'
 def format_state(pos, value, fixp, state_map):

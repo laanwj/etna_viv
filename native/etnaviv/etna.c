@@ -46,11 +46,14 @@
 //#define DEBUG
 //#define DEBUG_CMDBUF
 
-/* TODO: don't forget to handle FE.VERTEX_ELEMENT_CONFIG (0x0600....0x0063c) specially;
- * fields need to be written in the right order, and only as many should be written as there are
- * used vertex elements.
- * header: contextbuf[contextbuf_addr[i].index - 1] where contextbuf_addr[i].address == 0x600
- */
+/* Maximum number of flushes without queuing a signal (per command buffer).
+   If this amount is reached, we roll to the next command buffer,
+   which automatically queues a signal.
+   XXX works around driver bug on (at least) cubox, for which drivers
+       is this not needed? Not urgent as this does not result in a
+       deducible performance impact.
+*/
+#define ETNA_MAX_UNSIGNALED_FLUSHES (40)
 
 /* Initialize kernel GPU context and state map */
 #ifdef GCABI_HAS_CONTEXT
@@ -252,10 +255,10 @@ static void clear_buffer(gcoCMDBUF cmdbuf)
 /* Switch to next buffer, optionally wait for it to be available */
 static int switch_next_buffer(struct etna_ctx *ctx)
 {
-#ifdef DEBUG
-    printf("Switching to new buffer\n");
-#endif
     int next_buf_id = (ctx->cur_buf + 1) % NUM_COMMAND_BUFFERS;
+#if 0
+    printf("Switching to new buffer %i\n", next_buf_id);
+#endif
     if(viv_user_signal_wait(ctx->conn, ctx->cmdbuf_sig[next_buf_id], VIV_WAIT_INDEFINITE) != 0)
     {
 #ifdef DEBUG
@@ -300,21 +303,37 @@ int _etna_reserve_internal(struct etna_ctx *ctx, size_t n)
 #ifdef DEBUG
     printf("Buffer full\n");
 #endif
+    if((ctx->offset*4 + END_COMMIT_CLEARANCE) > COMMAND_BUFFER_SIZE)
+    {
+        printf("%s: Command buffer overflow! This is likely a programming error in the GPU driver.\n", __func__);
+        abort();
+    }
     if(ctx->cur_buf != -1)
     {
-#ifdef DEBUG
-        printf("Submitting old buffer\n");
+#if 0
+        printf("Submitting old buffer %i\n", ctx->cur_buf);
 #endif
         /* Queue signal to signify when buffer is available again */
-        if(etna_queue_signal(ctx->queue, ctx->cmdbuf_sig[ctx->cur_buf], VIV_WHERE_COMMAND) != 0)
-            return ETNA_INTERNAL_ERROR;
+        if((status = etna_queue_signal(ctx->queue, ctx->cmdbuf_sig[ctx->cur_buf], VIV_WHERE_COMMAND)) != ETNA_OK)
+        {
+            printf("%s: queue signal for old buffer failed: %i\n", __func__, status);
+            abort(); /* buffer is in invalid state XXX need some kind of recovery */
+        }
         /* Otherwise, if there is something to be committed left in the current command buffer, commit it */
         if((status = etna_flush(ctx)) != ETNA_OK)
-            return status;
+        {
+            printf("%s: reserve failed: %i\n", __func__, status);
+            abort(); /* buffer is in invalid state XXX need some kind of recovery */
+        }
     }
 
     /* Move on to next buffer if not enough free in current one */
-    status = switch_next_buffer(ctx);
+    if((status = switch_next_buffer(ctx)) != ETNA_OK)
+    {
+        printf("%s: can't switch to next command buffer: %i\n", __func__, status);
+        abort(); /* Buffer is in invalid state XXX need some kind of recovery.
+                    This could involve waiting and re-uploading the context state. */
+    }
     return status;
 }
 
@@ -339,6 +358,10 @@ int etna_flush(struct etna_ctx *ctx)
 #ifdef DEBUG_CMDBUF
     etna_dump_cmd_buffer(ctx);
 #endif
+    if(!queue_first)
+        ctx->flushes += 1;
+    else
+        ctx->flushes = 0;
     if((status = viv_commit(ctx->conn, cur_buf, ctx->ctx, queue_first)) != 0)
     {
 #ifdef DEBUG
@@ -365,6 +388,17 @@ int etna_flush(struct etna_ctx *ctx)
     /* TODO: if context was used, queue it to be freed later, and initialize new context buffer */
     cur_buf->startOffset = cur_buf->offset + END_COMMIT_CLEARANCE;
     cur_buf->offset = cur_buf->startOffset + BEGIN_COMMIT_CLEARANCE;
+
+    if((cur_buf->offset + END_COMMIT_CLEARANCE) >= COMMAND_BUFFER_SIZE ||
+       ctx->flushes > ETNA_MAX_UNSIGNALED_FLUSHES)
+    {
+        /* nothing more fits in buffer, prevent warning about buffer overflow
+           on next etna_reserve.
+         */
+        cur_buf->startOffset = cur_buf->offset = COMMAND_BUFFER_SIZE - END_COMMIT_CLEARANCE;
+    }
+    /* Set writing offset for next etna_reserve. For convenience this is 
+       stored as an index instead of a byte offset.  */
     ctx->offset = cur_buf->offset / 4;
 #ifdef DEBUG
 #ifdef GCABI_HAS_CONTEXT
@@ -378,6 +412,7 @@ nothing_to_do:
     /* Nothing in command buffer; but there may be kernel commands to submit. Do this seperately. */
     if(queue_first != NULL)
     {
+        ctx->flushes = 0;
         if((status = viv_event_commit(ctx->conn, queue_first)) != 0)
         {
 #ifdef DEBUG

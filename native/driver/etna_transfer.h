@@ -25,27 +25,9 @@
 #ifndef H_ETNA_TRANSFER
 #define H_ETNA_TRANSFER
 
-#include <unistd.h>
+#include "pipe/p_state.h"
 
-struct pipe_transfer;
-struct pipe_resource;
-struct pipe_box;
-struct pipe_context;
-enum pipe_format;
-
-void *etna_pipe_transfer_map(struct pipe_context *pipe,
-                         struct pipe_resource *resource,
-                         unsigned level,
-                         unsigned usage,  /* a combination of PIPE_TRANSFER_x */
-                         const struct pipe_box *box,
-                         struct pipe_transfer **out_transfer);
-
-void etna_pipe_transfer_flush_region(struct pipe_context *pipe,
-				  struct pipe_transfer *transfer_,
-				  const struct pipe_box *box);
-
-void etna_pipe_transfer_unmap(struct pipe_context *pipe,
-                      struct pipe_transfer *transfer_);
+void etna_pipe_transfer_init(struct pipe_context *pipe);
 
 #endif
 

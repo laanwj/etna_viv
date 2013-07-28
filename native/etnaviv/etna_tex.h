@@ -31,11 +31,13 @@ enum etna_surface_layout
     ETNA_LAYOUT_LINEAR = 0,
     ETNA_LAYOUT_TILED = 1,
     ETNA_LAYOUT_SUPERTILED = 3 /* 1|2, both tiling and supertiling bit enabled */
+    /* XXX more supertile layouts for newer GCxxxx */
 };
 
 void etna_texture_tile(void *dest, void *src, unsigned width, unsigned height, unsigned src_stride, unsigned elmtsize);
+void etna_texture_untile(void *dest, void *src, unsigned width, unsigned height, unsigned dst_stride, unsigned elmtsize);
 
-/* XXX from/to supertiling */
+/* XXX from/to supertiling (can have different layouts, may be better to leave to RS) */
 
 #endif
 

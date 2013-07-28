@@ -8,11 +8,11 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- /home/orion/projects/etna_viv/rnndb/state.xml    (  15001 bytes, from 2013-03-03 11:55:38)
+- /home/orion/projects/etna_viv/rnndb/state.xml    (  17286 bytes, from 2013-07-25 15:32:33)
 - /home/orion/projects/etna_viv/rnndb/common.xml   (  15985 bytes, from 2013-02-10 12:55:03)
-- /home/orion/projects/etna_viv/rnndb/state_hi.xml (  16736 bytes, from 2013-03-23 07:27:22)
-- /home/orion/projects/etna_viv/rnndb/state_2d.xml (  30577 bytes, from 2013-02-01 10:02:25)
-- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  52534 bytes, from 2013-04-04 19:42:14)
+- /home/orion/projects/etna_viv/rnndb/state_hi.xml (  17017 bytes, from 2013-07-25 15:34:05)
+- /home/orion/projects/etna_viv/rnndb/state_2d.xml (  30607 bytes, from 2013-04-16 17:48:29)
+- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  53323 bytes, from 2013-07-17 06:01:42)
 
 Copyright (C) 2013
 */
@@ -37,6 +37,9 @@ Copyright (C) 2013
 #define VIVS_HI_CLOCK_CONTROL_IDLE_2D				0x00020000
 #define VIVS_HI_CLOCK_CONTROL_IDLE_VG				0x00040000
 #define VIVS_HI_CLOCK_CONTROL_ISOLATE_GPU			0x00080000
+#define VIVS_HI_CLOCK_CONTROL_DEBUG_PIXEL_PIPE__MASK		0x00f00000
+#define VIVS_HI_CLOCK_CONTROL_DEBUG_PIXEL_PIPE__SHIFT		20
+#define VIVS_HI_CLOCK_CONTROL_DEBUG_PIXEL_PIPE(x)		(((x) << VIVS_HI_CLOCK_CONTROL_DEBUG_PIXEL_PIPE__SHIFT) & VIVS_HI_CLOCK_CONTROL_DEBUG_PIXEL_PIPE__MASK)
 
 #define VIVS_HI_IDLE_STATE					0x00000004
 #define VIVS_HI_IDLE_STATE_FE					0x00000001
@@ -78,9 +81,10 @@ Copyright (C) 2013
 #define VIVS_HI_AXI_STATUS_DET_RD_ERR				0x00000200
 
 #define VIVS_HI_INTR_ACKNOWLEDGE				0x00000010
-#define VIVS_HI_INTR_ACKNOWLEDGE_INTR_VEC__MASK			0xffffffff
+#define VIVS_HI_INTR_ACKNOWLEDGE_INTR_VEC__MASK			0x7fffffff
 #define VIVS_HI_INTR_ACKNOWLEDGE_INTR_VEC__SHIFT		0
 #define VIVS_HI_INTR_ACKNOWLEDGE_INTR_VEC(x)			(((x) << VIVS_HI_INTR_ACKNOWLEDGE_INTR_VEC__SHIFT) & VIVS_HI_INTR_ACKNOWLEDGE_INTR_VEC__MASK)
+#define VIVS_HI_INTR_ACKNOWLEDGE_AXI_BUS_ERROR			0x80000000
 
 #define VIVS_HI_INTR_ENBL					0x00000014
 #define VIVS_HI_INTR_ENBL_INTR_ENBL_VEC__MASK			0xffffffff

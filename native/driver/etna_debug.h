@@ -29,8 +29,21 @@
 #include <stdlib.h>
 #include "util/u_debug.h"
 
-#define ETNA_DBG_MSGS   0x1
+#define ETNA_DBG_MSGS      0x1 /* Warnings and non-fatal errors */
+#define ETNA_FRAME_MSGS    0x2
+#define ETNA_RESOURCE_MSGS 0x4
+#define ETNA_COMPILER_MSGS 0x8
+#define ETNA_LINKER_MSGS   0x10
+#define ETNA_DUMP_SHADERS  0x20
+
 extern int etna_mesa_debug;
+
+#define DBG_ENABLED(flag) (etna_mesa_debug & (flag))
+
+#define DBG_F(flag, fmt, ...) \
+		do { if (etna_mesa_debug & (flag)) \
+			debug_printf("%s:%d: "fmt "\n", \
+				__FUNCTION__, __LINE__, ##__VA_ARGS__); } while (0)
 
 #define DBG(fmt, ...) \
 		do { if (etna_mesa_debug & ETNA_DBG_MSGS) \

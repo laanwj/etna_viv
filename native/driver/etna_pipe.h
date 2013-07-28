@@ -110,6 +110,7 @@ struct etna_resource
     struct etna_vidmem *ts; /* Tile status video memory */
 
     struct etna_resource_level levels[ETNA_NUM_LOD];
+    struct etna_pipe_context *last_ctx; /* Last bound context */
 };
 
 struct etna_surface
@@ -144,7 +145,6 @@ struct etna_transfer
 /* group all current CSOs, for dirty bits */
 enum
 {
-    ETNA_STATE_BASE_SETUP = (1<<0), /* basic openGL setup */
     ETNA_STATE_BLEND = (1<<1),
     ETNA_STATE_SAMPLERS = (1<<2),
     ETNA_STATE_RASTERIZER = (1<<3),
@@ -162,21 +162,20 @@ enum
     ETNA_STATE_SHADER = (1<<15),
     ETNA_STATE_VS_UNIFORMS = (1<<16),
     ETNA_STATE_PS_UNIFORMS = (1<<17),
-    ETNA_STATE_TS = (1<<18) /* set after clear and when RS blit operations from other surface affect TS */
+    ETNA_STATE_TS = (1<<18), /* set after clear and when RS blit operations from other surface affect TS */
+    ETNA_STATE_TEXTURE_CACHES = (1<<19) /* set when texture has been modified/uploaded */
 };
 
 /* private opaque context structure */
-struct etna_pipe_context_priv
+struct etna_pipe_context
 {
+    struct pipe_context base;
     struct viv_conn *conn;
     struct etna_ctx *ctx;
     unsigned dirty_bits;
     struct etna_pipe_specs specs;
     struct util_slab_mempool transfer_pool;
     struct blitter_context *blitter;
-
-    /* constant */
-    struct compiled_base_setup_state base_setup;
 
     /* bindable state */
     struct compiled_blend_state *blend;
@@ -217,6 +216,12 @@ struct etna_pipe_context_priv
     struct etna_3d_state gpu3d;
 };
 
+static INLINE struct etna_pipe_context *
+etna_pipe_context(struct pipe_context *p)
+{
+    return (struct etna_pipe_context *)p;
+}
+
 static INLINE struct etna_resource *
 etna_resource(struct pipe_resource *p)
 {
@@ -241,19 +246,7 @@ etna_transfer(struct pipe_transfer *p)
     return (struct etna_transfer *)p;
 }
 
-#define ETNA_PIPE(pipe) ((struct etna_pipe_context_priv*)(pipe)->priv)
-
-struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct etna_pipe_specs *specs, struct pipe_screen *scr);
-
-#ifdef RAWSHADER
-/* raw shader methods -- used by fb_rawshader demos */
-void *etna_create_shader_state(struct pipe_context *pipe, const struct etna_shader_program *rs);
-void etna_bind_shader_state(struct pipe_context *pipe, void *sh);
-void etna_delete_shader_state(struct pipe_context *pipe, void *sh_);
-void etna_set_uniforms(struct pipe_context *pipe, unsigned type, unsigned offset, unsigned count, const uint32_t *values);
-#endif
-
-struct etna_ctx *etna_pipe_get_etna_context(struct pipe_context *pipe);
+struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct etna_pipe_specs *specs, struct pipe_screen *scr, void *priv);
 
 #endif
 

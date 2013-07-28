@@ -164,7 +164,10 @@ struct tgsi_declaration_interp
 #define TGSI_SEMANTIC_THREAD_ID  18 /**< block-relative id of the current thread */
 #define TGSI_SEMANTIC_TEXCOORD   19 /**< texture or sprite coordinates */
 #define TGSI_SEMANTIC_PCOORD     20 /**< point sprite coordinate */
-#define TGSI_SEMANTIC_COUNT      21 /**< number of semantic values */
+#define TGSI_SEMANTIC_VIEWPORT_INDEX 21 /**< viewport index */
+#define TGSI_SEMANTIC_LAYER      22 /**< layer (rendertarget index) */
+#define TGSI_SEMANTIC_CULLDIST   23
+#define TGSI_SEMANTIC_COUNT      24 /**< number of semantic values */
 
 struct tgsi_declaration_semantic
 {
@@ -299,7 +302,7 @@ struct tgsi_property_data {
 #define TGSI_OPCODE_COS                 36
 #define TGSI_OPCODE_DDX                 37
 #define TGSI_OPCODE_DDY                 38
-#define TGSI_OPCODE_KILP                39  /* predicated kill */
+#define TGSI_OPCODE_KILL                39 /* unconditional */
 #define TGSI_OPCODE_PK2H                40
 #define TGSI_OPCODE_PK2US               41
 #define TGSI_OPCODE_PK4B                42
@@ -369,7 +372,7 @@ struct tgsi_property_data {
 #define TGSI_OPCODE_CALLNZ              113
                                 /* gap */
 #define TGSI_OPCODE_BREAKC              115
-#define TGSI_OPCODE_KIL                 116  /* conditional kill */
+#define TGSI_OPCODE_KILL_IF             116  /* conditional kill */
 #define TGSI_OPCODE_END                 117  /* aka HALT */
                                 /* gap */
 #define TGSI_OPCODE_F2I                 119
