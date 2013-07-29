@@ -47,11 +47,20 @@ void etna_resource_touch(struct pipe_context *pipe, struct pipe_resource *resour
     resource->last_ctx = ectx;
 }
 
-static boolean etna_screen_can_create_resource(struct pipe_screen *screen,
+static boolean etna_screen_can_create_resource(struct pipe_screen *pscreen,
                               const struct pipe_resource *templat)
 {
-    /* XXX test against maximum texture size, 
-     * based on TEXTURE_8K / RENDERTARGET_8K features */
+    struct etna_screen *screen = etna_screen(pscreen);
+    if(templat->nr_samples > 1)
+        return false;
+    if(templat->bind & (PIPE_BIND_RENDER_TARGET | PIPE_BIND_DEPTH_STENCIL | PIPE_BIND_SAMPLER_VIEW))
+    {
+        uint max_size = (templat->bind & (PIPE_BIND_RENDER_TARGET | PIPE_BIND_DEPTH_STENCIL)) ?
+                            screen->specs.max_rendertarget_size :
+                            screen->specs.max_texture_size;
+        if(templat->width0 > max_size || templat->height0 > max_size)
+            return false;
+    }
     return true;
 }
                            

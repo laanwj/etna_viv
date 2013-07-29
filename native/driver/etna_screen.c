@@ -92,7 +92,7 @@ static int etna_screen_get_param( struct pipe_screen *screen, enum pipe_cap para
     case PIPE_CAP_GLSL_FEATURE_LEVEL:
             return 120;
 
-    case PIPE_CAP_NPOT_TEXTURES: /* MUST be supported with GLES 2.0 */
+    case PIPE_CAP_NPOT_TEXTURES: /* MUST be supported with GLES 2.0: what the capability specifies is filtering support */
             return true; /* VIV_FEATURE(priv->dev, chipMinorFeatures1, NON_POWER_OF_TWO); */
 
     case PIPE_CAP_MAX_VERTEX_BUFFERS:
@@ -481,6 +481,8 @@ etna_screen_create(struct viv_conn *dev)
         screen->specs.vs_offset = 0xC000;
         screen->specs.ps_offset = 0xD000; //like vivante driver
     }
+    screen->specs.max_texture_size = VIV_FEATURE(dev, chipMinorFeatures0, TEXTURE_8K)?8192:4096;
+    screen->specs.max_rendertarget_size = VIV_FEATURE(dev, chipMinorFeatures0, RENDERTARGET_8K)?8192:4096;
 
     /* Initialize vtable */
     pscreen->destroy = etna_screen_destroy;

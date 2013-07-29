@@ -68,6 +68,10 @@ struct etna_pipe_specs
     uint32_t vs_offset;
     /* pixel shader memory address*/
     uint32_t ps_offset;
+    /* maximum texture size */
+    unsigned max_texture_size;
+    /* maximum texture size */
+    unsigned max_rendertarget_size;
 };
 
 /** Compiled Gallium state. All the different compiled state atoms are woven together and uploaded
