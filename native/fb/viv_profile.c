@@ -29,7 +29,7 @@ int main()
     uint32_t *counter_data = calloc(num_profile_counters, 4);
     if(viv_read_profile_counters_3d(conn, counter_data) != 0)
     {
-        fprintf(stderr, "Error querying counters (probably unsupported with this kernel)\n");
+        fprintf(stderr, "Error querying counters (probably unsupported with this kernel, or not built into libetnaviv)\n");
         exit(1);
     }
     for(uint32_t c=0; c<num_profile_counters; ++c)
