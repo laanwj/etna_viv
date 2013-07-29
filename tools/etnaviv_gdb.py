@@ -30,10 +30,10 @@ from etnaviv.rnn_domain_visitor import DomainVisitor
 
 # Ideas:
 # - print changes in current GPU state highlighted
-
 # - can we hook etna_flush and display the current command buffer contents?
 #   set breakpoint that invokes python code? is that possible?
 # (see gdb.Breakpoint)
+# - dump current command buffers
 
 RegStride = namedtuple('RegStride', ['stride', 'length'])
 RegInfo = namedtuple('RegInfo', ['reg', 'offset', 'strides'])

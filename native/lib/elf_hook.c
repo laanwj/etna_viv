@@ -1,6 +1,7 @@
 // Based on https://github.com/shoumikhin/ELF-Hook by Anthony Shoumikhin
 // http://www.codeproject.com/Articles/70302/Redirecting-functions-in-shared-ELF-libraries
 //
+#include "elf_hook.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

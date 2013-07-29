@@ -51,9 +51,10 @@ These values for environment variable `GCABI` are supported out of the box:
 - `dove`: Marvell Dove, newer drivers (0.8.0.3184)
 - `dove_old`: Marvell Dove, older drivers (0.8.0.1998, 0.8.0.1123)
 - `arnova`: Android, Arnova 10B G3 tablet (RK2918)
-- `v2`: Various Android, for older chips (RK2918 etc.)
-- `imx6`: Various Android, for newer chips (i.MX6 specific)
-- `v4`: Various Android, for newer chips (i.MX6 etc.)
+- `v2`: Various
+- `v4`: Various, newer API than v2
+- `imx6`: v4 API, specialized for i.MX6
+- `imx6_v4_0_0`: v4 API, but i.MX6 specific, release 4.0.0
 
 If possible get the `gc_*.h` headers for your specific kernel version. If that's not possible, try to find which of the above sets
 of headers is most similar, and adapt that.
