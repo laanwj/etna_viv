@@ -327,8 +327,10 @@ static void *etna_pipe_create_shader_state(struct pipe_context *pipe, const stru
 {
     struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct etna_shader_object *out = NULL;
-    etna_compile_shader_object(&priv->specs, pss->tokens, &out);
-    return out;
+    if(etna_compile_shader_object(&priv->specs, pss->tokens, &out) != ETNA_OK)
+        return NULL;
+    else
+        return out;
 }
 
 static void etna_pipe_delete_shader_state(struct pipe_context *pipe, void *ss)

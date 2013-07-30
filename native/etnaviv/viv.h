@@ -161,6 +161,7 @@ struct viv_specs {
     uint32_t instruction_count;
     uint32_t num_constants;
     uint32_t buffer_size;
+    uint32_t varyings_count;
 };
 
 /* connection to driver */

@@ -128,6 +128,11 @@ static void convert_chip_specs(struct viv_specs *out, const struct _gcsHAL_QUERY
     out->num_constants = 0; /* =default (depends on hw) */
     out->buffer_size = 0; /* =default (depends on hw) */
 #endif
+#ifdef GCABI_CHIPIDENTITY_VARYINGS
+    out->varyings_count = in->varyingsCount;
+#else
+    out->varyings_count = 8;
+#endif
 }
 
 int viv_open(enum viv_hw_type hw_type, struct viv_conn **out)

@@ -88,7 +88,6 @@ static uint32_t active_samplers_bits(struct pipe_context *pipe)
     return active_samplers;
 }
 
-
 /* Reset / re-upload context.
  *
  * This pushes the current register state in pipe->gpu3d to the GPU.
@@ -276,11 +275,6 @@ static void sync_context(struct pipe_context *pipe)
         etna_link_shaders(pipe, &e->shader_state, e->vs, e->fs);
     }
 
-    /* XXX todo: 
-     * - before flush, update context for kernel driver: libetnaviv needs
-     *   to provide an interface for this (use reset_context to build the set
-     *   context command buffer from the etna_3d_state structure).
-     */
     e->gpu3d.num_vertex_elements = e->vertex_elements->num_elements;
 
     /*

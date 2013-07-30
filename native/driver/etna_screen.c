@@ -471,16 +471,27 @@ etna_screen_create(struct viv_conn *dev)
     screen->specs.stream_count = dev->chip.stream_count;
     screen->specs.has_sin_cos_sqrt = VIV_FEATURE(dev, chipMinorFeatures0, HAS_SQRT_TRIG);
     screen->specs.has_shader_range_registers = dev->chip.chip_model >= 0x1000 || dev->chip.chip_model == 0x880;    
-    if (dev->chip.chip_model < 0x1000 && dev->chip.chip_model != 0x880)
-    {
-        screen->specs.vs_offset = 0x4000;
-        screen->specs.ps_offset = 0x6000;
-    }
-    else
+    if (dev->chip.instruction_count > 256) /* unified instruction memory? */
     {
         screen->specs.vs_offset = 0xC000;
         screen->specs.ps_offset = 0xD000; //like vivante driver
+        screen->specs.max_instructions = 256;
+    } else {
+        screen->specs.vs_offset = 0x4000;
+        screen->specs.ps_offset = 0x6000;
+        screen->specs.max_instructions = dev->chip.instruction_count/2;
     }
+    screen->specs.max_varyings = dev->chip.varyings_count;
+    screen->specs.max_registers = dev->chip.register_max;
+    if (dev->chip.chip_model < chipModel_GC4000) /* from QueryShaderCaps in kernel driver */
+    {
+        screen->specs.max_vs_uniforms = 168;
+        screen->specs.max_ps_uniforms = 64;
+    } else {
+        screen->specs.max_vs_uniforms = 256;
+        screen->specs.max_ps_uniforms = 256;
+    }
+
     screen->specs.max_texture_size = VIV_FEATURE(dev, chipMinorFeatures0, TEXTURE_8K)?8192:4096;
     screen->specs.max_rendertarget_size = VIV_FEATURE(dev, chipMinorFeatures0, RENDERTARGET_8K)?8192:4096;
 

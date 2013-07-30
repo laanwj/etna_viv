@@ -128,6 +128,7 @@ struct etna_compile_data
     uint32_t imm_base; /* base of immediates (in 32 bit units) */
     uint32_t imm_size; /* size of immediates (in 32 bit units) */
     uint32_t next_free_native;
+    int num_uniforms;
    
     /* conditionals */
     struct etna_compile_frame frame_stack[ETNA_MAX_DEPTH];
@@ -1179,6 +1180,7 @@ static void assign_constants_and_immediates(struct etna_compile_data *cd)
         cd->file[TGSI_FILE_IMMEDIATE][idx].native.id = cd->imm_base/4 + idx;
     }
     DBG_F(ETNA_COMPILER_MSGS, "imm base: %i size: %i", cd->imm_base, cd->imm_size);
+    cd->num_uniforms = cd->imm_base/4 + cd->file_size[TGSI_FILE_IMMEDIATE];
 }
 
 /* Assign declared samplers to native texture units */
@@ -1393,6 +1395,34 @@ static void fill_in_vs_outputs(struct etna_shader_object *sobj, struct etna_comp
                               VIVS_VS_LOAD_BALANCING_D(0x0f);
 }
 
+static bool etna_compile_check_limits(struct etna_compile_data *cd)
+{
+    int max_uniforms = (cd->processor == TGSI_PROCESSOR_VERTEX) ? 
+                        cd->specs->max_vs_uniforms :
+                        cd->specs->max_ps_uniforms;
+    if(cd->inst_ptr > cd->specs->max_instructions)
+    {
+        DBG("Number of instructions (%d) exceeds maximum %d", cd->inst_ptr, cd->specs->max_instructions);
+        return false;
+    }
+    if(cd->next_free_native > cd->specs->max_registers)
+    {
+        DBG("Number of registers (%d) exceeds maximum %d", cd->next_free_native, cd->specs->max_registers);
+        return false;
+    }
+    if(cd->num_uniforms > cd->specs->max_registers)
+    {
+        DBG("Number of uniforms (%d) exceeds maximum %d", cd->num_uniforms, max_uniforms);
+        return false;
+    }
+    if(cd->num_varyings > cd->specs->max_varyings)
+    {
+        DBG("Number of varyings (%d) exceeds maximum %d", cd->num_varyings, cd->specs->max_varyings);
+        return false;
+    }
+    return true;
+}
+
 int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct tgsi_token *tokens,
         struct etna_shader_object **out)
 {
@@ -1508,6 +1538,13 @@ int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct
     etna_compile_add_z_div_if_needed(cd);
     etna_compile_add_nop_if_needed(cd);
     etna_compile_fill_in_labels(cd);
+
+    if(!etna_compile_check_limits(cd))
+    {
+        FREE(cd);
+        *out = NULL;
+        return -1;
+    }
 
     /* fill in output structure */
     struct etna_shader_object *sobj = CALLOC_STRUCT(etna_shader_object);

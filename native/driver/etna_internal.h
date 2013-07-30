@@ -68,6 +68,16 @@ struct etna_pipe_specs
     uint32_t vs_offset;
     /* pixel shader memory address*/
     uint32_t ps_offset;
+    /* vertex/fragment shader max instructions */
+    uint32_t max_instructions;
+    /* maximum number of varyings */
+    unsigned max_varyings;
+    /* maximum number of registers */
+    unsigned max_registers;
+    /* maximum vertex uniforms */
+    unsigned max_vs_uniforms;
+    /* maximum pixel uniforms */
+    unsigned max_ps_uniforms;
     /* maximum texture size */
     unsigned max_texture_size;
     /* maximum texture size */

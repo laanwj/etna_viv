@@ -35,6 +35,7 @@
 
 // Chip identity has pixelPipes, instructionCount, numConstants, bufferSize
 #define GCABI_CHIPIDENTITY_EXT
+#define GCABI_CHIPIDENTITY_VARYINGS
 
 // imx6 v4 kernel driver
 #define GCABI_IMX_V4
