@@ -657,7 +657,14 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         .src[2] = convert_src(cd, &inst->Src[0]), 
                         });
                 break;
-            case TGSI_OPCODE_LIT: assert(0); break;
+            case TGSI_OPCODE_LIT:
+                /*
+                LOG tmp.x, void, void, src.yyyy
+                MUL tmp.x, tmp.xxxx, src.wwww, void
+                LITP dst, src.xxyy, src.xxxx, tmp.xxxx
+                 */
+                assert(0);
+                break;
             case TGSI_OPCODE_RCP: 
                 emit_inst(cd, &(struct etna_inst) {
                         .opcode = INST_OPCODE_RCP,
@@ -830,7 +837,7 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         });
                 break;
             case TGSI_OPCODE_ROUND: assert(0); break;
-            case TGSI_OPCODE_EX2: /* XXX check that this is correct see also OPCODE_EXP */
+            case TGSI_OPCODE_EX2:
                 emit_inst(cd, &(struct etna_inst) {
                         .opcode = INST_OPCODE_EXP,
                         .sat = sat,
@@ -838,7 +845,7 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         .src[2] = convert_src(cd, &inst->Src[0]), 
                         });
                 break;
-            case TGSI_OPCODE_LG2: /* XXX check this is correct see also OPCODE_LOG */
+            case TGSI_OPCODE_LG2:
                 emit_inst(cd, &(struct etna_inst) {
                         .opcode = INST_OPCODE_LOG,
                         .sat = sat,
@@ -863,19 +870,20 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
             case TGSI_OPCODE_SIN:
                 if(cd->specs->has_sin_cos_sqrt)
                 {
-                    /* add divide by PI/2, re-use dest register */
+                    /* add divide by PI/2, re-use dest register, this works even in src=dst case
+                     * because second instruction only uses output of first. */
                     emit_inst(cd, &(struct etna_inst) {
                         .opcode = INST_OPCODE_MUL,
                         .sat = 0,
                         .dst = convert_dst(cd, &inst->Dst[0]),
-                              .src[0] = convert_src(cd, &inst->Src[0]), /* any swizzling happens here */
-                              .src[1] = alloc_imm_u32(cd, 2.0f/M_PI),
+                        .src[0] = convert_src(cd, &inst->Src[0]), /* any swizzling happens here */
+                        .src[1] = alloc_imm_u32(cd, 2.0f/M_PI),
                     });
                     emit_inst(cd, &(struct etna_inst) {
                         .opcode = inst->Instruction.Opcode == TGSI_OPCODE_COS ? INST_OPCODE_COS : INST_OPCODE_SIN,
                         .sat = sat,
                         .dst = convert_dst(cd, &inst->Dst[0]),
-                              .src[2] = convert_dst_to_src(cd, &inst->Dst[0]),
+                        .src[2] = convert_dst_to_src(cd, &inst->Dst[0]),
                     });
                 } else {
                     /* XXX fall back to Taylor series if not HAS_SQRT_TRIG,
