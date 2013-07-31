@@ -135,9 +135,13 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     </value>
     <value value="0x0E" name="LITP" brief="Partial lighting computation">
         <doc>
-            Appears to use input argument src0.yz and src1.yz.
-            dst.x is always 1, dst.w is always 1.
-            Probably http://msdn.microsoft.com/en-us/library/windows/desktop/bb174703%28v=vs.85%29.aspx
+            dst.x := 1
+            dst.y := src1.y IF (src1.z > 0 AND src0.y > 0) else 0
+            dst.z := exp(src2.x) IF (src1.z > 0 AND src0.z > 0) else 0
+            dst.w := 1
+
+            Partial http://msdn.microsoft.com/en-us/library/windows/desktop/bb174703%28v=vs.85%29.aspx
+            Note: If src0 is disabled, src0.y > 0 and src0.z > 0 evaluate as true.
         </doc>
     </value>
     <value value="0x0F" name="SELECT" brief="Choose input based on condition">
