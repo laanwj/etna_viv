@@ -40,6 +40,7 @@ from etnaviv.dump_structure import dump_structure, print_address
 # Parse rules-ng-ng format for state space
 from etnaviv.parse_rng import parse_rng_file, format_path, BitSet, Domain
 from etnaviv.dump_cmdstream_util import int_as_float, fixp_as_float
+from etnaviv.parse_command_buffer import parse_command_buffer
 
 DEBUG = False
 
@@ -59,10 +60,6 @@ CMDS_NO_OUTPUT = [
 'gcvHAL_COMMIT',
 'gcvHAL_EVENT_COMMIT'
 ]
-
-# Number of words to ignore at start of command buffer
-# A PIPE3D command will be inserted here by the kernel if necessary
-CMDBUF_IGNORE_INITIAL = 8
 
 class HalResolver(ResolverBase):
     '''
@@ -177,6 +174,14 @@ def dump_shader(f, name, states, start, end):
     f.write('/* [dumped %s to %s] */ ' % (name, filename))
     shader_num += 1
 
+def iter_memory(mem, addr, end_addr):
+    size = (end_addr - addr)//4
+    ptr = 0
+    while ptr < size:
+        hide = False
+        (value,) = WORD_SPEC.unpack(mem[addr+ptr*4:addr+ptr*4+4])
+        yield value
+        ptr += 1
 
 def dump_command_buffer(f, mem, addr, end_addr, depth, state_map):
     '''
@@ -185,79 +190,25 @@ def dump_command_buffer(f, mem, addr, end_addr, depth, state_map):
     '''
     indent = '    ' * len(depth)
     f.write('{\n')
-    state_base = 0
-    state_count = 0
-    state_format = 0
-    next_cmd = CMDBUF_IGNORE_INITIAL
-    payload_start_ptr = 0
-    payload_end_ptr = 0
-    op = 0
-    size = (end_addr - addr)//4
-    ptr = 0
     states = [] # list of (ptr, state_addr) tuples
-    while ptr < size:
+    size = (end_addr - addr)//4
+    for rec in parse_command_buffer(iter_memory(mem, addr, end_addr)):
         hide = False
-        (value,) = WORD_SPEC.unpack(mem[addr+ptr*4:addr+ptr*4+4])
-        if ptr >= next_cmd:
-            #f.write('\n')
-            op = value >> 27
-            payload_start_ptr = payload_end_ptr = ptr + 1
-            if op == 1:
-                state_base = (value & 0xFFFF)<<2
-                state_count = (value >> 16) & 0x3FF
-                if state_count == 0:
-                    state_count = 0x400
-                state_format = (value >> 26) & 1
-                payload_end_ptr = payload_start_ptr + state_count
-                desc = "LOAD_STATE (1) Base: 0x%05X Size: %i Fixp: %i" % (state_base, state_count, state_format)
-                if options.hide_load_state:
-                    hide = True
-            elif op == 2:
-                desc = "END (2)"
-            elif op == 3:
-                desc = "NOP (3)"
-            elif op == 4:
-                desc = "DRAW_2D (4)"
-            elif op == 5:
-                desc = "DRAW_PRIMITIVES (5)"
-                payload_end_ptr = payload_start_ptr + 3
-            elif op == 6:
-                desc = "DRAW_INDEXED_PRIMITIVES (6)"
-                payload_end_ptr = payload_start_ptr + 4
-            elif op == 7:
-                desc = "WAIT (7)"
-            elif op == 8:
-                desc = "LINK (8)"
-                payload_end_ptr = payload_start_ptr + 1
-            elif op == 9:
-                desc = "STALL (9)"
-                payload_end_ptr = payload_start_ptr + 1
-            elif op == 10:
-                desc = "CALL (10)"
-                payload_end_ptr = payload_start_ptr + 1
-            elif op == 11:
-                desc = "RETURN (11)"
-            elif op == 13:
-                desc = "CHIP_SELECT (13)"
-            else:
-                desc = "UNKNOWN (%i)" % op
-            next_cmd = (payload_end_ptr + 1) & (~1)
-        elif ptr < payload_end_ptr: # Parse payload 
-            if op == 1:
-                pos = (ptr - payload_start_ptr)*4 + state_base
-                states.append((ptr, pos, state_format, value))
-                desc = format_state(pos, value, state_format, state_map)
-            else:
-                desc = ""
+        if rec.op == 1 and rec.payload_ofs == -1:
+            if options.hide_load_state:
+                hide = True
+        if rec.state_info is not None:
+            states.append((rec.ptr, rec.state_info.pos, rec.state_info.format, rec.value))
+            desc = format_state(rec.state_info.pos, rec.value, rec.state_info.format, state_map)
         else:
-            desc = "PAD"
+            desc = rec.desc
+
         if not hide:
-            f.write(indent + '    0x%08x' % value)
-            if ptr != (size-1):
+            f.write(indent + '    0x%08x' % rec.value)
+            if rec.ptr != (size-1):
                 f.write(", /* %s */\n" % desc)
             else:
                 f.write("  /* %s */\n" % desc)
-        ptr += 1
     f.write(indent + '}')
     if options.list_address_states:
         # Print addresses; useful for making a re-play program

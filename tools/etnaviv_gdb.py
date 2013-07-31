@@ -21,8 +21,9 @@ if not os.path.dirname(__file__) in sys.path:
 
 from etnaviv.util import rnndb_path
 from etnaviv.parse_rng import parse_rng_file, format_path, BitSet, Domain, Stripe, Register, Array, BaseType
-from etnaviv.dump_cmdstream_util import int_as_float, fixp_as_float
+from etnaviv.dump_cmdstream_util import int_as_float, fixp_as_float, offset_to_uniform
 from etnaviv.rnn_domain_visitor import DomainVisitor
+from etnaviv.parse_command_buffer import parse_command_buffer
 
 # (gdb) print ((struct etna_pipe_context*)((struct gl_context*)_glapi_Context)->st->cso_context->pipe)
 # pipe-> gpu3d           has current GPU state
@@ -137,9 +138,9 @@ def format_state(reg, key, val):
 class GPUState(gdb.Command):
     """Etnaviv: show GPU state."""
 
-    def __init__ (self):
+    def __init__ (self, state_xml):
         super(GPUState, self).__init__ ("gpu-state", gdb.COMMAND_USER)
-        self.state_xml = parse_rng_file(rnndb_path('state.xml'))
+        self.state_xml = state_xml
         self.state_map = self.state_xml.lookup_domain('VIVS')
         self.registers = build_registers_dict(self.state_map)
 
@@ -204,9 +205,9 @@ from etnaviv.asm_common import format_instruction, disassemble
 class GPUDisassemble(gdb.Command):
     """Etnaviv: disassemble shaders"""
  
-    def __init__ (self):
+    def __init__ (self, isa_xml):
         super(GPUDisassemble, self).__init__ ("gpu-disassemble", gdb.COMMAND_USER)
-        self.isa = parse_rng_file(rnndb_path('isa.xml'))
+        self.isa = isa_xml
  
     def invoke(self, arg, from_tty):
         self.dont_repeat()
@@ -235,6 +236,117 @@ class GPUDisassemble(gdb.Command):
             # XXX show current values when loading from uniforms
             out.write('\n')
 
-GPUState()
-GPUDisassemble() 
+### gpu-trace ###
+from etnaviv.asm_common import format_instruction, disassemble
+
+class CommitBreakpoint(gdb.Breakpoint):
+    def __init__(self, state_map, do_stop):
+        super(CommitBreakpoint, self).__init__('viv_commit')
+        self.state_map = state_map
+        self.size_t_type = gdb.lookup_type('size_t') # must have same size as pointer
+        self.uint32_t_ptr_type = gdb.lookup_type('uint32_t').pointer() # command words
+        self.do_stop = do_stop
+
+    def memory_iterator(self, start_addr, end_addr):
+        addr = start_addr
+        while addr < end_addr:
+            yield int(self.viv_read_u32(addr))
+            addr += 4
+    
+    def format_state(self, pos, value, fixp):
+        try:
+            path = self.state_map.lookup_address(pos)
+            path_str = format_path(path)
+        except KeyError:
+            path = None
+            path_str = '0x%05X' % pos
+        desc = '  ' + path_str 
+        if fixp:
+            desc += ' = %f' % fixp_as_float(value)
+        else:
+            # For uniforms, show float value
+            if (pos >= 0x05000 and pos < 0x06000) or (pos >= 0x07000 and pos < 0x08000):
+                num = pos & 0xFFF
+                desc += ' := %f (%s)' % (int_as_float(value), offset_to_uniform(num))
+            elif path is not None:
+                register = path[-1][0]
+                desc += ' := ' + register.describe(value)
+        return desc
+
+    def stop(self):
+        commandBuffer_sym,_ = gdb.lookup_symbol('commandBuffer') 
+        commandBuffer = commandBuffer_sym.value(gdb.newest_frame())
+        # offset, startOffset
+        # physical
+        offset = int(commandBuffer['offset'])
+        startOffset = int(commandBuffer['startOffset'])
+        physical = int(commandBuffer['physical'].cast(self.size_t_type)) # GPU address
+        logical = int(commandBuffer['logical'].cast(self.size_t_type)) # CPU address
+        print('viv_commit:')
+        # need this function from viv.c to work around gdb having no access to the mapped buffers
+        self.viv_read_u32 = gdb.lookup_symbol('_viv_read_u32')[0].value()
+        # iterate over buffer, one 32 bit word at a time
+        for rec in parse_command_buffer(self.memory_iterator(logical + startOffset, logical + offset)):
+            if rec.state_info is not None:
+                desc = self.format_state(rec.state_info.pos, rec.value, rec.state_info.format)
+            else:
+                desc = rec.desc
+            print('  [%08x] %08x %s' % (physical + startOffset + rec.ptr*4, rec.value, desc))
+        return self.do_stop
+
+class GPUTrace(gdb.Command):
+    """Etnaviv: trace submitted command buffers
+    Usage: 
+      gpu-trace <on|off>      Enable/disable cmdbuffer trace
+      gpu-trace stop <on|off> Enable/disable stopping on commit
+    """
+ 
+    def __init__ (self, state_xml):
+        super(GPUTrace, self).__init__ ("gpu-trace", gdb.COMMAND_USER)
+        self.enabled = False
+        self.state_xml = state_xml
+        self.state_map = self.state_xml.lookup_domain('VIVS')
+        self.bp = None
+        self.stop_on_commit = False
+ 
+    def invoke(self, arg, from_tty):
+        self.dont_repeat()
+        arg = arg.split()
+        if not arg:
+            pass # just check status
+        elif arg[0] == 'off': # disable
+            if not self.enabled:
+                print("GPU tracing is not enabled")
+                return
+            self.enabled = False
+            self.bp.delete()
+            self.bp = None
+        elif arg[0] == 'on': # enable
+            if self.enabled:
+                print("GPU tracing is already enabled")
+                return
+            self.enabled = True
+            self.bp = CommitBreakpoint(self.state_map, self.stop_on_commit)
+        elif arg[0] == 'stop':
+            if arg[1] == 'off':
+                self.stop_on_commit = False
+            elif arg[1] == 'on':
+                self.stop_on_commit = True
+            else:
+                print("Unrecognized stop mode %s" % arg[1])
+            if self.bp: # if breakpoint currently exists, change parameter on the fly
+                self.bp.do_stop = self.stop_on_commit
+        else:
+            print("Unrecognized tracing mode %s" % arg[0])
+            return
+        print("Etnaviv command buffer tracing %s (stop %s)" % (
+            ['disabled','enabled'][self.enabled],
+            ['disabled','enabled'][self.stop_on_commit]))
+
+state_xml = parse_rng_file(rnndb_path('state.xml'))
+isa_xml = parse_rng_file(rnndb_path('isa.xml'))
+
+GPUState(state_xml)
+GPUDisassemble(isa_xml) 
+GPUTrace(state_xml)
 

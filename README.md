@@ -231,6 +231,18 @@ Commands:
 - gpu-dis
 
   Disassemble the currently bound fragment and vertex shaders.
+    
+- gpu-trace
+
+  Trace and dump all submitted command buffers. This is similar to dumping to FDR and
+  then running `dump_cmdstream`, however this works on the fly.
+  Along with each command the physical address is printed, this should come in handy for
+  searching back the physical address that the GPU is stuck on
+  according to the kernel.
+
+   Usage: 
+      gpu-trace <on|off>      Enable/disable cmdbuffer trace
+      gpu-trace stop <on|off> Enable/disable stopping on commit
 
 These commands will automatically find the gallium pipe and screen from the current Mesa
 context.

@@ -59,6 +59,11 @@
 const char *galcore_device[] = {"/dev/galcore", "/dev/graphics/galcore", NULL};
 #define INTERFACE_SIZE (sizeof(gcsHAL_INTERFACE))
 
+/* for some reason, GDB can not read vivante-kernel driver mapped memory
+ * with ptrace, so provide a helper function */
+uint32_t _viv_read_u32(uint32_t* x);
+uint32_t _viv_read_u32(uint32_t* x) { return *x; }
+
 /* Call ioctl interface with structure cmd as input and output.
  * @returns status (gcvSTATUS_xxx)
  */
