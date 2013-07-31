@@ -1418,7 +1418,7 @@ static bool etna_compile_check_limits(struct etna_compile_data *cd)
         DBG("Number of registers (%d) exceeds maximum %d", cd->next_free_native, cd->specs->max_registers);
         return false;
     }
-    if(cd->num_uniforms > cd->specs->max_registers)
+    if(cd->num_uniforms > max_uniforms)
     {
         DBG("Number of uniforms (%d) exceeds maximum %d", cd->num_uniforms, max_uniforms);
         return false;
