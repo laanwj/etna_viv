@@ -239,6 +239,39 @@ class GPUDisassemble(gdb.Command):
 ### gpu-trace ###
 from etnaviv.asm_common import format_instruction, disassemble
 
+def indirect_memcpy(start_addr, end_addr):
+    '''
+    Indirect memory copy operation from inferior.
+
+    Allocate memory in the inferior process, and copy over
+    a range of memory using memcpy in the inferior.
+    Subsequently this memory is read by the gdb process.
+    This two-step process is needed because gdb refuses
+    to access the memory mapped by the Vivante kernel
+    driver.
+    '''
+    inferior = gdb.selected_inferior()
+    size_t_type = gdb.lookup_type('size_t') # same size as pointer
+    # These don't have debug symbols, so we need to be very careful
+    # about the types passed in. Cast them all to size_t.
+    malloc = gdb.parse_and_eval('malloc')
+    free = gdb.parse_and_eval('free')
+    memcpy = gdb.parse_and_eval('memcpy')
+
+    start_addr = gdb.Value(start_addr).cast(size_t_type)
+    size = gdb.Value(end_addr - start_addr).cast(size_t_type)
+
+    try:
+        # allocate memory and cast result to size_t
+        ptr = malloc(size).cast(size_t_type)
+        # copy from client memory to client memory
+        memcpy(ptr, start_addr, size)
+        # read from client memory
+        return inferior.read_memory(ptr, size)
+    finally: # ensure free of temp buffer to prevent memory leak
+        free(ptr)
+
+import struct
 class CommitBreakpoint(gdb.Breakpoint):
     def __init__(self, state_map, do_stop):
         super(CommitBreakpoint, self).__init__('viv_commit')
@@ -282,11 +315,14 @@ class CommitBreakpoint(gdb.Breakpoint):
         startOffset = int(commandBuffer['startOffset'])
         physical = int(commandBuffer['physical'].cast(self.size_t_type)) # GPU address
         logical = int(commandBuffer['logical'].cast(self.size_t_type)) # CPU address
+
+        buffer = indirect_memcpy(logical + startOffset, logical + offset)
+        data = struct.unpack_from(b'%dL' % (len(buffer)/4), buffer)
+
         print('viv_commit:')
-        # need this function from viv.c to work around gdb having no access to the mapped buffers
-        self.viv_read_u32 = gdb.lookup_symbol('_viv_read_u32')[0].value()
+        # "cast" byte-based buffer to uint32_t
         # iterate over buffer, one 32 bit word at a time
-        for rec in parse_command_buffer(self.memory_iterator(logical + startOffset, logical + offset)):
+        for rec in parse_command_buffer(data):
             if rec.state_info is not None:
                 desc = self.format_state(rec.state_info.pos, rec.value, rec.state_info.format)
             else:
