@@ -234,8 +234,10 @@ Commands:
     
 - gpu-trace
 
-  Trace and dump all submitted command buffers. This is similar to dumping to FDR and
-  then running `dump_cmdstream`, however this works on the fly.
+  Trace and dump all submitted command buffers. This is similar to dumping to FDR 
+  (using one of the hook mechanisms) and then running `dump_cmdstream`, however this 
+  works on the fly.
+
   Along with each command the physical address is printed, this should come in handy for
   searching back the physical address that the GPU is stuck on
   according to the kernel.
@@ -244,7 +246,7 @@ Commands:
       gpu-trace <on|off>      Enable/disable cmdbuffer trace
       gpu-trace stop <on|off> Enable/disable stopping on every commit
 
-These commands will automatically find the gallium pipe and screen from the current Mesa
+These commands automatically find the gallium pipe and screen from the current Mesa
 context.
 
 State map 

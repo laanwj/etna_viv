@@ -334,7 +334,7 @@ int main(int argc, char **argv)
    
     void *dsa_bigquad = pipe->create_depth_stencil_alpha_state(pipe, &(struct pipe_depth_stencil_alpha_state){
             .depth = {
-                .enabled = 1,
+                .enabled = 0,
                 .writemask = 1,
                 .func = PIPE_FUNC_LESS /* GL default */
             },
@@ -355,7 +355,7 @@ int main(int argc, char **argv)
                 .f = {0.2, 0.2, 0.2, 1.0}
                 }, 0.75f, 0x01);
 
-        float fs_const[4] = {frame / 1000.0f, 0.0, 0.0, 0.0}; /* frame, for animation */
+        float fs_const[4] = {frame / 1000.0f, -frame / 1000.0f, 0.0, 0.0f}; /* frame, for animation */
         pipe->set_constant_buffer(pipe, PIPE_SHADER_FRAGMENT, 0, &(struct pipe_constant_buffer){
                 .user_buffer = fs_const,
                 .buffer_size = sizeof(fs_const)
