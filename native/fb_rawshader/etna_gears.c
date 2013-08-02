@@ -50,7 +50,7 @@
 #include <unistd.h>
 
 #include "etna_pipe.h"
-#include "etna_shader.h"
+#include "etna_rawshader.h"
 #include "util/u_inlines.h"
 
 #include "write_bmp.h"

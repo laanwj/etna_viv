@@ -10,4 +10,7 @@ stencil_test
 displacement
 particle_system
 etna_gears
+viv_profile
+viv_gpu_top
+ps_sandbox
 

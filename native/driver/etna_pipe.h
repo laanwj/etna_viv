@@ -59,32 +59,6 @@ struct etna_shader_varying
     int vs_reg; /* VS output register */
 };
 
-#ifdef RAWSHADER
-struct etna_shader_program 
-{
-    unsigned num_inputs;
-    struct etna_shader_input inputs[ETNA_NUM_INPUTS];
-    unsigned num_varyings;
-    struct etna_shader_varying varyings[ETNA_NUM_VARYINGS]; 
-    
-    unsigned vs_code_size; /* Vertex shader code size in words */ 
-    uint32_t *vs_code;
-    unsigned vs_pos_out_reg; /* VS position output */
-    unsigned vs_pointsize_out_reg; /* VS point size output */
-    unsigned vs_load_balancing;
-    unsigned vs_num_temps; /* number of temporaries, can never be less than num_varyings+1 */
-    unsigned vs_uniforms_size; /* Size of uniforms (in words) */
-    uint32_t *vs_uniforms; /* Initial values for VS uniforms */
-
-    unsigned ps_code_size; /* Pixel shader code size in words */
-    uint32_t *ps_code;
-    unsigned ps_color_out_reg; /* color output register */
-    unsigned ps_num_temps; /* number of temporaries, can never be less than num_varyings+1 */;
-    unsigned ps_uniforms_size; /* Size of uniforms (in words) */
-    uint32_t *ps_uniforms; /* Initial values for VS uniforms */
-};
-#endif
-
 struct etna_resource_level
 {
    unsigned width, padded_width;
