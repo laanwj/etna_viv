@@ -273,12 +273,13 @@ def indirect_memcpy(start_addr, end_addr):
 
 import struct
 class CommitBreakpoint(gdb.Breakpoint):
-    def __init__(self, state_map, do_stop):
+    def __init__(self, state_map, do_stop, output):
         super(CommitBreakpoint, self).__init__('viv_commit')
         self.state_map = state_map
         self.size_t_type = gdb.lookup_type('size_t') # must have same size as pointer
         self.uint32_t_ptr_type = gdb.lookup_type('uint32_t').pointer() # command words
         self.do_stop = do_stop
+        self.output = output
 
     def memory_iterator(self, start_addr, end_addr):
         addr = start_addr
@@ -319,15 +320,17 @@ class CommitBreakpoint(gdb.Breakpoint):
         buffer = indirect_memcpy(logical + startOffset, logical + offset)
         data = struct.unpack_from(b'%dL' % (len(buffer)/4), buffer)
 
-        print('viv_commit:')
         # "cast" byte-based buffer to uint32_t
         # iterate over buffer, one 32 bit word at a time
+        f = sys.stdout if self.output is None else self.output
+        f.write('viv_commit:\n')
         for rec in parse_command_buffer(data):
             if rec.state_info is not None:
                 desc = self.format_state(rec.state_info.pos, rec.value, rec.state_info.format)
             else:
                 desc = rec.desc
-            print('  [%08x] %08x %s' % (physical + startOffset + rec.ptr*4, rec.value, desc))
+            f.write('  [%08x] %08x %s\n' % (physical + startOffset + rec.ptr*4, rec.value, desc))
+        f.flush()
         return self.do_stop
 
 class GPUTrace(gdb.Command):
@@ -335,6 +338,8 @@ class GPUTrace(gdb.Command):
     Usage: 
       gpu-trace <on|off>      Enable/disable cmdbuffer trace
       gpu-trace stop <on|off> Enable/disable stopping on commit
+      gpu-trace output stdout Set tracing output to stdout (default)
+      gpu-trace output file <name>   Set tracing output to file
     """
  
     def __init__ (self, state_xml):
@@ -344,10 +349,11 @@ class GPUTrace(gdb.Command):
         self.state_map = self.state_xml.lookup_domain('VIVS')
         self.bp = None
         self.stop_on_commit = False
+        self.output = None
  
     def invoke(self, arg, from_tty):
         self.dont_repeat()
-        arg = arg.split()
+        arg = gdb.string_to_argv(arg)
         if not arg:
             pass # just check status
         elif arg[0] == 'off': # disable
@@ -362,7 +368,7 @@ class GPUTrace(gdb.Command):
                 print("GPU tracing is already enabled")
                 return
             self.enabled = True
-            self.bp = CommitBreakpoint(self.state_map, self.stop_on_commit)
+            self.bp = CommitBreakpoint(self.state_map, self.stop_on_commit, self.output)
         elif arg[0] == 'stop':
             if arg[1] == 'off':
                 self.stop_on_commit = False
@@ -372,12 +378,27 @@ class GPUTrace(gdb.Command):
                 print("Unrecognized stop mode %s" % arg[1])
             if self.bp: # if breakpoint currently exists, change parameter on the fly
                 self.bp.do_stop = self.stop_on_commit
+        elif arg[0].startswith('out') # output
+            new_output = self.output
+            if arg[1] == 'file':
+                new_output = open(arg[2],'w')
+            elif arg[1] == 'stdout':
+                new_output = None
+            else:
+                print("Unrecognized output mode %s" % arg[1])
+            if new_output is not self.output:
+                if self.output is not None: # close old output file
+                    self.output.close()
+                self.output = new_output
+                if self.bp: # if breakpoint currently exists, change parameter on the fly
+                    self.bp.output = self.output
         else:
             print("Unrecognized tracing mode %s" % arg[0])
             return
-        print("Etnaviv command buffer tracing %s (stop %s)" % (
+        print("Etnaviv command buffer tracing %s (stop %s, output to %s)" % (
             ['disabled','enabled'][self.enabled],
-            ['disabled','enabled'][self.stop_on_commit]))
+            ['disabled','enabled'][self.stop_on_commit],
+            self.output or '<stdout>'))
 
 state_xml = parse_rng_file(rnndb_path('state.xml'))
 isa_xml = parse_rng_file(rnndb_path('isa.xml'))

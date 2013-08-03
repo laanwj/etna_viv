@@ -245,6 +245,8 @@ Commands:
    Usage: 
       gpu-trace <on|off>      Enable/disable cmdbuffer trace
       gpu-trace stop <on|off> Enable/disable stopping on every commit
+      gpu-trace output stdout Set tracing output to stdout (default)
+      gpu-trace output file <name>   Set tracing output to file
 
 These commands automatically find the gallium pipe and screen from the current Mesa
 context.
