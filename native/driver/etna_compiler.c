@@ -969,7 +969,6 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
             case TGSI_OPCODE_PK4UB: assert(0); break;
             case TGSI_OPCODE_RFL: assert(0); break;
             case TGSI_OPCODE_TEX: 
-            case TGSI_OPCODE_TXP: /* XXX divide src.xyz by src.w */
                 emit_inst(cd, &(struct etna_inst) {
                         .opcode = INST_OPCODE_TEXLD,
                         .sat = (inst->Instruction.Saturate == TGSI_SAT_ZERO_ONE),
@@ -978,6 +977,43 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         .src[0] = convert_src(cd, &inst->Src[0], INST_SWIZ_IDENTITY),
                         });
                 break;
+            case TGSI_OPCODE_TXP: { /* divide src.xyz by src.w */
+                struct etna_native_reg temp = etna_compile_get_inner_temp(cd);
+                emit_inst(cd, &(struct etna_inst) {
+                        .opcode = INST_OPCODE_RCP,
+                        .sat = 0,
+                        .dst.use = 1,
+                        .dst.comps = INST_COMPS_W, /* tmp.w */
+                        .dst.reg = temp.id,
+                        .src[2] = convert_src(cd, &inst->Src[0], INST_SWIZ_BROADCAST(3)),
+                        });
+                emit_inst(cd, &(struct etna_inst) {
+                        .opcode = INST_OPCODE_MUL,
+                        .sat = 0,
+                        .dst.use = 1,
+                        .dst.comps = INST_COMPS_X | INST_COMPS_Y | INST_COMPS_Z, /* tmp.xyz */
+                        .dst.reg = temp.id,
+                        .src[0].use = 1, /* tmp.wwww */
+                        .src[0].swiz = INST_SWIZ_BROADCAST(3),
+                        .src[0].neg = 0,
+                        .src[0].abs = 0,
+                        .src[0].rgroup = temp.rgroup,
+                        .src[0].reg = temp.id,
+                        .src[1] = convert_src(cd, &inst->Src[0], INST_SWIZ_IDENTITY), /* src.xyzw */
+                });
+                emit_inst(cd, &(struct etna_inst) {
+                        .opcode = INST_OPCODE_TEXLD,
+                        .sat = (inst->Instruction.Saturate == TGSI_SAT_ZERO_ONE),
+                        .dst = convert_dst(cd, &inst->Dst[0]),
+                        .tex = convert_tex(cd, &inst->Src[1], &inst->Texture),
+                        .src[0].use = 1, /* tmp.xyzw */
+                        .src[0].swiz = INST_SWIZ_IDENTITY,
+                        .src[0].neg = 0,
+                        .src[0].abs = 0,
+                        .src[0].rgroup = temp.rgroup,
+                        .src[0].reg = temp.id,
+                        });
+                } break;
             case TGSI_OPCODE_TXB: assert(0); break; /* TEXLDB */
             case TGSI_OPCODE_TXL: assert(0); break; /* TEXLDL */
             case TGSI_OPCODE_UP2H: assert(0); break;
