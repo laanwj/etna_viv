@@ -427,29 +427,6 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
     ectx->base.flush(&ectx->base, fence, 0);
 }
 
-bool etna_screen_resource_alloc_ts(struct pipe_screen *screen, struct etna_resource *resource)
-{
-    struct etna_screen *priv = etna_screen(screen);
-    size_t rt_ts_size;
-    assert(!resource->ts);
-    /* TS only for level 0 -- XXX is this formula correct? */
-    rt_ts_size = align(resource->levels[0].size*priv->specs.bits_per_tile/0x80, 0x100);
-    if(rt_ts_size == 0)
-        return true;
-
-    DBG_F(ETNA_RESOURCE_MSGS, "%p: Allocating tile status of size %i", resource, rt_ts_size);
-    struct etna_vidmem *rt_ts = 0;
-    if(unlikely(etna_vidmem_alloc_linear(priv->dev, &rt_ts, rt_ts_size, VIV_SURF_TILE_STATUS, VIV_POOL_DEFAULT, true)!=ETNA_OK))
-    {
-        printf("Problem allocating tile status for resource\n");
-        return false;
-    }
-    resource->ts = rt_ts;
-    resource->levels[0].ts_address = resource->ts->address;
-    resource->levels[0].ts_size = resource->ts->size;
-    return true;
-}
-
 struct pipe_screen *
 etna_screen_create(struct viv_conn *dev)
 {

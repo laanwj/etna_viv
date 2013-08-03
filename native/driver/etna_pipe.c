@@ -1536,7 +1536,9 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
     pipe_resource_reference(&surf->base.texture, &resource->base);
 
     /* Allocate a TS for the resource if there isn't one yet */
-    if(!resource->ts)
+    /* XXX for now, don't do TS for render textures as this path
+     * is not stable */
+    if(!resource->ts & !(resource->base.bind & PIPE_BIND_SAMPLER_VIEW))
         etna_screen_resource_alloc_ts(pipe->screen, resource);
 
     surf->base.texture = &resource->base;
