@@ -76,20 +76,22 @@ Example fs.txt:
 */
 
 /*********************************************************************/
-#define VERTEX_BUFFER_SIZE 0x60000
    
 const float vVertices[] = { 
-   -1.00f, -1.00f,  0.00f, 0.0f, 0.0f,
-    1.00f, -1.00f,  0.00f, 1.0f, 0.0f,
-    1.00f,  1.00f,  0.00f, 1.0f, 1.0f,
-   -1.00f,  1.00f,  0.00f, 0.0f, 1.0f
+ -1.0f, -1.0f, 0.0f, 1.0f, 
+  0.0f,  0.0f, 0.0f, 0.0f, 
+
+  1.0f, -1.0f, 0.0f, 1.0f, 
+  1.0f,  0.0f, 0.0f, 0.0f, 
+
+  1.0f,  1.0f, 0.0f, 1.0f, 
+  1.0f,  1.0f, 0.0f, 0.0f, 
+ 
+ -1.0f,  1.0f, 0.0f, 1.0f, 
+  0.0f,  1.0f, 0.0f, 0.0f
 };
 
-const uint8_t indices[][6] = { 
-   {  0,  1,  2,  0,  2,  3 }, // Quad #0
-};
-
-#define VERTEX_STRIDE (5)
+#define VERTEX_STRIDE (8)
 #define NUM_VERTICES (sizeof(vVertices) / (sizeof(float)*VERTEX_STRIDE))
 
 static char* readfile(const char* path, unsigned* size)
@@ -143,7 +145,6 @@ int main(int argc, char **argv)
     struct pipe_resource *rt_resource = fbdemo_create_2d(fbs->screen, PIPE_BIND_RENDER_TARGET, PIPE_FORMAT_B8G8R8X8_UNORM, width, height, 0);
     struct pipe_resource *z_resource = fbdemo_create_2d(fbs->screen, PIPE_BIND_RENDER_TARGET, PIPE_FORMAT_S8_UINT_Z24_UNORM, width, height, 0);
     struct pipe_resource *vtx_resource = pipe_buffer_create(fbs->screen, PIPE_BIND_VERTEX_BUFFER, PIPE_USAGE_IMMUTABLE, sizeof(vVertices));
-    struct pipe_resource *idx_resource = pipe_buffer_create(fbs->screen, PIPE_BIND_INDEX_BUFFER, PIPE_USAGE_IMMUTABLE, sizeof(indices));
     
     /* bind render target to framebuffer */
     etna_fb_bind_resource(&fbs->fb, rt_resource);
@@ -154,12 +155,6 @@ int main(int argc, char **argv)
     assert(vtx_logical);
     memcpy(vtx_logical, vVertices, sizeof(vVertices));
     pipe_buffer_unmap(pipe, vtx_transfer);
-
-    struct pipe_transfer *idx_transfer = 0;
-    void *idx_logical = pipe_buffer_map(pipe, idx_resource, PIPE_TRANSFER_WRITE | PIPE_TRANSFER_UNSYNCHRONIZED, &idx_transfer);
-    assert(idx_logical);
-    memcpy(idx_logical, indices, sizeof(indices));
-    pipe_buffer_unmap(pipe, idx_transfer);
 
     struct pipe_vertex_buffer vertex_buf_desc = {
             .stride = VERTEX_STRIDE*4,
@@ -172,23 +167,17 @@ int main(int argc, char **argv)
             .src_offset = 0*4,
             .instance_divisor = 0,
             .vertex_buffer_index = 0,
-            .src_format = PIPE_FORMAT_R32G32B32_FLOAT 
+            .src_format = PIPE_FORMAT_R32G32B32A32_FLOAT 
         },
         { /* texcoord */
-            .src_offset = 3*4,
+            .src_offset = 4*4,
             .instance_divisor = 0,
             .vertex_buffer_index = 0,
-            .src_format = PIPE_FORMAT_R32G32_FLOAT 
+            .src_format = PIPE_FORMAT_R32G32B32A32_FLOAT 
         },
     };
     void *vertex_elements = pipe->create_vertex_elements_state(pipe, 
             sizeof(pipe_vertex_elements)/sizeof(pipe_vertex_elements[0]), pipe_vertex_elements);
-    struct pipe_index_buffer index_buf_desc = {
-            .index_size = 1,
-            .offset = 0,
-            .buffer = idx_resource,
-            .user_buffer = 0
-            };
 
     /* compile gallium3d states */
     void *blend = pipe->create_blend_state(pipe, &(struct pipe_blend_state) {
@@ -297,7 +286,6 @@ int main(int argc, char **argv)
             });
 
     pipe->set_vertex_buffers(pipe, 0, 1, &vertex_buf_desc);
-    pipe->set_index_buffer(pipe, &index_buf_desc);    
 
     /* Load shaders */
     if(argc < 3)
@@ -361,10 +349,10 @@ int main(int argc, char **argv)
                 .buffer_size = sizeof(fs_const)
                 });
         pipe->draw_vbo(pipe, &(struct pipe_draw_info){
-                .indexed = 1,
-                .mode = PIPE_PRIM_TRIANGLES,
+                .indexed = 0,
+                .mode = PIPE_PRIM_TRIANGLE_FAN,
                 .start = 0,
-                .count = 6 });
+                .count = 4 });
 
         etna_swap_buffers(fbs->buffers);
     }
