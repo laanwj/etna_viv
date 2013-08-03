@@ -222,7 +222,6 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
         DBG_F(ETNA_RESOURCE_MSGS, "  %08x level %i: %ix%i (%i) stride=%i layer_stride=%i", 
                 (int)mip->address, ix, (int)mip->width, (int)mip->height, (int)mip->size,
                 (int)mip->stride, (int)mip->layer_stride);
-        memset(mip->logical, 0, mip->size);
     }
 
     return &resource->base;
