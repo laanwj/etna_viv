@@ -23,6 +23,7 @@
 /* Surface handling */
 #include "etna_surface.h"
 
+#include "etna_clear_blit.h"
 #include "etna_internal.h"
 #include "etna_pipe.h"
 #include "etna_resource.h"
@@ -35,33 +36,6 @@
 #include <etnaviv/common.xml.h>
 #include <etnaviv/state.xml.h>
 #include <etnaviv/state_3d.xml.h>
-
-/* Generate clear command for a surface (non-TS case) */
-void etna_rs_gen_clear_surface(struct etna_surface *surf, uint32_t clear_value)
-{
-    uint bs = util_format_get_blocksize(surf->base.format);
-    uint format = 0;
-    switch(bs) 
-    {
-    case 2: format = RS_FORMAT_A1R5G5B5; break;
-    case 4: format = RS_FORMAT_A8R8G8B8; break;
-    default: printf("Unhandled clear blocksize: %i (fmt %i)\n", bs, surf->base.format);
-             format = RS_FORMAT_A8R8G8B8;
-    }
-    etna_compile_rs_state(&surf->clear_command, &(struct rs_state){
-            .source_format = format,
-            .dest_format = format,
-            .dest_addr = surf->surf.address,
-            .dest_stride = surf->surf.stride,
-            .dest_tiling = surf->layout,
-            .dither = {0xffffffff, 0xffffffff},
-            .width = surf->surf.width,
-            .height = surf->surf.height,
-            .clear_value = {clear_value},
-            .clear_mode = VIVS_RS_CLEAR_CONTROL_MODE_ENABLED1,
-            .clear_bits = 0xffff
-        });
-}
 
 static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
                                       struct pipe_resource *resource_,

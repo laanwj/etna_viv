@@ -7,6 +7,7 @@ LDFLAGS +=
 DRIVER_OBJS = \
 	      etna_asm.o \
 	      etna_blend.o \
+	      etna_clear_blit.o \
 	      etna_compiler.o \
 	      etna_fence.o \
 	      etna_pipe.o \

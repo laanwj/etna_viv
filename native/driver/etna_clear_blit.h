@@ -20,13 +20,19 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-/* Surface handling */
-#ifndef H_ETNA_SURFACE
-#define H_ETNA_SURFACE
+/* Clearing and blitting functionality */
+#ifndef H_ETNA_CLEAR_BLIT
+#define H_ETNA_CLEAR_BLIT
+
+#include <stdint.h>
 
 struct pipe_context;
+struct etna_surface;
 
-void etna_pipe_surface_init(struct pipe_context *pipe);
+void etna_rs_gen_clear_surface(struct etna_surface *surf, uint32_t clear_value);
+
+void etna_pipe_clear_blit_init(struct pipe_context *pipe);
 
 #endif
+
 
