@@ -1370,6 +1370,11 @@ static void etna_pipe_clear(struct pipe_context *pipe,
              unsigned stencil)
 {
     struct etna_pipe_context *priv = etna_pipe_context(pipe);
+    /* Flush color and depth cache before clearing anything.
+     * This is especially important when coming from another surface, as otherwise it may clear
+     * part of the old surface instead.
+     */
+    etna_set_state(priv->ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
     /* No need to set up the TS here with sync_context.
      * RS clear operations (in contrary to resolve and copy) do not require the TS state. 
      */
