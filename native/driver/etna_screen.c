@@ -173,7 +173,7 @@ static int etna_screen_get_param( struct pipe_screen *screen, enum pipe_cap para
 
     /* Preferences */
     case PIPE_CAP_PREFER_BLIT_BASED_TEXTURE_TRANSFER:
-            return 1;
+            return 0;
 
     default:
             DBG("unknown param %d", param);
