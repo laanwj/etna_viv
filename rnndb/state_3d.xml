@@ -343,8 +343,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00A40" name="SHADER_ATTRIBUTES" value="0x00000000" length="10" stride="4">
             <doc>Flags word per shader attribute. I suspect that these determine the type of interpolation
                 (color, perspective, linear, ...).</doc>
-            <bitfield high="7" low="0" name="UNK0"/>
-            <bitfield high="15" low="8" name="UNK8"/>
+            <bitfield high="0" low="0" name="BYPASS_FLAT" brief="Bypass flat shading for this varying"/>
+            <bitfield high="7" low="4" name="UNK4"/>
+            <bitfield high="11" low="8" name="UNK8"/>
         </reg32>
         <reg32 offset="0x00A80" name="VIEWPORT_UNK00A80" value="0x00000000" type="float"/>
         <reg32 offset="0x00A84" name="VIEWPORT_UNK00A84" value="0x00000000" type="float"/>

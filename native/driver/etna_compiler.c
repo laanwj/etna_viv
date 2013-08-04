@@ -1380,11 +1380,10 @@ static void fill_in_ps_inputs(struct etna_shader_object *sobj, struct etna_compi
             int input_id = reg->native.id - 1;
             sobj->inputs[input_id].reg = reg->native.id;
             sobj->inputs[input_id].semantic = reg->semantic;
-            if(reg->semantic.Name == TGSI_SEMANTIC_PCOORD ||
-               reg->semantic.Name == TGSI_SEMANTIC_TEXCOORD)
-                sobj->inputs[input_id].pa_attributes = 0x2f1; 
-            else
+            if(reg->semantic.Name == TGSI_SEMANTIC_COLOR) /* colors affected by flat shading */
                 sobj->inputs[input_id].pa_attributes = 0x200;
+            else /* texture coord or other bypasses flat shading */
+                sobj->inputs[input_id].pa_attributes = 0x2f1;
             sobj->inputs[input_id].num_components = util_last_bit(reg->usage_mask);
         }
     }
