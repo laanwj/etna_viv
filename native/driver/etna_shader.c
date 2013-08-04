@@ -233,6 +233,9 @@ void etna_pipe_shader_init(struct pipe_context *pc)
     pc->create_vs_state = etna_pipe_create_shader_state;
     pc->bind_vs_state = etna_pipe_bind_vs_state;
     pc->delete_vs_state = etna_pipe_delete_shader_state;
+    /* XXX create_gs_state */
+    /* XXX bind_gs_state */
+    /* XXX delete_gs_state */
     pc->set_constant_buffer = etna_set_constant_buffer;
 }
 

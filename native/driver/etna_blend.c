@@ -1,0 +1,102 @@
+/*
+ * Copyright (c) 2012-2013 Etnaviv Project
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sub license,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice (including the
+ * next paragraph) shall be included in all copies or substantial portions
+ * of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ */
+/* Blending CSOs */
+#include "etna_blend.h"
+
+#include "etna_internal.h"
+#include "etna_pipe.h"
+#include "etna_translate.h"
+#include "pipe/p_defines.h"
+#include "pipe/p_state.h"
+#include "util/u_memory.h"
+
+#include <etnaviv/common.xml.h>
+#include <etnaviv/state.xml.h>
+#include <etnaviv/state_3d.xml.h>
+
+/* Macros to define state */
+#define SET_STATE(addr, value) cs->addr = (value)
+#define SET_STATE_FIXP(addr, value) cs->addr = (value)
+#define SET_STATE_F32(addr, value) cs->addr = etna_f32_to_u32(value)
+
+static void *etna_pipe_create_blend_state(struct pipe_context *pipe,
+                            const struct pipe_blend_state *bs)
+{
+    //struct etna_pipe_context *priv = etna_pipe_context(pipe);
+    struct compiled_blend_state *cs = CALLOC_STRUCT(compiled_blend_state);
+    const struct pipe_rt_blend_state *rt0 = &bs->rt[0];
+    bool enable = rt0->blend_enable && !(rt0->rgb_src_factor == PIPE_BLENDFACTOR_ONE && rt0->rgb_dst_factor == PIPE_BLENDFACTOR_ZERO &&
+                                         rt0->alpha_src_factor == PIPE_BLENDFACTOR_ONE && rt0->alpha_dst_factor == PIPE_BLENDFACTOR_ZERO);
+    bool separate_alpha = enable && !(rt0->rgb_src_factor == rt0->alpha_src_factor &&
+                                      rt0->rgb_dst_factor == rt0->alpha_dst_factor);
+    bool full_overwrite = (rt0->colormask == 15) && !enable;
+    if(enable)
+    {
+        SET_STATE(PE_ALPHA_CONFIG, 
+                VIVS_PE_ALPHA_CONFIG_BLEND_ENABLE_COLOR | 
+                (separate_alpha ? VIVS_PE_ALPHA_CONFIG_BLEND_SEPARATE_ALPHA : 0) |
+                VIVS_PE_ALPHA_CONFIG_SRC_FUNC_COLOR(translate_blend_factor(rt0->rgb_src_factor)) |
+                VIVS_PE_ALPHA_CONFIG_SRC_FUNC_ALPHA(translate_blend_factor(rt0->alpha_src_factor)) |
+                VIVS_PE_ALPHA_CONFIG_DST_FUNC_COLOR(translate_blend_factor(rt0->rgb_dst_factor)) |
+                VIVS_PE_ALPHA_CONFIG_DST_FUNC_ALPHA(translate_blend_factor(rt0->alpha_dst_factor)) |
+                VIVS_PE_ALPHA_CONFIG_EQ_COLOR(translate_blend(rt0->rgb_func)) |
+                VIVS_PE_ALPHA_CONFIG_EQ_ALPHA(translate_blend(rt0->alpha_func))
+                );
+    } else {
+        SET_STATE(PE_ALPHA_CONFIG, 0);
+    }
+    /* XXX should colormask be used if enable==false? */
+    SET_STATE(PE_COLOR_FORMAT, 
+            VIVS_PE_COLOR_FORMAT_COMPONENTS(rt0->colormask) |
+            (full_overwrite ? VIVS_PE_COLOR_FORMAT_OVERWRITE : 0)
+            );
+    SET_STATE(PE_LOGIC_OP, 
+            VIVS_PE_LOGIC_OP_OP(bs->logicop_enable ? bs->logicop_func : LOGIC_OP_COPY) /* 1-to-1 mapping */ |
+            0x000E4000 /* ??? */
+            );
+    /* independent_blend_enable not needed: only one rt supported */
+    /* XXX alpha_to_coverage / alpha_to_one? */
+    /* XXX dither? VIVS_PE_DITHER(...) and/or VIVS_RS_DITHER(...) on resolve */
+    return cs;
+}
+
+static void etna_pipe_bind_blend_state(struct pipe_context *pipe, void *bs)
+{
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
+    priv->dirty_bits |= ETNA_STATE_BLEND;
+    priv->blend = bs;
+}
+
+static void etna_pipe_delete_blend_state(struct pipe_context *pipe, void *bs)
+{
+    //struct etna_pipe_context *priv = etna_pipe_context(pipe);
+    FREE(bs);
+}
+
+void etna_pipe_blend_init(struct pipe_context *pc)
+{
+    pc->create_blend_state = etna_pipe_create_blend_state;
+    pc->bind_blend_state = etna_pipe_bind_blend_state;
+    pc->delete_blend_state = etna_pipe_delete_blend_state;
+}
+

@@ -33,6 +33,7 @@
 #include <etnaviv/state_3d.xml.h>
 #include <etnaviv/cmdstream.xml.h>
 #include <etnaviv/etna_util.h>
+#include <etnaviv/etna_tex.h>
 #include "etna_internal.h"
 #include "etna_debug.h"
 
