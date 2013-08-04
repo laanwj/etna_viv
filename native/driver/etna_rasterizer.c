@@ -34,11 +34,6 @@
 #include <etnaviv/state.xml.h>
 #include <etnaviv/state_3d.xml.h>
 
-/* Macros to define state */
-#define SET_STATE(addr, value) cs->addr = (value)
-#define SET_STATE_FIXP(addr, value) cs->addr = (value)
-#define SET_STATE_F32(addr, value) cs->addr = etna_f32_to_u32(value)
-
 static void *etna_pipe_create_rasterizer_state(struct pipe_context *pipe,
                                  const struct pipe_rasterizer_state *rs)
 {
@@ -48,23 +43,22 @@ static void *etna_pipe_create_rasterizer_state(struct pipe_context *pipe,
     {
         printf("Different front and back fill mode not supported\n");
     }
-    SET_STATE(PA_CONFIG, 
+    cs->PA_CONFIG =
             (rs->flatshade ? VIVS_PA_CONFIG_SHADE_MODEL_FLAT : VIVS_PA_CONFIG_SHADE_MODEL_SMOOTH) | 
             translate_cull_face(rs->cull_face, rs->front_ccw) |
             translate_polygon_mode(rs->fill_front) |
             (rs->point_quad_rasterization ? VIVS_PA_CONFIG_POINT_SPRITE_ENABLE : 0) |
-            (rs->point_size_per_vertex ? VIVS_PA_CONFIG_POINT_SIZE_ENABLE : 0));
-    SET_STATE_F32(PA_LINE_WIDTH, rs->line_width);
-    SET_STATE_F32(PA_POINT_SIZE, rs->point_size);
-    SET_STATE_F32(SE_DEPTH_SCALE, rs->offset_scale);
-    SET_STATE_F32(SE_DEPTH_BIAS, rs->offset_units);
-    SET_STATE(SE_CONFIG, 
-            (rs->line_last_pixel ? VIVS_SE_CONFIG_LAST_PIXEL_ENABLE : 0) 
+            (rs->point_size_per_vertex ? VIVS_PA_CONFIG_POINT_SIZE_ENABLE : 0);
+    cs->PA_LINE_WIDTH = etna_f32_to_u32(rs->line_width);
+    cs->PA_POINT_SIZE = etna_f32_to_u32(rs->point_size);
+    cs->SE_DEPTH_SCALE = etna_f32_to_u32(rs->offset_scale);
+    cs->SE_DEPTH_BIAS = etna_f32_to_u32(rs->offset_units);
+    cs->SE_CONFIG =
+            (rs->line_last_pixel ? VIVS_SE_CONFIG_LAST_PIXEL_ENABLE : 0);
             /* XXX anything else? */
-            );
     /* XXX bottom_edge_rule */
-    SET_STATE(PA_SYSTEM_MODE, 
-            (rs->half_pixel_center ? (VIVS_PA_SYSTEM_MODE_UNK0 | VIVS_PA_SYSTEM_MODE_UNK4) : 0));
+    cs->PA_SYSTEM_MODE =
+            (rs->half_pixel_center ? (VIVS_PA_SYSTEM_MODE_UNK0 | VIVS_PA_SYSTEM_MODE_UNK4) : 0);
     /* rs->scissor overrides the scissor, defaulting to the whole framebuffer, with the scissor state */
     cs->scissor = rs->scissor;
     /* point size per vertex adds a vertex shader output */

@@ -33,10 +33,6 @@
 
 #include <etnaviv/state_3d.xml.h>
 
-#define SET_STATE(addr, value) cs->addr = (value)
-#define SET_STATE_FIXP(addr, value) cs->addr = (value)
-#define SET_STATE_F32(addr, value) cs->addr = etna_f32_to_u32(value)
-
 /* Link vs and fs together: fill in shader_state from vs and fs
  * as this function is called every time a new fs or vs is bound, the goal is to do 
  * little processing as possible here, and to precompute as much as possible in the 
@@ -62,19 +58,19 @@ void etna_link_shaders(struct pipe_context *pipe,
     if(fs->num_inputs>0 && fs->inputs[fs->num_inputs-1].num_components <= 2)
         last_varying_2x = true;
 
-    SET_STATE(RA_CONTROL, VIVS_RA_CONTROL_UNK0 |
-                          (last_varying_2x ? VIVS_RA_CONTROL_LAST_VARYING_2X : 0));
+    cs->RA_CONTROL = VIVS_RA_CONTROL_UNK0 |
+                          (last_varying_2x ? VIVS_RA_CONTROL_LAST_VARYING_2X : 0);
 
-    SET_STATE(PA_ATTRIBUTE_ELEMENT_COUNT, VIVS_PA_ATTRIBUTE_ELEMENT_COUNT_COUNT(fs->num_inputs));
+    cs->PA_ATTRIBUTE_ELEMENT_COUNT = VIVS_PA_ATTRIBUTE_ELEMENT_COUNT_COUNT(fs->num_inputs);
     for(int idx=0; idx<fs->num_inputs; ++idx)
-        SET_STATE(PA_SHADER_ATTRIBUTES[idx], fs->inputs[idx].pa_attributes);
+        cs->PA_SHADER_ATTRIBUTES[idx] = fs->inputs[idx].pa_attributes;
 
-    SET_STATE(VS_END_PC, vs->code_size / 4);
-    SET_STATE(VS_OUTPUT_COUNT, fs->num_inputs + 1); /* position + varyings */
+    cs->VS_END_PC = vs->code_size / 4;
+    cs->VS_OUTPUT_COUNT = fs->num_inputs + 1; /* position + varyings */
     /* Number of vertex elements determines number of VS inputs. Otherwise, the GPU crashes */
-    SET_STATE(VS_INPUT_COUNT, VIVS_VS_INPUT_COUNT_UNK8(vs->input_count_unk8));
-    SET_STATE(VS_TEMP_REGISTER_CONTROL,
-                              VIVS_VS_TEMP_REGISTER_CONTROL_NUM_TEMPS(vs->num_temps));
+    cs->VS_INPUT_COUNT = VIVS_VS_INPUT_COUNT_UNK8(vs->input_count_unk8);
+    cs->VS_TEMP_REGISTER_CONTROL =
+                              VIVS_VS_TEMP_REGISTER_CONTROL_NUM_TEMPS(vs->num_temps);
 
     /* link vs outputs to fs inputs */
     struct etna_shader_link_info link = {};
@@ -99,8 +95,8 @@ void etna_link_shaders(struct pipe_context *pipe,
 
     for(int idx=0; idx<4; ++idx)
     {
-        SET_STATE(VS_OUTPUT[idx],(vs_output[idx*4+0] << 0)  | (vs_output[idx*4+1] << 8) | 
-                                 (vs_output[idx*4+2] << 16) | (vs_output[idx*4+3] << 24));
+        cs->VS_OUTPUT[idx] =(vs_output[idx*4+0] << 0)  | (vs_output[idx*4+1] << 8) | 
+                                 (vs_output[idx*4+2] << 16) | (vs_output[idx*4+3] << 24);
     }
     
     /* vs inputs (attributes) */
@@ -108,19 +104,19 @@ void etna_link_shaders(struct pipe_context *pipe,
     for(int idx=0; idx<vs->num_inputs; ++idx)
         vs_input[idx/4] |= vs->inputs[idx].reg << ((idx%4)*8);
     for(int idx=0; idx<4; ++idx)
-        SET_STATE(VS_INPUT[idx], vs_input[idx]);
+        cs->VS_INPUT[idx] = vs_input[idx];
 
-    SET_STATE(VS_LOAD_BALANCING, vs->vs_load_balancing);
-    SET_STATE(VS_START_PC, 0);
+    cs->VS_LOAD_BALANCING = vs->vs_load_balancing;
+    cs->VS_START_PC = 0;
 
-    SET_STATE(PS_END_PC, fs->code_size / 4);
-    SET_STATE(PS_OUTPUT_REG, fs->ps_color_out_reg);
-    SET_STATE(PS_INPUT_COUNT, VIVS_PS_INPUT_COUNT_COUNT(fs->num_inputs + 1) |  /* XXX MSAA adds another input */
-                              VIVS_PS_INPUT_COUNT_UNK8(fs->input_count_unk8));
-    SET_STATE(PS_TEMP_REGISTER_CONTROL,
-                              VIVS_PS_TEMP_REGISTER_CONTROL_NUM_TEMPS(fs->num_temps));
-    SET_STATE(PS_CONTROL, VIVS_PS_CONTROL_UNK1); /* XXX when can we set BYPASS? */
-    SET_STATE(PS_START_PC, 0);
+    cs->PS_END_PC = fs->code_size / 4;
+    cs->PS_OUTPUT_REG = fs->ps_color_out_reg;
+    cs->PS_INPUT_COUNT = VIVS_PS_INPUT_COUNT_COUNT(fs->num_inputs + 1) |  /* XXX MSAA adds another input */
+                              VIVS_PS_INPUT_COUNT_UNK8(fs->input_count_unk8);
+    cs->PS_TEMP_REGISTER_CONTROL =
+                              VIVS_PS_TEMP_REGISTER_CONTROL_NUM_TEMPS(fs->num_temps);
+    cs->PS_CONTROL = VIVS_PS_CONTROL_UNK1; /* XXX when can we set BYPASS? */
+    cs->PS_START_PC = 0;
 
     uint32_t total_components = 0;
     uint32_t num_components = 0;
@@ -143,10 +139,10 @@ void etna_link_shaders(struct pipe_context *pipe,
             total_components += 1;
         }
     }
-    SET_STATE(GL_VARYING_TOTAL_COMPONENTS, VIVS_GL_VARYING_TOTAL_COMPONENTS_NUM(align(total_components, 2)));
-    SET_STATE(GL_VARYING_NUM_COMPONENTS, num_components);
-    SET_STATE(GL_VARYING_COMPONENT_USE[0], component_use[0]);
-    SET_STATE(GL_VARYING_COMPONENT_USE[1], component_use[1]);
+    cs->GL_VARYING_TOTAL_COMPONENTS = VIVS_GL_VARYING_TOTAL_COMPONENTS_NUM(align(total_components, 2));
+    cs->GL_VARYING_NUM_COMPONENTS = num_components;
+    cs->GL_VARYING_COMPONENT_USE[0] = component_use[0];
+    cs->GL_VARYING_COMPONENT_USE[1] = component_use[1];
     
     /* reference instruction memory */
     cs->vs_inst_mem_size = vs->code_size;

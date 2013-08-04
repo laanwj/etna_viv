@@ -36,11 +36,6 @@
 #include <etnaviv/state.xml.h>
 #include <etnaviv/state_3d.xml.h>
 
-/* Macros to define state */
-#define SET_STATE(addr, value) cs->addr = (value)
-#define SET_STATE_FIXP(addr, value) cs->addr = (value)
-#define SET_STATE_F32(addr, value) cs->addr = etna_f32_to_u32(value)
-
 /* Generate clear command for a surface (non-TS case) */
 void etna_rs_gen_clear_surface(struct etna_surface *surf, uint32_t clear_value)
 {

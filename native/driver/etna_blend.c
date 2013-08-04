@@ -34,11 +34,6 @@
 #include <etnaviv/state.xml.h>
 #include <etnaviv/state_3d.xml.h>
 
-/* Macros to define state */
-#define SET_STATE(addr, value) cs->addr = (value)
-#define SET_STATE_FIXP(addr, value) cs->addr = (value)
-#define SET_STATE_F32(addr, value) cs->addr = etna_f32_to_u32(value)
-
 static void *etna_pipe_create_blend_state(struct pipe_context *pipe,
                             const struct pipe_blend_state *bs)
 {
@@ -52,7 +47,7 @@ static void *etna_pipe_create_blend_state(struct pipe_context *pipe,
     bool full_overwrite = (rt0->colormask == 15) && !enable;
     if(enable)
     {
-        SET_STATE(PE_ALPHA_CONFIG, 
+        cs->PE_ALPHA_CONFIG =
                 VIVS_PE_ALPHA_CONFIG_BLEND_ENABLE_COLOR | 
                 (separate_alpha ? VIVS_PE_ALPHA_CONFIG_BLEND_SEPARATE_ALPHA : 0) |
                 VIVS_PE_ALPHA_CONFIG_SRC_FUNC_COLOR(translate_blend_factor(rt0->rgb_src_factor)) |
@@ -60,20 +55,17 @@ static void *etna_pipe_create_blend_state(struct pipe_context *pipe,
                 VIVS_PE_ALPHA_CONFIG_DST_FUNC_COLOR(translate_blend_factor(rt0->rgb_dst_factor)) |
                 VIVS_PE_ALPHA_CONFIG_DST_FUNC_ALPHA(translate_blend_factor(rt0->alpha_dst_factor)) |
                 VIVS_PE_ALPHA_CONFIG_EQ_COLOR(translate_blend(rt0->rgb_func)) |
-                VIVS_PE_ALPHA_CONFIG_EQ_ALPHA(translate_blend(rt0->alpha_func))
-                );
+                VIVS_PE_ALPHA_CONFIG_EQ_ALPHA(translate_blend(rt0->alpha_func));
     } else {
-        SET_STATE(PE_ALPHA_CONFIG, 0);
+        cs->PE_ALPHA_CONFIG = 0;
     }
     /* XXX should colormask be used if enable==false? */
-    SET_STATE(PE_COLOR_FORMAT, 
+    cs->PE_COLOR_FORMAT =
             VIVS_PE_COLOR_FORMAT_COMPONENTS(rt0->colormask) |
-            (full_overwrite ? VIVS_PE_COLOR_FORMAT_OVERWRITE : 0)
-            );
-    SET_STATE(PE_LOGIC_OP, 
+            (full_overwrite ? VIVS_PE_COLOR_FORMAT_OVERWRITE : 0);
+    cs->PE_LOGIC_OP =
             VIVS_PE_LOGIC_OP_OP(bs->logicop_enable ? bs->logicop_func : LOGIC_OP_COPY) /* 1-to-1 mapping */ |
-            0x000E4000 /* ??? */
-            );
+            0x000E4000 /* ??? */;
     /* independent_blend_enable not needed: only one rt supported */
     /* XXX alpha_to_coverage / alpha_to_one? */
     /* XXX dither? VIVS_PE_DITHER(...) and/or VIVS_RS_DITHER(...) on resolve */

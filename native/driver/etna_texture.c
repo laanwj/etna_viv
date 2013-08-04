@@ -35,30 +35,23 @@
 #include <etnaviv/state.xml.h>
 #include <etnaviv/state_3d.xml.h>
 
-/* Macros to define state */
-#define SET_STATE(addr, value) cs->addr = (value)
-#define SET_STATE_FIXP(addr, value) cs->addr = (value)
-#define SET_STATE_F32(addr, value) cs->addr = etna_f32_to_u32(value)
-
 static void *etna_pipe_create_sampler_state(struct pipe_context *pipe,
                               const struct pipe_sampler_state *ss)
 {
     //struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct compiled_sampler_state *cs = CALLOC_STRUCT(compiled_sampler_state);
-    SET_STATE(TE_SAMPLER_CONFIG0, 
+    cs->TE_SAMPLER_CONFIG0 =
                 /* XXX get from sampler view: VIVS_TE_SAMPLER_CONFIG0_TYPE(TEXTURE_TYPE_2D)| */
                 VIVS_TE_SAMPLER_CONFIG0_UWRAP(translate_texture_wrapmode(ss->wrap_s))|
                 VIVS_TE_SAMPLER_CONFIG0_VWRAP(translate_texture_wrapmode(ss->wrap_t))|
                 VIVS_TE_SAMPLER_CONFIG0_MIN(translate_texture_filter(ss->min_img_filter))|
                 VIVS_TE_SAMPLER_CONFIG0_MIP(translate_texture_mipfilter(ss->min_mip_filter))|
-                VIVS_TE_SAMPLER_CONFIG0_MAG(translate_texture_filter(ss->mag_img_filter))
+                VIVS_TE_SAMPLER_CONFIG0_MAG(translate_texture_filter(ss->mag_img_filter));
                 /* XXX get from sampler view: VIVS_TE_SAMPLER_CONFIG0_FORMAT(tex_format) */
-            );
     /* VIVS_TE_SAMPLER_CONFIG1 (swizzle, extended format) fully determined by sampler view */
-    SET_STATE(TE_SAMPLER_LOD_CONFIG,
+    cs->TE_SAMPLER_LOD_CONFIG =
             (ss->lod_bias != 0.0 ? VIVS_TE_SAMPLER_LOD_CONFIG_BIAS_ENABLE : 0) | 
-            VIVS_TE_SAMPLER_LOD_CONFIG_BIAS(float_to_fixp55(ss->lod_bias))
-            );
+            VIVS_TE_SAMPLER_LOD_CONFIG_BIAS(float_to_fixp55(ss->lod_bias));
     if(ss->min_mip_filter != PIPE_TEX_MIPFILTER_NONE)
     {
         cs->min_lod = float_to_fixp55(ss->min_lod);
@@ -114,22 +107,21 @@ static struct pipe_sampler_view *etna_pipe_create_sampler_view(struct pipe_conte
     struct etna_resource *res = etna_resource(sv->base.texture);
     assert(res != NULL);
 
-    SET_STATE(TE_SAMPLER_CONFIG0, 
+    cs->TE_SAMPLER_CONFIG0 =
                 VIVS_TE_SAMPLER_CONFIG0_TYPE(translate_texture_target(res->base.target, false)) |
-                VIVS_TE_SAMPLER_CONFIG0_FORMAT(translate_texture_format(sv->base.format, false)) 
+                VIVS_TE_SAMPLER_CONFIG0_FORMAT(translate_texture_format(sv->base.format, false));
                 /* merged with sampler state */
-            );
     /* XXX VIVS_TE_SAMPLER_CONFIG1 (swizzle, extended format), swizzle_(r|g|b|a) */
-    SET_STATE(TE_SAMPLER_SIZE, 
+    cs->TE_SAMPLER_SIZE =
             VIVS_TE_SAMPLER_SIZE_WIDTH(res->base.width0)|
-            VIVS_TE_SAMPLER_SIZE_HEIGHT(res->base.height0));
-    SET_STATE(TE_SAMPLER_LOG_SIZE, 
+            VIVS_TE_SAMPLER_SIZE_HEIGHT(res->base.height0);
+    cs->TE_SAMPLER_LOG_SIZE =
             VIVS_TE_SAMPLER_LOG_SIZE_WIDTH(log2_fixp55(res->base.width0)) |
-            VIVS_TE_SAMPLER_LOG_SIZE_HEIGHT(log2_fixp55(res->base.height0)));
+            VIVS_TE_SAMPLER_LOG_SIZE_HEIGHT(log2_fixp55(res->base.height0));
     /* XXX in principle we only have to define lods sv->first_level .. sv->last_level */
     for(int lod=0; lod<=res->base.last_level; ++lod)
     {
-        SET_STATE(TE_SAMPLER_LOD_ADDR[lod], res->levels[lod].address);
+        cs->TE_SAMPLER_LOD_ADDR[lod] = res->levels[lod].address;
     }
     cs->min_lod = sv->base.u.tex.first_level << 5;
     cs->max_lod = MIN2(sv->base.u.tex.last_level, res->base.last_level) << 5;

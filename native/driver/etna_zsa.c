@@ -34,11 +34,6 @@
 #include <etnaviv/state.xml.h>
 #include <etnaviv/state_3d.xml.h>
 
-/* Macros to define state */
-#define SET_STATE(addr, value) cs->addr = (value)
-#define SET_STATE_FIXP(addr, value) cs->addr = (value)
-#define SET_STATE_F32(addr, value) cs->addr = etna_f32_to_u32(value)
-
 static void *etna_pipe_create_depth_stencil_alpha_state(struct pipe_context *pipe,
                                     const struct pipe_depth_stencil_alpha_state *dsa_p)
 {
@@ -83,16 +78,15 @@ static void *etna_pipe_create_depth_stencil_alpha_state(struct pipe_context *pip
     }
 
     /* compare funcs have 1 to 1 mapping */
-    SET_STATE(PE_DEPTH_CONFIG, 
+    cs->PE_DEPTH_CONFIG =
             VIVS_PE_DEPTH_CONFIG_DEPTH_FUNC(dsa.depth.enabled ? dsa.depth.func : PIPE_FUNC_ALWAYS) |
             (dsa.depth.writemask ? VIVS_PE_DEPTH_CONFIG_WRITE_ENABLE : 0) |
-            (early_z ? VIVS_PE_DEPTH_CONFIG_EARLY_Z : 0)
-            );
-    SET_STATE(PE_ALPHA_OP, 
+            (early_z ? VIVS_PE_DEPTH_CONFIG_EARLY_Z : 0);
+    cs->PE_ALPHA_OP =
             (dsa.alpha.enabled ? VIVS_PE_ALPHA_OP_ALPHA_TEST : 0) |
             VIVS_PE_ALPHA_OP_ALPHA_FUNC(dsa.alpha.func) |
-            VIVS_PE_ALPHA_OP_ALPHA_REF(etna_cfloat_to_uint8(dsa.alpha.ref_value)));
-    SET_STATE(PE_STENCIL_OP, 
+            VIVS_PE_ALPHA_OP_ALPHA_REF(etna_cfloat_to_uint8(dsa.alpha.ref_value));
+    cs->PE_STENCIL_OP =
             VIVS_PE_STENCIL_OP_FUNC_FRONT(dsa.stencil[0].func) |
             VIVS_PE_STENCIL_OP_FUNC_BACK(dsa.stencil[1].func) |
             VIVS_PE_STENCIL_OP_FAIL_FRONT(translate_stencil_op(dsa.stencil[0].fail_op)) | 
@@ -100,14 +94,13 @@ static void *etna_pipe_create_depth_stencil_alpha_state(struct pipe_context *pip
             VIVS_PE_STENCIL_OP_DEPTH_FAIL_FRONT(translate_stencil_op(dsa.stencil[0].zfail_op)) |
             VIVS_PE_STENCIL_OP_DEPTH_FAIL_BACK(translate_stencil_op(dsa.stencil[1].zfail_op)) |
             VIVS_PE_STENCIL_OP_PASS_FRONT(translate_stencil_op(dsa.stencil[0].zpass_op)) |
-            VIVS_PE_STENCIL_OP_PASS_BACK(translate_stencil_op(dsa.stencil[1].zpass_op)));
-    SET_STATE(PE_STENCIL_CONFIG, 
+            VIVS_PE_STENCIL_OP_PASS_BACK(translate_stencil_op(dsa.stencil[1].zpass_op));
+    cs->PE_STENCIL_CONFIG =
             translate_stencil_mode(dsa.stencil[0].enabled, dsa.stencil[1].enabled) |
             VIVS_PE_STENCIL_CONFIG_MASK_FRONT(dsa.stencil[0].valuemask) | 
-            VIVS_PE_STENCIL_CONFIG_WRITE_MASK(dsa.stencil[0].writemask) 
+            VIVS_PE_STENCIL_CONFIG_WRITE_MASK(dsa.stencil[0].writemask);
             /* XXX back masks in VIVS_PE_DEPTH_CONFIG_EXT? */
             /* XXX VIVS_PE_STENCIL_CONFIG_REF_FRONT comes from pipe_stencil_ref */
-            );
 
     /* XXX does alpha/stencil test affect PE_COLOR_FORMAT_OVERWRITE? */
     return cs;
