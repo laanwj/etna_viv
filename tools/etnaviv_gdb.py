@@ -378,7 +378,7 @@ class GPUTrace(gdb.Command):
                 print("Unrecognized stop mode %s" % arg[1])
             if self.bp: # if breakpoint currently exists, change parameter on the fly
                 self.bp.do_stop = self.stop_on_commit
-        elif arg[0].startswith('out') # output
+        elif arg[0].startswith('out'): # output
             new_output = self.output
             if arg[1] == 'file':
                 new_output = open(arg[2],'w')
@@ -400,10 +400,36 @@ class GPUTrace(gdb.Command):
             ['disabled','enabled'][self.stop_on_commit],
             self.output or '<stdout>'))
 
+### gpu-inspect ###
+class GPUInspect(gdb.Command):
+    """Etnaviv: inspect etna resource
+    Usage:
+      gpu-inspect <resource>
+    """
+
+    def __init__ (self):
+        super(GPUInspect, self).__init__ ("gpu-inspect", gdb.COMMAND_USER)
+
+    def invoke(self, arg, from_tty):
+        self.dont_repeat()
+        arg = gdb.string_to_argv(arg)
+        arg[0] = gdb.parse_and_eval(arg[0])
+        etna_resource_type = gdb.lookup_type('struct etna_resource').pointer()
+        res = arg[0].cast(etna_resource_type)
+        # this is very, very primitive now
+        # dump first 128 bytes of level 0 by default, as floats
+        # XXX make this more flexible
+        logical = res['levels'][0]['logical']
+        size = 128
+        buffer = indirect_memcpy(logical, logical+size)
+        data = struct.unpack_from(b'%df' % (len(buffer)/4), buffer)
+        print(data)
+
 state_xml = parse_rng_file(rnndb_path('state.xml'))
 isa_xml = parse_rng_file(rnndb_path('isa.xml'))
 
 GPUState(state_xml)
 GPUDisassemble(isa_xml) 
 GPUTrace(state_xml)
+GPUInspect()
 
