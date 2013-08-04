@@ -95,7 +95,7 @@ static uint32_t active_samplers_bits(struct pipe_context *pipe)
  * at the beginning of the rendering, as well as to create a context
  * buffer for the kernel driver before flush (TODO).
  */
-static void reset_context(struct pipe_context *pipe)
+static void reset_context(struct pipe_context *restrict pipe)
 {
     struct etna_pipe_context *restrict e = etna_pipe_context(pipe);
     struct etna_ctx *restrict ctx = e->ctx;
@@ -259,7 +259,7 @@ static void reset_context(struct pipe_context *pipe)
  * the context into one device register state. Parts of this state that are changed since
  * last call (dirty) will be uploaded as state changes in the command buffer.
  */
-static void sync_context(struct pipe_context *pipe)
+static void sync_context(struct pipe_context *restrict pipe)
 {
     struct etna_pipe_context *restrict e = etna_pipe_context(pipe);
     struct etna_ctx *restrict ctx = e->ctx;
@@ -1655,11 +1655,9 @@ static void etna_pipe_blit(struct pipe_context *pipe, const struct pipe_blit_inf
         DBG("color resolve unimplemented");
         return;
     }
-#if 0 /* remove once implemented */
-    if (util_try_blit_via_copy_region(pctx, &info)) {
+    if (util_try_blit_via_copy_region(pipe, blit_info)) {
         return; /* done */
     }
-#endif
     if (info.mask & PIPE_MASK_S) {
         DBG("cannot blit stencil, skipping");
         info.mask &= ~PIPE_MASK_S;
