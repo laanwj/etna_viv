@@ -21,13 +21,56 @@
  * DEALINGS IN THE SOFTWARE.
  */
 #include "etna_asm.h"
+#include "etna_debug.h"
 
 #include <etnaviv/isa.xml.h>
+
+/* Return whether the rgroup is one of the uniforms */
+static inline int rgroup_is_uniform(unsigned rgroup)
+{
+    return rgroup == INST_RGROUP_UNIFORM_0 ||
+           rgroup == INST_RGROUP_UNIFORM_1;
+}
+
+/** An instruction can only read from one distinct uniform. 
+ * This function verifies this property and returns true if the instruction
+ * is deemed correct and false otherwise.
+ */
+static bool check_uniforms(const struct etna_inst *inst)
+{
+    unsigned uni_rgroup = -1;
+    unsigned uni_reg = -1;
+    bool conflict = false;
+    for(int src=0; src<3; ++src)
+    {
+        if(rgroup_is_uniform(inst->src[src].rgroup))
+        {
+            if(uni_reg == -1) /* first uniform used */
+            {
+                uni_rgroup = inst->src[src].rgroup;
+                uni_reg = inst->src[src].reg;
+            } else { /* second or later; check that it is a re-use */
+                if(uni_rgroup != inst->src[src].rgroup ||
+                   uni_reg != inst->src[src].reg)
+                {
+                    conflict = true;
+                }
+            }
+        }
+    }
+    return !conflict;
+}
 
 int etna_assemble(uint32_t *out, const struct etna_inst *inst)
 {
     if(inst->imm && inst->src[2].use)
         return 1; /* cannot have both src2 and imm */
+
+    if(!check_uniforms(inst))
+    {
+        DBG("warning: generating instruction that accesses two different uniforms");
+    }
+
     out[0] = VIV_ISA_WORD_0_OPCODE(inst->opcode) | 
              VIV_ISA_WORD_0_COND(inst->cond) | 
              (inst->sat ? VIV_ISA_WORD_0_SAT : 0) | 
