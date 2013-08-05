@@ -70,18 +70,19 @@ void etna_rs_gen_clear_surface(struct etna_surface *surf, uint32_t clear_value)
     {
     case 2: format = RS_FORMAT_A1R5G5B5; break;
     case 4: format = RS_FORMAT_A8R8G8B8; break;
-    default: printf("Unhandled clear blocksize: %i (fmt %i)\n", bs, surf->base.format);
+    default: printf("etna_rs_gen_clear_surface: Unhandled clear blocksize: %i (fmt %i)\n", bs, surf->base.format);
              format = RS_FORMAT_A8R8G8B8;
+             assert(0);
     }
     etna_compile_rs_state(&surf->clear_command, &(struct rs_state){
             .source_format = format,
             .dest_format = format,
             .dest_addr = surf->surf.address,
             .dest_stride = surf->surf.stride,
-            .dest_tiling = surf->layout,
+            .dest_tiling = ETNA_LAYOUT_LINEAR, /* Clearing always in LINEAR layout */
             .dither = {0xffffffff, 0xffffffff},
-            .width = surf->surf.width,
-            .height = surf->surf.height,
+            .width = surf->surf.padded_width, /* These must be padded to 4x4, otherwise RS will hang */
+            .height = surf->surf.padded_height,
             .clear_value = {clear_value},
             .clear_mode = VIVS_RS_CLEAR_CONTROL_MODE_ENABLED1,
             .clear_bits = 0xffff
