@@ -2041,9 +2041,25 @@ exec_txf(struct tgsi_exec_machine *mach,
       r[3].f[j] = rgba[3][j];
    }
 
-   for (chan = 0; chan < TGSI_NUM_CHANNELS; chan++) {
-      if (inst->Dst[0].Register.WriteMask & (1 << chan)) {
-         store_dest(mach, &r[chan], &inst->Dst[0], inst, chan, TGSI_EXEC_DATA_FLOAT);
+   if (inst->Instruction.Opcode == TGSI_OPCODE_SAMPLE_I) {
+      unsigned char swizzles[4];
+      swizzles[0] = inst->Src[1].Register.SwizzleX;
+      swizzles[1] = inst->Src[1].Register.SwizzleY;
+      swizzles[2] = inst->Src[1].Register.SwizzleZ;
+      swizzles[3] = inst->Src[1].Register.SwizzleW;
+
+      for (chan = 0; chan < TGSI_NUM_CHANNELS; chan++) {
+         if (inst->Dst[0].Register.WriteMask & (1 << chan)) {
+            store_dest(mach, &r[swizzles[chan]],
+                       &inst->Dst[0], inst, chan, TGSI_EXEC_DATA_FLOAT);
+         }
+      }
+   }
+   else {
+      for (chan = 0; chan < TGSI_NUM_CHANNELS; chan++) {
+         if (inst->Dst[0].Register.WriteMask & (1 << chan)) {
+            store_dest(mach, &r[chan], &inst->Dst[0], inst, chan, TGSI_EXEC_DATA_FLOAT);
+         }
       }
    }
 }
@@ -2087,6 +2103,7 @@ exec_sample(struct tgsi_exec_machine *mach,
    const union tgsi_exec_channel *lod = &ZeroVec;
    enum tgsi_sampler_control control = tgsi_sampler_lod_none;
    uint chan;
+   unsigned char swizzles[4];
    int8_t offsets[3];
 
    /* always fetch all 3 offsets, overkill but keeps code simple */
@@ -2193,9 +2210,15 @@ exec_sample(struct tgsi_exec_machine *mach,
       assert(0);
    }
 
+   swizzles[0] = inst->Src[1].Register.SwizzleX;
+   swizzles[1] = inst->Src[1].Register.SwizzleY;
+   swizzles[2] = inst->Src[1].Register.SwizzleZ;
+   swizzles[3] = inst->Src[1].Register.SwizzleW;
+
    for (chan = 0; chan < TGSI_NUM_CHANNELS; chan++) {
       if (inst->Dst[0].Register.WriteMask & (1 << chan)) {
-         store_dest(mach, &r[chan], &inst->Dst[0], inst, chan, TGSI_EXEC_DATA_FLOAT);
+         store_dest(mach, &r[swizzles[chan]],
+                    &inst->Dst[0], inst, chan, TGSI_EXEC_DATA_FLOAT);
       }
    }
 }
@@ -2209,6 +2232,7 @@ exec_sample_d(struct tgsi_exec_machine *mach,
    union tgsi_exec_channel r[4];
    float derivs[3][2][TGSI_QUAD_SIZE];
    uint chan;
+   unsigned char swizzles[4];
    int8_t offsets[3];
 
    /* always fetch all 3 offsets, overkill but keeps code simple */
@@ -2268,9 +2292,15 @@ exec_sample_d(struct tgsi_exec_machine *mach,
       assert(0);
    }
 
+   swizzles[0] = inst->Src[1].Register.SwizzleX;
+   swizzles[1] = inst->Src[1].Register.SwizzleY;
+   swizzles[2] = inst->Src[1].Register.SwizzleZ;
+   swizzles[3] = inst->Src[1].Register.SwizzleW;
+
    for (chan = 0; chan < TGSI_NUM_CHANNELS; chan++) {
       if (inst->Dst[0].Register.WriteMask & (1 << chan)) {
-         store_dest(mach, &r[chan], &inst->Dst[0], inst, chan, TGSI_EXEC_DATA_FLOAT);
+         store_dest(mach, &r[swizzles[chan]],
+                    &inst->Dst[0], inst, chan, TGSI_EXEC_DATA_FLOAT);
       }
    }
 }
@@ -3168,10 +3198,15 @@ micro_shl(union tgsi_exec_channel *dst,
           const union tgsi_exec_channel *src0,
           const union tgsi_exec_channel *src1)
 {
-   dst->u[0] = src0->u[0] << src1->u[0];
-   dst->u[1] = src0->u[1] << src1->u[1];
-   dst->u[2] = src0->u[2] << src1->u[2];
-   dst->u[3] = src0->u[3] << src1->u[3];
+   unsigned masked_count;
+   masked_count = src1->u[0] & 0x1f;
+   dst->u[0] = src0->u[0] << masked_count;
+   masked_count = src1->u[1] & 0x1f;
+   dst->u[1] = src0->u[1] << masked_count;
+   masked_count = src1->u[2] & 0x1f;
+   dst->u[2] = src0->u[2] << masked_count;
+   masked_count = src1->u[3] & 0x1f;
+   dst->u[3] = src0->u[3] << masked_count;
 }
 
 static void
@@ -3277,10 +3312,15 @@ micro_ishr(union tgsi_exec_channel *dst,
            const union tgsi_exec_channel *src0,
            const union tgsi_exec_channel *src1)
 {
-   dst->i[0] = src0->i[0] >> src1->i[0];
-   dst->i[1] = src0->i[1] >> src1->i[1];
-   dst->i[2] = src0->i[2] >> src1->i[2];
-   dst->i[3] = src0->i[3] >> src1->i[3];
+   unsigned masked_count;
+   masked_count = src1->i[0] & 0x1f;
+   dst->i[0] = src0->i[0] >> masked_count;
+   masked_count = src1->i[1] & 0x1f;
+   dst->i[1] = src0->i[1] >> masked_count;
+   masked_count = src1->i[2] & 0x1f;
+   dst->i[2] = src0->i[2] >> masked_count;
+   masked_count = src1->i[3] & 0x1f;
+   dst->i[3] = src0->i[3] >> masked_count;
 }
 
 static void
@@ -3419,10 +3459,15 @@ micro_ushr(union tgsi_exec_channel *dst,
            const union tgsi_exec_channel *src0,
            const union tgsi_exec_channel *src1)
 {
-   dst->u[0] = src0->u[0] >> src1->u[0];
-   dst->u[1] = src0->u[1] >> src1->u[1];
-   dst->u[2] = src0->u[2] >> src1->u[2];
-   dst->u[3] = src0->u[3] >> src1->u[3];
+   unsigned masked_count;
+   masked_count = src1->u[0] & 0x1f;
+   dst->u[0] = src0->u[0] >> masked_count;
+   masked_count = src1->u[1] & 0x1f;
+   dst->u[1] = src0->u[1] >> masked_count;
+   masked_count = src1->u[2] & 0x1f;
+   dst->u[2] = src0->u[2] >> masked_count;
+   masked_count = src1->u[3] & 0x1f;
+   dst->u[3] = src0->u[3] >> masked_count;
 }
 
 static void

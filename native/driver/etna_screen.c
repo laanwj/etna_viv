@@ -97,6 +97,8 @@ static int etna_screen_get_param( struct pipe_screen *screen, enum pipe_cap para
 
     case PIPE_CAP_MAX_VERTEX_BUFFERS:
             return priv->specs.stream_count;
+    case PIPE_CAP_ENDIANNESS:
+            return PIPE_ENDIAN_LITTLE; /* on most Viv hw this is configurable (feature ENDIANNESS_CONFIG) */
 
     /* Unsupported features. */
     case PIPE_CAP_TEXTURE_SWIZZLE: /* XXX supported on gc2000 */
