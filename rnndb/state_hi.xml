@@ -36,18 +36,20 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             and enable/acknowledge interrupts.
         </doc>
         <reg32 offset="0x00000" name="CLOCK_CONTROL">
-            <bitfield high="0" low="0" name="CLK3D_DIS"/>
-            <bitfield high="1" low="1" name="CLK2D_DIS"/>
+            <bitfield high="0" low="0" name="CLK3D_DIS" brief="Disable 3D clock"/>
+            <bitfield high="1" low="1" name="CLK2D_DIS" brief="Disable 2D clock"/>
             <bitfield high="8" low="2" name="FSCALE_VAL"/>
             <bitfield high="9" low="9" name="FSCALE_CMD_LOAD"/>
-            <bitfield high="10" low="10" name="DISABLE_RAM_CLK_GATING"/>
-            <bitfield high="11" low="11" name="DISABLE_DEBUG_REGISTERS"/>
-            <bitfield high="12" low="12" name="SOFT_RESET"/>
-            <bitfield high="16" low="16" name="IDLE_3D"/>
-            <bitfield high="17" low="17" name="IDLE_2D"/>
-            <bitfield high="18" low="18" name="IDLE_VG"/>
-            <bitfield high="19" low="19" name="ISOLATE_GPU"/>
-            <bitfield high="23" low="20" name="DEBUG_PIXEL_PIPE"/>
+            <bitfield high="10" low="10" name="DISABLE_RAM_CLK_GATING" brief="Disable clock gating from rams"/>
+            <bitfield high="11" low="11" name="DISABLE_DEBUG_REGISTERS" brief="Disable debug registers">
+                <doc>If this bit is 1, debug registers are clock gated.</doc>
+            </bitfield>
+            <bitfield high="12" low="12" name="SOFT_RESET" brief="Soft resets the GPU"/>
+            <bitfield high="16" low="16" name="IDLE_3D" brief="3D pipe is idle"/>
+            <bitfield high="17" low="17" name="IDLE_2D" brief="2D pipe is idle"/>
+            <bitfield high="18" low="18" name="IDLE_VG" brief="VG pipe is idle"/>
+            <bitfield high="19" low="19" name="ISOLATE_GPU" brief="Isolate GPU bit"/>
+            <bitfield high="23" low="20" name="DEBUG_PIXEL_PIPE" brief="Select pixel pipe for debug registers"/>
         </reg32>
         <reg32 offset="0x00004" name="IDLE_STATE" brief="Idle state">
             <doc>Bits are 1 if the module is idle, 0 otherwise.</doc>
@@ -77,12 +79,14 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="8" low="8" name="DET_WR_ERR"/>
             <bitfield high="9" low="9" name="DET_RD_ERR"/>
         </reg32>
-        <reg32 offset="0x00010" name="INTR_ACKNOWLEDGE">
+        <reg32 offset="0x00010" name="INTR_ACKNOWLEDGE" brief="Interrupt acknowledge register">
             <bitfield high="30" low="0" name="INTR_VEC" brief="Event signal interrupt bits"/>
             <bitfield pos="31" name="AXI_BUS_ERROR" brief="AXI bus error interrupt"/>
-            <doc>Reading this register clears the interrupt flags.</doc>
+            <doc>Each bit represents a corresponding event being triggered.
+                Reading this register clears the interrupt flags.</doc>
         </reg32>
-        <reg32 offset="0x00014" name="INTR_ENBL">
+        <reg32 offset="0x00014" name="INTR_ENBL" brief="Interrupt enable register">
+            <doc>Each bit enabled a corresponding event.</doc>
            <bitfield high="31" low="0" name="INTR_ENBL_VEC"/>
         </reg32>
         <reg32 offset="0x00018" name="CHIP_IDENTITY"/>
@@ -93,7 +97,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x0002C" name="CHIP_TIME" brief="Chip time"/>
         <reg32 offset="0x00034" name="CHIP_MINOR_FEATURE_0" type="chipMinorFeatures0" brief="Chip minor features 0"/>
         <reg32 offset="0x00038" name="CACHE_CONTROL"/>
-        <reg32 offset="0x0003C" name="MEMORY_COUNTER_RESET"/>
+        <reg32 offset="0x0003C" name="MEMORY_COUNTER_RESET" brief="Memory counter reset">
+            <doc>
+                Writing 1 will reset the counters and stop counting. Write 0 to start counting again.
+            </doc>
+        </reg32>
         <reg32 offset="0x00040" name="PROFILE_READ_BYTES8" brief="Total reads in terms of 64bits"/>
         <reg32 offset="0x00044" name="PROFILE_WRITE_BYTES8" brief="Total writes in terms of 64bits"/>
         <reg32 offset="0x00048" name="CHIP_SPECS" brief="Chip specifications"/>
@@ -105,7 +113,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00064" name="GP_OUT0" brief="General Purpose output register0. R/W but not connected to anywhere"/>
         <reg32 offset="0x00068" name="GP_OUT1" brief="General Purpose output register1. R/W but not connected to anywhere"/>
         <reg32 offset="0x0006C" name="GP_OUT2" brief="General Purpose output register2. R/W but not connected to anywhere"/>
-        <reg32 offset="0x00070" name="AXI_CONTROL" brief="Special Handling on AXI Bus"/>
+        <reg32 offset="0x00070" name="AXI_CONTROL" brief="Special Handling on AXI Bus">
+            <bitfield high="0" low="0" name="WR_FULL_BURST_MODE" brief="Write full burst mode"/>
+        </reg32>
         <reg32 offset="0x00074" name="CHIP_MINOR_FEATURE_1" type="chipMinorFeatures1" brief="Chip minor features 1"/>
         <reg32 offset="0x00078" name="PROFILE_TOTAL_CYCLES" brief="Total cycles">
             <doc>This register is a free running counter.  It can be reset by writing 0 to it.</doc>
@@ -123,10 +133,24 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <!-- This block exists at 0x00200 for GC300 models with chipRevision < 0x2000 -->
     <stripe name="PM" brief="Power Management">
         <doc>Features to control power usage.</doc>
-        <reg32 offset="0x00100" name="POWER_CONTROLS"/>
-        <reg32 offset="0x00104" name="MODULE_CONTROLS"/>
-        <reg32 offset="0x00108" name="MODULE_STATUS"/>
-        <reg32 offset="0x0010C" name="PULSE_EATER"/>  <!-- power management feature -->
+        <reg32 offset="0x00100" name="POWER_CONTROLS" brief="Control register for module level power controls">
+            <bitfield high="0" low="0" name="ENABLE_MODULE_CLOCK_GATING" brief="Enables module level clock gating"/>
+            <bitfield high="1" low="1" name="DISABLE_STALL_MODULE_CLOCK_GATING" brief="Disables module level clock gating for stall condition"/>
+            <bitfield high="2" low="2" name="DISABLE_STARVE_MODULE_CLOCK_GATING" brief="Disabled module level clock gating for starve/idle condition"/>
+            <bitfield high="7" low="4" name="TURN_ON_COUNTER" brief="Number of clock cycles to wait after turning on the clock"/>
+            <bitfield high="31" low="16" name="TURN_OFF_COUNTER" brief="Counter value for clock gating the module if the module is idle for this amount of clock cycles"/>
+        </reg32>
+        <reg32 offset="0x00104" name="MODULE_CONTROLS" brief="Module level control registers">
+            <bitfield high="0" low="0" name="DISABLE_MODULE_CLOCK_GATING_FE" brief="Disables module level clock gating for FE"/>
+            <bitfield high="1" low="1" name="DISABLE_MODULE_CLOCK_GATING_DE" brief="Disables module level clock gating for DE"/>
+            <bitfield high="2" low="2" name="DISABLE_MODULE_CLOCK_GATING_PE" brief="Disables module level clock gating for PE"/>
+        </reg32>
+        <reg32 offset="0x00108" name="MODULE_STATUS" brief="Module level control status">
+            <bitfield high="0" low="0" name="MODULE_CLOCK_GATED_FE" brief="Module level clock gating is ON for FE"/>
+            <bitfield high="1" low="1" name="MODULE_CLOCK_GATED_DE" brief="Module level clock gating is ON for DE"/>
+            <bitfield high="2" low="2" name="MODULE_CLOCK_GATED_PE" brief="Module level clock gating is ON for PE"/>
+        </reg32>
+        <reg32 offset="0x0010C" name="PULSE_EATER" brief="Pulse eater"/>  <!-- power management feature -->
     </stripe>
 
     <enum name="MMU_EXCEPTION">
@@ -136,30 +160,52 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     </enum>
     <stripe name="MMUv2" brief="Memory Management Unit v2">
         <doc>New MMU unit. Only exists on more recent hardware.</doc>
-        <reg32 offset="0x00180" name="SAFE_ADDRESS"/>
-        <reg32 offset="0x00184" name="CONFIGURATION" masked="yes">
-            <bitfield high="0" low="0" name="MODE">
-                <value value="0" name="MODE4_K"/>
-                <value value="1" name="MODE1_K"/>
+        <reg32 offset="0x00180" name="SAFE_ADDRESS" brief="MMU safe address">
+            <doc>
+            A 64-byte range starting from this address that will act as a 'safe' zone. 
+            Any address that would cause an exception is routed to this safe zone. 
+            Reads will happen and writes will go to this address, but with a write-enable 
+            of 0. This register can only be programmed once after a reset. Any attempt to write
+            to this register after the initial write-after-reset will be ignored.
+            </doc>
+        </reg32>
+        <reg32 offset="0x00184" name="CONFIGURATION" masked="yes" brief="This register controls the master TLB of the MMU">
+            <bitfield high="0" low="0" name="MODE" brief="Mode for the master TLB">
+                <value value="0" name="MODE4_K" brief="The master TLB is 4kB in size and contains 1024 entries">
+                    <doc>Each page can be 4kB or 64kB in size.</doc>
+                </value>
+                <value value="1" name="MODE1_K" brief="The master TLB is 1kB in size and contains 256 entries">
+                    <doc>Each page can be 4kB, 64kB, 1MB or 16MB in size.</doc>
+                </value>
             </bitfield>
             <bitfield high="3" low="3" name="MODE_MASK"/>
-            <bitfield high="4" low="4" name="FLUSH">
+            <bitfield high="4" low="4" name="FLUSH" brief="Flush the MMU caches">
                 <value value="1" name="FLUSH"/>
             </bitfield>
             <bitfield high="7" low="7" name="FLUSH_MASK"/>
             <bitfield high="8" low="8" name="ADDRESS_MASK"/>
-            <bitfield high="31" low="10" name="ADDRESS"/>
+            <bitfield high="31" low="10" name="ADDRESS" brief="Upper bits of the page aligned master TLB"/>
         </reg32>
-        <reg32 offset="0x00188" name="STATUS">
-            <bitfield high="1" low="0" name="EXCEPTION0" type="MMU_EXCEPTION"/>
-            <bitfield high="5" low="4" name="EXCEPTION1" type="MMU_EXCEPTION"/>
-            <bitfield high="9" low="8" name="EXCEPTION2" type="MMU_EXCEPTION"/>
-            <bitfield high="13" low="12" name="EXCEPTION3" type="MMU_EXCEPTION"/>
+        <reg32 offset="0x00188" name="STATUS" brief="Status register that holds which MMU generated an exception">
+            <bitfield high="1" low="0" name="EXCEPTION0" type="MMU_EXCEPTION" brief="MMU 0 caused an exception">
+                <doc>EXCEPTION_ADDR[0] will contain the exception address.</doc>
+            </bitfield>
+            <bitfield high="5" low="4" name="EXCEPTION1" type="MMU_EXCEPTION" brief="MMU 1 caused an exception">
+                <doc>EXCEPTION_ADDR[1] will contain the exception address.</doc>
+            </bitfield>
+            <bitfield high="9" low="8" name="EXCEPTION2" type="MMU_EXCEPTION" brief="MMU 2 caused an exception">
+                <doc>EXCEPTION_ADDR[2] will contain the exception address.</doc>
+            </bitfield>
+            <bitfield high="13" low="12" name="EXCEPTION3" type="MMU_EXCEPTION" brief="MMU 3 caused an exception">
+                <doc>EXCEPTION_ADDR[3] will contain the exception address.</doc>
+            </bitfield>
         </reg32>
-        <reg32 offset="0x0018C" name="CONTROL">
-            <bitfield high="0" low="0" name="ENABLE"/>
+        <reg32 offset="0x0018C" name="CONTROL" brief="Control register that enables the MMU">
+            <bitfield high="0" low="0" name="ENABLE" brief="Enable the MMU">
+                <doc>For security reasons, once the MMU is enabled it cannot be disabled anymore.</doc>
+            </bitfield>
         </reg32>
-        <reg32 offset="0x00190" name="EXCEPTION_ADDR"/>
+        <reg32 offset="0x00190" name="EXCEPTION_ADDR" length="4"/>
     </stripe>
 
     <stripe name="MC" brief="Memory Controller">

@@ -99,50 +99,98 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="2" name="USE_DISABLE"/>
     </enum>
     <!-- These register patterns are repeated many times -->
-    <bitset name="2D_SRC_STRIDE" inline="yes">
+    <bitset name="2D_SRC_STRIDE" inline="yes" brief="Stride of the source surface in bytes">
+        <doc>
+            To calculate the stride multiply the surface width in pixels
+            (8-pixel aligned) by the number of bytes per pixel.
+        </doc>
         <bitfield high="17" low="0" name="STRIDE"/>
     </bitset>
     <bitset name="2D_SRC_ROTATION_CONFIG" inline="yes" brief="Source rotation configuration">
+        <doc>
+            90 degree rotation configuration for the source surface. Width field specifies
+            the width of the surface in pixels.
+        </doc>
         <bitfield high="15" low="0" name="WIDTH"/>
         <bitfield high="16" low="16" name="ROTATION" type="ENABLE_DISABLE" brief="Enable rotation"/>
     </bitset>
-    <bitset name="2D_SRC_CONFIG" inline="yes" brief="Source configuration">
-        <bitfield high="6" low="6" name="SRC_RELATIVE">
-            <value value="0" name="ABSOLUTE"/>
-            <value value="1" name="RELATIVE"/>
+    <bitset name="2D_SRC_CONFIG" inline="yes" brief="Source surface configuration register">
+        <bitfield high="6" low="6" name="SRC_RELATIVE" brief="Source relative">
+            <value value="0" name="ABSOLUTE">
+                <doc>
+                If set to ABSOLUTE, the source coordinates are treated as absolute coordinates
+                inside the source surface.
+                </doc>
+            </value>
+            <value value="1" name="RELATIVE">
+                <doc>
+                If set to RELATIVE, the source coordinates are treated as the offsets from
+                the destination coordinates with the source size equal to the size of the
+                destination.
+                </doc>
+            </value>
         </bitfield>
-        <bitfield high="7" low="7" name="TILED" type="ENABLE_DISABLE"/>
-        <bitfield high="8" low="8" name="LOCATION">
+        <bitfield high="7" low="7" name="TILED" type="ENABLE_DISABLE" brief="Source linear/tiled computation control"/>
+        <bitfield high="8" low="8" name="LOCATION" brief="Source data location">
+            <doc>
+            Set to STREAM for mono expansion blits or masked blits.
+            For mono expansion blits the complete bitmap comes from the command stream.
+            For masked blits the source data comes from the memory and the mask from the
+            command stream.
+            </doc>
             <value value="0" name="MEMORY" brief="From memory"/>
             <value value="1" name="STREAM" brief="From command stream: set for mono expansion blits or masked blits"/>
         </bitfield>
-        <bitfield high="13" low="12" name="PACK">
+        <bitfield high="13" low="12" name="PACK" brief="Mono expansion or masked blit: stream packing in pixels">
+            <doc>
+            Determines how many horizontal pixels there are per each 32-bit chunk.
+            For example, if set to PACKED8, each 32-bit chunk is 8-pixel wide, which also means that
+            it defines 4 vertical lines of pixels.
+            </doc>
             <value value="0" name="PACKED8"/>
             <value value="1" name="PACKED16"/>
             <value value="2" name="PACKED32"/>
             <value value="3" name="UNPACKED"/>
         </bitfield>
-        <bitfield high="15" low="15" name="MONO_TRANSPARENCY">
-            <value value="0" name="BACKGROUND"/>
-            <value value="1" name="FOREGROUND"/>
+        <bitfield high="15" low="15" name="MONO_TRANSPARENCY" brief="Mono expansion">
+            <value value="0" name="BACKGROUND" brief="Transparency color will be 0"/>
+            <value value="1" name="FOREGROUND" brief="Transparancy color will be 1"/>
         </bitfield>
-        <bitfield high="21" low="20" name="SWIZZLE" type="DE_SWIZZLE"/>
-        <bitfield high="28" low="24" name="SOURCE_FORMAT" type="DE_FORMAT"/>
-        <bitfield high="29" low="29" name="DISABLE420_L2_CACHE" type="ENABLE_DISABLE"/> <!-- if chip has 420 L2 cache -->
-        <bitfield high="31" low="30" name="ENDIAN_CONTROL" type="ENDIAN_MODE"/>
+        <bitfield high="21" low="20" name="SWIZZLE" type="DE_SWIZZLE" brief="Color channel swizzles"/>
+        <bitfield high="28" low="24" name="SOURCE_FORMAT" type="DE_FORMAT" brief="Pixel format of the source surface"/>
+        <bitfield high="29" low="29" name="DISABLE420_L2_CACHE" type="ENABLE_DISABLE" brief="Disable 420 L2 cache"/> <!-- if chip has 420 L2 cache -->
+        <bitfield high="31" low="30" name="ENDIAN_CONTROL" type="ENDIAN_MODE" brief="Source endianness"/>
     </bitset>
     <bitset name="2D_SRC_ORIGIN" inline="yes" brief="Source origin">
+        <doc>
+        Absolute or relative (determined by the SRC_RELATIVE field of the SRC_CONFIG register)
+        X and Y coordinates in pixels of the top left corner of the source rectangle within 
+        the source surface.
+        </doc>
         <bitfield high="15" low="0" name="X"/>
         <bitfield high="31" low="16" name="Y"/>
     </bitset>
     <bitset name="2D_SRC_SIZE" inline="yes" brief="Source size">
+        <doc>
+        The width and height of the source rectangle in pixels. If the source is relative,
+        or a regular bitblt is being performed without stretching, this register is ignored
+        and the source size is assumed to be the same as the destination size.
+        </doc>
         <bitfield high="15" low="0" name="X"/>
         <bitfield high="31" low="16" name="Y"/>
     </bitset>
     <bitset name="2D_ROP" inline="yes" brief="Raster operation">
-        <bitfield high="7" low="0" name="ROP_FG"/>
-        <bitfield high="15" low="8" name="ROP_BG"/>
-        <bitfield high="21" low="20" name="TYPE">
+        <doc>
+        Raster operation foreground and background codes. Even though ROP
+        is not used in CLEAR, HOR_FILTER_BLT, VER_FILTER_BLT and alpha-enabled
+        BIT_BLTs, ROP code still has to be programmed, because the engine makes the
+        decision whether source, destination and pattern are involved in the current
+        operation and the correct decision is essential for the engine to complete
+        the operation as expected.
+        </doc>
+        <bitfield high="7" low="0" name="ROP_FG" brief="Foreground ROP code is used for opaque pixels"/>
+        <bitfield high="15" low="8" name="ROP_BG" brief="Background ROP code is used for transparent pixels"/>
+        <bitfield high="21" low="20" name="TYPE" brief="ROP type">
             <value value="0" name="ROP2_PATTERN"/>
             <value value="1" name="ROP2_SOURCE"/>
             <value value="2" name="ROP3"/>
@@ -175,14 +223,22 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <value value="2" name="SCALED"/>
         </bitfield>
         <bitfield high="26" low="24" name="SRC_BLENDING_MODE" type="DE_BLENDMODE"/>
-        <bitfield high="27" low="27" name="SRC_ALPHA_FACTOR" type="ENABLE_DISABLE"/>
+        <bitfield high="27" low="27" name="SRC_ALPHA_FACTOR" type="ENABLE_DISABLE" brief="Src blending factor is calculated from src alpha"/>
         <bitfield high="30" low="28" name="DST_BLENDING_MODE" type="DE_BLENDMODE"/>
-        <bitfield high="31" low="31" name="DST_ALPHA_FACTOR" type="ENABLE_DISABLE"/>
+        <bitfield high="31" low="31" name="DST_ALPHA_FACTOR" type="ENABLE_DISABLE" brief="Dst blending factor is calculated from dst alpha"/>
     </bitset>
     <bitset name="2D_SRC_ROTATION_HEIGHT" inline="yes">
+        <doc>
+        180/270 degree rotation configuration for the source surface.
+        Height field specifies the height of the surface in pixels.
+        </doc>
         <bitfield high="15" low="0" name="HEIGHT"/>
     </bitset>
     <bitset name="2D_ROT_ANGLE" masked="yes" inline="yes">
+        <doc>
+        0/90/180/270 degree rotation configuratino for the source surface.
+        Height field specifies the height of the surface in pixels.
+        </doc>
         <bitfield high="2" low="0" name="SRC" type="DE_ROT_MODE"/>
         <bitfield high="5" low="3" name="DST" type="DE_ROT_MODE"/>
         <bitfield high="8" low="8" name="SRC_MASK"/>
@@ -193,6 +249,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield high="19" low="19" name="DST_MIRROR_MASK"/>
     </bitset>
     <bitset name="2D_COLOR_MULTIPLY_MODES" inline="yes">
+        <doc>
+        Color modes to multiply source or destination pixel color by alpha channel.
+        Alpha can be from global color source or current pixel.
+        </doc>
         <bitfield high="0" low="0" name="SRC_PREMULTIPLY" type="ENABLE_DISABLE"/>
         <bitfield high="4" low="4" name="DST_PREMULTIPLY" type="ENABLE_DISABLE"/>
         <bitfield high="9" low="8" name="SRC_GLOBAL_PREMULTIPLY">
@@ -203,18 +263,22 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield high="20" low="20" name="DST_DEMULTIPLY" type="ENABLE_DISABLE"/>
     </bitset>
     <bitset name="2D_PE_TRANSPARENCY" inline="yes"> <!-- XXX support masking for multiple fields for one mask -->
-        <bitfield high="1" low="0" name="SOURCE" type="2D_TRANSPARENCY_KIND"/>
-        <bitfield high="5" low="4" name="PATTERN" type="2D_TRANSPARENCY_KIND"/>
-        <bitfield high="9" low="8" name="DESTINATION" type="2D_TRANSPARENCY_KIND"/>
-        <bitfield high="12" low="12" name="TRANSPARENCY_MASK"/>
-        <bitfield high="17" low="16" name="USE_SRC_OVERRIDE" type="2D_TRANSPARENCY_OVERRIDE"/>
-        <bitfield high="21" low="20" name="USE_PAT_OVERRIDE" type="2D_TRANSPARENCY_OVERRIDE"/>
-        <bitfield high="25" low="24" name="USE_DST_OVERRIDE" type="2D_TRANSPARENCY_OVERRIDE"/>
-        <bitfield high="28" low="28" name="RESOURCE_OVERRIDE_MASK"/>
-        <bitfield high="29" low="29" name="DFB_COLOR_KEY" type="ENABLE_DISABLE"/>
+        <bitfield high="1" low="0" name="SOURCE" type="2D_TRANSPARENCY_KIND" brief="Source transparency mode"/>
+        <bitfield high="5" low="4" name="PATTERN" type="2D_TRANSPARENCY_KIND" brief="Pattern transparency mode">
+            <doc>KEY transparency mode is reserved.</doc>
+        </bitfield>
+        <bitfield high="9" low="8" name="DESTINATION" type="2D_TRANSPARENCY_KIND" brief="Destination transparency mode">
+            <doc>MASK transparency mode is reserved.</doc>
+        </bitfield>
+        <bitfield high="12" low="12" name="TRANSPARENCY_MASK" brief="Mask field for SOURCE/PATTERN/DESTINATION fields"/>
+        <bitfield high="17" low="16" name="USE_SRC_OVERRIDE" type="2D_TRANSPARENCY_OVERRIDE" brief="Source usage override"/>
+        <bitfield high="21" low="20" name="USE_PAT_OVERRIDE" type="2D_TRANSPARENCY_OVERRIDE" brief="Pattern usage override"/>
+        <bitfield high="25" low="24" name="USE_DST_OVERRIDE" type="2D_TRANSPARENCY_OVERRIDE" brief="Destination usage override"/>
+        <bitfield high="28" low="28" name="RESOURCE_OVERRIDE_MASK" brief="2D resource usage override mask field"/>
+        <bitfield high="29" low="29" name="DFB_COLOR_KEY" type="ENABLE_DISABLE" brief="DBF color key"/>
         <bitfield high="31" low="31" name="DFB_COLOR_KEY_MASK"/>
     </bitset>
-    <bitset name="2D_PE_CONTROL" masked="yes" inline="yes">
+    <bitset name="2D_PE_CONTROL" masked="yes" inline="yes" brief="General purpose control register">
         <bitfield high="0" low="0" name="YUV">
             <value value="0" name="601"/>
             <value value="1" name="709"/>
@@ -225,7 +289,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <value value="1" name="VU"/>
         </bitfield>
         <bitfield high="7" low="7" name="UV_SWIZZLE_MASK"/>
-        <bitfield high="8" low="8" name="YUVRGB" type="ENABLE_DISABLE"/>
+        <bitfield high="8" low="8" name="YUVRGB" type="ENABLE_DISABLE" brief="YUV to RGB convert enable"/>
         <bitfield high="11" low="11" name="YUVRGB_MASK"/>
     </bitset>
     <bitset name="2D_SRC_EX_CONFIG" masked="yes" inline="yes">
@@ -235,56 +299,107 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     </bitset>
     <stripe name="DE" brief="2D Drawing Engine">
         <doc>2D drawing engine: conversion, scaling, filtering, rotation, blending of 2D images.</doc>
-        <reg32 offset="0x01200" name="SRC_ADDRESS" type="VIVM" brief="Source address"/>
-        <reg32 offset="0x01204" name="SRC_STRIDE" brief="Source stride" type="2D_SRC_STRIDE"/>
+        <reg32 offset="0x01200" name="SRC_ADDRESS" type="VIVM" brief="32-bit aligned base address of the source surface"/>
+        <reg32 offset="0x01204" name="SRC_STRIDE" type="2D_SRC_STRIDE"/>
         <reg32 offset="0x01208" name="SRC_ROTATION_CONFIG" type="2D_SRC_ROTATION_CONFIG"/>
         <reg32 offset="0x0120C" name="SRC_CONFIG" type="2D_SRC_CONFIG"/>
         <reg32 offset="0x01210" name="SRC_ORIGIN" type="2D_SRC_ORIGIN"/>
         <reg32 offset="0x01214" name="SRC_SIZE" type="2D_SRC_SIZE"/>
-        <reg32 offset="0x01218" name="SRC_COLOR_BG" type="DE_COLOR"/>
-        <reg32 offset="0x0121C" name="SRC_COLOR_FG" type="DE_COLOR"/>
+        <reg32 offset="0x01218" name="SRC_COLOR_BG" type="DE_COLOR" brief="Source color background">
+            <doc>
+            In mono expansion this register defines the source color if the mono pixel is 0.
+            The color must be set in A8R8G8B8 format.
+            In color blits it defines the source transparency color and must be of the same 
+            format as the source format.
+            </doc>
+        </reg32>
+        <reg32 offset="0x0121C" name="SRC_COLOR_FG" type="DE_COLOR">
+            <doc>
+            In mono expansion this register defines the source color if the mono pixel is 1.
+            The color must be set in A8G8G8B8 format.
+            </doc>
+        </reg32>
         <reg32 offset="0x01220" name="STRETCH_FACTOR_LOW">
-            <bitfield high="30" low="0" name="X"/>
+            <bitfield high="30" low="0" name="X" brief="Horizontal stretch factor in 15.16 fixed point format">
+                <doc>
+                The value is calculated using the following formula:
+                    
+                    factor = ((srcWidth - 1) &lt;&lt; 16) / (dstWidth - 1)
+
+                Stretch blit uses only the integer part of the value while Filter blit uses all
+                31 bits.
+                </doc>
+            </bitfield>
         </reg32>
         <reg32 offset="0x01224" name="STRETCH_FACTOR_HIGH">
-            <bitfield high="30" low="0" name="Y"/>
-        </reg32>
-        <reg32 offset="0x01228" name="DEST_ADDRESS" type="VIVM"/>
-        <reg32 offset="0x0122C" name="DEST_STRIDE" type="2D_SRC_STRIDE"/>
-        <reg32 offset="0x01230" name="DEST_ROTATION_CONFIG" type="2D_SRC_ROTATION_CONFIG"/>
-        <reg32 offset="0x01234" name="DEST_CONFIG">
-            <bitfield high="4" low="0" name="FORMAT" type="DE_FORMAT"/>
-            <bitfield high="8" low="8" name="TILED" type="ENABLE_DISABLE"/>
-            <bitfield high="15" low="12" name="COMMAND">
-                <value value="0" name="CLEAR"/>
-                <value value="1" name="LINE"/>
-                <value value="2" name="BIT_BLT"/>
-                <value value="3" name="BIT_BLT_REVERSED"/>
-                <value value="4" name="STRETCH_BLT"/>
-                <value value="5" name="HOR_FILTER_BLT"/>
-                <value value="6" name="VER_FILTER_BLT"/>
-                <value value="7" name="ONE_PASS_FILTER_BLT"/>
-                <value value="8" name="MULTI_SOURCE_BLT"/>
+            <bitfield high="30" low="0" name="Y" brief="Vertical stretch factor in 15.16 fixed point format">
+                <doc>
+                The value is calculated using the following formula:
+                    
+                    factor = ((srcWidth - 1) &lt;&lt; 16) / (dstWidth - 1)
+
+                Stretch blit uses only the integer part of the value while Filter blit uses all
+                31 bits.
+                </doc>
             </bitfield>
-            <bitfield high="17" low="16" name="SWIZZLE" type="DE_SWIZZLE"/>
-            <bitfield high="21" low="20" name="ENDIAN_CONTROL" type="ENDIAN_MODE"/>
-            <bitfield high="24" low="24" name="GDI_STRE" type="ENABLE_DISABLE"/>
-            <bitfield high="25" low="25" name="INTER_TILE_PER_FIX">
+        </reg32>
+        <reg32 offset="0x01228" name="DEST_ADDRESS" type="VIVM" brief="32-bit aligned base address of the destination surface"/>
+        <reg32 offset="0x0122C" name="DEST_STRIDE" brief="Stride of the destination surface in bytes">
+            <doc>
+                To calculate the stride multiply the surface width in pixels (8-pixel aligned) by
+                the number of bytes per pixel.
+            </doc>
+            <bitfield high="17" low="0" name="STRIDE"/>
+        </reg32>
+        <reg32 offset="0x01230" name="DEST_ROTATION_CONFIG" brief="90 degree rotation configuration for the destination surface">
+            <doc>
+                90 degree rotation configuration for the destination surface. Width field specifies
+                the width of the surface in pixels.
+            </doc>
+            <bitfield high="15" low="0" name="WIDTH"/>
+            <bitfield high="16" low="16" name="ROTATION" type="ENABLE_DISABLE" brief="Enable rotation"/>
+        </reg32>
+        <reg32 offset="0x01234" name="DEST_CONFIG" brief="Destination surface configuration register">
+            <bitfield high="4" low="0" name="FORMAT" type="DE_FORMAT" brief="Pixel format of the destination surface"/>
+            <bitfield high="8" low="8" name="TILED" type="ENABLE_DISABLE" brief="Destination linear/tiled address computation control">
+                <doc>Reserved field for future expansion.</doc>
+            </bitfield>
+            <bitfield high="15" low="12" name="COMMAND" brief="Type of primitive to be rendered">
+                <value value="0" name="CLEAR" brief="Clear"/>
+                <value value="1" name="LINE" brief="Line"/>
+                <value value="2" name="BIT_BLT" brief="Bitblit"/>
+                <value value="3" name="BIT_BLT_REVERSED" brief="Defined for internal use and should not be used"/>
+                <value value="4" name="STRETCH_BLT" brief="Stretch blt"/>
+                <value value="5" name="HOR_FILTER_BLT" brief="Horizontal filter blit"/>
+                <value value="6" name="VER_FILTER_BLT" brief="Vertical filter blit"/>
+                <value value="7" name="ONE_PASS_FILTER_BLT" brief="One-pass filter blit"/>
+                <value value="8" name="MULTI_SOURCE_BLT" brief="Multi source blit"/>
+            </bitfield>
+            <bitfield high="17" low="16" name="SWIZZLE" type="DE_SWIZZLE" brief="Color channel swizzles"/>
+            <bitfield high="21" low="20" name="ENDIAN_CONTROL" type="ENDIAN_MODE" brief="Destination endianness"/>
+            <bitfield high="24" low="24" name="GDI_STRE" type="ENABLE_DISABLE" brief="GDI stretch blit"/>
+            <bitfield high="25" low="25" name="INTER_TILE_PER_FIX" brief="Performance fix for DE">
                 <value value="1" name="DISABLED"/>
                 <value value="0" name="ENABLED"/>
             </bitfield>
-            <bitfield high="26" low="26" name="MINOR_TILED" type="ENABLE_DISABLE"/>
+            <bitfield high="26" low="26" name="MINOR_TILED" type="ENABLE_DISABLE" brief="MinorTile"/>
         </reg32>
         <reg32 offset="0x0125C" name="ROP" type="2D_ROP"/>
-        <reg32 offset="0x01260" name="CLIP_TOP_LEFT">
+        <reg32 offset="0x01260" name="CLIP_TOP_LEFT" brief="Top left corner of the clipping rectangle">
+            <doc>
+            Clipping is always on (except with filter blits) and everything beyond the clipping rectangle will be clipped out.
+            </doc>
             <bitfield high="14" low="0" name="X"/>
             <bitfield high="30" low="16" name="Y"/>
         </reg32>
-        <reg32 offset="0x01264" name="CLIP_BOTTOM_RIGHT">
+        <reg32 offset="0x01264" name="CLIP_BOTTOM_RIGHT" brief="Bottom right corner of the clipping rectangle">
+            <doc>
+            Clipping is always on (except with filter blits) and everything beyond the clipping rectangle will be clipped out.
+            </doc>
             <bitfield high="14" low="0" name="X"/>
             <bitfield high="30" low="16" name="Y"/>
         </reg32>
-        <reg32 offset="0x0126C" name="CONFIG">
+        <reg32 offset="0x0126C" name="CONFIG" brief="Drawing engine configuration">
             <bitfield high="0" low="0" name="MIRROR_BLT_ENABLE">
                 <value value="0" name="OFF"/>
                 <value value="1" name="ON"/>
@@ -295,50 +410,54 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <value value="2" name="VMIRROR"/>
                 <value value="3" name="FULL_MIRROR"/>
             </bitfield>
-            <bitfield high="18" low="16" name="SOURCE_SELECT"/>
-            <bitfield high="21" low="20" name="DESTINATION_SELECT"/>
+            <bitfield high="18" low="16" name="SOURCE_SELECT" brief="Source select for the old walkers"/>
+            <bitfield high="21" low="20" name="DESTINATION_SELECT" brief="Destination select for the old walkers"/>
         </reg32>
-        <reg32 offset="0x01278" name="SRC_ORIGIN_FRACTION">
+        <reg32 offset="0x01278" name="SRC_ORIGIN_FRACTION" brief="Fraction for the source origin">
+            <doc>
+            Together with values in SRC_ORIGIN these values form signed 16.16 fixed point origin
+            for the source rectangle. Fractions are only used in filter blit in split frame mode.
+            </doc>
             <bitfield high="15" low="0" name="X"/>
             <bitfield high="31" low="16" name="Y"/>
         </reg32>
         <reg32 offset="0x0127C" name="ALPHA_CONTROL" type="2D_ALPHA_CONTROL"/>
         <reg32 offset="0x01280" name="ALPHA_MODES" type="2D_ALPHA_MODES"/>
-        <reg32 offset="0x01284" name="UPLANE_ADDRESS" type="VIVM"/>
-        <reg32 offset="0x01288" name="UPLANE_STRIDE" type="2D_SRC_STRIDE"/>
-        <reg32 offset="0x0128C" name="VPLANE_ADDRESS" type="VIVM"/>
-        <reg32 offset="0x01290" name="VPLANE_STRIDE" type="2D_SRC_STRIDE"/>
-        <reg32 offset="0x01294" name="VR_CONFIG" masked="yes">
-            <bitfield high="1" low="0" name="START">
+        <reg32 offset="0x01284" name="UPLANE_ADDRESS" type="VIVM" brief="32-bit aligned base address of the source U plane"/>
+        <reg32 offset="0x01288" name="UPLANE_STRIDE" type="2D_SRC_STRIDE" brief="Stride of the source U plane in bytes"/>
+        <reg32 offset="0x0128C" name="VPLANE_ADDRESS" type="VIVM" brief="32-bit aligned base address of the source V plane"/>
+        <reg32 offset="0x01290" name="VPLANE_STRIDE" type="2D_SRC_STRIDE" brief="Stride of the source V plane in bytes"/>
+        <reg32 offset="0x01294" name="VR_CONFIG" masked="yes" brief="Video rasterizer kick-off register">
+            <bitfield high="1" low="0" name="START" brief="Kick-off command">
                 <value value="0" name="HORIZONTAL_BLIT"/>
                 <value value="1" name="VERTICAL_BLIT"/>
                 <value value="2" name="ONE_PASS_BLIT"/>
             </bitfield>
             <bitfield high="3" low="3" name="START_MASK"/>
         </reg32>
-        <reg32 offset="0x01298" name="VR_SOURCE_IMAGE_LOW">
+        <reg32 offset="0x01298" name="VR_SOURCE_IMAGE_LOW" brief="Top left corner of bounding box of the source image">
             <bitfield high="15" low="0" name="LEFT"/>
             <bitfield high="31" low="16" name="TOP"/>
         </reg32>
-        <reg32 offset="0x0129C" name="VR_SOURCE_IMAGE_HIGH">
+        <reg32 offset="0x0129C" name="VR_SOURCE_IMAGE_HIGH" brief="Right bottom corner of bounding box of the source image">
             <bitfield high="15" low="0" name="RIGHT"/>
             <bitfield high="31" low="16" name="BOTTOM"/>
         </reg32>
-        <reg32 offset="0x012A0" name="VR_SOURCE_ORIGIN_LOW">
+        <reg32 offset="0x012A0" name="VR_SOURCE_ORIGIN_LOW" brief="Fractional x coordinate of the source window to be rendered within the source image">
             <bitfield high="31" low="0" name="X"/>
         </reg32>
-        <reg32 offset="0x012A4" name="VR_SOURCE_ORIGIN_HIGH">
+        <reg32 offset="0x012A4" name="VR_SOURCE_ORIGIN_HIGH" brief="Fractional y coordinate of the source window to be rendered within the source image">
             <bitfield high="31" low="0" name="Y"/>
         </reg32>
-        <reg32 offset="0x012A8" name="VR_TARGET_WINDOW_LOW">
+        <reg32 offset="0x012A8" name="VR_TARGET_WINDOW_LOW" brief="Left top corner of the destination window to be rendered within the destination image">
             <bitfield high="15" low="0" name="LEFT"/>
             <bitfield high="31" low="16" name="TOP"/>
         </reg32>
-        <reg32 offset="0x012AC" name="VR_TARGET_WINDOW_HIGH">
+        <reg32 offset="0x012AC" name="VR_TARGET_WINDOW_HIGH" brief="Bottom right corner of the destination window to be rendered within the destination image">
             <bitfield high="15" low="0" name="RIGHT"/>
             <bitfield high="31" low="16" name="BOTTOM"/>
         </reg32>
-        <reg32 offset="0x012B0" name="PE_CONFIG" masked="yes">
+        <reg32 offset="0x012B0" name="PE_CONFIG" masked="yes" brief="PE debug register">
             <bitfield high="1" low="0" name="DESTINATION_FETCH">
                 <value value="0" name="DISABLE"/>
                 <value value="1" name="DEFAULT"/>
@@ -347,61 +466,71 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="3" low="3" name="DESTINATION_FETCH_MASK"/>
         </reg32>
         <reg32 offset="0x012B4" name="DST_ROTATION_HEIGHT">
+            <doc>
+            180/270 degree rotation configuration for the destination surface.
+            Height field specifies the height of the surface in pixels.
+            </doc>
             <bitfield high="15" low="0" name="HEIGHT"/>
         </reg32>
         <reg32 offset="0x012B8" name="SRC_ROTATION_HEIGHT" type="2D_SRC_ROTATION_HEIGHT"/>
         <reg32 offset="0x012BC" name="ROT_ANGLE" type="2D_ROT_ANGLE"/>
-        <reg32 offset="0x012C0" name="CLEAR_PIXEL_VALUE32" type="DE_COLOR"/>
-        <reg32 offset="0x012C4" name="DEST_COLOR_KEY" type="DE_COLOR"/>
-        <reg32 offset="0x012C8" name="GLOBAL_SRC_COLOR" type="DE_COLOR"/>
-        <reg32 offset="0x012CC" name="GLOBAL_DEST_COLOR" type="DE_COLOR"/>
+        <reg32 offset="0x012C0" name="CLEAR_PIXEL_VALUE32" type="DE_COLOR" brief="Clear color value in A8R8G8B8 format"/>
+        <reg32 offset="0x012C4" name="DEST_COLOR_KEY" type="DE_COLOR" brief="Destination transparency color in destination format"/>
+        <reg32 offset="0x012C8" name="GLOBAL_SRC_COLOR" type="DE_COLOR" brief="Global source color and alpha values"/>
+        <reg32 offset="0x012CC" name="GLOBAL_DEST_COLOR" type="DE_COLOR" brief="Global destination color and alpha values"/>
         <reg32 offset="0x012D0" name="COLOR_MULTIPLY_MODES" type="2D_COLOR_MULTIPLY_MODES"/>
         <reg32 offset="0x012D4" name="PE_TRANSPARENCY" type="2D_PE_TRANSPARENCY"/>
         <reg32 offset="0x012D8" name="PE_CONTROL" type="2D_PE_CONTROL"/>
-        <reg32 offset="0x012DC" name="SRC_COLOR_KEY_HIGH" type="DE_COLOR"/>
-        <reg32 offset="0x012E0" name="DEST_COLOR_KEY_HIGH" type="DE_COLOR"/>
-        <reg32 offset="0x012E4" name="VR_CONFIG_EX" masked="yes">
-            <bitfield high="1" low="0" name="VERTICAL_LINE_WIDTH">
+        <reg32 offset="0x012DC" name="SRC_COLOR_KEY_HIGH" type="DE_COLOR" brief="Source transparency color in source format"/>
+        <reg32 offset="0x012E0" name="DEST_COLOR_KEY_HIGH" type="DE_COLOR" brief="Destination transparency color in destination format"/>
+        <reg32 offset="0x012E4" name="VR_CONFIG_EX" masked="yes" brief="Video rasterizer configuration register">
+            <bitfield high="1" low="0" name="VERTICAL_LINE_WIDTH" brief="Line width in pixels for vertical pass">
                 <value value="0" name="AUTO"/>
                 <value value="1" name="PIXELS16"/>
                 <value value="2" name="PIXELS32"/>
             </bitfield>
             <bitfield high="3" low="3" name="VERTICAL_LINE_WIDTH_MASK"/>
-            <bitfield high="7" low="4" name="FILTER_TAP"/>
+            <bitfield high="7" low="4" name="FILTER_TAP" brief="One pass filter tap"/>
             <bitfield high="8" low="8" name="FILTER_TAP_MASK"/>
         </reg32>
-        <reg32 offset="0x012E8" name="PE_DITHER_LOW">
-            <bitfield high="3" low="0" name="PIXEL_X0_Y0"/>
-            <bitfield high="7" low="4" name="PIXEL_X1_Y0"/>
-            <bitfield high="11" low="8" name="PIXEL_X2_Y0"/>
-            <bitfield high="15" low="12" name="PIXEL_X3_Y0"/>
-            <bitfield high="19" low="16" name="PIXEL_X0_Y1"/>
-            <bitfield high="23" low="20" name="PIXEL_X1_Y1"/>
-            <bitfield high="27" low="24" name="PIXEL_X2_Y1"/>
-            <bitfield high="31" low="28" name="PIXEL_X3_Y1"/>
+        <reg32 offset="0x012E8" name="PE_DITHER_LOW" brief="PE dither register (low)">
+            <doc>
+            If you don't want dither, set all fields to their reset values (0xFFFFFFFF).
+            </doc>
+            <bitfield high="3" low="0" name="PIXEL_X0_Y0" brief="X,Y = 0,0"/>
+            <bitfield high="7" low="4" name="PIXEL_X1_Y0" brief="X,Y = 1,0"/>
+            <bitfield high="11" low="8" name="PIXEL_X2_Y0" brief="X,Y = 2,0"/>
+            <bitfield high="15" low="12" name="PIXEL_X3_Y0" brief="X,Y = 3,0"/>
+            <bitfield high="19" low="16" name="PIXEL_X0_Y1" brief="X,Y = 0,1"/>
+            <bitfield high="23" low="20" name="PIXEL_X1_Y1" brief="X,Y = 1,1"/>
+            <bitfield high="27" low="24" name="PIXEL_X2_Y1" brief="X,Y = 2,1"/>
+            <bitfield high="31" low="28" name="PIXEL_X3_Y1" brief="X,Y = 3,1"/>
         </reg32>
-        <reg32 offset="0x012EC" name="PE_DITHER_HIGH">
-            <bitfield high="3" low="0" name="PIXEL_X0_Y2"/>
-            <bitfield high="7" low="4" name="PIXEL_X1_Y2"/>
-            <bitfield high="11" low="8" name="PIXEL_X2_Y2"/>
-            <bitfield high="15" low="12" name="PIXEL_X3_Y2"/>
-            <bitfield high="19" low="16" name="PIXEL_X0_Y3"/>
-            <bitfield high="23" low="20" name="PIXEL_X1_Y3"/>
-            <bitfield high="27" low="24" name="PIXEL_X2_Y3"/>
-            <bitfield high="31" low="28" name="PIXEL_X3_Y3"/>
+        <reg32 offset="0x012EC" name="PE_DITHER_HIGH" brief="PE dither register (high)">
+            <doc>
+            If you don't want dither, set all fields to their reset values (0xFFFFFFFF).
+            </doc>
+            <bitfield high="3" low="0" name="PIXEL_X0_Y2" brief="X,Y = 0,2"/>
+            <bitfield high="7" low="4" name="PIXEL_X1_Y2" brief="X,Y = 1,2"/>
+            <bitfield high="11" low="8" name="PIXEL_X2_Y2" brief="X,Y = 2,2"/>
+            <bitfield high="15" low="12" name="PIXEL_X3_Y2" brief="X,Y = 3,2"/>
+            <bitfield high="19" low="16" name="PIXEL_X0_Y3" brief="X,Y = 0,3"/>
+            <bitfield high="23" low="20" name="PIXEL_X1_Y3" brief="X,Y = 1,3"/>
+            <bitfield high="27" low="24" name="PIXEL_X2_Y3" brief="X,Y = 2,3"/>
+            <bitfield high="31" low="28" name="PIXEL_X3_Y3" brief="X,Y = 3,3"/>
         </reg32>
-        <reg32 offset="0x012F0" name="BW_CONFIG" masked="yes">
-            <bitfield high="0" low="0" name="BLOCK_CONFIG">
+        <reg32 offset="0x012F0" name="BW_CONFIG" masked="yes" brief="Block walk configuration">
+            <bitfield high="0" low="0" name="BLOCK_CONFIG" brief="One pass filter block configuration">
                 <value value="0" name="AUTO"/>
                 <value value="1" name="CUSTOMIZE"/>
             </bitfield>
             <bitfield high="3" low="3" name="BLOCK_CONFIG_MASK"/>
-            <bitfield high="4" low="4" name="BLOCK_WALK_DIRECTION">
+            <bitfield high="4" low="4" name="BLOCK_WALK_DIRECTION" brief="Block walk direction in one pass filter blit">
                 <value value="0" name="RIGHT_BOTTOM"/>
                 <value value="1" name="BOTTOM_RIGHT"/>
             </bitfield>
             <bitfield high="7" low="7" name="BLOCK_WALK_DIRECTION_MASK"/>
-            <bitfield high="8" low="8" name="TILE_WALK_DIRECTION">
+            <bitfield high="8" low="8" name="TILE_WALK_DIRECTION" brief="Tile walk direction in one pass filter blit">
                 <value value="0" name="RIGHT_BOTTOM"/>
                 <value value="1" name="BOTTOM_RIGHT"/>
             </bitfield>
@@ -410,29 +539,29 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <value value="0" name="RIGHT_BOTTOM"/>
                 <value value="1" name="BOTTOM_RIGHT"/>
             </bitfield>
-            <bitfield high="15" low="15" name="PIXEL_WALK_DIRECTION_MASK"/>
+            <bitfield high="15" low="15" name="PIXEL_WALK_DIRECTION_MASK" brief="Pixel walk direction in one pass filter blits"/>
         </reg32>
-        <reg32 offset="0x012F4" name="BW_BLOCK_SIZE">
+        <reg32 offset="0x012F4" name="BW_BLOCK_SIZE" brief="Block walker block size">
             <bitfield high="15" low="0" name="WIDTH"/>
             <bitfield high="31" low="16" name="HEIGHT"/>
         </reg32>
-        <reg32 offset="0x012F8" name="BW_TILE_SIZE">
+        <reg32 offset="0x012F8" name="BW_TILE_SIZE" brief="Block walker tile size">
             <bitfield high="15" low="0" name="WIDTH"/>
             <bitfield high="31" low="16" name="HEIGHT"/>
         </reg32>
-        <reg32 offset="0x012FC" name="BW_BLOCK_MASK">
+        <reg32 offset="0x012FC" name="BW_BLOCK_MASK" brief="Block walker block mask">
             <bitfield high="15" low="0" name="HORIZONTAL"/>
             <bitfield high="31" low="16" name="VERTICAL"/>
         </reg32>
         <reg32 offset="0x01300" name="SRC_EX_CONFIG">
-            <bitfield high="0" low="0" name="MULTI_TILED" type="ENABLE_DISABLE"/>
-            <bitfield high="3" low="3" name="SUPER_TILED" type="ENABLE_DISABLE"/>
-            <bitfield high="8" low="8" name="MINOR_TILED" type="ENABLE_DISABLE"/>
+            <bitfield high="0" low="0" name="MULTI_TILED" type="ENABLE_DISABLE" brief="Source multi tiled address computation control"/>
+            <bitfield high="3" low="3" name="SUPER_TILED" type="ENABLE_DISABLE" brief="Source super tiled address computation control"/>
+            <bitfield high="8" low="8" name="MINOR_TILED" type="ENABLE_DISABLE" brief="Source minor tiled address computation control"/>
         </reg32>
-        <reg32 offset="0x01304" name="SRC_EX_ADDRESS" type="VIVM"/>
-        <reg32 offset="0x01308" name="DE_MULTI_SOURCE">
-            <bitfield high="2" low="0" name="MAX_SOURCE"/>
-            <bitfield high="10" low="8" name="HORIZONTAL_BLOCK">
+        <reg32 offset="0x01304" name="SRC_EX_ADDRESS" type="VIVM" brief="32-bit aligned base address of the source extra surface"/>
+        <reg32 offset="0x01308" name="DE_MULTI_SOURCE" brief="Multisource control register">
+            <bitfield high="2" low="0" name="MAX_SOURCE" brief="Number of source surfaces minus 1"/>
+            <bitfield high="10" low="8" name="HORIZONTAL_BLOCK" brief="Number of pixels for horizontal block walker">
                 <value value="0" name="PIXEL16"/>
                 <value value="1" name="PIXEL32"/>
                 <value value="2" name="PIXEL64"/>
@@ -440,7 +569,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <value value="4" name="PIXEL256"/>
                 <value value="5" name="PIXEL512"/>
             </bitfield>
-            <bitfield high="18" low="16" name="VERTICAL_BLOCK">
+            <bitfield high="18" low="16" name="VERTICAL_BLOCK" brief="Number of lines for vertical block walker">
                 <value value="0" name="LINE1"/>
                 <value value="1" name="LINE2"/>
                 <value value="2" name="LINE4"/>
@@ -451,50 +580,71 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <value value="7" name="LINE128"/>
             </bitfield>
         </reg32>
-        <reg32 offset="0x0130C" name="DEYUV_CONVERSION">
-            <bitfield high="1" low="0" name="ENABLE">
-                <value value="0" name="OFF"/>
-                <value value="1" name="PLANE1"/>
-                <value value="2" name="PLANE2"/>
-                <value value="3" name="PLANE3"/>
+        <reg32 offset="0x0130C" name="DEYUV_CONVERSION" brief="Configure the YUV to YUV conversion">
+            <bitfield high="1" low="0" name="ENABLE" brief="Select the number of planes we need to process">
+                <value value="0" name="OFF" brief="YUV to YUV conversion is turned off"/>
+                <value value="1" name="PLANE1" brief="YUV to YUV conversion is writing to 1 plane"/>
+                <value value="2" name="PLANE2" brief="YUV to YUV conversion is writing to 2 planes"/>
+                <value value="3" name="PLANE3" brief="YUV to YUV conversion is writing to 3 planes"/>
             </bitfield>
-            <bitfield high="3" low="2" name="PLANE1_COUNT" type="uint"/>
-            <bitfield high="5" low="4" name="PLANE2_COUNT" type="uint"/>
-            <bitfield high="7" low="6" name="PLANE3_COUNT" type="uint"/>
-            <bitfield high="9" low="8" name="PLANE1_SWIZZLE_B" type="DE_COMPONENT"/>
-            <bitfield high="11" low="10" name="PLANE1_SWIZZLE_G" type="DE_COMPONENT"/>
-            <bitfield high="13" low="12" name="PLANE1_SWIZZLE_R" type="DE_COMPONENT"/>
-            <bitfield high="15" low="14" name="PLANE1_SWIZZLE_A" type="DE_COMPONENT"/>
-            <bitfield high="17" low="16" name="PLANE2_SWIZZLE_B" type="DE_COMPONENT"/>
-            <bitfield high="19" low="18" name="PLANE2_SWIZZLE_G" type="DE_COMPONENT"/>
-            <bitfield high="21" low="20" name="PLANE2_SWIZZLE_R" type="DE_COMPONENT"/>
-            <bitfield high="23" low="22" name="PLANE2_SWIZZLE_A" type="DE_COMPONENT"/>
-            <bitfield high="25" low="24" name="PLANE3_SWIZZLE_B" type="DE_COMPONENT"/>
-            <bitfield high="27" low="26" name="PLANE3_SWIZZLE_G" type="DE_COMPONENT"/>
-            <bitfield high="29" low="28" name="PLANE3_SWIZZLE_R" type="DE_COMPONENT"/>
-            <bitfield high="31" low="30" name="PLANE3_SWIZZLE_A" type="DE_COMPONENT"/>
+            <bitfield high="3" low="2" name="PLANE1_COUNT" type="uint" brief="Number of channels to process - 1 for plane 1"/>
+            <bitfield high="5" low="4" name="PLANE2_COUNT" type="uint" brief="Number of channels to process - 1 for plane 2"/>
+            <bitfield high="7" low="6" name="PLANE3_COUNT" type="uint" brief="Number of channels to process - 1 for plane 3"/>
+            <bitfield high="9" low="8" name="PLANE1_SWIZZLE_B" type="DE_COMPONENT" brief="Color channel to pick for B channel for plane 1"/>
+            <bitfield high="11" low="10" name="PLANE1_SWIZZLE_G" type="DE_COMPONENT" brief="Color channel to pick for G channel for plane 1"/>
+            <bitfield high="13" low="12" name="PLANE1_SWIZZLE_R" type="DE_COMPONENT" brief="Color channel to pick for R channel for plane 1"/>
+            <bitfield high="15" low="14" name="PLANE1_SWIZZLE_A" type="DE_COMPONENT" brief="Color channel to pick for A channel for plane 1"/>
+            <bitfield high="17" low="16" name="PLANE2_SWIZZLE_B" type="DE_COMPONENT" brief="Color channel to pick for B channel for plane 2"/>
+            <bitfield high="19" low="18" name="PLANE2_SWIZZLE_G" type="DE_COMPONENT" brief="Color channel to pick for G channel for plane 2"/>
+            <bitfield high="21" low="20" name="PLANE2_SWIZZLE_R" type="DE_COMPONENT" brief="Color channel to pick for R channel for plane 2"/>
+            <bitfield high="23" low="22" name="PLANE2_SWIZZLE_A" type="DE_COMPONENT" brief="Color channel to pick for A channel for plane 2"/>
+            <bitfield high="25" low="24" name="PLANE3_SWIZZLE_B" type="DE_COMPONENT" brief="Color channel to pick for B channel for plane 3"/>
+            <bitfield high="27" low="26" name="PLANE3_SWIZZLE_G" type="DE_COMPONENT" brief="Color channel to pick for G channel for plane 3"/>
+            <bitfield high="29" low="28" name="PLANE3_SWIZZLE_R" type="DE_COMPONENT" brief="Color channel to pick for R channel for plane 3"/>
+            <bitfield high="31" low="30" name="PLANE3_SWIZZLE_A" type="DE_COMPONENT" brief="Color channel to pick for A channel for plane 3"/>
         </reg32>
-        <reg32 offset="0x01310" name="DE_PLANE2_ADDRESS" type="VIVM"/>
-        <reg32 offset="0x01314" name="DE_PLANE2_STRIDE" type="2D_SRC_STRIDE"/>
-        <reg32 offset="0x01318" name="DE_PLANE3_ADDRESS" type="VIVM"/>
-        <reg32 offset="0x0131C" name="DE_PLANE3_STRIDE" type="2D_SRC_STRIDE"/>
+        <reg32 offset="0x01310" name="DE_PLANE2_ADDRESS" type="VIVM" brief="Address for plane 2 if DEYUV_CONVERSION ENABLE is set to PLANE2 or PLANE3"/>
+        <reg32 offset="0x01314" name="DE_PLANE2_STRIDE" type="2D_SRC_STRIDE" brief="Stride for plane 2 if DEYUV_CONVERSION ENABLE is set to PLANE2 or PLANE3"/>
+        <reg32 offset="0x01318" name="DE_PLANE3_ADDRESS" type="VIVM" brief="Address for plane 3 if DEYUV_CONVERSION ENABLE is set to PLANE3"/>
+        <reg32 offset="0x0131C" name="DE_PLANE3_STRIDE" type="2D_SRC_STRIDE" brief="Stride for plane 3 if DEYUV_CONVERSION ENABLE is set to PLANE3"/>
         <reg32 offset="0x01320" name="DE_STALL_DE">
-            <bitfield high="0" low="0" name="ENABLE" type="ENABLE_DISABLE"/>
+            <bitfield high="0" low="0" name="ENABLE" type="ENABLE_DISABLE" brief="Stall DE enable"/>
         </reg32>
-        <reg32 offset="0x01800" name="FILTER_KERNEL" length="128">
+        <reg32 offset="0x01800" name="FILTER_KERNEL" length="128" brief="Filter blit coefficient table">
+            <doc>
+            The algorithm uses 5 bits of the pixel coordinate's fraction to index the kernel array,
+            which makes it a 32-entry array. Each entry consists of 9 kernel values. In practice
+            we store only a half of the table, because the other half is a mirror of the first,
+            therefore:
+                rows_to_store    = 32 / 2 + 1 = 17
+                values_to_store  = rows_to_store * 9 = 153
+                even_value_count = (values_to_store + 1) &amp; ~1 = 154
+                dword_count      = even_value_count / 2 = 77
+            </doc>
             <bitfield high="15" low="0" name="COEFFICIENT0"/>
             <bitfield high="31" low="16" name="COEFFICIENT1"/>
         </reg32>
-        <reg32 offset="0x01C00" name="INDEX_COLOR_TABLE" length="256" type="DE_COLOR"/>
-        <reg32 offset="0x02800" name="HORI_FILTER_KERNEL" length="128">
+        <reg32 offset="0x01C00" name="INDEX_COLOR_TABLE" length="256" type="DE_COLOR" brief="Index color table">
+            <doc>
+            256 color entries for the indexed color mode. Colors are assumed to be in
+            the destination format and no color conversion is done on the values.
+            </doc>
+        </reg32>
+        <reg32 offset="0x02800" name="HORI_FILTER_KERNEL" length="128" brief="One pass Filter blit horizontal coefficient table">
             <bitfield high="15" low="0" name="COEFFICIENT0"/>
             <bitfield high="31" low="16" name="COEFFICIENT1"/>
         </reg32>
-        <reg32 offset="0x02A00" name="VERTI_FILTER_KERNEL" length="128">
+        <reg32 offset="0x02A00" name="VERTI_FILTER_KERNEL" length="128" brief="One pass Filter blit vertical coefficient table">
             <bitfield high="15" low="0" name="COEFFICIENT0"/>
             <bitfield high="31" low="16" name="COEFFICIENT1"/>
         </reg32>
-        <reg32 offset="0x03400" name="INDEX_COLOR_TABLE32" length="256" type="DE_COLOR"/>
+        <reg32 offset="0x03400" name="INDEX_COLOR_TABLE32" length="256" type="DE_COLOR"> <!-- only PE20 -->
+            <doc>
+            256 color entries for the indexed color mode. Colors are assumed to be in
+            A8R8G8B8 format and no color conversion is done on the values.
+            This register is only used with chips with PE20 feature.
+            </doc>
+        </reg32>
         <!-- Multi-source blend -->
         <stripe name="BLOCK4">
             <reg32 offset="0x12800" name="SRC_ADDRESS" length="4" type="VIVM"/>

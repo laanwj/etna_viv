@@ -192,7 +192,12 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 32 bits (word 0) of the last-fetched DMA word.
             </doc>
         </reg32>
-        <reg32 offset="0x0066C" name="DMA_HIGH" brief="FE fetched word 1"/>
+        <reg32 offset="0x0066C" name="DMA_HIGH" brief="FE fetched word 1">
+            <doc>
+                The GPU's DMA engine fetches 64-bit words at once. This register will read the upper
+                32 bits (word 1) of the last-fetched DMA word.
+            </doc>
+        </reg32>
         <reg32 offset="0x00670" name="AUTO_FLUSH" value="0x00000000" brief="Auto flush cycles"/>
         <reg32 offset="0x00678" name="UNK00678" value="0x00000000"/>
         <reg32 offset="0x0067C" name="UNK0067C" value="0xFFFFFFFF"/>
@@ -210,6 +215,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             when to send event, when to wait on semaphores and the API mode (OGL or D3D).
         </doc>
         <reg32 offset="0x03800" name="PIPE_SELECT" brief="Select the current graphics pipe">
+            <doc>Make sure that the PE is idle before switching pipes.</doc>
             <bitfield pos="0" name="PIPE" type="PIPE_ID"/>
         </reg32>
         <reg32 offset="0x03804" name="EVENT" brief="Send an event">
@@ -226,7 +232,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="0" name="DEPTH"/>
             <bitfield pos="1" name="COLOR"/>
             <bitfield pos="2" name="TEXTURE"/>
-            <bitfield pos="3" name="PE2D"/>
+            <bitfield pos="3" name="PE2D" brief="Flush the 2D pixel cache"/>
             <bitfield pos="4" name="TEXTUREVS"/>
             <bitfield pos="5" name="SHADER_L1"/>
             <bitfield pos="6" name="SHADER_L2"/>

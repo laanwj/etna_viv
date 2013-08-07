@@ -8,11 +8,11 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- /home/orion/projects/etna_viv/rnndb/state.xml    (  17286 bytes, from 2013-07-25 15:32:33)
+- /home/orion/projects/etna_viv/rnndb/state.xml    (  17986 bytes, from 2013-08-07 08:47:32)
 - /home/orion/projects/etna_viv/rnndb/common.xml   (  15985 bytes, from 2013-02-10 12:55:03)
-- /home/orion/projects/etna_viv/rnndb/state_hi.xml (  17017 bytes, from 2013-07-25 15:34:05)
-- /home/orion/projects/etna_viv/rnndb/state_2d.xml (  30607 bytes, from 2013-04-16 17:48:29)
-- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  53323 bytes, from 2013-07-17 06:01:42)
+- /home/orion/projects/etna_viv/rnndb/state_hi.xml (  21543 bytes, from 2013-08-07 09:21:45)
+- /home/orion/projects/etna_viv/rnndb/state_2d.xml (  43962 bytes, from 2013-08-07 16:02:06)
+- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  53428 bytes, from 2013-08-04 07:40:45)
 
 Copyright (C) 2013
 */
@@ -22,6 +22,9 @@ Copyright (C) 2013
 #define VARYING_COMPONENT_USE_USED				0x00000001
 #define VARYING_COMPONENT_USE_POINTCOORD_X			0x00000002
 #define VARYING_COMPONENT_USE_POINTCOORD_Y			0x00000003
+#define FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE__MASK		0x000000ff
+#define FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE__SHIFT		0
+#define FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE(x)		(((x) << FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE__SHIFT) & FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE__MASK)
 #define VIVS_FE							0x00000000
 
 #define VIVS_FE_VERTEX_ELEMENT_CONFIG(i0)		       (0x00000600 + 0x4*(i0))
@@ -75,9 +78,6 @@ Copyright (C) 2013
 #define VIVS_FE_VERTEX_STREAM_BASE_ADDR				0x0000064c
 
 #define VIVS_FE_VERTEX_STREAM_CONTROL				0x00000650
-#define VIVS_FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE__MASK	0x000000ff
-#define VIVS_FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE__SHIFT	0
-#define VIVS_FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE(x)		(((x) << VIVS_FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE__SHIFT) & VIVS_FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE__MASK)
 
 #define VIVS_FE_COMMAND_ADDRESS					0x00000654
 

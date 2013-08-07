@@ -8,11 +8,11 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- /home/orion/projects/etna_viv/rnndb/state.xml    (  17286 bytes, from 2013-07-25 15:32:33)
+- /home/orion/projects/etna_viv/rnndb/state.xml    (  17986 bytes, from 2013-08-07 08:47:32)
 - /home/orion/projects/etna_viv/rnndb/common.xml   (  15985 bytes, from 2013-02-10 12:55:03)
-- /home/orion/projects/etna_viv/rnndb/state_hi.xml (  17017 bytes, from 2013-07-25 15:34:05)
-- /home/orion/projects/etna_viv/rnndb/state_2d.xml (  30607 bytes, from 2013-04-16 17:48:29)
-- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  53323 bytes, from 2013-07-17 06:01:42)
+- /home/orion/projects/etna_viv/rnndb/state_hi.xml (  21543 bytes, from 2013-08-07 09:21:45)
+- /home/orion/projects/etna_viv/rnndb/state_2d.xml (  43962 bytes, from 2013-08-07 16:02:06)
+- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  53428 bytes, from 2013-08-04 07:40:45)
 
 Copyright (C) 2013
 */
@@ -364,10 +364,11 @@ Copyright (C) 2013
 #define VIVS_PA_SHADER_ATTRIBUTES(i0)			       (0x00000a40 + 0x4*(i0))
 #define VIVS_PA_SHADER_ATTRIBUTES__ESIZE			0x00000004
 #define VIVS_PA_SHADER_ATTRIBUTES__LEN				0x0000000a
-#define VIVS_PA_SHADER_ATTRIBUTES_UNK0__MASK			0x000000ff
-#define VIVS_PA_SHADER_ATTRIBUTES_UNK0__SHIFT			0
-#define VIVS_PA_SHADER_ATTRIBUTES_UNK0(x)			(((x) << VIVS_PA_SHADER_ATTRIBUTES_UNK0__SHIFT) & VIVS_PA_SHADER_ATTRIBUTES_UNK0__MASK)
-#define VIVS_PA_SHADER_ATTRIBUTES_UNK8__MASK			0x0000ff00
+#define VIVS_PA_SHADER_ATTRIBUTES_BYPASS_FLAT			0x00000001
+#define VIVS_PA_SHADER_ATTRIBUTES_UNK4__MASK			0x000000f0
+#define VIVS_PA_SHADER_ATTRIBUTES_UNK4__SHIFT			4
+#define VIVS_PA_SHADER_ATTRIBUTES_UNK4(x)			(((x) << VIVS_PA_SHADER_ATTRIBUTES_UNK4__SHIFT) & VIVS_PA_SHADER_ATTRIBUTES_UNK4__MASK)
+#define VIVS_PA_SHADER_ATTRIBUTES_UNK8__MASK			0x00000f00
 #define VIVS_PA_SHADER_ATTRIBUTES_UNK8__SHIFT			8
 #define VIVS_PA_SHADER_ATTRIBUTES_UNK8(x)			(((x) << VIVS_PA_SHADER_ATTRIBUTES_UNK8__SHIFT) & VIVS_PA_SHADER_ATTRIBUTES_UNK8__MASK)
 

@@ -623,6 +623,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 
              A) tiled: SOURCE_TILED, DEST_TILED in CONFIG word
              B) supertiled: TILING bit in SOURCE_STRIDE / DEST_STRIDE
+
+             GC2000 and other GPUs with multiple pixel pipes have additional multi-pipe tiling formats,
+             which are used by the PE when rendering.
         </doc>
         <reg32 offset="0x01600" name="KICKER" brief="Resolve start" value="0x00000000">
             <doc>Write some value to this register to kick off resolver</doc>
@@ -709,7 +712,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <stripe name="TS" brief="Tile Status">
         <doc>
         Tile status block contains information about the tiles to be resolved.
-        It is used by the PE (to read/update tile status) as well as the RS (to read tile status).
+        It is used by the PE (to read/update tile status) as well as the RS (to read tile status for source).
         </doc>
         <reg32 offset="0x01654" name="MEM_CONFIG" brief="Memory configuration" value="0x00200000">
             <doc>

@@ -987,7 +987,7 @@ static void etna_pipe_set_vertex_buffers( struct pipe_context *pipe,
             cs->logical = etna_resource(vbi->buffer)->levels[0].logical + vbi->buffer_offset;
         }
         /* compiled state */
-        cs->FE_VERTEX_STREAM_CONTROL = VIVS_FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE(vbi->stride);
+        cs->FE_VERTEX_STREAM_CONTROL = FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE(vbi->stride);
         cs->FE_VERTEX_STREAM_BASE_ADDR = gpu_addr;
         
         etna_resource_touch(pipe, vbi->buffer);
