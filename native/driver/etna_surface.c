@@ -54,10 +54,15 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
     pipe_reference_init(&surf->base.reference, 1);
     pipe_resource_reference(&surf->base.texture, &resource->base);
 
-    /* Allocate a TS for the resource if there isn't one yet */
+    /* Allocate a TS for the resource if there isn't one yet,
+     * and it is allowed by the hw (width is a multiple of 16).
+     */
     /* XXX for now, don't do TS for render textures as this path
-     * is not stable */
-    if(!resource->ts & !(resource->base.bind & PIPE_BIND_SAMPLER_VIEW))
+     * is not stable.
+     */
+    if(!resource->ts & !(resource->base.bind & PIPE_BIND_SAMPLER_VIEW) &&
+            (resource->levels[level].padded_width & ETNA_RS_WIDTH_MASK) == 0 &&
+            (resource->levels[level].padded_height & ETNA_RS_HEIGHT_MASK) == 0)
         etna_screen_resource_alloc_ts(pipe->screen, resource);
 
     surf->base.texture = &resource->base;

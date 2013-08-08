@@ -138,7 +138,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="3" name="ANISOTROPIC"/><!-- Only supported if HALTI0 feature bit set -->
     </enum>
     <enum name="TEXTURE_TYPE">
-        <!-- 0 shows up as black -->
+        <value value="0" name="NONE"/> <!-- 0 shows up as black -->
         <!-- 1 crashes GPU -->
         <value value="2" name="2D"/>
         <!-- 3 crashes GPU -->
@@ -170,6 +170,13 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="3" name="ALPHA"/>
         <value value="4" name="ZERO"/>
         <value value="5" name="ONE"/>
+    </enum>
+    <enum name="TEXTURE_HALIGN">
+        <value value="0" name="FOUR"/>
+        <value value="1" name="SIXTEEN"/>
+        <value value="2" name="SUPER_TILED"/>
+        <value value="3" name="SPLIT_TILED"/>
+        <value value="4" name="SPLIT_SUPER_TILED"/>
     </enum>
     <enum name="LOGIC_OP" brief="LogicOp">
         <value value="0" name="CLEAR"/>
@@ -827,6 +834,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield high="14" low="12" name="SWIZZLE_G" type="TEXTURE_SWIZZLE"/>
         <bitfield high="18" low="16" name="SWIZZLE_B" type="TEXTURE_SWIZZLE"/>
         <bitfield high="22" low="20" name="SWIZZLE_A" type="TEXTURE_SWIZZLE"/>
+        <bitfield high="28" low="26" name="HALIGN" type="TEXTURE_HALIGN"/>
     </bitset>
     <stripe name="TE" brief="TExture sampler states">
         <doc>Texture sampling, filtering, LOD, etc</doc>

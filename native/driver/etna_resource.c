@@ -130,18 +130,28 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     assert(templat->array_size != 0);
     
     /* Figure out what tiling to use -- for now, assume that textures cannot be supertiled, and cannot be linear.
-     * There is a feature flag SUPERTILED_TEXTURE that may allow this, as well as TEXTURE_LINEAR, but not sure how it works. 
+     * There is a feature flag SUPERTILED_TEXTURE (not supported on any known hw) that may allow this, as well 
+     * as LINEAR_TEXTURE_SUPPORT (supported on gc880 and gc2000 at least), but not sure how it works. 
      * Buffers always have LINEAR layout.
      */
     unsigned layout = ETNA_LAYOUT_LINEAR;
     if(templat->target != PIPE_BUFFER)
     {
         if(!(templat->bind & PIPE_BIND_SAMPLER_VIEW) && priv->specs.can_supertile) 
-            layout = ETNA_LAYOUT_SUPERTILED;
+            layout = ETNA_LAYOUT_SUPER_TILED;
         else
             layout = ETNA_LAYOUT_TILED;
     }
-    unsigned padding = etna_layout_multiple(layout);
+    /* XXX multi tiled formats */
+
+    /* Determine needed padding */
+    unsigned paddingX = 0, paddingY = 0;
+    unsigned halign = TEXTURE_HALIGN_FOUR;
+    etna_layout_multiple(layout,
+            priv->dev->chip.pixel_pipes,
+            (templat->bind & PIPE_BIND_SAMPLER_VIEW) && !VIV_FEATURE(priv->dev, chipMinorFeatures1, TEXTURE_HALIGN),
+            &paddingX, &paddingY, &halign);
+    assert(paddingX && paddingY);
     
     /* determine mipmap levels */
     struct etna_resource *resource = CALLOC_STRUCT(etna_resource);
@@ -163,8 +173,8 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
         struct etna_resource_level *mip = &resource->levels[ix];
         mip->width = x;
         mip->height = y;
-        mip->padded_width = align(x, padding);
-        mip->padded_height = align(y, padding);
+        mip->padded_width = align(x, paddingX);
+        mip->padded_height = align(y, paddingY);
         mip->stride = align(resource->levels[ix].padded_width, divSizeX)/divSizeX * element_size;
         mip->offset = offset;
         mip->layer_stride = align(mip->padded_width, divSizeX)/divSizeX * 
@@ -210,6 +220,7 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     resource->base.last_level = ix; /* real last mipmap level */
     resource->base.screen = screen;
     resource->layout = layout;
+    resource->halign = halign;
     resource->surface = rt;
     resource->ts = 0; /* TS is only created when first bound to surface */
     pipe_reference_init(&resource->base.reference, 1);

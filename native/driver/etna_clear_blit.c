@@ -74,14 +74,17 @@ void etna_rs_gen_clear_surface(struct etna_surface *surf, uint32_t clear_value)
              format = RS_FORMAT_A8R8G8B8;
              assert(0);
     }
+    /* use tiled clear if width is multiple of 16 */
+    bool tiled_clear = (surf->surf.padded_width & ETNA_RS_WIDTH_MASK) == 0 &&
+                       (surf->surf.padded_height & ETNA_RS_HEIGHT_MASK) == 0;
     etna_compile_rs_state(&surf->clear_command, &(struct rs_state){
             .source_format = format,
             .dest_format = format,
             .dest_addr = surf->surf.address,
             .dest_stride = surf->surf.stride,
-            .dest_tiling = ETNA_LAYOUT_LINEAR, /* Clearing always in LINEAR layout */
+            .dest_tiling = tiled_clear ? surf->layout : ETNA_LAYOUT_LINEAR,
             .dither = {0xffffffff, 0xffffffff},
-            .width = surf->surf.padded_width, /* These must be padded to 4x4, otherwise RS will hang */
+            .width = surf->surf.padded_width, /* These must be padded to 16x4 if !LINEAR, otherwise RS will hang */
             .height = surf->surf.padded_height,
             .clear_value = {clear_value},
             .clear_mode = VIVS_RS_CLEAR_CONTROL_MODE_ENABLED1,

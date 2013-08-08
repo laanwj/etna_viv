@@ -79,7 +79,10 @@ struct etna_resource
     struct pipe_resource base;
 
     /* only lod 0 used for non-texture buffers */
+    /* Layout for surface (tiled, multitiled, split tiled, ...) */
     enum etna_surface_layout layout;
+    /* Horizontal alignment for texture unit (TEXTURE_HALIGN_*) */
+    unsigned halign;
     struct etna_vidmem *surface; /* Surface video memory */
     struct etna_vidmem *ts; /* Tile status video memory */
 

@@ -233,6 +233,10 @@ static void reset_context(struct pipe_context *restrict pipe)
     {
         /*020C0*/ EMIT_STATE(TE_SAMPLER_LOD_CONFIG(x), TE_SAMPLER_LOD_CONFIG[x]);
     }
+    for(int x=0; x<12; ++x)
+    {
+        /*021C0*/ EMIT_STATE(TE_SAMPLER_CONFIG1(x), TE_SAMPLER_CONFIG1[x]);
+    }
     for(int y=0; y<14; ++y)
     {
         for(int x=0; x<12; ++x)
@@ -571,6 +575,14 @@ static void sync_context(struct pipe_context *restrict pipe)
                         e->sampler[x]->TE_SAMPLER_LOD_CONFIG | 
                         VIVS_TE_SAMPLER_LOD_CONFIG_MAX(MIN2(e->sampler[x]->max_lod, e->sampler_view[x].max_lod)) | 
                         VIVS_TE_SAMPLER_LOD_CONFIG_MIN(MAX2(e->sampler[x]->min_lod, e->sampler_view[x].min_lod))); 
+            }
+        }
+        for(int x=0; x<VIVS_TE_SAMPLER__LEN; ++x)
+        {
+            if((1<<x) & active_samplers)
+            {
+                /*021C0*/ EMIT_STATE(TE_SAMPLER_CONFIG1(x), TE_SAMPLER_CONFIG1[x], 
+                        e->sampler[x]->TE_SAMPLER_CONFIG1 | e->sampler_view[x].TE_SAMPLER_CONFIG1);
             }
         }
     }

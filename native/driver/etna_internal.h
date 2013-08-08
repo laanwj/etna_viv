@@ -35,6 +35,11 @@
 #define ETNA_NUM_LAYERS (6)
 #define ETNA_MAX_UNIFORMS (256)
 
+/* RS tiled operations must have width%16 = 0 */
+#define ETNA_RS_WIDTH_MASK (16-1)
+/* RS tiled operations must have height%4 = 0 */
+#define ETNA_RS_HEIGHT_MASK (3)
+
 /* GPU chip 3D specs */
 struct etna_pipe_specs
 {
@@ -165,6 +170,7 @@ struct compiled_sampler_state
 {
     /* sampler offset +4*sampler, interleave when committing state */
     uint32_t TE_SAMPLER_CONFIG0;
+    uint32_t TE_SAMPLER_CONFIG1;
     uint32_t TE_SAMPLER_LOD_CONFIG;
     unsigned min_lod, max_lod;
 };
@@ -174,6 +180,7 @@ struct compiled_sampler_view
 {
     /* sampler offset +4*sampler, interleave when committing state */
     uint32_t TE_SAMPLER_CONFIG0;
+    uint32_t TE_SAMPLER_CONFIG1;
     uint32_t TE_SAMPLER_SIZE;
     uint32_t TE_SAMPLER_LOG_SIZE;
     uint32_t TE_SAMPLER_LOD_ADDR[VIVS_TE_SAMPLER_LOD_ADDR__LEN];
@@ -364,6 +371,7 @@ struct etna_3d_state
     uint32_t /*02040*/ TE_SAMPLER_SIZE[VIVS_TE_SAMPLER__LEN];
     uint32_t /*02080*/ TE_SAMPLER_LOG_SIZE[VIVS_TE_SAMPLER__LEN];
     uint32_t /*020C0*/ TE_SAMPLER_LOD_CONFIG[VIVS_TE_SAMPLER__LEN];
+    uint32_t /*021C0*/ TE_SAMPLER_CONFIG1[VIVS_TE_SAMPLER__LEN];
     uint32_t /*02400*/ TE_SAMPLER_LOD_ADDR[VIVS_TE_SAMPLER_LOD_ADDR__LEN][VIVS_TE_SAMPLER__LEN];
 
     uint32_t /*03814*/ GL_VERTEX_ELEMENT_CONFIG;

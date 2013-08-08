@@ -9,10 +9,10 @@ git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
 - /home/orion/projects/etna_viv/rnndb/state.xml    (  17986 bytes, from 2013-08-07 08:47:32)
-- /home/orion/projects/etna_viv/rnndb/common.xml   (  15985 bytes, from 2013-02-10 12:55:03)
+- /home/orion/projects/etna_viv/rnndb/common.xml   (  15983 bytes, from 2013-08-08 19:33:56)
 - /home/orion/projects/etna_viv/rnndb/state_hi.xml (  21543 bytes, from 2013-08-07 09:21:45)
 - /home/orion/projects/etna_viv/rnndb/state_2d.xml (  43962 bytes, from 2013-08-07 16:02:06)
-- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  53428 bytes, from 2013-08-04 07:40:45)
+- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  53974 bytes, from 2013-08-08 18:57:46)
 
 Copyright (C) 2013
 */
@@ -95,6 +95,7 @@ Copyright (C) 2013
 #define TEXTURE_FILTER_NEAREST					0x00000001
 #define TEXTURE_FILTER_LINEAR					0x00000002
 #define TEXTURE_FILTER_ANISOTROPIC				0x00000003
+#define TEXTURE_TYPE_NONE					0x00000000
 #define TEXTURE_TYPE_2D						0x00000002
 #define TEXTURE_TYPE_CUBE_MAP					0x00000005
 #define TEXTURE_WRAPMODE_REPEAT					0x00000000
@@ -112,6 +113,11 @@ Copyright (C) 2013
 #define TEXTURE_SWIZZLE_ALPHA					0x00000003
 #define TEXTURE_SWIZZLE_ZERO					0x00000004
 #define TEXTURE_SWIZZLE_ONE					0x00000005
+#define TEXTURE_HALIGN_FOUR					0x00000000
+#define TEXTURE_HALIGN_SIXTEEN					0x00000001
+#define TEXTURE_HALIGN_SUPER_TILED				0x00000002
+#define TEXTURE_HALIGN_SPLIT_TILED				0x00000003
+#define TEXTURE_HALIGN_SPLIT_SUPER_TILED			0x00000004
 #define LOGIC_OP_CLEAR						0x00000000
 #define LOGIC_OP_NOR						0x00000001
 #define LOGIC_OP_AND_INVERTED					0x00000002
@@ -1000,6 +1006,9 @@ Copyright (C) 2013
 #define VIVS_TE_SAMPLER_CONFIG1_SWIZZLE_A__MASK			0x00700000
 #define VIVS_TE_SAMPLER_CONFIG1_SWIZZLE_A__SHIFT		20
 #define VIVS_TE_SAMPLER_CONFIG1_SWIZZLE_A(x)			(((x) << VIVS_TE_SAMPLER_CONFIG1_SWIZZLE_A__SHIFT) & VIVS_TE_SAMPLER_CONFIG1_SWIZZLE_A__MASK)
+#define VIVS_TE_SAMPLER_CONFIG1_HALIGN__MASK			0x1c000000
+#define VIVS_TE_SAMPLER_CONFIG1_HALIGN__SHIFT			26
+#define VIVS_TE_SAMPLER_CONFIG1_HALIGN(x)			(((x) << VIVS_TE_SAMPLER_CONFIG1_HALIGN__SHIFT) & VIVS_TE_SAMPLER_CONFIG1_HALIGN__MASK)
 
 #define VIVS_TE_SAMPLER_UNK02200(i0)			       (0x00002200 + 0x4*(i0))
 
@@ -1095,6 +1104,9 @@ Copyright (C) 2013
 #define VIVS_NTE_SAMPLER_CONFIG1_SWIZZLE_A__MASK		0x00700000
 #define VIVS_NTE_SAMPLER_CONFIG1_SWIZZLE_A__SHIFT		20
 #define VIVS_NTE_SAMPLER_CONFIG1_SWIZZLE_A(x)			(((x) << VIVS_NTE_SAMPLER_CONFIG1_SWIZZLE_A__SHIFT) & VIVS_NTE_SAMPLER_CONFIG1_SWIZZLE_A__MASK)
+#define VIVS_NTE_SAMPLER_CONFIG1_HALIGN__MASK			0x1c000000
+#define VIVS_NTE_SAMPLER_CONFIG1_HALIGN__SHIFT			26
+#define VIVS_NTE_SAMPLER_CONFIG1_HALIGN(x)			(((x) << VIVS_NTE_SAMPLER_CONFIG1_HALIGN__SHIFT) & VIVS_NTE_SAMPLER_CONFIG1_HALIGN__MASK)
 
 #define VIVS_NTE_SAMPLER_UNK10400(i0)			       (0x00010400 + 0x4*(i0))
 

@@ -384,15 +384,48 @@ static inline uint32_t translate_draw_mode(unsigned mode)
     }
 }
 
-/* get size multiple for size of texture/rendertarget with a certain layout */
-static inline unsigned etna_layout_multiple(unsigned layout)
+/* Get size multiple for size of texture/rendertarget with a certain layout 
+ * This is affected by many different parameters:
+ *   -  A horizontal multiple of 16 is used when possible as in this case tile status and resolve can be used
+ *       at the cost of only a little bit extra memory usage.
+ *   - If the surface is a texture, and HALIGN can not be specified on thie GPU, set tex_no_halign to 1
+ *       If set, an horizontal multiple of 4 will be used for tiled and linear surfaces, otherwise one of 16.
+ *   - If the surface is supertiled, horizontal and vertical multiple is always 64
+ *   - If the surface is multi tiled or supertiled, make sure that the vertical size
+ *     is a multiple of the number of pixel pipes as well.
+ * */
+static inline void etna_layout_multiple(unsigned layout, unsigned pixel_pipes,
+        bool tex_no_halign,
+        unsigned *paddingX, unsigned *paddingY, unsigned *halign)
 {
     switch(layout)
     {
-    case ETNA_LAYOUT_LINEAR: return 1;
-    case ETNA_LAYOUT_TILED:  return 4;
-    case ETNA_LAYOUT_SUPERTILED: return 64;
-    default: DBG("Unhandled layout %i\n", layout); return 0;
+    case ETNA_LAYOUT_LINEAR:
+        *paddingX = tex_no_halign ? 4 : 16;
+        *paddingY = 1;
+        *halign = tex_no_halign ? TEXTURE_HALIGN_FOUR : TEXTURE_HALIGN_SIXTEEN;
+        break;
+    case ETNA_LAYOUT_TILED:
+        *paddingX = tex_no_halign ? 4 : 16;
+        *paddingY = 4;
+        *halign = tex_no_halign ? TEXTURE_HALIGN_FOUR : TEXTURE_HALIGN_SIXTEEN;
+        break;
+    case ETNA_LAYOUT_SUPER_TILED:
+        *paddingX = 64;
+        *paddingY = 64;
+        *halign = TEXTURE_HALIGN_SUPER_TILED;
+        break;
+    case ETNA_LAYOUT_MULTI_TILED:
+        *paddingX = 16;
+        *paddingY = 4 * pixel_pipes;
+        *halign = TEXTURE_HALIGN_SPLIT_TILED;
+        break;
+    case ETNA_LAYOUT_MULTI_SUPERTILED:
+        *paddingX = 64;
+        *paddingY = 64 * pixel_pipes;
+        *halign = TEXTURE_HALIGN_SPLIT_SUPER_TILED;
+        break;
+    default: DBG("Unhandled layout %i\n", layout); 
     }
 }
 

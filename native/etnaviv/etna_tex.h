@@ -26,12 +26,14 @@
 
 #include <stdint.h>
 
+/* texture or surface layout */
 enum etna_surface_layout
 {
     ETNA_LAYOUT_LINEAR = 0,
     ETNA_LAYOUT_TILED = 1,
-    ETNA_LAYOUT_SUPERTILED = 3 /* 1|2, both tiling and supertiling bit enabled */
-    /* XXX more supertile layouts for newer GCxxxx */
+    ETNA_LAYOUT_SUPER_TILED = 1|2, /* both tiling and supertiling bit enabled */
+    ETNA_LAYOUT_MULTI_TILED = 4|1, /* multi pipe tiled */
+    ETNA_LAYOUT_MULTI_SUPERTILED = 4|1|2 /* multi pipe supertiled */
 };
 
 void etna_texture_tile(void *dest, void *src, unsigned width, unsigned height, unsigned src_stride, unsigned elmtsize);
