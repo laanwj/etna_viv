@@ -49,7 +49,7 @@ static void *etna_pipe_create_rasterizer_state(struct pipe_context *pipe,
             translate_polygon_mode(rs->fill_front) |
             (rs->point_quad_rasterization ? VIVS_PA_CONFIG_POINT_SPRITE_ENABLE : 0) |
             (rs->point_size_per_vertex ? VIVS_PA_CONFIG_POINT_SIZE_ENABLE : 0);
-    cs->PA_LINE_WIDTH = etna_f32_to_u32(rs->line_width);
+    cs->PA_LINE_WIDTH = etna_f32_to_u32(rs->line_width / 2.0f);
     cs->PA_POINT_SIZE = etna_f32_to_u32(rs->point_size);
     cs->SE_DEPTH_SCALE = etna_f32_to_u32(rs->offset_scale);
     cs->SE_DEPTH_BIAS = etna_f32_to_u32(rs->offset_units);

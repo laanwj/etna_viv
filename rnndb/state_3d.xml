@@ -302,7 +302,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00A0C" name="VIEWPORT_OFFSET_X" value="0x00000000" type="float"/>
         <reg32 offset="0x00A10" name="VIEWPORT_OFFSET_Y" value="0x00000000" type="float"/>
         <reg32 offset="0x00A14" name="VIEWPORT_OFFSET_Z" value="0x00000000" type="float"/>
-        <reg32 offset="0x00A18" name="LINE_WIDTH" value="0x00000000" type="float"/>
+        <reg32 offset="0x00A18" name="LINE_WIDTH" value="0x00000000" type="float" brief="Half of line width in pixels"/>
         <reg32 offset="0x00A1C" name="POINT_SIZE" value="0x00000000" type="float"/>
         <reg32 offset="0x00A28" name="SYSTEM_MODE" value="0x00000000"> <!-- D3D/OpenGL switch -->
             <doc>0x11 for OpenGL, 0x00 for D3D9</doc>
