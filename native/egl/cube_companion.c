@@ -33,6 +33,7 @@
 #include "companion.h"
 #include "dump_gl_screen.h"
 #include "viv_hook.h"
+#include "eglutil.h"
 
 #define ONSCREEN 0
 #define WIDTH  800

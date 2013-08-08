@@ -25,7 +25,7 @@
 #include <stdbool.h>
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
-
+#include "eglutil.h"
 char *
 eglStrError(EGLint error)
 {

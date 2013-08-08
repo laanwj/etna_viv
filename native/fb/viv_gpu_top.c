@@ -267,7 +267,7 @@ int main()
         begin_time = end_time;
     }
     /*
-     * XXX define new mode MODE_OCCUPANCY some percentage bars:
+     * XXX define new mode MODE_OCCUPANCY and some derived percentage bars:
      * - [PA] Number of primitives per vertex (max 1)
      * - [PA] % of primitives culled
      * - VS -> PA -> SE -> RA primitives/vertices in each stage
@@ -275,6 +275,7 @@ int main()
      * - Pixels per PS inst
      * - Vertices per VS inst
      * - % of texture requests trilinear/bilinear
+     * - overdraw (killed by depth)
      */
 
     return 0;

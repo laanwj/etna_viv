@@ -43,7 +43,7 @@ static const EGLint context_attribute_list[] = {
 
 #define TEX_WIDTH (16)
 #define TEX_HEIGHT (16)
-GLuint createSimpleTexture()
+static GLuint createSimpleTexture()
 {
     GLuint textureId;
     uint8_t pixels[TEX_HEIGHT][TEX_WIDTH];

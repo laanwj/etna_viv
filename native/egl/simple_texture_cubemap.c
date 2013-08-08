@@ -28,7 +28,7 @@
 ///
 // Create a simple cubemap with a 1x1 face with a different
 // color for each face
-GLuint CreateSimpleTextureCubemap( )
+static GLuint CreateSimpleTextureCubemap( )
 {
    GLuint textureId;
    // Six 1x1 RGB faces
