@@ -188,7 +188,7 @@ int main(int argc, char **argv)
                 VIVS_RS_WINDOW_SIZE_WIDTH(padded_width));
         etna_set_state(ctx, VIVS_RS_KICKER, 0xbeebbeeb);
 
-        etna_set_state(ctx, VIVS_RS_FLUSH_CACHE, VIVS_RS_FLUSH_CACHE_FLUSH | VIVS_GL_FLUSH_CACHE_COLOR);
+        etna_set_state(ctx, VIVS_TS_FLUSH_CACHE, VIVS_TS_FLUSH_CACHE_FLUSH | VIVS_GL_FLUSH_CACHE_COLOR);
 
         /* Clear part using normal (not fast) clear */
         etna_set_state(ctx, VIVS_TS_MEM_CONFIG, 0);

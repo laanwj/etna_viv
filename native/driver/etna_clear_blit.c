@@ -99,6 +99,7 @@ static void etna_pipe_clear(struct pipe_context *pipe,
              unsigned stencil)
 {
     struct etna_pipe_context *priv = etna_pipe_context(pipe);
+    bool need_flush_ts = false;
     /* Flush color and depth cache before clearing anything.
      * This is especially important when coming from another surface, as otherwise it may clear
      * part of the old surface instead.
@@ -123,6 +124,7 @@ static void etna_pipe_clear(struct pipe_context *pipe,
                     priv->framebuffer.TS_COLOR_CLEAR_VALUE = new_clear_value;
                     priv->dirty_bits |= ETNA_STATE_TS;
                 }
+                need_flush_ts = true;
             }
             else if(unlikely(new_clear_value != surf->clear_value)) /* Queue normal RS clear for non-TS surfaces */
             {
@@ -143,12 +145,18 @@ static void etna_pipe_clear(struct pipe_context *pipe,
                 priv->framebuffer.TS_DEPTH_CLEAR_VALUE = new_clear_value;
                 priv->dirty_bits |= ETNA_STATE_TS;
             }
+            need_flush_ts = true;
         } else if(unlikely(new_clear_value != surf->clear_value)) /* Queue normal RS clear for non-TS surfaces */
         {
             etna_rs_gen_clear_surface(surf, new_clear_value);
         }
         etna_submit_rs_state(priv->ctx, &surf->clear_command);
         surf->clear_value = new_clear_value;
+    }
+    if(need_flush_ts)
+    {
+        /* Flush RS if we overwrote the TS outside of normal rendering */
+        etna_set_state(priv->ctx, VIVS_TS_FLUSH_CACHE, VIVS_TS_FLUSH_CACHE_FLUSH);
     }
     /* Wait rasterizer until PE finished updating. This makes sure that it sees the updated surface.
      */

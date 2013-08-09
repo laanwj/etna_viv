@@ -447,7 +447,7 @@ int main(int argc, char **argv)
         etna_set_state_f32(ctx, VIVS_PE_DEPTH_NORMALIZE, 65535.0);
 
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
-        etna_set_state(ctx, VIVS_RS_FLUSH_CACHE, VIVS_RS_FLUSH_CACHE_FLUSH);
+        etna_set_state(ctx, VIVS_TS_FLUSH_CACHE, VIVS_TS_FLUSH_CACHE_FLUSH);
         etna_stall(ctx, SYNC_RECIPIENT_RA, SYNC_RECIPIENT_PE);
 
         /* Set up the resolve to clear tile status for main render target 
@@ -602,7 +602,7 @@ int main(int argc, char **argv)
                 VIVS_RS_WINDOW_SIZE_WIDTH(padded_width));
         etna_set_state(ctx, VIVS_RS_KICKER, 0xbeebbeeb);
 
-        etna_set_state(ctx, VIVS_RS_FLUSH_CACHE, VIVS_RS_FLUSH_CACHE_FLUSH);
+        etna_set_state(ctx, VIVS_TS_FLUSH_CACHE, VIVS_TS_FLUSH_CACHE_FLUSH);
 
         etna_set_state(ctx, VIVS_TS_COLOR_STATUS_BASE, rt_ts->address); /* ADDR_B */
         etna_set_state(ctx, VIVS_TS_COLOR_SURFACE_BASE, rt->address); /* ADDR_A */

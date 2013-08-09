@@ -302,7 +302,7 @@ int etna_fb_copy_buffer(struct fb_info *fb, struct etna_ctx *ctx, int buffer)
      */
     etna_submit_rs_state(ctx, &fb->copy_to_screen[buffer]);
     /* Flush RS */
-    etna_set_state(ctx, VIVS_RS_FLUSH_CACHE, VIVS_RS_FLUSH_CACHE_FLUSH);
+    etna_set_state(ctx, VIVS_TS_FLUSH_CACHE, VIVS_TS_FLUSH_CACHE_FLUSH);
 
     return 0;
 }

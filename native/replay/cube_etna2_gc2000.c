@@ -332,7 +332,7 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_SE_DEPTH_BIAS, 0);
         
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_DEPTH | VIVS_GL_FLUSH_CACHE_COLOR);
-        etna_set_state(ctx, VIVS_RS_FLUSH_CACHE, VIVS_RS_FLUSH_CACHE_FLUSH);
+        etna_set_state(ctx, VIVS_TS_FLUSH_CACHE, VIVS_TS_FLUSH_CACHE_FLUSH);
 
         
         /* semaphore time */
@@ -588,7 +588,7 @@ int main(int argc, char **argv)
         /* Submit second command buffer */
         etna_flush(ctx);
 
-        etna_set_state(ctx, VIVS_RS_FLUSH_CACHE, VIVS_RS_FLUSH_CACHE_FLUSH);
+        etna_set_state(ctx, VIVS_TS_FLUSH_CACHE, VIVS_TS_FLUSH_CACHE_FLUSH);
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR);
         //etna_set_state(ctx, VIVS_DUMMY_DUMMY, 0);
         etna_set_state(ctx, VIVS_TS_MEM_CONFIG,

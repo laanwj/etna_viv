@@ -548,8 +548,8 @@ int main(int argc, char **argv)
                        VIVS_GL_FLUSH_CACHE_DEPTH | VIVS_GL_FLUSH_CACHE_COLOR);
         etna_set_state(cmdPtr, VIVS_GL_FLUSH_CACHE,
                        VIVS_GL_FLUSH_CACHE_DEPTH | VIVS_GL_FLUSH_CACHE_COLOR);
-        etna_set_state(cmdPtr, VIVS_RS_FLUSH_CACHE,
-                       VIVS_RS_FLUSH_CACHE_FLUSH);
+        etna_set_state(cmdPtr, VIVS_TS_FLUSH_CACHE,
+                       VIVS_TS_FLUSH_CACHE_FLUSH);
     }
     
     /* semaphore time */
@@ -920,7 +920,7 @@ int main(int argc, char **argv)
      **/
     commandBuffer.startOffset = commandBuffer.offset + 0x18;
     commandBuffer.offset = commandBuffer.startOffset + 8*4;
-    etna_set_state(cmdPtr, VIVS_RS_FLUSH_CACHE, VIVS_RS_FLUSH_CACHE_FLUSH);
+    etna_set_state(cmdPtr, VIVS_TS_FLUSH_CACHE, VIVS_TS_FLUSH_CACHE_FLUSH);
     etna_set_state(cmdPtr, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR);
     etna_set_state(cmdPtr, VIVS_DUMMY_DUMMY, 0);
     etna_set_state(cmdPtr, VIVS_TS_MEM_CONFIG,

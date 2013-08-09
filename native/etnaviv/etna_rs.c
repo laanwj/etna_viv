@@ -31,7 +31,7 @@ void etna_warm_up_rs(struct etna_ctx *cmdbuf, viv_addr_t aux_rt_physical, viv_ad
 {
     etna_set_state(cmdbuf, VIVS_TS_COLOR_STATUS_BASE, aux_rt_ts_physical); /* ADDR_G */
     etna_set_state(cmdbuf, VIVS_TS_COLOR_SURFACE_BASE, aux_rt_physical); /* ADDR_F */
-    etna_set_state(cmdbuf, VIVS_RS_FLUSH_CACHE, VIVS_RS_FLUSH_CACHE_FLUSH);
+    etna_set_state(cmdbuf, VIVS_TS_FLUSH_CACHE, VIVS_TS_FLUSH_CACHE_FLUSH);
     etna_set_state(cmdbuf, VIVS_RS_CONFIG,  /* wut? */
             VIVS_RS_CONFIG_SOURCE_FORMAT(RS_FORMAT_A8R8G8B8) |
             VIVS_RS_CONFIG_SOURCE_TILED |
