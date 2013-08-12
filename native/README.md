@@ -23,3 +23,5 @@ Directory contents
 
 - `cl`: OpenCL test (like egl, for command stream interception)
 
+- `test2d`: 2D engine tests
+

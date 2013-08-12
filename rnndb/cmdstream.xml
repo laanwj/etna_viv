@@ -96,19 +96,42 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     </stripe>
 
     <stripe name="DRAW_2D" varset="FE_OPCODE" variants="DRAW_2D">
+        <doc>
+        Draw rectangles with the 2D engine.
+
+        Up to 256 rectangles can be rendered with one command.
+        After the header follows one padding word, and after this the specified amount of
+        rectangles follow in (top,left) (bottom,right) format.
+
+        Rectangles can have every size from one pixel to the size of the entire image, bounded
+        by the clipping rectangle.
+
+        In the case of drawing lines, the (top,left) and (bottom,right) will be used as inclusive
+        endpoints of the line.
+        </doc>
         <reg32 offset="0x00000" name="HEADER">
-            <bitfield high="15" low="8" name="COUNT" brief="Number of rectangles to send"/>
+            <bitfield high="15" low="8" name="COUNT" brief="Number of rectangles to send">
+                <doc>
+                Number of rectangles to be rendered with this command.
+                </doc>
+            </bitfield>
             <bitfield high="26" low="16" name="DATA_COUNT" brief="Number of 32-bit data words to send"/>
             <bitfield high="31" low="27" name="OP">
                 <value value="4" name="DRAW_2D" brief="Draw 2D"/>
             </bitfield>
         </reg32>
         <!-- 2 words per rectangle follow, aligned to 64 bit -->
-        <reg32 offset="0x00004" name="TOP_LEFT">
+        <reg32 offset="0x00008" name="TOP_LEFT">
+            <doc>
+            Top left coordinates are inclusive.
+            </doc>
             <bitfield high="15" low="0" name="X"/>
             <bitfield high="31" low="16" name="Y"/>
         </reg32>
-        <reg32 offset="0x00008" name="BOTTOM_RIGHT">
+        <reg32 offset="0x0000C" name="BOTTOM_RIGHT">
+            <doc>
+            Bottom right coordinates are exclusive.
+            </doc>
             <bitfield high="15" low="0" name="X"/>
             <bitfield high="31" low="16" name="Y"/>
         </reg32>

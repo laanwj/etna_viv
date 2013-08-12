@@ -212,7 +212,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield pos="14" name="UNK14"/>
         <bitfield pos="15" name="EXTRA_TEXTURE_STATE" brief="Extra texture state (0x12000)"/>
         <bitfield pos="16" name="FULL_DIRECTFB"/>
-        <bitfield pos="17" name="2D_TILING" brief="2D tiling and YUV blit"/>
+        <bitfield pos="17" name="2D_TILING" brief="2D tiling, YUV blit and one-pass filter blit"/>
         <bitfield pos="18" name="THREAD_WALKER_IN_PS"/>
         <bitfield pos="19" name="TILE_FILLER"/>
         <bitfield pos="20" name="UNK20"/>

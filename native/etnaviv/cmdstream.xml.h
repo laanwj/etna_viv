@@ -8,7 +8,7 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- /home/orion/projects/etna_viv/rnndb/cmdstream.xml (  11727 bytes, from 2013-07-26 08:42:24)
+- /home/orion/projects/etna_viv/rnndb/cmdstream.xml (  12591 bytes, from 2013-08-12 07:48:56)
 - /home/orion/projects/etna_viv/rnndb/common.xml    (  15983 bytes, from 2013-08-08 20:22:21)
 
 Copyright (C) 2013
@@ -81,7 +81,7 @@ Copyright (C) 2013
 #define VIV_FE_DRAW_2D_HEADER_OP__SHIFT				27
 #define VIV_FE_DRAW_2D_HEADER_OP_DRAW_2D			0x20000000
 
-#define VIV_FE_DRAW_2D_TOP_LEFT					0x00000004
+#define VIV_FE_DRAW_2D_TOP_LEFT					0x00000008
 #define VIV_FE_DRAW_2D_TOP_LEFT_X__MASK				0x0000ffff
 #define VIV_FE_DRAW_2D_TOP_LEFT_X__SHIFT			0
 #define VIV_FE_DRAW_2D_TOP_LEFT_X(x)				(((x) << VIV_FE_DRAW_2D_TOP_LEFT_X__SHIFT) & VIV_FE_DRAW_2D_TOP_LEFT_X__MASK)
@@ -89,7 +89,7 @@ Copyright (C) 2013
 #define VIV_FE_DRAW_2D_TOP_LEFT_Y__SHIFT			16
 #define VIV_FE_DRAW_2D_TOP_LEFT_Y(x)				(((x) << VIV_FE_DRAW_2D_TOP_LEFT_Y__SHIFT) & VIV_FE_DRAW_2D_TOP_LEFT_Y__MASK)
 
-#define VIV_FE_DRAW_2D_BOTTOM_RIGHT				0x00000008
+#define VIV_FE_DRAW_2D_BOTTOM_RIGHT				0x0000000c
 #define VIV_FE_DRAW_2D_BOTTOM_RIGHT_X__MASK			0x0000ffff
 #define VIV_FE_DRAW_2D_BOTTOM_RIGHT_X__SHIFT			0
 #define VIV_FE_DRAW_2D_BOTTOM_RIGHT_X(x)			(((x) << VIV_FE_DRAW_2D_BOTTOM_RIGHT_X__SHIFT) & VIV_FE_DRAW_2D_BOTTOM_RIGHT_X__MASK)

@@ -106,7 +106,7 @@ static void etna_pipe_clear(struct pipe_context *pipe,
      */
     etna_set_state(priv->ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
     /* No need to set up the TS here with sync_context.
-     * RS clear operations (in contrary to resolve and copy) do not require the TS state. 
+     * RS clear operations (in contrast to resolve and copy) do not require the TS state. 
      */
     /* Need to update clear command in non-TS (fast clear) case *if*
      * clear value is different from previous time. 

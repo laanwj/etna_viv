@@ -115,6 +115,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield high="16" low="16" name="ROTATION" type="ENABLE_DISABLE" brief="Enable rotation"/>
     </bitset>
     <bitset name="2D_SRC_CONFIG" inline="yes" brief="Source surface configuration register">
+        <bitfield high="3" low="0" name="PE10_SOURCE_FORMAT" type="DE_FORMAT" brief="Source format (older PE10 only, PE20 uses SOURCE_FORMAT field)"/>
+        <bitfield high="5" low="4" name="TRANSPARENCY"/>
         <bitfield high="6" low="6" name="SRC_RELATIVE" brief="Source relative">
             <value value="0" name="ABSOLUTE">
                 <doc>
@@ -156,6 +158,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <value value="0" name="BACKGROUND" brief="Transparency color will be 0"/>
             <value value="1" name="FOREGROUND" brief="Transparancy color will be 1"/>
         </bitfield>
+        <bitfield high="16" low="16" name="UNK16"/>
         <bitfield high="21" low="20" name="SWIZZLE" type="DE_SWIZZLE" brief="Color channel swizzles"/>
         <bitfield high="28" low="24" name="SOURCE_FORMAT" type="DE_FORMAT" brief="Pixel format of the source surface"/>
         <bitfield high="29" low="29" name="DISABLE420_L2_CACHE" type="ENABLE_DISABLE" brief="Disable 420 L2 cache"/> <!-- if chip has 420 L2 cache -->
@@ -187,6 +190,29 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         decision whether source, destination and pattern are involved in the current
         operation and the correct decision is essential for the engine to complete
         the operation as expected.
+
+        ROP builds a lookup table for a logical operation with 2, 3 or 4 inputs
+        (depending on ROP type). So for a ROP3, for example, the rop pattern will be
+        2^3=8 bits.
+
+        ROP2_PATTERN [untested]
+            bit 0 destination
+            bit 1 pattern
+
+        ROP2_SOURCE [untested]
+            bit 0 destination
+            bit 1 source
+
+        ROP3 (uses ROP_FG only)
+            bit 0 destination
+            bit 1 source
+            bit 2 pattern
+
+        ROP4 (uses ROP_FG and ROP_BG)
+            bit 0 destination
+            bit 1 source
+            bit 2 pattern
+            bit "3" foreground/background (ROP_FG / ROP_BG)
         </doc>
         <bitfield high="7" low="0" name="ROP_FG" brief="Foreground ROP code is used for opaque pixels"/>
         <bitfield high="15" low="8" name="ROP_BG" brief="Background ROP code is used for transparent pixels"/>
@@ -365,8 +391,12 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <doc>Reserved field for future expansion.</doc>
             </bitfield>
             <bitfield high="15" low="12" name="COMMAND" brief="Type of primitive to be rendered">
-                <value value="0" name="CLEAR" brief="Clear"/>
-                <value value="1" name="LINE" brief="Line"/>
+                <value value="0" name="CLEAR" brief="Clear">
+                    <doc>Draw solid filled rectangles.</doc>
+                </value>
+                <value value="1" name="LINE" brief="Line">
+                    <doc>Draw lines. Lines can either be filled with a solid color or a pattern.</doc>
+                </value>
                 <value value="2" name="BIT_BLT" brief="Bitblit"/>
                 <value value="3" name="BIT_BLT_REVERSED" brief="Defined for internal use and should not be used"/>
                 <value value="4" name="STRETCH_BLT" brief="Stretch blt"/>
@@ -384,10 +414,29 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             </bitfield>
             <bitfield high="26" low="26" name="MINOR_TILED" type="ENABLE_DISABLE" brief="MinorTile"/>
         </reg32>
+        <reg32 offset="0x01238" name="PATTERN_ADDRESS" type="VIVM" brief="Source address for pattern"/>
+        <reg32 offset="0x0123C" name="PATTERN_CONFIG" brief="Pattern configuration word">
+            <bitfield high="3" low="0" name="FORMAT"/>
+            <bitfield high="4" low="4" name="TYPE">
+                <value value="0" name="SOLID_COLOR"/>
+                <value value="1" name="PATTERN"/>
+            </bitfield>
+            <bitfield high="5" low="5" name="COLOR_CONVERT" type="ENABLE_DISABLE"/>
+            <bitfield high="7" low="6" name="INIT_TRIGGER"/>
+            <bitfield high="18" low="16" name="ORIGIN_X"/>
+            <bitfield high="22" low="20" name="ORIGIN_Y"/>
+        </reg32>
+        <reg32 offset="0x01240" name="PATTERN_LOW"/>
+        <reg32 offset="0x01244" name="PATTERN_HIGH"/>
+        <reg32 offset="0x01248" name="PATTERN_MASK_LOW"/>
+        <reg32 offset="0x0124C" name="PATTERN_MASK_HIGH"/>
+        <reg32 offset="0x01250" name="PATTERN_BG_COLOR" type="DE_COLOR" brief="Background color for pattern"/>
+        <reg32 offset="0x01254" name="PATTERN_FG_COLOR" type="DE_COLOR" brief="Foreground color for pattern"/>
         <reg32 offset="0x0125C" name="ROP" type="2D_ROP"/>
         <reg32 offset="0x01260" name="CLIP_TOP_LEFT" brief="Top left corner of the clipping rectangle">
             <doc>
             Clipping is always on (except with filter blits) and everything beyond the clipping rectangle will be clipped out.
+            Top left coordinates are inclusive.
             </doc>
             <bitfield high="14" low="0" name="X"/>
             <bitfield high="30" low="16" name="Y"/>
@@ -395,9 +444,18 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x01264" name="CLIP_BOTTOM_RIGHT" brief="Bottom right corner of the clipping rectangle">
             <doc>
             Clipping is always on (except with filter blits) and everything beyond the clipping rectangle will be clipped out.
+            Bottom right coordinates are exclusive.
             </doc>
             <bitfield high="14" low="0" name="X"/>
             <bitfield high="30" low="16" name="Y"/>
+        </reg32>
+        <reg32 offset="0x01268" name="CLEAR_BYTE_MASK"> <!-- PE10 -->
+            <doc>
+            Byte pattern mask used for clearing. PE1.0 uses a 8-byte pattern for clearing
+            as specified in the CLEAR_PIXEL_VALUE_LOW and CLEAR_PIXEL_VALUE_HIGH registers.
+            Each of 8 bits refers to a byte. A value of 1 clears the respective byte, 
+            and a value of 0 ignores it.
+            </doc>
         </reg32>
         <reg32 offset="0x0126C" name="CONFIG" brief="Drawing engine configuration">
             <bitfield high="0" low="0" name="MIRROR_BLT_ENABLE">
@@ -413,6 +471,12 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="18" low="16" name="SOURCE_SELECT" brief="Source select for the old walkers"/>
             <bitfield high="21" low="20" name="DESTINATION_SELECT" brief="Destination select for the old walkers"/>
         </reg32>
+        <reg32 offset="0x01270" name="CLEAR_PIXEL_VALUE_LOW"> <!-- PE10 -->
+            <doc>
+            This register and CLEAR_PIXEL_VALUE_HIGH specify a 8-byte pattern to be used for CLEAR operations.
+            </doc>
+        </reg32>
+        <reg32 offset="0x01274" name="CLEAR_PIXEL_VALUE_HIGH"/> <!-- PE10 -->
         <reg32 offset="0x01278" name="SRC_ORIGIN_FRACTION" brief="Fraction for the source origin">
             <doc>
             Together with values in SRC_ORIGIN these values form signed 16.16 fixed point origin
@@ -459,6 +523,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x012B0" name="PE_CONFIG" masked="yes" brief="PE debug register">
             <bitfield high="1" low="0" name="DESTINATION_FETCH">
+                <doc>
+                Bypass destination fetch when writing part of a cache block.
+                Destination fetch can be disabled if the area around the target rectangle is not important.
+                </doc>
                 <value value="0" name="DISABLE"/>
                 <value value="1" name="DEFAULT"/>
                 <value value="2" name="ALWAYS"/>
@@ -474,7 +542,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x012B8" name="SRC_ROTATION_HEIGHT" type="2D_SRC_ROTATION_HEIGHT"/>
         <reg32 offset="0x012BC" name="ROT_ANGLE" type="2D_ROT_ANGLE"/>
-        <reg32 offset="0x012C0" name="CLEAR_PIXEL_VALUE32" type="DE_COLOR" brief="Clear color value in A8R8G8B8 format"/>
+        <reg32 offset="0x012C0" name="CLEAR_PIXEL_VALUE32" type="DE_COLOR" brief="Clear color value in A8R8G8B8 format"/> <!--PE20-->
         <reg32 offset="0x012C4" name="DEST_COLOR_KEY" type="DE_COLOR" brief="Destination transparency color in destination format"/>
         <reg32 offset="0x012C8" name="GLOBAL_SRC_COLOR" type="DE_COLOR" brief="Global source color and alpha values"/>
         <reg32 offset="0x012CC" name="GLOBAL_DEST_COLOR" type="DE_COLOR" brief="Global destination color and alpha values"/>
@@ -621,13 +689,14 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 even_value_count = (values_to_store + 1) &amp; ~1 = 154
                 dword_count      = even_value_count / 2 = 77
             </doc>
-            <bitfield high="15" low="0" name="COEFFICIENT0"/>
-            <bitfield high="31" low="16" name="COEFFICIENT1"/>
+            <bitfield high="15" low="0" name="COEFFICIENT0" brief="1.14 fixed point plus sign bit"/>
+            <bitfield high="31" low="16" name="COEFFICIENT1" brief="1.14 fixed point plus sign bit"/>
         </reg32>
-        <reg32 offset="0x01C00" name="INDEX_COLOR_TABLE" length="256" type="DE_COLOR" brief="Index color table">
+        <reg32 offset="0x01C00" name="INDEX_COLOR_TABLE" length="256" type="DE_COLOR" brief="Index color table (PE10)">
             <doc>
             256 color entries for the indexed color mode. Colors are assumed to be in
             the destination format and no color conversion is done on the values.
+            This register is only used with chips with PE10 feature.
             </doc>
         </reg32>
         <reg32 offset="0x02800" name="HORI_FILTER_KERNEL" length="128" brief="One pass Filter blit horizontal coefficient table">
@@ -638,7 +707,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="15" low="0" name="COEFFICIENT0"/>
             <bitfield high="31" low="16" name="COEFFICIENT1"/>
         </reg32>
-        <reg32 offset="0x03400" name="INDEX_COLOR_TABLE32" length="256" type="DE_COLOR"> <!-- only PE20 -->
+        <reg32 offset="0x03400" name="INDEX_COLOR_TABLE32" length="256" type="DE_COLOR" brief="Index color table (PE20)"> <!-- only PE20 -->
             <doc>
             256 color entries for the indexed color mode. Colors are assumed to be in
             A8R8G8B8 format and no color conversion is done on the values.

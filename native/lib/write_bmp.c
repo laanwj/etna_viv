@@ -64,7 +64,7 @@ struct dib_header {
 } __attribute__((__packed__));
 
 static int
-bmp_header_write(int fd, int width, int height, int bgra)
+bmp_header_write(int fd, int width, int height, int bgra, int noflip)
 {
 	struct bmp_header bmp_header = {
 		.magic = 0x4d42,
@@ -75,7 +75,7 @@ bmp_header_write(int fd, int width, int height, int bgra)
 	struct dib_header dib_header = {
 		.size = sizeof(struct dib_header),
 		.width = width,
-		.height = height,
+		.height = noflip ? -height : height,
 		.planes = 1,
 		.bpp = 32,
 		.compression = 3,
@@ -113,7 +113,23 @@ bmp_dump32(char *buffer, unsigned width, unsigned height, bool bgra, const char 
 		return;
 	}
 
-	bmp_header_write(fd, width, height, bgra);
+	bmp_header_write(fd, width, height, bgra, false);
+
+	write(fd, buffer, width * height * 4);
+}
+
+void
+bmp_dump32_noflip(char *buffer, unsigned width, unsigned height, bool bgra, const char *filename)
+{
+	int fd;
+
+	fd = open(filename, O_WRONLY| O_TRUNC | O_CREAT, 0666);
+	if (fd == -1) {
+		printf("Failed to open %s: %s\n", filename, strerror(errno));
+		return;
+	}
+
+	bmp_header_write(fd, width, height, bgra, true);
 
 	write(fd, buffer, width * height * 4);
 }
