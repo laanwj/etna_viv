@@ -252,13 +252,6 @@ int main(int argc, char **argv)
                 VIVS_DE_SRC_CONFIG_SOURCE_FORMAT(DE_FORMAT_YV12) |
                 VIVS_DE_SRC_CONFIG_LOCATION_MEMORY |
                 VIVS_DE_SRC_CONFIG_PE10_SOURCE_FORMAT(DE_FORMAT_YV12));
-        etna_set_state(ctx, VIVS_DE_SRC_ORIGIN, 
-                VIVS_DE_SRC_ORIGIN_X(0) |
-                VIVS_DE_SRC_ORIGIN_Y(0)); /* what should this be? */
-        etna_set_state(ctx, VIVS_DE_SRC_SIZE, 
-                VIVS_DE_SRC_SIZE_X(src_width[0]) |
-                VIVS_DE_SRC_SIZE_Y(src_height[0])
-                ); // source size is ignored
         
         /* Compute stretch factors */
         etna_set_state(ctx, VIVS_DE_STRETCH_FACTOR_LOW, 
@@ -279,15 +272,13 @@ int main(int argc, char **argv)
                 );
         etna_set_state(ctx, VIVS_DE_ROP, 
                 VIVS_DE_ROP_ROP_FG(0xcc) | VIVS_DE_ROP_ROP_BG(0xcc) | VIVS_DE_ROP_TYPE_ROP4);
-        /* Clipping rectangle (probably not used in VR blit) */
-        etna_set_state(ctx, VIVS_DE_CLIP_TOP_LEFT, 
-                VIVS_DE_CLIP_TOP_LEFT_X(0) |
-                VIVS_DE_CLIP_TOP_LEFT_Y(0)
-                );
-        etna_set_state(ctx, VIVS_DE_CLIP_BOTTOM_RIGHT, 
-                VIVS_DE_CLIP_BOTTOM_RIGHT_X(0) | 
-                VIVS_DE_CLIP_BOTTOM_RIGHT_Y(0)
-                );
+
+        /* Clipping rectangle (not used in VR blit) */
+        etna_set_state(ctx, VIVS_DE_CLIP_TOP_LEFT, 0);
+        etna_set_state(ctx, VIVS_DE_CLIP_BOTTOM_RIGHT, 0);
+        /* Source size and origin not used in VR blit */
+        etna_set_state(ctx, VIVS_DE_SRC_SIZE, 0);
+        etna_set_state(ctx, VIVS_DE_SRC_ORIGIN, 0);
 
         /* Misc DE/PE setup */
         etna_set_state(ctx, VIVS_DE_CONFIG, 0); /* TODO */
@@ -351,10 +342,6 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_DE_VR_SOURCE_IMAGE_HIGH,
                 VIVS_DE_VR_SOURCE_IMAGE_HIGH_RIGHT(temp_width) | 
                 VIVS_DE_VR_SOURCE_IMAGE_HIGH_BOTTOM(temp_height));
-        etna_set_state(ctx, VIVS_DE_SRC_SIZE, 
-                VIVS_DE_SRC_SIZE_X(temp_width) |
-                VIVS_DE_SRC_SIZE_Y(temp_height)
-                ); // source size is ignored
 
         etna_set_state(ctx, VIVS_DE_DEST_ADDRESS, bmp->address);
         etna_set_state(ctx, VIVS_DE_DEST_STRIDE, dest_stride);

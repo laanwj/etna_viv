@@ -61,11 +61,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 <import file="state_hi.xml"/>
 <import file="state_2d.xml"/>
 <import file="state_3d.xml"/>
+<import file="state_vg.xml"/>
 
 <domain name="VIVS" brief="GPU state">
 
     <!-- Other generic enums -->
-
     <enum name="VARYING_COMPONENT_USE">
         <value value="0" name="UNUSED" brief="Component is not used"/>
         <value value="1" name="USED" brief="Component is used"/>
@@ -306,8 +306,6 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="31" name="FLIP1"/>
         </reg32>
     </stripe>
-
-    <!-- VG states 0x02800 - 0x02A00 -->
 
     <stripe name="DUMMY" brief="/dev/null">
         <doc>Dummy state write, sometimes used for inserting padding or small delays into the command stream.</doc>

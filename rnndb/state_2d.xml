@@ -21,14 +21,20 @@
  DEALINGS IN THE SOFTWARE.
 -->
 <!-- Vivante GCxxxx render states and registers overview:
-     PIPE_2D states, mostly taken from gcreg.h in gcx project
+     2D engine states, mostly taken from gcreg.h in gcx project.
+
+     Be sure to set the PIPE to PIPE_2D (on a core with the respective
+     capability) before programming any of these or using the DRAW_DE
+     command.
   -->
 <database xmlns="http://nouveau.freedesktop.org/"
 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 
 <domain name="VIVS" brief="GPU state">
-    <enum name="DE_FORMAT" brief="2D pixel format"> <!-- 0..7 match RS_FORMAT -->
+<!-- Enumerations for use in the 2D engine -->
+    <enum name="DE_FORMAT" brief="2D pixel format"> <!-- 0..7 match RS_FORMAT in 3D engine -->
+        <doc>Pixel formats that can be used as source or destination for the 2D engine.</doc>
         <value value="0" name="X4R4G4B4"/>
         <value value="1" name="A4R4G4B4"/>
         <value value="2" name="X1R5G5B5"/>
@@ -36,17 +42,21 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="4" name="R5G6B5"/>
         <value value="5" name="X8R8G8B8"/>
         <value value="6" name="A8R8G8B8"/>
-        <value value="7" name="YUY2"/>
-        <value value="8" name="UYVY"/>
-        <value value="9" name="INDEX8"/>
-        <value value="10" name="MONOCHROME"/>
-        <value value="15" name="YV12"/>
+        <value value="7" name="YUY2" brief="YUV 4:2:2 interleaved per four bytes, Y0 Cb Y1 Cr"/>
+        <value value="8" name="UYVY" brief="YUV 4:2:2 interleaved per four bytes, Cb Y0 Cr Y1"/>
+        <value value="9" name="INDEX8" brief="8-bit palette indexed"/>
+        <value value="10" name="MONOCHROME" brief="1 bit per pixel"/>
+        <value value="15" name="YV12" brief="YUV 4:2:0 8-bit Y plane and 8 bit 2x2 subsampled V and U planes"/>
         <value value="16" name="A8"/>
-        <value value="17" name="NV12"/>
-        <value value="18" name="NV16"/>
-        <value value="19" name="RG16"/>
+        <value value="17" name="NV12" brief="YUV 4:2:0 8-bit Y plane and interleaved U/V plane with 2x2 subsampling"/>
+        <value value="18" name="NV16" brief="YUV 4:2:2 8-bit Y plane and interleaved U/V plane with 2x1 subsampling"/>
+        <value value="19" name="RG16" brief="Bayer, RGRG..(odd line), GBGB..(even line), 8-bit samples"/>
     </enum>
     <enum name="DE_SWIZZLE" brief="2D swizzle">
+        <doc>
+        Unlike the shader engine, the 2D engine has no full swizzle capability.
+        Four predefined common swizzles are available.
+        </doc>
         <value value="0" name="ARGB"/>
         <value value="1" name="RGBA"/>
         <value value="2" name="ABGR"/>
@@ -98,7 +108,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="1" name="USE_ENABLE"/>
         <value value="2" name="USE_DISABLE"/>
     </enum>
-    <!-- These register patterns are repeated many times -->
+
+<!-- These register patterns are used a few times,
+     once for single-source blits, once in the BLOCK4 block for multi-source blits
+     and once in the BLOCK8 block for multi-source blits.
+     -->
     <bitset name="2D_SRC_STRIDE" inline="yes" brief="Stride of the source surface in bytes">
         <doc>
             To calculate the stride multiply the surface width in pixels
@@ -288,7 +302,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </bitfield>
         <bitfield high="20" low="20" name="DST_DEMULTIPLY" type="ENABLE_DISABLE"/>
     </bitset>
-    <bitset name="2D_PE_TRANSPARENCY" inline="yes"> <!-- XXX support masking for multiple fields for one mask -->
+    <bitset name="2D_PE_TRANSPARENCY" inline="yes">
         <bitfield high="1" low="0" name="SOURCE" type="2D_TRANSPARENCY_KIND" brief="Source transparency mode"/>
         <bitfield high="5" low="4" name="PATTERN" type="2D_TRANSPARENCY_KIND" brief="Pattern transparency mode">
             <doc>KEY transparency mode is reserved.</doc>
@@ -323,6 +337,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield high="3" low="3" name="SUPER_TILED" type="ENABLE_DISABLE"/>
         <bitfield high="8" low="8" name="MINOR_TILED" type="ENABLE_DISABLE"/>
     </bitset>
+
     <stripe name="DE" brief="2D Drawing Engine">
         <doc>2D drawing engine: conversion, scaling, filtering, rotation, blending of 2D images.</doc>
         <reg32 offset="0x01200" name="SRC_ADDRESS" type="VIVM" brief="32-bit aligned base address of the source surface"/>
@@ -715,7 +730,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             </doc>
         </reg32>
         <!-- Multi-source blend -->
-        <stripe name="BLOCK4">
+        <stripe name="BLOCK4" brief="Multi-source blit (up to 4)">
+            <doc>
+            These registers are used for multi-source blit when the capability 2D_MULTI_SOURCE_BLIT is available.
+            </doc>
             <reg32 offset="0x12800" name="SRC_ADDRESS" length="4" type="VIVM"/>
             <reg32 offset="0x12810" name="SRC_STRIDE" length="4" type="2D_SRC_STRIDE"/>
             <reg32 offset="0x12820" name="SRC_ROTATION_CONFIG" length="4" type="2D_SRC_ROTATION_CONFIG"/>
@@ -741,7 +759,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <reg32 offset="0x12960" name="SRC_EX_CONFIG" length="4" type="2D_SRC_EX_CONFIG"/>
             <reg32 offset="0x12970" name="SRC_EX_ADDRESS" length="4" type="VIVM"/>
         </stripe>
-        <stripe name="BLOCK8">
+        <stripe name="BLOCK8" brief="Multi-source blit extended (up to 8)">
+            <doc>
+            These registers are used for multi-source blit when the capability 2D_MULTI_SOURCE_BLIT_EX is available.
+            </doc>
             <reg32 offset="0x12A00" name="SRC_ADDRESS" length="8" type="VIVM"/>
             <reg32 offset="0x12A20" name="SRC_STRIDE" length="8" type="2D_SRC_STRIDE"/>
             <reg32 offset="0x12A40" name="SRC_ROTATION_CONFIG" length="8" type="2D_SRC_ROTATION_CONFIG"/>

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright (c) 2012-2013 The Etnaviv Project
+
+ Permission is hereby granted, free of charge, to any person obtaining a
+ copy of this software and associated documentation files (the "Software"),
+ to deal in the Software without restriction, including without limitation
+ the rights to use, copy, modify, merge, publish, distribute, sub license,
+ and/or sell copies of the Software, and to permit persons to whom the
+ Software is furnished to do so, subject to the following conditions:
+
+ The above copyright notice and this permission notice (including the
+ next paragraph) shall be included in all copies or substantial portions
+ of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL
+ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ DEALINGS IN THE SOFTWARE.
+-->
+<database xmlns="http://nouveau.freedesktop.org/"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
+<!-- Vivante GCxxxx render states and registers overview:
+     OpenVG part (GC350)
+ -->
+<domain name="VIVS" brief="GPU state">
+    <stripe name="VG" brief="OpenVG state">
+        <reg32 offset="0x02800" name="UNK02800" value="0x00000000"/>
+        <reg32 offset="0x02804" name="UNK02804" value="0x00000000"/>
+        <reg32 offset="0x02808" name="UNK02808" value="0x00000000"/>
+        <reg32 offset="0x0280C" name="UNK0280C" value="0x00000000"/>
+        <reg32 offset="0x02810" name="UNK02810" value="0x00000000" length="2"/>
+        <reg32 offset="0x02818" name="UNK02818" value="0x00000000" length="2"/>
+        <reg32 offset="0x02820" name="UNK02820" value="0x00000000" length="2"/>
+        <reg32 offset="0x02828" name="UNK02828" value="0x00000000"/>
+        <reg32 offset="0x0282C" name="UNK0282C" value="0x00000000"/>
+        <reg32 offset="0x02830" name="UNK02830" value="0x00000000" length="4"/>
+        <reg32 offset="0x02840" name="UNK02840" value="0x00000000"/>
+        <reg32 offset="0x02844" name="UNK02844" value="0x00000000"/>
+        <reg32 offset="0x02848" name="UNK02848" value="0x00000000"/>
+        <reg32 offset="0x0284C" name="UNK0284C" value="0x00000000"/>
+        <reg32 offset="0x02850" name="UNK02850" value="0x00000000"/>
+        <reg32 offset="0x02854" name="UNK02854" value="0x00000000"/>
+        <reg32 offset="0x02858" name="UNK02858" value="0x00000000"/>
+        <reg32 offset="0x0285C" name="UNK0285C" value="0x00000000"/>
+        <reg32 offset="0x02860" name="UNK02860" value="0x00000000" length="3"/>
+        <reg32 offset="0x02870" name="UNK02870" value="0x00000000" length="3"/>
+        <reg32 offset="0x02880" name="UNK02880" value="0x00000000" length="3"/>
+        <reg32 offset="0x02890" name="UNK02890" value="0x00000000" length="2"/>
+        <reg32 offset="0x02898" name="UNK02898" value="0x00000000" length="2"/>
+        <reg32 offset="0x028A0" name="UNK028A0" value="0x00000000" length="2"/>
+        <reg32 offset="0x028A8" name="UNK028A8" value="0x00000000" length="2"/>
+        <reg32 offset="0x028B0" name="UNK028B0" value="0x00000000" length="2"/>
+        <reg32 offset="0x028B8" name="UNK028B8" value="0x00000000" length="2"/>
+        <reg32 offset="0x028C0" name="UNK028C0" value="0x00000000"/>
+        <reg32 offset="0x028C4" name="UNK028C4" value="0x00000000"/>
+        <reg32 offset="0x028C8" name="UNK028C8" value="0x00000000"/>
+        <reg32 offset="0x028CC" name="UNK028CC" value="0x00000000"/>
+        <reg32 offset="0x028D0" name="UNK028D0" value="0x00000000"/>
+        <reg32 offset="0x028D4" name="UNK028D4" value="0x00000000"/>
+        <reg32 offset="0x028D8" name="UNK028D8" value="0x00000000"/>
+        <reg32 offset="0x028DC" name="UNK028DC" value="0x00000000"/>
+        <reg32 offset="0x028E0" name="UNK028E0" value="0x00000000"/>
+        <reg32 offset="0x028E4" name="UNK028E4" value="0x00000000"/>
+        <reg32 offset="0x028E8" name="UNK028E8" value="0x00000000"/>
+        <reg32 offset="0x028EC" name="UNK028EC" value="0x00000000"/>
+        <reg32 offset="0x028F0" name="UNK028F0" value="0x00000000"/>
+        <reg32 offset="0x028F8" name="UNK028F8" value="0x00000055"/>
+        <reg32 offset="0x028FC" name="UNK028FC" value="0x70707074"/>
+        <reg32 offset="0x02900" name="UNK02900" value="0x00000000" length="6"/>
+        <reg32 offset="0x02918" name="UNK02918" value="0x75057545"/>
+        <reg32 offset="0x0291C" name="UNK0291C" value="0x70007000"/>
+        <reg32 offset="0x02920" name="UNK02920" value="0x70707074"/>
+        <reg32 offset="0x02924" name="UNK02924" value="0x74007000"/>
+        <reg32 offset="0x02928" name="UNK02928" value="0x70007000"/>
+        <reg32 offset="0x0292C" name="UNK0292C" value="0x70007000"/>
+        <reg32 offset="0x02930" name="UNK02930" value="0x70007000"/>
+        <reg32 offset="0x02934" name="UNK02934" value="0x00402008"/>
+        <reg32 offset="0x02938" name="UNK02938" value="0x04001000"/>
+        <reg32 offset="0x0293C" name="UNK0293C" value="0x00800200"/>
+        <reg32 offset="0x02940" name="UNK02940" value="0x00000000" length="2"/>
+        <reg32 offset="0x02948" name="UNK02948" value="0x00000000" length="2"/>
+        <reg32 offset="0x02950" name="UNK02950" value="0x00000000"/>
+        <reg32 offset="0x02954" name="UNK02954" value="0x00000000"/>
+        <reg32 offset="0x02958" name="UNK02958" value="0x00000000"/>
+        <reg32 offset="0x0295C" name="UNK0295C" value="0x00000000"/>
+        <reg32 offset="0x02960" name="UNK02960" value="0x00000000"/>
+        <reg32 offset="0x02980" name="UNK02980" value="0x00000000" length="25"/>
+    </stripe>
+</domain>
+
+</database>
+
