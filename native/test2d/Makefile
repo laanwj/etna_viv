@@ -7,7 +7,7 @@ CFLAGS += -DDUMP
 CXXFLAGS += 
 LDFLAGS += -lpng
 
-TARGETS = clear2d line2d bitblt2d_from_stream line2d_patterned bitblt2d bitblt2d_palette filterblt2d stretchblt2d
+TARGETS = clear2d line2d bitblt2d_from_stream line2d_patterned bitblt2d bitblt2d_palette filterblt2d stretchblt2d filterblt2d_fromplanar
 ETNA_OBJS = ../lib/write_bmp.o ../lib/etna_bswap.o ../etnaviv/libetnaviv.a ../lib/read_png.o
 
 all: $(TARGETS)
@@ -32,6 +32,9 @@ bitblt2d_palette: bitblt2d_palette.o $(ETNA_OBJS)
 	$(CXX) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 
 filterblt2d: filterblt2d.o $(ETNA_OBJS)
+	$(CXX) $(CFLAGS) -o $@ $^  $(LDFLAGS)
+
+filterblt2d_fromplanar: filterblt2d_fromplanar.o $(ETNA_OBJS)
 	$(CXX) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 
 bitblt2d: bitblt2d.o $(ETNA_OBJS)

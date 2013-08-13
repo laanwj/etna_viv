@@ -3,6 +3,7 @@ bitblt2d_from_stream
 clear2d
 bitblt2d_palette
 filterblt2d
+filterblt2d_fromplanar
 line2d
 line2d_patterned
 stretchblt2d

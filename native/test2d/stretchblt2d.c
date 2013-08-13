@@ -20,7 +20,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-/* Use stretch blit to draw gradient.
+/* Use stretch blit. A stretch blit scales up an image with a point 
+ * (nearest) filter.
  */
 #include <stdio.h>
 #include <unistd.h>
