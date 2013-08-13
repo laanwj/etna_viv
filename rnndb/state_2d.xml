@@ -129,7 +129,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield high="16" low="16" name="ROTATION" type="ENABLE_DISABLE" brief="Enable rotation"/>
     </bitset>
     <bitset name="2D_SRC_CONFIG" inline="yes" brief="Source surface configuration register">
-        <bitfield high="3" low="0" name="PE10_SOURCE_FORMAT" type="DE_FORMAT" brief="Source format (older PE10 only, PE20 uses SOURCE_FORMAT field)"/>
+        <bitfield high="3" low="0" name="PE10_SOURCE_FORMAT" type="DE_FORMAT" brief="Source format (older PE10 only, PE20 uses SOURCE_FORMAT field)"/> <!--PE10-->
         <bitfield high="5" low="4" name="TRANSPARENCY"/>
         <bitfield high="6" low="6" name="SRC_RELATIVE" brief="Source relative">
             <value value="0" name="ABSOLUTE">
@@ -238,10 +238,12 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </bitfield>
     </bitset>
     <bitset name="2D_ALPHA_CONTROL" inline="yes">
-        <bitfield high="0" low="0" name="ENABLE">
+        <bitfield high="0" low="0" name="ENABLE" brief="Enable alpha blending (disables ROP)">
             <value value="0" name="OFF"/>
             <value value="1" name="ON"/>
         </bitfield>
+        <bitfield high="23" low="16" name="PE10_GLOBAL_SRC_ALPHA" brief="Global source alpha (PE10)"/> <!--PE10-->
+        <bitfield high="31" low="24" name="PE10_GLOBAL_DST_ALPHA" brief="Global destination alpha (PE10)"/> <!--PE10-->
     </bitset>
     <bitset name="2D_ALPHA_MODES" inline="yes">
         <bitfield high="0" low="0" name="SRC_ALPHA_MODE">
@@ -253,19 +255,33 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <value value="1" name="INVERSED"/>
         </bitfield>
         <bitfield high="9" low="8" name="GLOBAL_SRC_ALPHA_MODE">
-            <value value="0" name="NORMAL"/>
-            <value value="1" name="GLOBAL"/>
-            <value value="2" name="SCALED"/>
+            <value value="0" name="NORMAL" brief="Don't use global source alpha"/>
+            <value value="1" name="GLOBAL" brief="Use global source alpha"/>
+            <value value="2" name="SCALED" brief="Scale source alpha with global source alpha"/>
         </bitfield>
         <bitfield high="13" low="12" name="GLOBAL_DST_ALPHA_MODE">
-            <value value="0" name="NORMAL"/>
-            <value value="1" name="GLOBAL"/>
-            <value value="2" name="SCALED"/>
+            <value value="0" name="NORMAL" brief="Don't use global destination alpha"/>
+            <value value="1" name="GLOBAL" brief="Use global destination alpha"/>
+            <value value="2" name="SCALED" brief="Scale destination alpha with global destination alpha"/>
+        </bitfield>
+        <bitfield high="16" low="16" name="PE10_SRC_COLOR_MULTIPLY" type="ENABLE_DISABLE" brief="Multiply source color with source alpha"> <!--PE10-->
+            <doc>
+            Used to choose between premultiplied and non-premultiplied alpha for the source color on PE10.
+            PE20 hardware uses the COLOR_MULTIPLY_MODES register for this instead, which offers more flexibility.
+            Normally this is enabled together with PE10_DST_COLOR_MULTIPLY.
+            </doc>
+        </bitfield>
+        <bitfield high="20" low="20" name="PE10_DST_COLOR_MULTIPLY" type="ENABLE_DISABLE" brief="Multiply destination color with destination alpha"> <!--PE10-->
+            <doc>
+            Used to choose between premultiplied and non-premultiplied alpha for the source color on PE10.
+            PE20 hardware uses the COLOR_MULTIPLY_MODES register for this instead, which offers more flexibility.
+            Normally this is enabled together with PE10_SRC_COLOR_MULTIPLY.
+            </doc>
         </bitfield>
         <bitfield high="26" low="24" name="SRC_BLENDING_MODE" type="DE_BLENDMODE"/>
-        <bitfield high="27" low="27" name="SRC_ALPHA_FACTOR" type="ENABLE_DISABLE" brief="Src blending factor is calculated from src alpha"/>
+        <bitfield high="27" low="27" name="SRC_ALPHA_FACTOR" type="ENABLE_DISABLE" brief="Src blending factor is calculated from src alpha"/> <!-- FULL_DIRECTFB -->
         <bitfield high="30" low="28" name="DST_BLENDING_MODE" type="DE_BLENDMODE"/>
-        <bitfield high="31" low="31" name="DST_ALPHA_FACTOR" type="ENABLE_DISABLE" brief="Dst blending factor is calculated from dst alpha"/>
+        <bitfield high="31" low="31" name="DST_ALPHA_FACTOR" type="ENABLE_DISABLE" brief="Dst blending factor is calculated from dst alpha"/> <!-- FULL_DIRECTFB -->
     </bitset>
     <bitset name="2D_SRC_ROTATION_HEIGHT" inline="yes">
         <doc>
@@ -561,7 +577,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x012C4" name="DEST_COLOR_KEY" type="DE_COLOR" brief="Destination transparency color in destination format"/>
         <reg32 offset="0x012C8" name="GLOBAL_SRC_COLOR" type="DE_COLOR" brief="Global source color and alpha values"/>
         <reg32 offset="0x012CC" name="GLOBAL_DEST_COLOR" type="DE_COLOR" brief="Global destination color and alpha values"/>
-        <reg32 offset="0x012D0" name="COLOR_MULTIPLY_MODES" type="2D_COLOR_MULTIPLY_MODES"/>
+        <reg32 offset="0x012D0" name="COLOR_MULTIPLY_MODES" type="2D_COLOR_MULTIPLY_MODES"/> <!--PE20-->
         <reg32 offset="0x012D4" name="PE_TRANSPARENCY" type="2D_PE_TRANSPARENCY"/>
         <reg32 offset="0x012D8" name="PE_CONTROL" type="2D_PE_CONTROL"/>
         <reg32 offset="0x012DC" name="SRC_COLOR_KEY_HIGH" type="DE_COLOR" brief="Source transparency color in source format"/>
@@ -707,7 +723,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="15" low="0" name="COEFFICIENT0" brief="1.14 fixed point plus sign bit"/>
             <bitfield high="31" low="16" name="COEFFICIENT1" brief="1.14 fixed point plus sign bit"/>
         </reg32>
-        <reg32 offset="0x01C00" name="INDEX_COLOR_TABLE" length="256" type="DE_COLOR" brief="Index color table (PE10)">
+        <reg32 offset="0x01C00" name="INDEX_COLOR_TABLE" length="256" type="DE_COLOR" brief="Index color table (PE10)"> <!--PE10-->
             <doc>
             256 color entries for the indexed color mode. Colors are assumed to be in
             the destination format and no color conversion is done on the values.
@@ -791,6 +807,4 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     </stripe>
 </domain>
 </database>
-
-
 
