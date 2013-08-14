@@ -179,7 +179,7 @@ int main(int argc, char **argv)
                 VIVS_DE_COLOR_MULTIPLY_MODES_DST_PREMULTIPLY_ENABLE |
                 VIVS_DE_COLOR_MULTIPLY_MODES_SRC_GLOBAL_PREMULTIPLY_DISABLE |
                 VIVS_DE_COLOR_MULTIPLY_MODES_DST_DEMULTIPLY_DISABLE);
-        etna_set_state(ctx, VIVS_DE_DST_ROTATION_HEIGHT, 0);
+        etna_set_state(ctx, VIVS_DE_DEST_ROTATION_HEIGHT, 0);
         etna_set_state(ctx, VIVS_DE_SRC_ROTATION_HEIGHT, 0);
         etna_set_state(ctx, VIVS_DE_ROT_ANGLE, 0);
 

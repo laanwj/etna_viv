@@ -285,7 +285,7 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_DE_SRC_ORIGIN_FRACTION, 0);
         etna_set_state(ctx, VIVS_DE_ALPHA_CONTROL, 0);
         etna_set_state(ctx, VIVS_DE_ALPHA_MODES, 0);
-        etna_set_state(ctx, VIVS_DE_DST_ROTATION_HEIGHT, 0);
+        etna_set_state(ctx, VIVS_DE_DEST_ROTATION_HEIGHT, 0);
         etna_set_state(ctx, VIVS_DE_SRC_ROTATION_HEIGHT, 0);
         etna_set_state(ctx, VIVS_DE_ROT_ANGLE, 0);
 

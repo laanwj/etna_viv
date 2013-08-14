@@ -34,7 +34,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 <domain name="VIVS" brief="GPU state">
 <!-- Enumerations for use in the 2D engine -->
     <enum name="DE_FORMAT" brief="2D pixel format"> <!-- 0..7 match RS_FORMAT in 3D engine -->
-        <doc>Pixel formats that can be used as source or destination for the 2D engine.</doc>
+        <doc>
+        Base pixel formats that can be used as source or destination for the 2D engine.
+        Additional formats can be supported by using RGBA or UV swizzles.
+        </doc>
         <value value="0" name="X4R4G4B4"/>
         <value value="1" name="A4R4G4B4"/>
         <value value="2" name="X1R5G5B5"/>
@@ -55,7 +58,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <enum name="DE_SWIZZLE" brief="2D swizzle">
         <doc>
         Unlike the shader engine, the 2D engine has no full swizzle capability.
-        Four predefined common swizzles are available.
+        Four predefined common swizzles are available, however these can be specified
+        for both the source and destination.
         </doc>
         <value value="0" name="ARGB"/>
         <value value="1" name="RGBA"/>
@@ -63,14 +67,14 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="3" name="BGRA"/>
     </enum>
     <enum name="DE_BLENDMODE" brief="2D blending mode">
-        <value value="0" name="ZERO"/>
-        <value value="1" name="ONE"/>
-        <value value="2" name="NORMAL"/>
-        <value value="3" name="INVERSED"/>
-        <value value="4" name="COLOR"/>
-        <value value="5" name="COLOR_INVERSED"/>
-        <value value="6" name="SATURATED_ALPHA"/>
-        <value value="7" name="SATURATED_DEST_ALPHA"/>
+        <value value="0" name="ZERO" brief="Akin to GL_ZERO"/>
+        <value value="1" name="ONE" brief="Akin to GL_ONE"/>
+        <value value="2" name="NORMAL" brief="Akin to GL_SRC_ALPHA"/>
+        <value value="3" name="INVERSED" brief="Akin to GL_ONE_MINUS_SRC_COLOR"/>
+        <value value="4" name="COLOR" brief="Akin to GL_SRC_COLOR"/>
+        <value value="5" name="COLOR_INVERSED" brief="Akin to GL_ONE_MINUS_SRC_COLOR"/>
+        <value value="6" name="SATURATED_ALPHA" brief="Akin to GL_SRC_ALPHA_SATURATE"/>
+        <value value="7" name="SATURATED_DEST_ALPHA" brief="No GL equivalent"/>
     </enum>
     <bitset name="DE_COLOR" brief="2D engine color"> <!-- 2D engine uses BGRA everywhere -->
         <bitfield high="7" low="0" name="BLUE"/>
@@ -175,7 +179,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield high="16" low="16" name="UNK16"/>
         <bitfield high="21" low="20" name="SWIZZLE" type="DE_SWIZZLE" brief="Color channel swizzles"/>
         <bitfield high="28" low="24" name="SOURCE_FORMAT" type="DE_FORMAT" brief="Pixel format of the source surface"/>
-        <bitfield high="29" low="29" name="DISABLE420_L2_CACHE" type="ENABLE_DISABLE" brief="Disable 420 L2 cache"/> <!-- if chip has 420 L2 cache -->
+        <bitfield high="29" low="29" name="DISABLE420_L2_CACHE" brief="Disable 420 L2 cache"/> <!-- if chip has 420 L2 cache -->
         <bitfield high="31" low="30" name="ENDIAN_CONTROL" type="ENDIAN_MODE" brief="Source endianness"/>
     </bitset>
     <bitset name="2D_SRC_ORIGIN" inline="yes" brief="Source origin">
@@ -292,7 +296,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     </bitset>
     <bitset name="2D_ROT_ANGLE" masked="yes" inline="yes">
         <doc>
-        0/90/180/270 degree rotation configuratino for the source surface.
+        0/90/180/270 degree rotation and mirroring configuration for the source and destination surface.
         Height field specifies the height of the surface in pixels.
         </doc>
         <bitfield high="2" low="0" name="SRC" type="DE_ROT_MODE"/>
@@ -336,13 +340,13 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     </bitset>
     <bitset name="2D_PE_CONTROL" masked="yes" inline="yes" brief="General purpose control register">
         <bitfield high="0" low="0" name="YUV">
-            <value value="0" name="601"/>
-            <value value="1" name="709"/>
+            <value value="0" name="601" brief="Color space BT.601"/>
+            <value value="1" name="709" brief="Color space BT.709"/>
         </bitfield>
         <bitfield high="3" low="3" name="YUV_MASK"/>
         <bitfield high="4" low="4" name="UV_SWIZZLE">
             <value value="0" name="UV"/>
-            <value value="1" name="VU"/>
+            <value value="1" name="VU" brief="Swap UV components"/>
         </bitfield>
         <bitfield high="7" low="7" name="UV_SWIZZLE_MASK"/>
         <bitfield high="8" low="8" name="YUVRGB" type="ENABLE_DISABLE" brief="YUV to RGB convert enable"/>
@@ -564,7 +568,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             </bitfield>
             <bitfield high="3" low="3" name="DESTINATION_FETCH_MASK"/>
         </reg32>
-        <reg32 offset="0x012B4" name="DST_ROTATION_HEIGHT">
+        <reg32 offset="0x012B4" name="DEST_ROTATION_HEIGHT">
             <doc>
             180/270 degree rotation configuration for the destination surface.
             Height field specifies the height of the surface in pixels.

@@ -20,7 +20,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-/* Test palette expansion.
+/* Test bit_blt operation (rotated 90 degrees).
  */
 #include <stdio.h>
 #include <unistd.h>
@@ -45,78 +45,16 @@
 #include <etnaviv/etna_rs.h>
 
 #include "write_bmp.h"
-
-#include "../resources/wani21_sr8.h"
-
-/* Decompress MSX2 sr8 file from memory. 
- * Output will contain 256x212 image.
- */
-#define SR8_OUT_SIZE (256*212)
-static void sr8_decompress(const uint8_t *data, uint8_t *data_out)
-{
-    uint16_t size16;
-    size_t in_size;
-    int in_ptr = 7;
-    int out_ptr = 0;
-    memcpy(&size16, &data[3], 2);
-    in_size = size16 + 7;
-
-    while(in_ptr < in_size && out_ptr < SR8_OUT_SIZE)
-    {
-        uint8_t d = data[in_ptr++];
-        uint8_t ch;
-        int rep;
-        if(d == 0)
-        {
-            if((in_ptr+1) >= in_size)
-                break;
-            rep = data[in_ptr++];
-            if(rep == 0)
-                rep = 256;
-            ch = data[in_ptr++];
-        } else if(d < 0x10)
-        {
-            if(in_ptr >= in_size)
-                break;
-            rep = d;
-            ch = data[in_ptr++];
-        } else
-        {
-            rep = 1;
-            ch = d;
-        }
-        for(int i=0; i<rep && out_ptr<SR8_OUT_SIZE; ++i)
-            data_out[out_ptr++] = ch;
-    }
-}
-
-/* Build MSX2 screen 8 palette.
- */
-static void sr8_palette(uint32_t *palette)
-{
-    for(int i=0; i<256; ++i)
-    {
-        uint8_t a = 0xff;
-        uint8_t r = (i >> 2) & 7;
-        uint8_t g = (i >> 5) & 7;
-        uint8_t b = i & 3;
-        r = (r << 5) | (r << 2) | (r >> 1);
-        g = (g << 5) | (g << 2) | (g >> 1);
-        b = (b << 6) | (b << 4) | (b << 2) | (b << 0);
-        palette[i] = ((uint32_t)a << 24)|((uint32_t)r<<16)|((uint32_t)g<<8)|(uint32_t)b;
-    }
-}
+#include "read_png.h"
 
 int main(int argc, char **argv)
 {
     int rv;
     int width = 256;
-    int height = 212;
+    int height = 256;
     
-    int padded_width = etna_align_up(width, 8);
-    int padded_height = etna_align_up(height, 1);
+    size_t dst_stride = etna_align_up(width, 8) * 4;
     
-    printf("padded_width %i padded_height %i\n", padded_width, padded_height);
     struct viv_conn *conn = 0;
     rv = viv_open(VIV_HW_2D, &conn);
     if(rv!=0)
@@ -126,11 +64,20 @@ int main(int argc, char **argv)
     }
     printf("Succesfully opened device\n");
     
+    /* Read test image */
+    int src_width, src_height, src_stride;
+    uint32_t *src_data = 0;
+    if(!read_png("amethyst256.png", 8*4, &src_stride, &src_width, &src_height, &src_data))
+    {
+        printf("Unable to read amethyst256.png in current directory\n");
+        exit(1);
+    }
+    
     struct etna_vidmem *bmp = 0; /* bitmap */
     struct etna_vidmem *src = 0; /* source */
 
-    size_t bmp_size = width * height * 4;
-    size_t src_size = width * height * 4;
+    size_t bmp_size = dst_stride * height;
+    size_t src_size = src_stride * src_height;
 
     if(etna_vidmem_alloc_linear(conn, &bmp, bmp_size, VIV_SURF_BITMAP, VIV_POOL_DEFAULT, true)!=ETNA_OK ||
        etna_vidmem_alloc_linear(conn, &src, src_size, VIV_SURF_BITMAP, VIV_POOL_DEFAULT, true)!=ETNA_OK)
@@ -153,25 +100,26 @@ int main(int argc, char **argv)
      */
     for(int i=0; i<bmp_size/4; ++i)
         ((uint32_t*)bmp->logical)[i] = 0xff000000;
-
-    uint32_t palette[256];
-    sr8_palette(palette);
-    sr8_decompress(image_sr8, (uint8_t*)src->logical);
+    memcpy(src->logical, src_data, src_height * src_stride);
 
     for(int frame=0; frame<1; ++frame)
     {
         printf("*** FRAME %i ****\n", frame);
 
         etna_set_state(ctx, VIVS_DE_SRC_ADDRESS, src->address);
-        etna_set_state(ctx, VIVS_DE_SRC_STRIDE, width);
-        etna_set_state(ctx, VIVS_DE_SRC_ROTATION_CONFIG, 0);
+        etna_set_state(ctx, VIVS_DE_SRC_STRIDE, src_stride);
+        etna_set_state(ctx, VIVS_DE_SRC_ROTATION_CONFIG, 
+                VIVS_DE_SRC_ROTATION_CONFIG_WIDTH(src_width) |
+                VIVS_DE_SRC_ROTATION_CONFIG_ROTATION_ENABLE);
+        etna_set_state(ctx, VIVS_DE_SRC_ROTATION_HEIGHT,
+                VIVS_DE_SRC_ROTATION_HEIGHT_HEIGHT(src_height));
         etna_set_state(ctx, VIVS_DE_SRC_CONFIG, 
-                VIVS_DE_SRC_CONFIG_SOURCE_FORMAT(DE_FORMAT_INDEX8) |
+                VIVS_DE_SRC_CONFIG_SOURCE_FORMAT(DE_FORMAT_A8R8G8B8) |
                 VIVS_DE_SRC_CONFIG_LOCATION_MEMORY |
-                VIVS_DE_SRC_CONFIG_PE10_SOURCE_FORMAT(DE_FORMAT_INDEX8));
+                VIVS_DE_SRC_CONFIG_PE10_SOURCE_FORMAT(DE_FORMAT_A8R8G8B8));
         etna_set_state(ctx, VIVS_DE_SRC_ORIGIN, 
-                VIVS_DE_SRC_ORIGIN_X(0) |
-                VIVS_DE_SRC_ORIGIN_Y(0));
+                VIVS_DE_SRC_ORIGIN_X(28) |
+                VIVS_DE_SRC_ORIGIN_Y(28));
         etna_set_state(ctx, VIVS_DE_SRC_SIZE, 
                 VIVS_DE_SRC_SIZE_X(width) |
                 VIVS_DE_SRC_SIZE_Y(height)
@@ -181,8 +129,12 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_DE_STRETCH_FACTOR_LOW, 0);
         etna_set_state(ctx, VIVS_DE_STRETCH_FACTOR_HIGH, 0);
         etna_set_state(ctx, VIVS_DE_DEST_ADDRESS, bmp->address);
-        etna_set_state(ctx, VIVS_DE_DEST_STRIDE, width*4);
-        etna_set_state(ctx, VIVS_DE_DEST_ROTATION_CONFIG, 0);
+        etna_set_state(ctx, VIVS_DE_DEST_STRIDE, dst_stride);
+        etna_set_state(ctx, VIVS_DE_DEST_ROTATION_CONFIG, 
+                VIVS_DE_DEST_ROTATION_CONFIG_WIDTH(width) |
+                VIVS_DE_DEST_ROTATION_CONFIG_ROTATION_DISABLE);
+        etna_set_state(ctx, VIVS_DE_DEST_ROTATION_HEIGHT,
+                VIVS_DE_DEST_ROTATION_HEIGHT_HEIGHT(height));
         etna_set_state(ctx, VIVS_DE_DEST_CONFIG, 
                 VIVS_DE_DEST_CONFIG_FORMAT(DE_FORMAT_A8R8G8B8) |
                 VIVS_DE_DEST_CONFIG_COMMAND_BIT_BLT |
@@ -200,16 +152,21 @@ int main(int argc, char **argv)
                 VIVS_DE_CLIP_BOTTOM_RIGHT_X(width) | 
                 VIVS_DE_CLIP_BOTTOM_RIGHT_Y(height)
                 );
-        etna_set_state(ctx, VIVS_DE_CONFIG, 0); /* TODO */
+        etna_set_state(ctx, VIVS_DE_CONFIG,
+                VIVS_DE_CONFIG_MIRROR_BLT_ENABLE_OFF |
+                VIVS_DE_CONFIG_MIRROR_BLT_MODE_NORMAL
+                );
         etna_set_state(ctx, VIVS_DE_SRC_ORIGIN_FRACTION, 0);
         etna_set_state(ctx, VIVS_DE_ALPHA_CONTROL, 0);
         etna_set_state(ctx, VIVS_DE_ALPHA_MODES, 0);
-        etna_set_state(ctx, VIVS_DE_DEST_ROTATION_HEIGHT, 0);
-        etna_set_state(ctx, VIVS_DE_SRC_ROTATION_HEIGHT, 0);
         etna_set_state(ctx, VIVS_DE_ROT_ANGLE, 0);
 
-        etna_set_state_multi(ctx, VIVS_DE_INDEX_COLOR_TABLE(0), 256, palette);
-        etna_set_state_multi(ctx, VIVS_DE_INDEX_COLOR_TABLE32(0), 256, palette);
+        /* Clear color PE20 */
+        etna_set_state(ctx, VIVS_DE_CLEAR_PIXEL_VALUE32, 0xff40ff40);
+        /* Clear color PE10 */
+        etna_set_state(ctx, VIVS_DE_CLEAR_BYTE_MASK, 0xff);
+        etna_set_state(ctx, VIVS_DE_CLEAR_PIXEL_VALUE_LOW, 0xff40ff40);
+        etna_set_state(ctx, VIVS_DE_CLEAR_PIXEL_VALUE_HIGH, 0xff40ff40);
 
         etna_set_state(ctx, VIVS_DE_DEST_COLOR_KEY, 0);
         etna_set_state(ctx, VIVS_DE_GLOBAL_SRC_COLOR, 0);
@@ -227,10 +184,17 @@ int main(int argc, char **argv)
                                       VIV_FE_DRAW_2D_HEADER_COUNT(NUM_RECTS) |
                                       VIV_FE_DRAW_2D_HEADER_DATA_COUNT(0);
         (ctx)->offset++; /* rectangles start aligned */
-        (ctx)->buf[(ctx)->offset++] = VIV_FE_DRAW_2D_TOP_LEFT_X(0) |
-                                      VIV_FE_DRAW_2D_TOP_LEFT_Y(0);
-        (ctx)->buf[(ctx)->offset++] = VIV_FE_DRAW_2D_BOTTOM_RIGHT_X(width) |
-                                      VIV_FE_DRAW_2D_BOTTOM_RIGHT_Y(height);
+        for(int rec=0; rec<NUM_RECTS; ++rec)
+        {
+            int tgt_width = 200;
+            int tgt_height = 200;
+            int x1 = 28;
+            int y1 = 28;
+            (ctx)->buf[(ctx)->offset++] = VIV_FE_DRAW_2D_TOP_LEFT_X(x1) |
+                                          VIV_FE_DRAW_2D_TOP_LEFT_Y(y1);
+            (ctx)->buf[(ctx)->offset++] = VIV_FE_DRAW_2D_BOTTOM_RIGHT_X(x1 + tgt_width) |
+                                          VIV_FE_DRAW_2D_BOTTOM_RIGHT_Y(y1 + tgt_height);
+        }
         etna_set_state(ctx, 1, 0);
         etna_set_state(ctx, 1, 0);
         etna_set_state(ctx, 1, 0);

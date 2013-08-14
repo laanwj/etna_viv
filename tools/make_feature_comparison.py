@@ -68,10 +68,10 @@ def main():
     table = []
     
     cur_row = 0
-    table.append(Cell(cur_row, 0, 'Platform', cls='header'))
+    table.append(Cell(cur_row, 0, 'Platform', cls='header firstrow'))
     cur_col = 1
     for platform in gpus:
-        table.append(Cell(cur_row, cur_col, platform['platform'], colspan=len(platform['chips'])))
+        table.append(Cell(cur_row, cur_col, platform['platform'], colspan=len(platform['chips']), cls='firstrow'))
         cur_col += len(platform['chips'])
     full_width = cur_col
 
@@ -115,7 +115,7 @@ def main():
     table.append(Cell(cur_row, 0, 'Features', colspan=full_width, cls='category'))
     for (field, bit) in all_features:
         cur_row += 1
-        table.append(Cell(cur_row, 0, bit.name, cls='subheader'))
+        table.append(Cell(cur_row, 0, bit.name, cls='subheader featurename'))
         cur_col = 1
         for platform in gpus:
             for chip in platform['chips']:
@@ -152,11 +152,13 @@ table.gpu-comparison tr:nth-child(odd) td {
 table.gpu-comparison tr:nth-child(even) td {
     background-color: #d0d0ff;
 }
-table.gpu-comparison td.header { text-align: left; width: 15em; }
-table.gpu-comparison td.subheader { text-align: left; padding-left: 20px; }
-table.gpu-comparison td.category { text-align: left; font-style: italic; }
+table.gpu-comparison tr td.firstrow { text-align: left; background-color: #F0F0F0; }
+table.gpu-comparison tr td.header { text-align: left; width: 15em; }
+table.gpu-comparison tr td.subheader { text-align: left; }
+table.gpu-comparison tr td.category { text-align: left; font-style: italic; background-color: #F0F0F0; }
 table.gpu-comparison td.minus { color: #808080; }
 table.gpu-comparison td.plus { }
+table.gpu-comparison .featurename { font-family:monospace; font-size: 10px; }
 </style>
 """)
     out.write('</head>\n')

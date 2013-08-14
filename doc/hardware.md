@@ -207,6 +207,8 @@ The RS and PE (drawing) share one set of pixel pipes. They will never be active 
 They do however have separate caches, so before using RS to copy from a surface at least the COLOR cache needs to be flushed
 (and possibly the RS cache). The blob also flushes the DEPTH cache, I do however not know why.
 
+Tiled or supertiled resolve operation sizes need to be aligned to 16 horizontally and 4 vertically.
+
 Tile status (Fast clear)
 -------------------------
 A render target is divided in tiles, and every tile has a couple of status flags.
