@@ -20,7 +20,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-/* Scale image using filter blit through video rasterizer.
+/* Scale image using filter blit through video rasterizer
+ * (hardware scaling using arbitrary 9-tap kernel and 5 bit subpixel precision).
  */
 #include <stdio.h>
 #include <unistd.h>

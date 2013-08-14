@@ -46,11 +46,24 @@
 
 #include "write_bmp.h"
 
+/* Text data to expand, packed per 8x4 bits in 32 bit words */
+static const uint32_t text_width = 128;
+static const uint32_t text_height = 8;
+static const uint32_t text_data[] = {
+    0xa9aada89, 0x00898a88, 0xc20528c8, 0x00c82825, 0x00008080, 0x00808000,
+    0x724a49f0, 0x00f24a4b, 0x27284887, 0x002728e0, 0x0808881c, 0x001c8888,
+    0x80804830, 0x00304880, 0x08080000, 0x00020508, 0xa29c0000, 0x001c20be,
+    0xcab10000, 0x00838083, 0x02e60002, 0x00c722c2, 0x221c0000, 0x001c2222,
+    0xc8b00000, 0x00888888, 0x03000807, 0x00070800, 0x00808000, 0x00189880,
+    0xa8988870, 0x007088c8
+};
+static const uint32_t text_size = sizeof(text_data)/4;
+
 int main(int argc, char **argv)
 {
     int rv;
     int width = 256;
-    int height = 256;
+    int height = 192;
     
     int padded_width = etna_align_up(width, 8);
     int padded_height = etna_align_up(height, 1);
@@ -91,7 +104,8 @@ int main(int argc, char **argv)
      * but we're lazy.
      */
     memset(src->logical, 255, src_size);
-    memset(bmp->logical, 0xaa, bmp_size);
+    for(int i=0; i<bmp_size/4; ++i)
+        ((uint32_t*)bmp->logical)[i] = 0xff2020ff;
     for(int frame=0; frame<1; ++frame)
     {
         printf("*** FRAME %i ****\n", frame);
@@ -108,8 +122,8 @@ int main(int argc, char **argv)
                 VIVS_DE_SRC_CONFIG_PE10_SOURCE_FORMAT(DE_FORMAT_MONOCHROME));
         etna_set_state(ctx, VIVS_DE_SRC_ORIGIN, 0);
         etna_set_state(ctx, VIVS_DE_SRC_SIZE, 0); // source size is ignored
-        etna_set_state(ctx, VIVS_DE_SRC_COLOR_BG, 0xff303030);
-        etna_set_state(ctx, VIVS_DE_SRC_COLOR_FG, 0xff12ff56);
+        etna_set_state(ctx, VIVS_DE_SRC_COLOR_BG, 0xff2020ff);
+        etna_set_state(ctx, VIVS_DE_SRC_COLOR_FG, 0xffffffff);
         etna_set_state(ctx, VIVS_DE_STRETCH_FACTOR_LOW, 0);
         etna_set_state(ctx, VIVS_DE_STRETCH_FACTOR_HIGH, 0);
         etna_set_state(ctx, VIVS_DE_DEST_ADDRESS, bmp->address);
@@ -164,17 +178,17 @@ int main(int argc, char **argv)
 
 #define NUM_RECTS (1)
         /* Queue DE command */
-        etna_reserve(ctx, 256*2 + 2);
+        etna_reserve(ctx, 256*2 + 2 + text_size);
         (ctx)->buf[(ctx)->offset++] = VIV_FE_DRAW_2D_HEADER_OP_DRAW_2D |
                                       VIV_FE_DRAW_2D_HEADER_COUNT(NUM_RECTS) |
-                                      VIV_FE_DRAW_2D_HEADER_DATA_COUNT(2);
+                                      VIV_FE_DRAW_2D_HEADER_DATA_COUNT(text_size);
         (ctx)->offset++; /* rectangles start aligned */
         for(int rec=0; rec<NUM_RECTS; ++rec)
         {
             int x1 = 4+16*rec;
             int y1 = 4;
-            int x2 = 4+8;
-            int y2 = 4+8;
+            int x2 = x1 + text_width;
+            int y2 = y1 + text_height;
             (ctx)->buf[(ctx)->offset++] = VIV_FE_DRAW_2D_TOP_LEFT_X(x1) |
                                           VIV_FE_DRAW_2D_TOP_LEFT_Y(y1);
             (ctx)->buf[(ctx)->offset++] = VIV_FE_DRAW_2D_BOTTOM_RIGHT_X(x2) |
@@ -182,8 +196,8 @@ int main(int argc, char **argv)
         }
         /* data in-stream */
         ETNA_ALIGN(ctx);
-        (ctx)->buf[(ctx)->offset++] = 0xaa55aa00;
-        (ctx)->buf[(ctx)->offset++] = 0x0055aa55;
+        for(int ptr=0; ptr<text_size; ++ptr)
+            (ctx)->buf[(ctx)->offset++] = text_data[ptr];
         ETNA_ALIGN(ctx);
         etna_set_state(ctx, 1, 0);
         etna_set_state(ctx, 1, 0);
@@ -192,7 +206,7 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_PE2D);
         etna_finish(ctx);
     }
-    bmp_dump32(bmp->logical, width, height, false, "/tmp/fb.bmp");
+    bmp_dump32_noflip(bmp->logical, width, height, true, "/tmp/fb.bmp");
     printf("Dump complete\n");
     
     /* Unlock video memory */

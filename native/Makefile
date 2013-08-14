@@ -2,7 +2,7 @@ TOP=.
 
 include $(TOP)/Makefile.inc
 
-DIRS=gallium etnaviv driver fb fb_rawshader replay
+DIRS=gallium etnaviv driver fb fb_rawshader replay test2d
 
 # only needed for reverse engineering/dumping
 # this needs a current EGL+OpenGL ES2 driver
