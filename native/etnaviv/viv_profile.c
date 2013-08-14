@@ -12,7 +12,6 @@
 #include "gc_hal_kernel_context.h"
 #endif
 #include "gc_hal_types.h"
-#include "etna_enum_convert.h"
 
 #ifdef ETNAVIV_HOOK
 /* If set, command stream will be logged to environment variable ETNAVIV_FDR */

@@ -41,7 +41,10 @@
 #endif
 #include "gc_hal_types.h"
 
+#ifdef GCABI_HAS_CONTEXT
 #include "etna_context_cmd.h"
+#endif
+#include "viv_internal.h"
 
 //#define DEBUG
 //#define DEBUG_CMDBUF
@@ -57,7 +60,7 @@
 
 /* Initialize kernel GPU context and state map */
 #ifdef GCABI_HAS_CONTEXT
-#define GCCTX(x) ((gcoCONTEXT)((x)->ctx))
+#define GCCTX(x) ((gcoCONTEXT)(size_t)((x)->ctx))
 static int initialize_gpu_context(struct viv_conn *conn, gcoCONTEXT *pvctx)
 {
     /* First build context state map from compressed representation */
@@ -156,7 +159,7 @@ static int initialize_gpu_context(struct viv_conn *conn, gckCONTEXT *vctx)
     printf("Context 0x%08x\n", (int)id.u.Attach.context);
 #endif
 
-    *vctx = id.u.Attach.context;
+    *vctx = (gckCONTEXT)id.u.Attach.context;
     return ETNA_OK;
 }
 #endif
@@ -208,8 +211,8 @@ int etna_create(struct viv_conn *conn, struct etna_ctx **ctx_out)
             return ETNA_OUT_OF_MEMORY;
         }
         ctx->cmdbuf[x]->object.type = gcvOBJ_COMMANDBUFFER;
-        ctx->cmdbuf[x]->physical = (void*)buf0_physical;
-        ctx->cmdbuf[x]->logical = (void*)buf0_logical;
+        ctx->cmdbuf[x]->physical = PTR_TO_VIV((void*)buf0_physical);
+        ctx->cmdbuf[x]->logical = PTR_TO_VIV((void*)buf0_logical);
         ctx->cmdbuf[x]->bytes = buf0_bytes;
 
         if(viv_user_signal_create(conn, 0, &ctx->cmdbuf_sig[x]) != 0 ||
@@ -268,7 +271,7 @@ static int switch_next_buffer(struct etna_ctx *ctx)
     }
     clear_buffer(ctx->cmdbuf[next_buf_id]);
     ctx->cur_buf = next_buf_id;
-    ctx->buf = ctx->cmdbuf[next_buf_id]->logical;
+    ctx->buf = VIV_TO_PTR(ctx->cmdbuf[next_buf_id]->logical);
     ctx->offset = ctx->cmdbuf[next_buf_id]->offset / 4;
 #ifdef DEBUG
     printf("Switched to command buffer %i\n", ctx->cur_buf);
@@ -285,7 +288,7 @@ int etna_free(struct etna_ctx *ctx)
     /* Free command buffers */
     for(int x=0; x<NUM_COMMAND_BUFFERS; ++x)
     {
-        viv_free_contiguous(ctx->conn, ctx->cmdbuf[x]->bytes, (viv_addr_t)ctx->cmdbuf[x]->physical, ctx->cmdbuf[x]->logical);
+        viv_free_contiguous(ctx->conn, ctx->cmdbuf[x]->bytes, (viv_addr_t)ctx->cmdbuf[x]->physical, VIV_TO_PTR(ctx->cmdbuf[x]->logical));
         ETNA_FREE(ctx->cmdbuf[x]);
     }
     ETNA_FREE(ctx);

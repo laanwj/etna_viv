@@ -30,7 +30,7 @@
 
 #define VIV_WAIT_INDEFINITE (0xffffffff)
 
-/* one of the features words */
+/* Enum with indices for each of the feature words */
 enum viv_features_word
 {
     viv_chipFeatures = 0,
@@ -137,13 +137,16 @@ enum viv_status
 typedef uint32_t viv_addr_t;
 
 /* General process handle */
-typedef void* viv_handle_t;
+typedef uint64_t viv_handle_t;
 
 /* Memory node handle */
-typedef void* viv_node_t;
+typedef uint64_t viv_node_t;
 
 /* GPU context handle */
-typedef void* viv_context_t;
+typedef uint64_t viv_context_t;
+
+/* User memory info handle */
+typedef uint64_t viv_usermem_t;
 
 /* kernel-interface independent chip specs structure, this is much easier to use
  * than checking GCABI defines all the time. 
@@ -165,7 +168,7 @@ struct viv_specs {
     uint32_t varyings_count;
 };
 
-/* connection to driver */
+/* Structure encompassing a connection to kernel driver */
 struct viv_conn {
     int fd;
     enum viv_hw_type hw_type;
@@ -182,7 +185,7 @@ struct _gcsHAL_INTERFACE;
 struct _gcoCMDBUF;
 struct _gcsQUEUE;
 
-/* Open connection to GPU driver.
+/* Open a new connection to the GPU driver.
  */
 int viv_open(enum viv_hw_type hw_type, struct viv_conn **out);
 
@@ -191,11 +194,12 @@ int viv_open(enum viv_hw_type hw_type, struct viv_conn **out);
  */
 int viv_invoke(struct viv_conn *conn, struct _gcsHAL_INTERFACE *cmd);
 
-/* Close connection to GPU driver.
+/* Close connection to GPU driver and free temporary structures
+ * and mapping.
  */
 int viv_close(struct viv_conn *conn);
 
-/** Allocate contiguous GPU-mapped memory */
+/** Allocate a span of physical contiguous GPU-mapped memory */
 int viv_alloc_contiguous(struct viv_conn *conn, size_t bytes, viv_addr_t *physical, void **logical, size_t *bytes_out);
 
 /** Allocate linear video memory.
@@ -204,39 +208,40 @@ int viv_alloc_contiguous(struct viv_conn *conn, size_t bytes, viv_addr_t *physic
 int viv_alloc_linear_vidmem(struct viv_conn *conn, size_t bytes, size_t alignment, enum viv_surf_type type, enum viv_pool pool, viv_node_t *node, size_t *bytes_out);
 
 /** Lock (map) video memory node to GPU and CPU memory.
+ * Video memory needs to be locked to be used by either the CPU or GPU.
  */
 int viv_lock_vidmem(struct viv_conn *conn, viv_node_t node, viv_addr_t *physical, void **logical);
 
-/** Commit GPU command buffer and context.
+/** Commit GPU command buffer and context. This submits a batch of commands.
  */
 int viv_commit(struct viv_conn *conn, struct _gcoCMDBUF *commandBuffer, viv_context_t context, struct _gcsQUEUE *queue);
 
-/**  Unlock (unmap) video memory node from GPU and CPU memory.
+/** Unlock (unmap) video memory node from GPU and CPU memory.
  */
 int viv_unlock_vidmem(struct viv_conn *conn, viv_node_t node, enum viv_surf_type type, int async);
 
-/**  Free block of video memory previously allocated with viv_alloc_linear_vidmem.
+/** Free a block of video memory previously allocated with viv_alloc_linear_vidmem.
  */
 int viv_free_vidmem(struct viv_conn *conn, viv_node_t node);
 
-/**  Free block of contiguous memory previously allocated with viv_alloc_contiguous.
+/** Free block of contiguous memory previously allocated with viv_alloc_contiguous.
  */
 int viv_free_contiguous(struct viv_conn *conn, size_t bytes, viv_addr_t physical, void *logical);
 
-/**  Map user memory to GPU memory.
+/** Map user memory to GPU memory.
  */
-int viv_map_user_memory(struct viv_conn *conn, void *memory, size_t size, void **info, viv_addr_t *address);
+int viv_map_user_memory(struct viv_conn *conn, void *memory, size_t size, viv_usermem_t *info, viv_addr_t *address);
 
-/**  Unmap user memory from GPU memory.
+/** Unmap user memory from GPU memory.
  */
-int viv_unmap_user_memory(struct viv_conn *conn, void *memory, size_t size, void *info, viv_addr_t address);
+int viv_unmap_user_memory(struct viv_conn *conn, void *memory, size_t size, viv_usermem_t info, viv_addr_t address);
 
 /** Commit event queue.
  */
 int viv_event_commit(struct viv_conn *conn, struct _gcsQUEUE *queue);
 
 /** Create a new user signal.
- *  if manualReset=0 automatic reset on WAIT
+ *  if manualReset=0 automatic reset on completion of signal_wait
  *     manualReset=1 need to manually reset state to 0 using SIGNAL
  */
 int viv_user_signal_create(struct viv_conn *conn, int manualReset, int *id_out);
@@ -257,6 +262,7 @@ int viv_user_signal_destroy(struct viv_conn *conn, int sig_id);
 void viv_show_chip_info(struct viv_conn *conn);
 
 /** Send reset command to GPU.
+ * This is supposed to fix a hung state, but its effectiveness depends on the SoC.
  */
 int viv_reset(struct viv_conn *conn);
 

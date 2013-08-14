@@ -33,11 +33,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="1" name="ENABLE"/>
     </enum>
     <enum name="PIPE_ID">
-        <value value="0" name="PIPE_3D"/>
-        <value value="1" name="PIPE_2D"/> <!-- DE only -->
+        <value value="0" name="PIPE_3D"/> <!-- Rendering of 3D primitives -->
+        <value value="1" name="PIPE_2D"/> <!-- DE rendering only -->
     </enum>
     <enum name="SYNC_RECIPIENT" brief="Synchronization source/destination">
-        <doc>This is used for synchronization primitives, for example for semaphores and stalling</doc>
+        <doc>The sync recipient can be a receiver or sender of a semaphore or synchronization signal within the GPU.</doc>
         <value value="1" name="FE" brief="Front End"/>
         <value value="5" name="RA" brief="Raster"/>
         <value value="7" name="PE" brief="Pixel Engine"/>
@@ -51,8 +51,12 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     </enum>
     <enum name="ENDIAN_MODE" brief="Byte swap configuration">
         <value value="0" name="NO_SWAP" brief="No endian swap"/>
-        <value value="1" name="SWAP_16" brief="Swap per 16 bit unit"/>
-        <value value="2" name="SWAP_32" brief="Swap per 32 bit unit"/>
+        <value value="1" name="SWAP_16" brief="Swap per 16 bit unit">
+            <doc>A B C D -> B A D C</doc>
+        </value>
+        <value value="2" name="SWAP_32" brief="Swap per 32 bit unit">
+            <doc>A B C D -> D C B A</doc>
+        </value>
     </enum>
     <bitset name="RGBA_BITS" brief="RGBA bits">
         <bitfield pos="0" name="R"/>
@@ -60,7 +64,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield pos="2" name="B"/>
         <bitfield pos="3" name="A"/>
     </bitset>
-    
+
+    <!-- Chip model. This is the primary identifier of a core.
+      -->
     <enum name="chipModel">
         <value value="0x0300" name="GC300"/> <!-- 2D graphics -->
         <value value="0x0320" name="GC320"/> <!-- 2D graphics + Compose engine -->
@@ -82,6 +88,12 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="0x2100" name="GC2100"/>
         <value value="0x4000" name="GC4000"/> <!-- 3D graphics, 8 cores -->
     </enum>
+
+    <!-- GPU feature words.
+         Each of the bits of these words signifies the availability (or sometimes lack of) a certain
+         rendering feature in the 2D, 3D or VG engine.
+         Not all the words are available on all GPU types, but if missing they default to 0.
+      -->
     <bitset name="chipFeatures">
         <bitfield pos="0" name="FAST_CLEAR" brief="Fast clear available"/>
         <bitfield pos="1" name="SPECIAL_ANTI_ALIASING" brief="Special AA (FSAA)"/>
@@ -262,5 +274,6 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield pos="30" name="UNK30"/>
         <bitfield pos="31" name="UNK31"/>
     </bitset>
+
 </database>
 

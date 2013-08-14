@@ -280,7 +280,7 @@ int main()
     printf("Num constants: 0x%08x\n", id.u.QueryChipIdentity.numConstants);
     printf("Buffer size: 0x%08x\n", id.u.QueryChipIdentity.bufferSize);
 #endif
-#ifdef GCABI_IMX_V4
+#ifdef GCABI_CHIPIDENTITY_VARYINGS
     printf("Number of varyings: 0x%08x\n", id.u.QueryChipIdentity.varyingsCount);
     printf("Supertile layout style in hardware: 0x%08x\n", id.u.QueryChipIdentity.superTileMode);
 #endif

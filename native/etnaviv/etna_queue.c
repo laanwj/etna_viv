@@ -11,7 +11,7 @@
 #else
 #include "gc_hal_kernel_context.h"
 #endif
-#include "etna_enum_convert.h"
+#include "viv_internal.h"
 
 #include <assert.h>
 
@@ -58,11 +58,11 @@ int etna_queue_alloc(struct etna_queue *queue, struct _gcsHAL_INTERFACE **cmd_ou
         assert(queue->count == 0);
     }
     struct _gcsQUEUE *cmd = &queue->queue[queue->count++];
-    cmd->next = NULL;
+    cmd->next = PTR_TO_VIV(NULL);
     /* update next pointer of previous record */
     if(queue->last != NULL)
     {
-        queue->last->next = cmd;
+        queue->last->next = PTR_TO_VIV(cmd);
     }
     queue->last = cmd;
     *cmd_out = &cmd->iface;
@@ -76,9 +76,9 @@ int etna_queue_signal(struct etna_queue *queue, int sig_id, enum viv_where fromW
     if((rv=etna_queue_alloc(queue, &cmd)) != ETNA_OK)
         return rv;
     cmd->command = gcvHAL_SIGNAL;
-    cmd->u.Signal.signal = (void*)sig_id;
-    cmd->u.Signal.auxSignal = (void*)0x0;
-    cmd->u.Signal.process = queue->ctx->conn->process;
+    cmd->u.Signal.signal = PTR_TO_VIV((void*)sig_id);
+    cmd->u.Signal.auxSignal = PTR_TO_VIV((void*)0x0);
+    cmd->u.Signal.process = HANDLE_TO_VIV(queue->ctx->conn->process);
     cmd->u.Signal.fromWhere = convert_where(fromWhere);
     return ETNA_OK;
 }
@@ -91,8 +91,8 @@ int etna_queue_free_contiguous(struct etna_queue *queue, size_t bytes, viv_addr_
         return rv;
     cmd->command = gcvHAL_FREE_CONTIGUOUS_MEMORY;
     cmd->u.FreeContiguousMemory.bytes = bytes;
-    cmd->u.FreeContiguousMemory.physical = (gctPHYS_ADDR)physical;
-    cmd->u.FreeContiguousMemory.logical = logical;
+    cmd->u.FreeContiguousMemory.physical = PTR_TO_VIV((gctPHYS_ADDR)physical);
+    cmd->u.FreeContiguousMemory.logical = PTR_TO_VIV(logical);
     return ETNA_OK;
 }
 
@@ -103,7 +103,7 @@ int etna_queue_unlock_vidmem(struct etna_queue *queue, viv_node_t node, enum viv
     if((rv=etna_queue_alloc(queue, &cmd)) != ETNA_OK)
         return rv;
     cmd->command = gcvHAL_UNLOCK_VIDEO_MEMORY;
-    cmd->u.UnlockVideoMemory.node = node;
+    cmd->u.UnlockVideoMemory.node = HANDLE_TO_VIV(node);
     cmd->u.UnlockVideoMemory.type = convert_surf_type(type);
     cmd->u.UnlockVideoMemory.asynchroneous = async;
     return ETNA_OK;
@@ -116,20 +116,20 @@ int etna_queue_free_vidmem(struct etna_queue *queue, viv_node_t node)
     if((rv=etna_queue_alloc(queue, &cmd)) != ETNA_OK)
         return rv;
     cmd->command = gcvHAL_FREE_VIDEO_MEMORY;
-    cmd->u.FreeVideoMemory.node = node;
+    cmd->u.FreeVideoMemory.node = HANDLE_TO_VIV(node);
     return ETNA_OK;
 }
 
-int etna_queue_unmap_user_memory(struct etna_queue *queue, void *memory, size_t size, void *info, viv_addr_t address)
+int etna_queue_unmap_user_memory(struct etna_queue *queue, void *memory, size_t size, viv_usermem_t info, viv_addr_t address)
 {
     struct _gcsHAL_INTERFACE *cmd = NULL;
     int rv;
     if((rv=etna_queue_alloc(queue, &cmd)) != ETNA_OK)
         return rv;
     cmd->command = gcvHAL_UNMAP_USER_MEMORY;
-    cmd->u.UnmapUserMemory.memory = memory;
+    cmd->u.UnmapUserMemory.memory = PTR_TO_VIV(memory);
     cmd->u.UnmapUserMemory.size = size;
-    cmd->u.UnmapUserMemory.info = info;
+    cmd->u.UnmapUserMemory.info = HANDLE_TO_VIV(info);
     cmd->u.UnmapUserMemory.address = address;
     return ETNA_OK;
 }

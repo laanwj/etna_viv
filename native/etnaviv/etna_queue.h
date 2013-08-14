@@ -85,7 +85,7 @@ int etna_queue_free_vidmem(struct etna_queue *queue, viv_node_t node);
 
 /** Queue unmap user memory from GPU memory.
  */
-int etna_queue_unmap_user_memory(struct etna_queue *queue, void *memory, size_t size, void *info, viv_addr_t address);
+int etna_queue_unmap_user_memory(struct etna_queue *queue, void *memory, size_t size, viv_usermem_t info, viv_addr_t address);
 
 /* Deallocate a queue. Flushes the queue and returns all memory.
  */

@@ -21,8 +21,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 /* Internal header: convert from etnaviv-specific values to kernel driver values */
-#ifndef ETNA_ENUM_CONVERT
-#define ETNA_ENUM_CONVERT
+#ifndef VIV_INTERNAL_H
+#define VIV_INTERNAL_H
+
 /* Convert VIV_SURF_* to kernel specific gcvSURF_* */
 static inline gceSURF_TYPE convert_surf_type(enum viv_surf_type type)
 {
@@ -73,5 +74,20 @@ static inline gceKERNEL_WHERE convert_where(enum viv_where where)
     default: return gcvKERNEL_PIXEL; /* unknown default */
     }
 }
+
+#ifdef GCABI_UINT64_POINTERS
+/* imx6 BSP 4.x Vivante driver casts all pointers to 64 bit integers
+ * provide macros to cast back and forth. */
+#define PTR_TO_VIV(x) ((gctUINT64)((size_t)(x)))
+#define VIV_TO_PTR(x) ((void*)((size_t)(x)))
+#define HANDLE_TO_VIV(x) (x)
+#define VIV_TO_HANDLE(x) (x)
+#else
+#define PTR_TO_VIV(x) (x)
+#define VIV_TO_PTR(x) (x)
+#define HANDLE_TO_VIV(x) ((void*)((size_t)(x)))
+#define VIV_TO_HANDLE(x) ((gctUINT64)(size_t)(x))
+#endif
+
 #endif
 

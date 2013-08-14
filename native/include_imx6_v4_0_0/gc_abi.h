@@ -35,10 +35,10 @@
 
 // Chip identity has pixelPipes, instructionCount, numConstants, bufferSize
 #define GCABI_CHIPIDENTITY_EXT
+// Chip identity has varyings and layout style
 #define GCABI_CHIPIDENTITY_VARYINGS
 
-// imx6 v4 kernel driver
-#define GCABI_IMX_V4
+#define GCABI_UINT64_POINTERS
 
 /* IOCTL structure for userspace driver*/
 typedef struct 

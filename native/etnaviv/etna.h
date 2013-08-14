@@ -30,6 +30,7 @@
 #include <etnaviv/common.xml.h>
 #include <etnaviv/cmdstream.xml.h>
 #include <etnaviv/etna_util.h>
+#include <etnaviv/viv.h>
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -107,7 +108,7 @@ struct etna_ctx {
     /* number of unsignalled flushes (used to work around kernel bug) */
     int flushes;
     /* context */
-    void *ctx;
+    viv_context_t ctx;
     /* command queue */
     struct etna_queue *queue;
 };

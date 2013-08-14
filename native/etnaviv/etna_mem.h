@@ -40,7 +40,7 @@ struct etna_vidmem {
 struct etna_usermem {
     void *memory;
     size_t size;
-    void *info;
+    viv_usermem_t info;
     viv_addr_t address;
 };
 
