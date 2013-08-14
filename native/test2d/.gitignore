@@ -8,7 +8,5 @@ bitblt2d_rotate
 line2d
 line2d_patterned
 stretchblt2d
-sync_cubox.sh
-test.sh
 bitblt2d_alpha
 

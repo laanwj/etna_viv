@@ -42,6 +42,7 @@ enum viv_features_word
 };
 
 /* hardware type */
+/* matches gceHARDWARE_TYPE enums */
 enum viv_hw_type
 {
     VIV_HW_3D = 1,

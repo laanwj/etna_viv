@@ -113,7 +113,7 @@ int main(int argc, char **argv)
                 VIVS_DE_DEST_CONFIG_MINOR_TILED_DISABLE
                 );
         etna_set_state(ctx, VIVS_DE_ROP, 
-                VIVS_DE_ROP_ROP_FG(0xf0) | VIVS_DE_ROP_ROP_BG(0xf0) | VIVS_DE_ROP_TYPE_ROP4);
+                VIVS_DE_ROP_ROP_FG(0xcc) | VIVS_DE_ROP_ROP_BG(0xcc) | VIVS_DE_ROP_TYPE_ROP4);
         etna_set_state(ctx, VIVS_DE_CLIP_TOP_LEFT, 
                 VIVS_DE_CLIP_TOP_LEFT_X(0) | 
                 VIVS_DE_CLIP_TOP_LEFT_Y(0)

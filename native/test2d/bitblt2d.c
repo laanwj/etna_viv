@@ -169,7 +169,6 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_DE_PE_CONTROL, 0);
         etna_set_state(ctx, VIVS_DE_PE_DITHER_LOW, 0xffffffff);
         etna_set_state(ctx, VIVS_DE_PE_DITHER_HIGH, 0xffffffff);
-
 #define NUM_RECTS (32)
         /* Queue DE command */
         etna_reserve(ctx, 256*2 + 2);
