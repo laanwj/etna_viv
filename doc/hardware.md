@@ -13,6 +13,18 @@ for extra parallelism and/or granularity in power switching). For example the Ma
 with only the 3D engine as well as a GC300 with only the 2D engine. Similarly, the Freescale i.mx6 SoC has a
 GC2000 with the 3D engine, a GC320 with 2D engine and a GC355 with VG engine.
 
+- State space is a 256kB (65536 times uint32) register file divided up into
+  separate units for parts of the chip (such as PE, RS, ...)
+
+- Most of the state is latched; that means if it's set to a certain value, it
+  will keep that value until the next change
+
+- Instead of programming the registers directly (which is possible from kernel
+  space), the FE, a DMA engine, is used to queue state changes for later
+
+- To perform an operation such as rendering, all the state for doing that
+  operation have been programmed to the desired values
+
 Feature bits
 =================
 

@@ -24,7 +24,7 @@
      2D engine states, mostly taken from gcreg.h in gcx project.
 
      Be sure to set the PIPE to PIPE_2D (on a core with the respective
-     capability) before programming any of these or using the DRAW_DE
+     capability) before programming any of these or using the DRAW_2D
      command.
   -->
 <database xmlns="http://nouveau.freedesktop.org/"
@@ -53,7 +53,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="16" name="A8"/>
         <value value="17" name="NV12" brief="YUV 4:2:0 8-bit Y plane and interleaved U/V plane with 2x2 subsampling"/>
         <value value="18" name="NV16" brief="YUV 4:2:2 8-bit Y plane and interleaved U/V plane with 2x1 subsampling"/>
-        <value value="19" name="RG16" brief="Bayer, RGRG..(odd line), GBGB..(even line), 8-bit samples"/>
+        <value value="19" name="RG16" brief="Bayer, interleaved RGRG..(odd line), GBGB..(even line), 8-bit samples"/>
     </enum>
     <enum name="DE_SWIZZLE" brief="2D swizzle">
         <doc>
