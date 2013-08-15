@@ -43,6 +43,10 @@
  */
 #define NUM_COMMAND_BUFFERS 5
 
+/* Special command buffer ids */
+#define ETNA_NO_BUFFER (-1)
+#define ETNA_CTX_BUFFER (-2)
+
 /* Number of bytes in one command buffer */
 #define COMMAND_BUFFER_SIZE (0x8000)
 
@@ -84,6 +88,15 @@ typedef enum _etna_pipe {
 
 struct _gcoCMDBUF;
 struct etna_queue;
+struct etna_ctx;
+
+struct etna_context_info {
+    size_t bytes;
+    viv_addr_t physical;
+    void *logical;
+};
+
+typedef int (*etna_context_snapshot_cb_t)(void *data, struct etna_ctx *ctx, etna_pipe *initial_pipe, etna_pipe *final_pipe);
 
 struct etna_ctx {
     /* Driver connection */
@@ -99,6 +112,8 @@ struct etna_ctx {
     uint32_t offset;
     /* Current buffer id (index into cmdbuf) */
     int cur_buf;
+    /* Stored current buffer id when building context */
+    int stored_buf;
     /* Synchronization signal for finish() */
     int sig_id;
     /* Structures for kernel */
@@ -109,6 +124,9 @@ struct etna_ctx {
     int flushes;
     /* context */
     viv_context_t ctx;
+    struct etna_context_info ctx_info;
+    etna_context_snapshot_cb_t ctx_cb;
+    void *ctx_cb_data;
     /* command queue */
     struct etna_queue *queue;
 };
@@ -178,7 +196,7 @@ static inline int etna_reserve(struct etna_ctx *ctx, size_t n)
 {
     if(ctx == NULL)
         return ETNA_INVALID_ADDR;
-    if(ctx->cur_buf != -1)
+    if(ctx->cur_buf != ETNA_NO_BUFFER)
     {
 #ifdef CMD_DEBUG
         printf("etna_reserve: %i at offset %i\n", (int)n, (int)ctx->offset);
@@ -218,6 +236,14 @@ int etna_semaphore(struct etna_ctx *ctx, uint32_t from, uint32_t to);
  * @return OK on success, error code otherwise
  */
 int etna_stall(struct etna_ctx *ctx, uint32_t from, uint32_t to);
+
+/** Set callback for building context before flush.
+ * Any etna state update commands called inside this callback function will be
+ * part of context.
+ * @note This callback is never called if the kernel driver does not use contexts.
+ * @return OK on success, error code otherwise
+ */
+int etna_set_context_cb(struct etna_ctx *ctx, etna_context_snapshot_cb_t snapshot_cb, void *data);
 
 /* print command buffer for debugging */
 void etna_dump_cmd_buffer(struct etna_ctx *ctx);
@@ -330,6 +356,5 @@ static inline void etna_draw_indexed_primitives(struct etna_ctx *cmdbuf, uint32_
         ETNA_EMIT(ctx, src_value); \
         last_reg = VIVS_##state_name + 4; last_fixp = (fixp); \
     }
-
 
 #endif

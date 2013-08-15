@@ -275,6 +275,10 @@ struct compiled_shader_state
 struct etna_3d_state
 {
     unsigned num_vertex_elements; /* number of elements in FE_VERTEX_ELEMENT_CONFIG */
+    unsigned vs_uniforms_size;
+    unsigned ps_uniforms_size;
+    unsigned vs_inst_mem_size;
+    unsigned ps_inst_mem_size;
 
     uint32_t /*00600*/ FE_VERTEX_ELEMENT_CONFIG[VIVS_FE_VERTEX_ELEMENT_CONFIG__LEN];
     uint32_t /*00644*/ FE_INDEX_STREAM_BASE_ADDR;
@@ -381,9 +385,9 @@ struct etna_3d_state
     uint32_t /*03828*/ GL_VARYING_COMPONENT_USE[VIVS_GL_VARYING_COMPONENT_USE__LEN];
     uint32_t /*0384C*/ GL_API_MODE;
 
-    // XX uint32_t /*04000*/ VS_INST_MEM[VIVS_VS_INST_MEM__LEN];
+    uint32_t /*04000*/ VS_INST_MEM[VIVS_VS_INST_MEM__LEN];
     uint32_t /*05000*/ VS_UNIFORMS[VIVS_VS_UNIFORMS__LEN];
-    // XX uint32_t /*06000*/ PS_INST_MEM[VIVS_PS_INST_MEM__LEN];
+    uint32_t /*06000*/ PS_INST_MEM[VIVS_PS_INST_MEM__LEN];
     uint32_t /*07000*/ PS_UNIFORMS[VIVS_PS_UNIFORMS__LEN];
 };
 

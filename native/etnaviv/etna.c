@@ -41,9 +41,6 @@
 #endif
 #include "gc_hal_types.h"
 
-#ifdef GCABI_HAS_CONTEXT
-#include "etna_context_cmd.h"
-#endif
 #include "viv_internal.h"
 
 //#define DEBUG
@@ -58,96 +55,230 @@
 */
 #define ETNA_MAX_UNSIGNALED_FLUSHES (40)
 
-/* Initialize kernel GPU context and state map */
+/* Initialize kernel GPU context (v2 only)
+ * XXX move all this context handling stuff to a separate implementation file.
+ */
 #ifdef GCABI_HAS_CONTEXT
+
+static int gpu_context_clear(struct etna_ctx *ctx);
+
 #define GCCTX(x) ((gcoCONTEXT)(size_t)((x)->ctx))
-static int initialize_gpu_context(struct viv_conn *conn, gcoCONTEXT *pvctx)
+
+/* Allocate new command buffer for context */
+static int gpu_context_allocate_buffer(struct etna_ctx *ctx, struct etna_context_info *ctx_info)
 {
-    /* First build context state map from compressed representation */
+    if(viv_alloc_contiguous(ctx->conn, COMMAND_BUFFER_SIZE,
+                &ctx_info->physical,
+                &ctx_info->logical,
+                &ctx_info->bytes)!=0)
+    {
+#ifdef DEBUG
+        fprintf(stderr, "Error allocating contiguous host memory for context\n");
+#endif
+        return ETNA_OUT_OF_MEMORY;
+    }
+#ifdef DEBUG
+    printf("Allocated buffer (size 0x%x) for context: phys=%08x log=%08x\n", (int)ctx_info->bytes, (int)ctx_info->physical, (int)ctx_info->logical);
+#endif
+    return ETNA_OK;
+}
+
+/* Free command buffer for context, either immediately or queued for when the
+ * GPU is finished with it. */
+static int gpu_context_free_buffer(struct etna_ctx *ctx, struct etna_context_info *ctx_info, bool queued)
+{
+    int rv;
+    if(queued)
+    {
+        rv = etna_queue_free_contiguous(ctx->queue,
+                    ctx_info->bytes,
+                    ctx_info->physical,
+                    ctx_info->logical);
+    } else {
+        rv = viv_free_contiguous(ctx->conn,
+                    ctx_info->bytes,
+                    ctx_info->physical,
+                    ctx_info->logical);
+    }
+    if(rv != ETNA_OK)
+    {
+#ifdef DEBUG
+        fprintf(stderr, "Error releasing contiguous host memory for context (%i)\n", rv);
+#endif
+        return rv;
+    }
+    ctx_info->bytes = ctx_info->physical = 0;
+    ctx_info->logical = NULL;
+    return ETNA_OK;
+}
+
+static int gpu_context_initialize(struct etna_ctx *ctx)
+{
+    int rv;
     gcoCONTEXT vctx = ETNA_CALLOC_STRUCT(_gcoCONTEXT);
     if(vctx == NULL)
     {
         return ETNA_OUT_OF_MEMORY;
     }
-    size_t contextbuf_addr_size = sizeof(contextbuf_addr)/sizeof(address_index_t);
-    size_t state_count = contextbuf_addr[contextbuf_addr_size - 1].address / 4 + 1;
-    uint32_t *context_map = ETNA_MALLOC(state_count * 4);
-    if(context_map == NULL)
-    {
-        ETNA_FREE(vctx);
-        return ETNA_OUT_OF_MEMORY;
-    }
-    memset(context_map, 0, state_count*4);
-    for(int idx=0; idx<contextbuf_addr_size; ++idx)
-    {
-        context_map[contextbuf_addr[idx].address / 4] = contextbuf_addr[idx].index;
-    }
-#ifdef DEBUG
-    printf("Initialized state map (%x)\n", state_count);
-#endif
-    /* fill in context */
     vctx->object.type = gcvOBJ_CONTEXT;
-    vctx->id = 0x0; // Actual ID will be returned here by kernel
-    vctx->map = context_map;
-    vctx->stateCount = state_count;
-    vctx->buffer = ETNA_MALLOC(sizeof(contextbuf));
-    memcpy(vctx->buffer, contextbuf, sizeof(contextbuf)); /* copy over hardcoded context command buffer */
-    vctx->pipe3DIndex = 0x2d6; // XXX should not be hardcoded
-    vctx->pipe2DIndex = 0x106e; // XXX should not be hardcoded
-    vctx->linkIndex = 0x1076; // XXX should not be hardcoded
-    vctx->inUseIndex = 0x1078; // XXX should not be hardcoded
-    vctx->bufferSize = sizeof(contextbuf);
-#ifdef GCABI_CONTEXT_HAS_PHYSICAL /* Are these used by the kernel on other platforms? otherwise better to remove them completely */
-    vctx->bytes = 0x0; // Number of bytes at actually allocated for physical, logical
-    vctx->physical = (void*)0x0;
-#endif
-    vctx->logical = (void*)0x0;
-    vctx->link = (void*)0x0; // Logical address of link (within consecutive array)
-    vctx->initialPipe = ETNA_PIPE_2D;
-    vctx->entryPipe = ETNA_PIPE_3D;
-    vctx->currentPipe = ETNA_PIPE_3D; // not used by kernel
-    vctx->postCommit = 1; // not used by kernel
-    vctx->inUse = (int*)0x0; // Logical address of inUse (within consecutive array)
+    vctx->id = 0x0; /* Actual ID will be returned here by kernel */
 
-    viv_addr_t cbuf0_physical = 0;
-    void *cbuf0_logical = 0;
-    size_t cbuf0_bytes = 0;
-    if(viv_alloc_contiguous(conn, vctx->bufferSize, &cbuf0_physical, &cbuf0_logical, &cbuf0_bytes)!=0)
+    vctx->pipe3DIndex = vctx->pipe2DIndex =     /* Any non-zero value will do, as kernel does not use */
+        vctx->linkIndex = vctx->inUseIndex = 1; /*  the actual values, just checks for zero */
+    vctx->initialPipe = ETNA_PIPE_3D; /* Pipe to be active at beginning of context buffer */
+    vctx->entryPipe = ETNA_PIPE_3D; /* Pipe at beginning of command buffer (needs to be added to context as well if */
+                                    /* pipe at end of context is different from entry pipe) */
+    vctx->currentPipe = ETNA_PIPE_3D; /* Pipe at end of command buffer */
+
+    /* CPU address of buffer */
+    vctx->logical = 0;
+    /* Number of bytes to read from command buffer by GPU */
+    vctx->bufferSize = 0;
+    /* Logical address of two NOP words at end of command buffer */
+    vctx->link = NULL;
+    /* Logical address of inUse flag as returned from kernel (within
+     * consecutive array), must have one word of NOP */
+    vctx->inUse = NULL;
+
+    ctx->ctx = VIV_TO_HANDLE(vctx);
+    /* Allocate initial context buffer */
+    if((rv = gpu_context_allocate_buffer(ctx, &ctx->ctx_info)) != ETNA_OK)
     {
-#ifdef DEBUG
-        fprintf(stderr, "Error allocating contiguous host memory for context\n");
-#endif
         ETNA_FREE(vctx);
-        ETNA_FREE(context_map);
-        return ETNA_OUT_OF_MEMORY;
+        return rv;
     }
-#ifdef DEBUG
-    printf("Allocated buffer (size 0x%x) for context: phys=%08x log=%08x\n", (int)cbuf0_bytes, (int)cbuf0_physical, (int)cbuf0_logical);
-#endif
-
-#ifdef GCABI_CONTEXT_HAS_PHYSICAL
-    vctx->bytes = cbuf0_bytes; /* actual size of buffer */
-    vctx->physical = (void*)cbuf0_physical;
-#endif
-    vctx->logical = cbuf0_logical;
-    vctx->link = ((uint32_t*)cbuf0_logical) + vctx->linkIndex;
-    vctx->inUse = (gctBOOL*)(((uint32_t*)cbuf0_logical) + vctx->inUseIndex);
-
-    /* copy over context buffer to contiguous memory, clear in-use flag */
-    memcpy(vctx->logical, vctx->buffer, vctx->bufferSize);
-    *vctx->inUse = 0;
-    *pvctx = vctx;
+    /* Set context to initial sane values */
+    gpu_context_clear(ctx);
     return ETNA_OK;
 }
+
+/* Clear GPU context, to rebuild it for next flush */
+static int gpu_context_clear(struct etna_ctx *ctx)
+{
+    /* If context was used, queue free it and allocate new buffer to prevent
+     * overwriting it while being used by the GPU.  Otherwise we can just
+     * re-use it.
+     */
+    int rv;
+#ifdef DEBUG
+    printf("gpu_context_clear (context %i)\n", (int)GCCTX(ctx)->id);
+#endif
+    if(GCCTX(ctx)->inUse != NULL &&
+       *GCCTX(ctx)->inUse)
+    {
+#ifdef DEBUG
+        printf("gpu_context_clear: context was in use, deferred freeing and reallocating it\n");
+#endif
+        if((rv = gpu_context_free_buffer(ctx, &ctx->ctx_info, true)) != ETNA_OK)
+        {
+            return rv;
+        }
+        if((rv = gpu_context_allocate_buffer(ctx, &ctx->ctx_info)) != ETNA_OK)
+        {
+            return rv;
+        }
+    }
+    /* Leave space at beginning of buffer for PIPE switch */
+    GCCTX(ctx)->bufferSize = BEGIN_COMMIT_CLEARANCE;
+    GCCTX(ctx)->logical = ctx->ctx_info.logical;
+#ifdef GCABI_CONTEXT_HAS_PHYSICAL
+    GCCTX(ctx)->bytes = ctx->ctx_info.bytes; /* actual size of buffer */
+    GCCTX(ctx)->physical = ctx->ctx_info.physical;
+#endif
+    /* When context is empty, initial pipe should default to entry pipe so that
+     * no pipe switch is needed within the context and the kernel does the
+     * right thing.
+     */
+    GCCTX(ctx)->initialPipe = GCCTX(ctx)->entryPipe;
+    return ETNA_OK;
+}
+
+/** Start building context buffer.
+ * Subsequent etna_reserve and other state setting commands will go to 
+ * the context buffer instead of the command buffer.
+ * initial_pipe is the pipe as it has to be at the beginning of the context
+ * buffer.
+ *
+ * @return ETNA_OK if succesful (can start building context)
+ *         or an error code otherwise.
+ */
+static int gpu_context_build_start(struct etna_ctx *ctx)
+{
+    if(ctx->cur_buf == ETNA_CTX_BUFFER)
+        return ETNA_INTERNAL_ERROR;
+    /* Save current buffer id and position */
+    ctx->cmdbuf[ctx->cur_buf]->offset = ctx->offset * 4;
+    ctx->stored_buf = ctx->cur_buf;
+
+    /* Switch to context buffer */
+    ctx->cur_buf = ETNA_CTX_BUFFER;
+    ctx->buf = GCCTX(ctx)->logical;
+    ctx->offset = GCCTX(ctx)->bufferSize / 4;
+
+    return ETNA_OK;
+}
+
+/** Finish building context buffer.
+ * final_pipe is the current pipe at the end of the context buffer.
+ */
+static int gpu_context_build_end(struct etna_ctx *ctx, etna_pipe final_pipe)
+{
+    if(ctx->cur_buf != ETNA_CTX_BUFFER)
+        return ETNA_INTERNAL_ERROR;
+    /* If closing pipe of context is different from entry pipe, add a switch
+     * command, as we want the context to end in the entry pipe. The kernel
+     * will handle switching to the entry pipe only when this is a new context.
+     */
+    if(final_pipe != GCCTX(ctx)->entryPipe)
+    {
+        etna_set_pipe(ctx, GCCTX(ctx)->entryPipe);
+    }
+    /* Set current size -- finishing up context before flush
+     * will add space for a LINK command and inUse flag.
+     */
+    GCCTX(ctx)->bufferSize = ctx->offset * 4;
+
+    /* Switch back to stored buffer */
+    ctx->cur_buf = ctx->stored_buf;
+    ctx->buf = VIV_TO_PTR(ctx->cmdbuf[ctx->cur_buf]->logical);
+    ctx->offset = ctx->cmdbuf[ctx->cur_buf]->offset / 4;
+    return ETNA_OK;
+}
+
+/** Finish up GPU context, make it ready for submission to kernel.
+   Append space for LINK and inUse flag.
+ */
+static int gpu_context_finish_up(struct etna_ctx *ctx)
+{
+    uint32_t *logical = GCCTX(ctx)->logical;
+    uint32_t ptr = GCCTX(ctx)->bufferSize/4;
+    /* Append LINK (8 bytes) */
+    GCCTX(ctx)->link = &logical[ptr];
+    logical[ptr++] = VIV_FE_NOP_HEADER_OP_NOP;
+    logical[ptr++] = VIV_FE_NOP_HEADER_OP_NOP;
+    /* Append inUse (4 bytes) */
+    GCCTX(ctx)->inUse = (gctBOOL*)&logical[ptr];
+    logical[ptr++] = 0;
+    /* Update buffer size to final value */
+    GCCTX(ctx)->bufferSize = ptr*4;
+#ifdef DEBUG
+    printf("gpu_context_finish_up: bufferSize %i link %p inUse %p\n",
+            (int)GCCTX(ctx)->bufferSize, GCCTX(ctx)->link, GCCTX(ctx)->inUse);
+#endif
+    return ETNA_OK;
+}
+
 #else
+
 #define GCCTX(x) ((gckCONTEXT)((x)->ctx))
-static int initialize_gpu_context(struct viv_conn *conn, gckCONTEXT *vctx)
+
+static int gpu_context_initialize(struct etna_ctx *ctx)
 {
     /* attach to GPU */
     int err;
     gcsHAL_INTERFACE id = {};
     id.command = gcvHAL_ATTACH;
-    if((err=viv_invoke(conn, &id)) != gcvSTATUS_OK)
+    if((err=viv_invoke(ctx->conn, &id)) != gcvSTATUS_OK)
     {
 #ifdef DEBUG
         fprintf(stderr, "Error attaching to GPU\n");
@@ -159,7 +290,7 @@ static int initialize_gpu_context(struct viv_conn *conn, gckCONTEXT *vctx)
     printf("Context 0x%08x\n", (int)id.u.Attach.context);
 #endif
 
-    *vctx = (gckCONTEXT)id.u.Attach.context;
+    ctx->ctx = VIV_TO_HANDLE(id.u.Attach.context);
     return ETNA_OK;
 }
 #endif
@@ -172,11 +303,7 @@ int etna_create(struct viv_conn *conn, struct etna_ctx **ctx_out)
     if(ctx == NULL) return ETNA_OUT_OF_MEMORY;
     ctx->conn = conn;
 
-#ifdef GCABI_HAS_CONTEXT
-    if(initialize_gpu_context(conn, (struct _gcoCONTEXT**)&ctx->ctx) != ETNA_OK)
-#else
-    if(initialize_gpu_context(conn, (struct _gckCONTEXT**)&ctx->ctx) != ETNA_OK)
-#endif
+    if(gpu_context_initialize(ctx) != ETNA_OK)
     {
         ETNA_FREE(ctx);
         return ETNA_INTERNAL_ERROR;
@@ -206,7 +333,7 @@ int etna_create(struct viv_conn *conn, struct etna_ctx **ctx_out)
         if(viv_alloc_contiguous(conn, COMMAND_BUFFER_SIZE, &buf0_physical, &buf0_logical, &buf0_bytes)!=0)
         {
 #ifdef DEBUG
-            fprintf(stderr, "Error allocating host memory\n");
+            fprintf(stderr, "Error allocating host memory for command buffer\n");
 #endif
             return ETNA_OUT_OF_MEMORY;
         }
@@ -224,15 +351,10 @@ int etna_create(struct viv_conn *conn, struct etna_ctx **ctx_out)
             return ETNA_INTERNAL_ERROR;
         }
 #ifdef DEBUG
-        printf("Allocated buffer %i: phys=%08x log=%08x bytes=%08x [signal %i]\n", x, (uint32_t)buf0_physical, (uint32_t)buf0_logical,
-                buf0_bytes, ctx->cmdbuf_sig[x]);
+        printf("Allocated buffer %i: phys=%08x log=%08x bytes=%08x [signal %i]\n", x, 
+                (uint32_t)buf0_physical, (uint32_t)buf0_logical, buf0_bytes, ctx->cmdbuf_sig[x]);
 #endif
     }
-    /* Set current buffer to -1, to signify that we need to switch to buffer 0 before
-     * queueing of commands can be started.
-     */
-    ctx->cur_buf = -1;
-    *ctx_out = ctx;
 
     /* Allocate command queue */
     if((rv = etna_queue_create(ctx, &ctx->queue)) != ETNA_OK)
@@ -243,6 +365,12 @@ int etna_create(struct viv_conn *conn, struct etna_ctx **ctx_out)
         return rv;
     }
 
+    /* Set current buffer to ETNA_NO_BUFFER, to signify that we need to switch to buffer 0 before
+     * queueing of commands can be started.
+     */
+    ctx->cur_buf = ETNA_NO_BUFFER;
+
+    *ctx_out = ctx;
     return ETNA_OK;
 }
 
@@ -283,8 +411,12 @@ int etna_free(struct etna_ctx *ctx)
 {
     if(ctx == NULL)
         return ETNA_INVALID_ADDR;
+    /* Free kernel command queue */
     etna_queue_free(ctx->queue);
-    /* TODO: free context buffer */
+#ifdef GCABI_HAVE_CONTEXT
+    /* Free context buffer */
+    gpu_context_free_buffer(ctx, &ctx->ctx_info, false);
+#endif
     /* Free command buffers */
     for(int x=0; x<NUM_COMMAND_BUFFERS; ++x)
     {
@@ -311,7 +443,14 @@ int _etna_reserve_internal(struct etna_ctx *ctx, size_t n)
         printf("%s: Command buffer overflow! This is likely a programming error in the GPU driver.\n", __func__);
         abort();
     }
-    if(ctx->cur_buf != -1)
+#ifdef GCABI_HAS_CONTEXT
+    if(ctx->cur_buf == ETNA_CTX_BUFFER)
+    {
+        printf("%s: Context buffer overflow! This is likely a programming error in the GPU driver.\n", __func__);
+        abort();
+    }
+#endif
+    if(ctx->cur_buf != ETNA_NO_BUFFER)
     {
 #if 0
         printf("Submitting old buffer %i\n", ctx->cur_buf);
@@ -345,8 +484,11 @@ int etna_flush(struct etna_ctx *ctx)
     int status;
     if(ctx == NULL)
         return ETNA_INVALID_ADDR;
+    if(ctx->cur_buf == ETNA_CTX_BUFFER)
+        /* Can never flush while building context buffer */
+        return ETNA_INTERNAL_ERROR;
     struct _gcsQUEUE *queue_first = etna_queue_first(ctx->queue);
-    if(ctx->cur_buf == -1)
+    if(ctx->cur_buf == ETNA_NO_BUFFER)
         goto nothing_to_do;
     gcoCMDBUF cur_buf = ctx->cmdbuf[ctx->cur_buf];
 
@@ -360,6 +502,9 @@ int etna_flush(struct etna_ctx *ctx)
     cur_buf->offset = ctx->offset*4; /* Copy over current ending offset into CMDBUF, for kernel */
 #ifdef DEBUG_CMDBUF
     etna_dump_cmd_buffer(ctx);
+#endif
+#ifdef GCABI_HAS_CONTEXT
+    gpu_context_finish_up(ctx);
 #endif
     if(!queue_first)
         ctx->flushes += 1;
@@ -375,20 +520,33 @@ int etna_flush(struct etna_ctx *ctx)
     if((status = etna_queue_clear(ctx->queue)) != ETNA_OK)
         return status;
 #ifdef GCABI_HAS_CONTEXT
-    if(*GCCTX(ctx)->inUse)
+    /* set context entryPipe to currentPipe (next commit will start with current pipe) */
+    GCCTX(ctx)->entryPipe = GCCTX(ctx)->currentPipe;
+    gpu_context_clear(ctx);
+    if(ctx->ctx_cb)
     {
-        printf("    Warning: context buffer used, full context handling not yet supported. Rendering may be corrupted.\n");
-        *GCCTX(ctx)->inUse = 0;
+        etna_pipe initial_pipe, final_pipe;
+        /* Start building GPU context */
+        if((status = gpu_context_build_start(ctx)) != ETNA_OK)
+        {
+            printf("%s: gpu_context_build_start failed with status %i\n", __func__, status);
+            return status;
+        }
+        if((status = ctx->ctx_cb(ctx->ctx_cb_data, ctx, &initial_pipe, &final_pipe)) != ETNA_OK)
+        {
+            printf("%s: Context callback failed with status %i\n", __func__, status);
+            return status;
+        }
+        /* Set initial pipe in context */
+        GCCTX(ctx)->initialPipe = initial_pipe;
+        /* Finish building GPU context */
+        if((status = gpu_context_build_end(ctx, final_pipe)) != ETNA_OK)
+        {
+            printf("%s: gpu_context_build_end failed with status %i\n", __func__, status);
+            return status;
+        }
     }
 #endif
-    /* TODO: analyze command buffer to update context */
-    /* set context entryPipe to currentPipe (next commit will start with current pipe) */
-#ifdef GCABI_HAS_CONTEXT
-    GCCTX(ctx)->entryPipe = GCCTX(ctx)->currentPipe;
-#endif
-
-    /* TODO: update context, NOP out final pipe2D if entryPipe is 2D, else put in the 2D pipe switch */
-    /* TODO: if context was used, queue it to be freed later, and initialize new context buffer */
     cur_buf->startOffset = cur_buf->offset + END_COMMIT_CLEARANCE;
     cur_buf->offset = cur_buf->startOffset + BEGIN_COMMIT_CLEARANCE;
 
@@ -400,12 +558,13 @@ int etna_flush(struct etna_ctx *ctx)
          */
         cur_buf->startOffset = cur_buf->offset = COMMAND_BUFFER_SIZE - END_COMMIT_CLEARANCE;
     }
+
     /* Set writing offset for next etna_reserve. For convenience this is 
        stored as an index instead of a byte offset.  */
     ctx->offset = cur_buf->offset / 4;
 #ifdef DEBUG
 #ifdef GCABI_HAS_CONTEXT
-    printf("  New start offset: %x New offset: %x Contextbuffer used: %i\n", cur_buf->startOffset, cur_buf->offset, *ctx->ctx.inUse);
+    printf("  New start offset: %x New offset: %x Contextbuffer used: %i\n", cur_buf->startOffset, cur_buf->offset, *(GCCTX(ctx)->inUse));
 #else
     printf("  New start offset: %x New offset: %x\n", cur_buf->startOffset, cur_buf->offset);
 #endif
@@ -477,7 +636,10 @@ int etna_set_pipe(struct etna_ctx *ctx, etna_pipe pipe)
     ETNA_EMIT(ctx, pipe);
 
 #ifdef GCABI_HAS_CONTEXT
-    GCCTX(ctx)->currentPipe = pipe;
+    if(ctx->cur_buf != ETNA_CTX_BUFFER)
+    {
+        GCCTX(ctx)->currentPipe = pipe;
+    }
 #endif
     return ETNA_OK;
 }
@@ -512,6 +674,13 @@ int etna_stall(struct etna_ctx *ctx, uint32_t from, uint32_t to)
         ETNA_EMIT_LOAD_STATE(ctx, VIVS_GL_STALL_TOKEN>>2, 1, 0);
         ETNA_EMIT(ctx, VIVS_GL_STALL_TOKEN_FROM(from) | VIVS_GL_STALL_TOKEN_TO(to));
     }
+    return ETNA_OK;
+}
+
+int etna_set_context_cb(struct etna_ctx *ctx, etna_context_snapshot_cb_t snapshot_cb, void *data)
+{
+    ctx->ctx_cb = snapshot_cb;
+    ctx->ctx_cb_data = data;
     return ETNA_OK;
 }
 

@@ -20,6 +20,10 @@ ifeq ($(ETNAVIV_PROFILER), 1)
 COMMON_FLAGS += -DVIVANTE_PROFILER=1
 endif
 
+ifeq ($(ETNAVIV_DEBUG), 1)
+COMMON_FLAGS += -DDEBUG=1
+endif
+
 TARGETS = libetnaviv.a
 
 all: $(TARGETS)
