@@ -168,6 +168,11 @@ struct viv_specs {
     uint32_t varyings_count;
 };
 
+struct viv_kernel_driver_version {
+    char name[40];
+    int major, minor, patch, build;
+};
+
 /* Structure encompassing a connection to kernel driver */
 struct viv_conn {
     int fd;
@@ -178,6 +183,7 @@ struct viv_conn {
     viv_addr_t mem_base;
     viv_handle_t process;
     struct viv_specs chip;
+    struct viv_kernel_driver_version kernel_driver;
 };
 
 /* Predefines for some kernel structures */

@@ -159,7 +159,31 @@ int viv_open(enum viv_hw_type hw_type, struct viv_conn **out)
     }
     if((err=conn->fd) < 0)
         goto error;
-    
+
+#ifdef VIV_HAS_STATE_DELTAS
+    /* Determine version */
+    id.command = gcvHAL_VERSION;
+    if((err=viv_invoke(conn, &id)) != gcvSTATUS_OK)
+        goto error;
+    conn->kernel_driver.major = id.u.Version.major;
+    conn->kernel_driver.minor = id.u.Version.minor;
+    conn->kernel_driver.patch = id.u.Version.patch;
+    conn->kernel_driver.build = id.u.Version.build;
+#else
+    /* <=v2 drivers don't have an always available mechanism for getting the driver version,
+     * although in some (like dove) a /proc file is available that gives the version.
+     */
+    conn->kernel_driver.major = 2;
+    conn->kernel_driver.minor = 0;
+    conn->kernel_driver.patch = 0;
+    conn->kernel_driver.build = 0;
+#endif
+    snprintf(conn->kernel_driver.name, sizeof(conn->kernel_driver.name), 
+            "Vivante GPL kernel driver %i.%i.%i.%i",
+            conn->kernel_driver.major, conn->kernel_driver.minor,
+            conn->kernel_driver.patch, conn->kernel_driver.build);
+    printf("Kernel: %s\n", conn->kernel_driver.name);
+
     /* Determine base address */
     id.command = gcvHAL_GET_BASE_ADDRESS;
     if((err=viv_invoke(conn, &id)) != gcvSTATUS_OK)
