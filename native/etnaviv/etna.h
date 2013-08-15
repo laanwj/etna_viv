@@ -81,10 +81,10 @@ enum etna_status {
 /* HW pipes.
  * Used by GPU to tell front-end what back-end modules to synchronize operations with. 
  */
-typedef enum _etna_pipe {
+enum etna_pipe {
     ETNA_PIPE_3D = 0,
     ETNA_PIPE_2D = 1
-} etna_pipe;
+};
 
 struct _gcoCMDBUF;
 struct etna_queue;
@@ -96,7 +96,8 @@ struct etna_context_info {
     void *logical;
 };
 
-typedef int (*etna_context_snapshot_cb_t)(void *data, struct etna_ctx *ctx, etna_pipe *initial_pipe, etna_pipe *final_pipe);
+typedef int (*etna_context_snapshot_cb_t)(void *data, struct etna_ctx *ctx, 
+        enum etna_pipe *initial_pipe, enum etna_pipe *final_pipe);
 
 struct etna_ctx {
     /* Driver connection */
@@ -150,13 +151,14 @@ struct etna_ctx {
       (ctx)->buf[(ctx)->offset++] = start; \
       (ctx)->buf[(ctx)->offset++] = count; } while(0)
 
-/* Draw indexed primitives (queues 5 words) */
+/* Draw indexed primitives (queues 6 words) */
 #define ETNA_EMIT_DRAW_INDEXED_PRIMITIVES(ctx, cmd, start, count, offset) \
     do { (ctx)->buf[(ctx)->offset++] = VIV_FE_DRAW_INDEXED_PRIMITIVES_HEADER_OP_DRAW_INDEXED_PRIMITIVES; \
       (ctx)->buf[(ctx)->offset++] = cmd; \
       (ctx)->buf[(ctx)->offset++] = start; \
       (ctx)->buf[(ctx)->offset++] = count; \
-      (ctx)->buf[(ctx)->offset++] = offset; } while(0)
+      (ctx)->buf[(ctx)->offset++] = offset; \
+      (ctx)->offset++; } while(0)
 
 /* Queue a STALL command (queues 2 words) */
 #define ETNA_EMIT_STALL(ctx, from, to) \
@@ -213,7 +215,7 @@ static inline int etna_reserve(struct etna_ctx *ctx, size_t n)
 
 /* Set GPU pipe (ETNA_PIPE_2D, ETNA_PIPE_3D).
  */
-int etna_set_pipe(struct etna_ctx *ctx, etna_pipe pipe);
+int etna_set_pipe(struct etna_ctx *ctx, enum etna_pipe pipe);
 
 /* Send currently queued commands to kernel.
  * @return OK on success, error code otherwise
@@ -307,7 +309,6 @@ static inline void etna_draw_indexed_primitives(struct etna_ctx *cmdbuf, uint32_
 #endif
     etna_reserve(cmdbuf, 5+1);
     ETNA_EMIT_DRAW_INDEXED_PRIMITIVES(cmdbuf, primitive_type, start, count, offset);
-    ETNA_ALIGN(cmdbuf);
 }
 
 /* ETNA_COALESCE

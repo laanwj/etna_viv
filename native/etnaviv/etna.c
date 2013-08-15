@@ -221,7 +221,7 @@ static int gpu_context_build_start(struct etna_ctx *ctx)
 /** Finish building context buffer.
  * final_pipe is the current pipe at the end of the context buffer.
  */
-static int gpu_context_build_end(struct etna_ctx *ctx, etna_pipe final_pipe)
+static int gpu_context_build_end(struct etna_ctx *ctx, enum etna_pipe final_pipe)
 {
     if(ctx->cur_buf != ETNA_CTX_BUFFER)
         return ETNA_INTERNAL_ERROR;
@@ -525,7 +525,7 @@ int etna_flush(struct etna_ctx *ctx)
     gpu_context_clear(ctx);
     if(ctx->ctx_cb)
     {
-        etna_pipe initial_pipe, final_pipe;
+        enum etna_pipe initial_pipe, final_pipe;
         /* Start building GPU context */
         if((status = gpu_context_build_start(ctx)) != ETNA_OK)
         {
@@ -612,7 +612,7 @@ int etna_finish(struct etna_ctx *ctx)
     return ETNA_OK;
 }
 
-int etna_set_pipe(struct etna_ctx *ctx, etna_pipe pipe)
+int etna_set_pipe(struct etna_ctx *ctx, enum etna_pipe pipe)
 {
     int status;
     if(ctx == NULL)

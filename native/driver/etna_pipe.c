@@ -690,7 +690,7 @@ static void sync_context(struct pipe_context *restrict pipe)
 
 /** Build new context for etna (for next command buffer submission, called as callback
  * function after flush) */
-static int update_context(void *pipe, struct etna_ctx *ctx, etna_pipe *initial_pipe, etna_pipe *final_pipe)
+static int update_context(void *pipe, struct etna_ctx *ctx, enum etna_pipe *initial_pipe, enum etna_pipe *final_pipe)
 {
     reset_context((struct pipe_context*) pipe);
     *initial_pipe = ETNA_PIPE_3D;
