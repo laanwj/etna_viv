@@ -270,6 +270,10 @@ static inline uint32_t translate_vertex_format_type(enum pipe_format fmt, bool s
     case PIPE_FORMAT_R8G8_UNORM:
     case PIPE_FORMAT_R8G8B8_UNORM:
     case PIPE_FORMAT_R8G8B8A8_UNORM:
+    case PIPE_FORMAT_R8_USCALED:
+    case PIPE_FORMAT_R8G8_USCALED:
+    case PIPE_FORMAT_R8G8B8_USCALED:
+    case PIPE_FORMAT_R8G8B8A8_USCALED:
     case PIPE_FORMAT_R8_UINT:
     case PIPE_FORMAT_R8G8_UINT:
     case PIPE_FORMAT_R8G8B8_UINT:
@@ -279,6 +283,10 @@ static inline uint32_t translate_vertex_format_type(enum pipe_format fmt, bool s
     case PIPE_FORMAT_R8G8_SNORM:
     case PIPE_FORMAT_R8G8B8_SNORM:
     case PIPE_FORMAT_R8G8B8A8_SNORM:
+    case PIPE_FORMAT_R8_SSCALED:
+    case PIPE_FORMAT_R8G8_SSCALED:
+    case PIPE_FORMAT_R8G8B8_SSCALED:
+    case PIPE_FORMAT_R8G8B8A8_SSCALED:
     case PIPE_FORMAT_R8_SINT:
     case PIPE_FORMAT_R8G8_SINT:
     case PIPE_FORMAT_R8G8B8_SINT:
@@ -288,6 +296,10 @@ static inline uint32_t translate_vertex_format_type(enum pipe_format fmt, bool s
     case PIPE_FORMAT_R16G16_UNORM:
     case PIPE_FORMAT_R16G16B16_UNORM:
     case PIPE_FORMAT_R16G16B16A16_UNORM:
+    case PIPE_FORMAT_R16_USCALED:
+    case PIPE_FORMAT_R16G16_USCALED:
+    case PIPE_FORMAT_R16G16B16_USCALED:
+    case PIPE_FORMAT_R16G16B16A16_USCALED:
     case PIPE_FORMAT_R16_UINT:
     case PIPE_FORMAT_R16G16_UINT:
     case PIPE_FORMAT_R16G16B16_UINT:
@@ -297,6 +309,10 @@ static inline uint32_t translate_vertex_format_type(enum pipe_format fmt, bool s
     case PIPE_FORMAT_R16G16_SNORM:
     case PIPE_FORMAT_R16G16B16_SNORM:
     case PIPE_FORMAT_R16G16B16A16_SNORM:
+    case PIPE_FORMAT_R16_SSCALED:
+    case PIPE_FORMAT_R16G16_SSCALED:
+    case PIPE_FORMAT_R16G16B16_SSCALED:
+    case PIPE_FORMAT_R16G16B16A16_SSCALED:
     case PIPE_FORMAT_R16_SINT:
     case PIPE_FORMAT_R16G16_SINT:
     case PIPE_FORMAT_R16G16B16_SINT:
@@ -306,6 +322,10 @@ static inline uint32_t translate_vertex_format_type(enum pipe_format fmt, bool s
     case PIPE_FORMAT_R32G32_UNORM:
     case PIPE_FORMAT_R32G32B32_UNORM:
     case PIPE_FORMAT_R32G32B32A32_UNORM:
+    case PIPE_FORMAT_R32_USCALED:
+    case PIPE_FORMAT_R32G32_USCALED:
+    case PIPE_FORMAT_R32G32B32_USCALED:
+    case PIPE_FORMAT_R32G32B32A32_USCALED:
     case PIPE_FORMAT_R32_UINT:
     case PIPE_FORMAT_R32G32_UINT:
     case PIPE_FORMAT_R32G32B32_UINT:
@@ -315,6 +335,10 @@ static inline uint32_t translate_vertex_format_type(enum pipe_format fmt, bool s
     case PIPE_FORMAT_R32G32_SNORM:
     case PIPE_FORMAT_R32G32B32_SNORM:
     case PIPE_FORMAT_R32G32B32A32_SNORM:
+    case PIPE_FORMAT_R32_SSCALED:
+    case PIPE_FORMAT_R32G32_SSCALED:
+    case PIPE_FORMAT_R32G32B32_SSCALED:
+    case PIPE_FORMAT_R32G32B32A32_SSCALED:
     case PIPE_FORMAT_R32_SINT:
     case PIPE_FORMAT_R32G32_SINT:
     case PIPE_FORMAT_R32G32B32_SINT:
