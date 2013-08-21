@@ -516,13 +516,14 @@ it seemed that some leftover cache from using a texture in displacement
 caused the texture in `cubemap_sphere` (which is only 1x1x6) to be messed
 up (due to containing old values).
 
+Warning: setting the `TEXTUREVS` bit seems to result in crashes when rendering directly afterwards.
+Even adding a PE to FE semaphore afterwards or dummy state loads does not fix this.
+
 All texture filtering options are allowed for vertex texture fetch.
 
 XXX maybe figure out if the sampler units are shared between fragment and vertex shaders and thus interchangeable. This is 
   not important for GL/Gallium because it already lives with the assumption that vertex and fragment shaders
   are distinct.
-
-XXX figure out wether normal texture2D works or that texture2DLod is needed.
 
 Shader size on GC2000
 ----------------------

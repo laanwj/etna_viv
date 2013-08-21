@@ -676,6 +676,7 @@ static void sync_context(struct pipe_context *restrict pipe)
     if(dirty & (ETNA_STATE_TEXTURE_CACHES))
     {
         /* clear texture cache (both fragment and vertex) */
+        /* don't flush TEXTUREVS until we figure out how to make it not crash */
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_TEXTURE);
     }
     if(dirty & (ETNA_STATE_FRAMEBUFFER | ETNA_STATE_TS))

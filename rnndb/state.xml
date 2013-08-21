@@ -233,7 +233,12 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="1" name="COLOR"/>
             <bitfield pos="2" name="TEXTURE"/>
             <bitfield pos="3" name="PE2D" brief="Flush the 2D pixel cache"/>
-            <bitfield pos="4" name="TEXTUREVS"/>
+            <bitfield pos="4" name="TEXTUREVS">
+                <doc>
+                Warning: setting the `TEXTUREVS` bit seems to result in crashes when rendering directly afterwards.
+                Even adding a PE to FE semaphore afterwards or dummy state loads does not fix this.
+                </doc>
+            </bitfield>
             <bitfield pos="5" name="SHADER_L1"/>
             <bitfield pos="6" name="SHADER_L2"/>
         </reg32>
