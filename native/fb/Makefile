@@ -8,7 +8,7 @@ CXXFLAGS +=
 LDFLAGS +=  
 
 TARGETS = rotate_cube alpha_blend cube_companion cubemap_sphere particle_system etna_gears stencil_test displacement mip_cube viv_profile ps_sandbox \
-	  viv_gpu_top
+	  viv_gpu_top downsample_test
 COMPANION_OBJS = ../resources/companion_array.o ../resources/companion_mesh.o ../resources/companion_texture.o
 ETNA_OBJS = ../lib/fbdemos.o ../lib/etna_bswap.o ../driver/libetnadriver.a ../gallium/libminigallium.a ../etnaviv/libetnaviv.a
 
@@ -52,5 +52,8 @@ viv_gpu_top: viv_gpu_top.o $(ETNA_OBJS)
 	$(CXX) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 
 ps_sandbox: ps_sandbox.o ../lib/write_bmp.o ../lib/esUtil.o ../lib/esTransform.o ../lib/esShapes.o $(ETNA_OBJS)
+	$(CXX) $(CFLAGS) -o $@ $^  $(LDFLAGS)
+
+downsample_test: downsample_test.o ../lib/write_bmp.o ../lib/esUtil.o ../lib/esTransform.o ../lib/esShapes.o $(COMPANION_OBJS) $(ETNA_OBJS)
 	$(CXX) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 

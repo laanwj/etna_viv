@@ -1682,6 +1682,7 @@ util_gen_mipmap(struct gen_mipmap_state *ctx,
          /* need to signal that the texture has changed _after_ rendering to it */
          pipe_surface_reference( &surf, NULL );
       }
+      ctx->pipe->texture_barrier(ctx->pipe);
    }
 
    /* restore state we changed */

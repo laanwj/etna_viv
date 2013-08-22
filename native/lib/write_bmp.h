@@ -28,5 +28,7 @@
 void bmp_dump32(char *buffer, unsigned width, unsigned height, bool bgra, const char *filename);
 /* write 32-bit image (y axis downwards) */
 void bmp_dump32_noflip(char *buffer, unsigned width, unsigned height, bool bgra, const char *filename);
+/* write 32-bit image */
+void bmp_dump32_ex(char *buffer, unsigned width, unsigned height, bool flip, bool bgra, bool alpha, const char *filename);
 
 #endif /* BMP_DUMP_H */

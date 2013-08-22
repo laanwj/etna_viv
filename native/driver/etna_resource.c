@@ -144,7 +144,7 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     }
     /* XXX multi tiled formats */
 
-    /* Determine needed padding */
+    /* Determine needed padding (alignment of height/width) */
     unsigned paddingX = 0, paddingY = 0;
     unsigned halign = TEXTURE_HALIGN_FOUR;
     etna_layout_multiple(layout,

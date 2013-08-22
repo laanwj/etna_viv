@@ -64,7 +64,7 @@ struct dib_header {
 } __attribute__((__packed__));
 
 static int
-bmp_header_write(int fd, int width, int height, int bgra, int noflip)
+bmp_header_write(int fd, int width, int height, int bgra, int noflip, int alpha)
 {
 	struct bmp_header bmp_header = {
 		.magic = 0x4d42,
@@ -87,7 +87,7 @@ bmp_header_write(int fd, int width, int height, int bgra, int noflip)
 		.red_mask = 0x000000FF,
 		.green_mask = 0x0000FF00,
 		.blue_mask = 0x00FF0000,
-		.alpha_mask = 0xFF000000,
+		.alpha_mask = alpha ? 0xFF000000 : 0x00000000,
 		.colour_space = 0x57696E20,
 	};
 
@@ -113,7 +113,7 @@ bmp_dump32(char *buffer, unsigned width, unsigned height, bool bgra, const char 
 		return;
 	}
 
-	bmp_header_write(fd, width, height, bgra, false);
+	bmp_header_write(fd, width, height, bgra, false, true);
 
 	write(fd, buffer, width * height * 4);
 }
@@ -129,7 +129,23 @@ bmp_dump32_noflip(char *buffer, unsigned width, unsigned height, bool bgra, cons
 		return;
 	}
 
-	bmp_header_write(fd, width, height, bgra, true);
+	bmp_header_write(fd, width, height, bgra, true, true);
+
+	write(fd, buffer, width * height * 4);
+}
+
+void
+bmp_dump32_ex(char *buffer, unsigned width, unsigned height, bool flip, bool bgra, bool alpha, const char *filename)
+{
+	int fd;
+
+	fd = open(filename, O_WRONLY| O_TRUNC | O_CREAT, 0666);
+	if (fd == -1) {
+		printf("Failed to open %s: %s\n", filename, strerror(errno));
+		return;
+	}
+
+	bmp_header_write(fd, width, height, bgra, flip, alpha);
 
 	write(fd, buffer, width * height * 4);
 }

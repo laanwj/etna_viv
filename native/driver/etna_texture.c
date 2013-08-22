@@ -190,9 +190,10 @@ static void etna_pipe_set_vertex_sampler_views(struct pipe_context *pipe,
 static void etna_pipe_texture_barrier(struct pipe_context *pipe)
 {
     struct etna_pipe_context *priv = etna_pipe_context(pipe);
-    /* clear texture cache */
-    etna_set_state(priv->ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_TEXTURE | VIVS_GL_FLUSH_CACHE_TEXTUREVS);
-    etna_stall(priv->ctx, SYNC_RECIPIENT_RA, SYNC_RECIPIENT_PE);
+    /* clear color and texture cache to make sure that texture unit reads
+     * what has been written
+     */
+    etna_set_state(priv->ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_TEXTURE);
 }
 
 void etna_pipe_texture_init(struct pipe_context *pc)

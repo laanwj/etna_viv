@@ -46,6 +46,7 @@ GALLIUM_OBJS = auxiliary/tgsi/tgsi_dump.o \
 	auxiliary/util/u_hash_table.o \
 	auxiliary/util/u_texture.o \
 	auxiliary/util/u_vbuf.o \
+	auxiliary/util/u_gen_mipmap.o \
 	auxiliary/os/os_misc.o \
 	auxiliary/cso_cache/cso_hash.o \
 	auxiliary/cso_cache/cso_cache.o \
