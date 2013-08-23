@@ -702,6 +702,7 @@ static void etna_pipe_destroy(struct pipe_context *pipe)
 {
     struct etna_pipe_context *priv = etna_pipe_context(pipe);
     etna_pipe_clear_blit_destroy(pipe);
+    etna_pipe_transfer_destroy(pipe);
     etna_free(priv->ctx);
     FREE(pipe);
 }
@@ -1113,8 +1114,6 @@ struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct et
     ectx->dirty_bits = 0xffffffff;
     ectx->conn = dev;
     ectx->specs = *specs;
-    util_slab_create(&ectx->transfer_pool, sizeof(struct etna_transfer),
-                     16, UTIL_SLAB_SINGLETHREADED);
 
     /*  Set sensible defaults for state */
     ectx->gpu3d.PA_W_CLIP_LIMIT = 0x34000001;

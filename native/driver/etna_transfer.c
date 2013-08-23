@@ -228,9 +228,20 @@ static void etna_pipe_transfer_unmap(struct pipe_context *pipe,
 
 void etna_pipe_transfer_init(struct pipe_context *pc)
 {
+    struct etna_pipe_context *priv = etna_pipe_context(pc);
+
     pc->transfer_map = etna_pipe_transfer_map;
     pc->transfer_flush_region = etna_pipe_transfer_flush_region;
     pc->transfer_unmap = etna_pipe_transfer_unmap;
     pc->transfer_inline_write = u_default_transfer_inline_write;
+
+    util_slab_create(&priv->transfer_pool, sizeof(struct etna_transfer),
+                     16, UTIL_SLAB_SINGLETHREADED);
+}
+
+void etna_pipe_transfer_destroy(struct pipe_context *pc)
+{
+    struct etna_pipe_context *priv = etna_pipe_context(pc);
+    util_slab_destroy(&priv->transfer_pool);
 }
 

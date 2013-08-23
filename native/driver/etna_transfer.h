@@ -29,5 +29,7 @@
 
 void etna_pipe_transfer_init(struct pipe_context *pipe);
 
+void etna_pipe_transfer_destroy(struct pipe_context *pc);
+
 #endif
 
