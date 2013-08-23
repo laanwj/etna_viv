@@ -33,6 +33,8 @@ void etna_rs_gen_clear_surface(struct etna_surface *surf, uint32_t clear_value);
 
 void etna_pipe_clear_blit_init(struct pipe_context *pipe);
 
+void etna_pipe_clear_blit_destroy(struct pipe_context *pipe);
+
 #endif
 
 

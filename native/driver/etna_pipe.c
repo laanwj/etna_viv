@@ -31,11 +31,6 @@
 #include <etnaviv/cmdstream.xml.h>
 #include <etnaviv/viv.h>
 #include <etnaviv/etna.h>
-#include <etnaviv/etna_mem.h>
-#include <etnaviv/etna_util.h>
-#include <etnaviv/etna_tex.h>
-#include <etnaviv/etna_fb.h>
-#include <etnaviv/etna_rs.h>
 
 #include "etna_blend.h"
 #include "etna_clear_blit.h"
@@ -52,14 +47,11 @@
 
 #include "pipe/p_context.h"
 #include "pipe/p_defines.h"
-#include "pipe/p_format.h"
-#include "pipe/p_shader_tokens.h"
 #include "pipe/p_state.h"
-#include "util/u_blitter.h"
-#include "util/u_format.h"
+#include "util/u_math.h"
+#include "util/u_inlines.h"
 #include "util/u_memory.h"
 #include "util/u_prim.h"
-#include "util/u_surface.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -75,6 +67,7 @@
 #include <errno.h>
 
 /*********************************************************************/
+/* Context handling */
 
 #define ETNA_3D_CONTEXT_SIZE (400) /* keep this number above "Total state updates (fixed)" from gen_weave_state tool */
 
@@ -669,10 +662,6 @@ static void sync_context(struct pipe_context *restrict pipe)
 #undef EMIT_STATE
 #undef EMIT_STATE_FIXP
     /**** Start of flushes ****/
-#if 0
-    etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_TEXTURE | VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
-    etna_set_state(ctx, VIVS_TS_FLUSH_CACHE, VIVS_TS_FLUSH_CACHE_FLUSH);
-#endif
     if(dirty & (ETNA_STATE_TEXTURE_CACHES))
     {
         /* clear texture cache (both fragment and vertex) */
@@ -689,8 +678,13 @@ static void sync_context(struct pipe_context *restrict pipe)
     e->dirty_bits = 0;
 }
 
-/** Build new context for etna (for next command buffer submission, called as callback
- * function after flush) */
+/** Build new explicit context for etna. This is a command buffer that contains
+ * all commands needed to set up the GPU to current state, to be used after a context
+ * switch (when multiple processes are using the GPU at once).
+ *
+ * This function is called as callback by etna_flush for kernel drivers
+ * that require an explicit context)
+ */
 static int update_context(void *pipe, struct etna_ctx *ctx, enum etna_pipe *initial_pipe, enum etna_pipe *final_pipe)
 {
     reset_context((struct pipe_context*) pipe);
@@ -700,16 +694,21 @@ static int update_context(void *pipe, struct etna_ctx *ctx, enum etna_pipe *init
 }
 
 /*********************************************************************/
+
+/** Destroy etna pipe. After calling this the pipe object must never be
+ * used again.
+ */
 static void etna_pipe_destroy(struct pipe_context *pipe)
 {
     struct etna_pipe_context *priv = etna_pipe_context(pipe);
-    if (priv->blitter)
-        util_blitter_destroy(priv->blitter);
-
+    etna_pipe_clear_blit_destroy(pipe);
     etna_free(priv->ctx);
     FREE(pipe);
 }
 
+/** Main draw function. Draw primitives from a vertex buffer object,
+ * using optonally an index buffer.
+ */
 static void etna_pipe_draw_vbo(struct pipe_context *pipe,
                  const struct pipe_draw_info *info)
 {
@@ -735,6 +734,9 @@ static void etna_pipe_draw_vbo(struct pipe_context *pipe,
     }
 }
 
+/** Create vertex element states, which define a layout for fetching
+ * vertices for rendering.
+ */
 static void *etna_pipe_create_vertex_elements_state(struct pipe_context *pipe,
                                       unsigned num_elements,
                                       const struct pipe_vertex_element *elements)
@@ -742,11 +744,11 @@ static void *etna_pipe_create_vertex_elements_state(struct pipe_context *pipe,
     struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct compiled_vertex_elements_state *cs = CALLOC_STRUCT(compiled_vertex_elements_state);
     /* XXX could minimize number of consecutive stretches here by sorting, and 
-     * permuting in shader or does Mesa do this already? */
+     * permuting the inputs in shader or does Mesa do this already? */
 
     /* Check that vertex element binding is compatible with hardware; thus
      * elements[idx].vertex_buffer_index are < stream_count. If not, the binding
-     * uses more streams than is supported, and we'll have to do some reorganization
+     * uses more streams than is supported, and u_vbuf should have done some reorganization
      * for compatibility. 
      */
     bool incompatible = false;
@@ -1162,8 +1164,6 @@ struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct et
     etna_pipe_texture_init(pc);
     etna_pipe_transfer_init(pc);
     etna_pipe_zsa_init(pc);
-
-    ectx->blitter = util_blitter_create(pc);
 
     /* Reset GPU to initial state */
     reset_context(pc);

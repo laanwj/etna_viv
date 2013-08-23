@@ -265,10 +265,20 @@ static void etna_pipe_blit(struct pipe_context *pipe, const struct pipe_blit_inf
 
 void etna_pipe_clear_blit_init(struct pipe_context *pc)
 {
+    struct etna_pipe_context *priv = etna_pipe_context(pc);
     pc->clear = etna_pipe_clear;
     pc->clear_render_target = etna_pipe_clear_render_target;
     pc->clear_depth_stencil = etna_pipe_clear_depth_stencil;
     pc->resource_copy_region = etna_pipe_resource_copy_region;
     pc->blit = etna_pipe_blit;
+
+    priv->blitter = util_blitter_create(pc);
+}
+
+void etna_pipe_clear_blit_destroy(struct pipe_context *pc)
+{
+    struct etna_pipe_context *priv = etna_pipe_context(pc);
+    if (priv->blitter)
+        util_blitter_destroy(priv->blitter);
 }
 
