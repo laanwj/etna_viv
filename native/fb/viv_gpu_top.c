@@ -1,6 +1,11 @@
 /* Watch usage of Vivante GPU live.
  * Needs profiling support built-in (build kernel and etnaviv with VIVANTE_PROFILER=1).
  */
+
+/* Uncomment if the platform has the clock_gettime call, to use a monotonic
+ * clock */
+/* #define HAVE_CLOCK */
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -12,7 +17,11 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <unistd.h>
+#ifdef HAVE_CLOCK
+#include <time.h>
+#else
 #include <sys/time.h>
+#endif
 
 #include <etnaviv/viv.h>
 #include <etnaviv/viv_profile.h>
@@ -60,11 +69,18 @@ static void print_percentage_bar(float percent, int cur_line_len)
     printf("%*s", PERCENTAGE_BAR_END - cur_line_len, "");
 }
 
+/* Get time in microseconds */
 static unsigned long gettime(void)
 {
+#ifdef HAVE_CLOCK
+    struct timespec t;
+    clock_gettime(CLOCK_MONOTONIC, &t);
+    return (t.tv_nsec/1000 + (t.tv_sec * 1000000));
+#else
     struct timeval t;
     gettimeofday(&t, NULL);
     return (t.tv_usec + (t.tv_sec * 1000000));
+#endif
 }
 
 /* Return number of lines in the terminal */
