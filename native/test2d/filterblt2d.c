@@ -71,10 +71,10 @@ int main(int argc, char **argv)
     int rv;
     int width = 512;
     int height = 256;
-    
+
     int padded_width = etna_align_up(width, 8);
     int padded_height = etna_align_up(height, 1);
-    
+
     printf("padded_width %i padded_height %i\n", padded_width, padded_height);
     struct viv_conn *conn = 0;
     rv = viv_open(VIV_HW_2D, &conn);
@@ -93,7 +93,7 @@ int main(int argc, char **argv)
         printf("Unable to read amethyst256.png in current directory\n");
         exit(1);
     }
-    
+
     struct etna_vidmem *bmp = 0; /* bitmap */
     struct etna_vidmem *src = 0; /* source */
 
@@ -122,9 +122,9 @@ int main(int argc, char **argv)
      */
     for(int i=0; i<bmp_size/4; ++i)
         ((uint32_t*)bmp->logical)[i] = 0xff404040;
-    memcpy(src->logical, src_data, src_size); 
+    memcpy(src->logical, src_data, src_size);
 
-    /* Compute sinc filter kernel */
+    /* Compute lanczos filter kernel */
     uint32_t filter_kernel[FB_DWORD_COUNT] = {0};
     float kernel_in[FB_ROWS_TO_STORE][9] = {{0.0f}};
     float row_ofs = 0.5f;
@@ -207,13 +207,13 @@ int main(int argc, char **argv)
                 VIVS_DE_SRC_SIZE_X(src_width) |
                 VIVS_DE_SRC_SIZE_Y(src_height)
                 ); // source size is ignored
-        
+
         /* Compute stretch factors */
         etna_set_state(ctx, VIVS_DE_STRETCH_FACTOR_LOW, 
                 VIVS_DE_STRETCH_FACTOR_LOW_X(((src_width - 1) << 16) / (width - 1)));
         etna_set_state(ctx, VIVS_DE_STRETCH_FACTOR_HIGH,
                 VIVS_DE_STRETCH_FACTOR_HIGH_Y(((src_height - 1) << 16) / (height - 1)));
-        
+
         /* Destination setup */
         etna_set_state(ctx, VIVS_DE_DEST_ADDRESS, bmp->address);
         etna_set_state(ctx, VIVS_DE_DEST_STRIDE, width*4);
@@ -288,7 +288,7 @@ int main(int argc, char **argv)
     }
     bmp_dump32_noflip(bmp->logical, width, height, true, "/tmp/fb.bmp");
     printf("Dump complete\n");
-    
+
     /* Unlock video memory */
     if(etna_vidmem_unlock(conn, bmp) != 0)
     {

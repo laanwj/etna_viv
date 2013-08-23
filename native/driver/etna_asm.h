@@ -25,7 +25,7 @@
 #define H_ETNA_ASM
 #include <stdint.h>
 
-/* Size of instruction in 32-bit words */
+/* Size of an instruction in 32-bit words */
 #define ETNA_INST_SIZE (4)
 /* Number of source operands per instruction */
 #define ETNA_NUM_SRC (3)
@@ -35,16 +35,16 @@
 /* destination operand */
 struct etna_inst_dst
 {
-    unsigned use:1;
-    unsigned amode:3;
-    unsigned reg:7;
+    unsigned use:1; /* 0: not in use, 1: in use */
+    unsigned amode:3; /* INST_AMODE_* */
+    unsigned reg:7; /* register number 0..127 */
     unsigned comps:4; /* INST_COMPS_* */
 };
 
 /* texture operand */
 struct etna_inst_tex
 {
-    unsigned id:5;
+    unsigned id:5; /* sampler id */
     unsigned amode:3; /* INST_AMODE_* */
     unsigned swiz:8; /* INST_SWIZ */
 };
@@ -52,21 +52,21 @@ struct etna_inst_tex
 /* source operand */
 struct etna_inst_src
 {
-    unsigned use:1;
-    unsigned reg:9;
+    unsigned use:1; /* 0: not in use, 1: in use */
+    unsigned reg:9; /* register or uniform number 0..511 */
     unsigned swiz:8;   /* INST_SWIZ */
-    unsigned neg:1;
-    unsigned abs:1;
+    unsigned neg:1;    /* negate (flip sign) if set */
+    unsigned abs:1;    /* absolute (remove sign) if set */
     unsigned amode:3;  /* INST_AMODE_* */
     unsigned rgroup:3; /* INST_RGROUP_* */
 };
 
 /*** instruction ***/
-struct etna_inst 
+struct etna_inst
 {
     uint8_t opcode; /* INST_OPCODE_* */
     unsigned cond:5; /* INST_CONDITION_* */
-    unsigned sat:1;
+    unsigned sat:1; /* saturate result between 0..1 */
     struct etna_inst_dst dst; /* destination operand */
     struct etna_inst_tex tex; /* texture operand */
     struct etna_inst_src src[ETNA_NUM_SRC]; /* source operand */
@@ -74,8 +74,8 @@ struct etna_inst
 };
 
 /**
- * Build vivante instruction from structure: 
- *  opcode, cond, sat, dst_use, dst_amode, 
+ * Build vivante instruction from structure with
+ *  opcode, cond, sat, dst_use, dst_amode,
  *  dst_reg, dst_comps, tex_id, tex_amode, tex_swiz,
  *  src[0-2]_reg, use, swiz, neg, abs, amode, rgroup,
  *  imm

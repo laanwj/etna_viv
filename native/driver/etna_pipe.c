@@ -322,7 +322,7 @@ static void sync_context(struct pipe_context *restrict pipe)
      * - num vertex elements
      * - scissor handling
      * - num samplers
-     * - texture lod 
+     * - texture lod
      * - ETNA_STATE_TS
      * - removed ETNA_STATE_BASE_SETUP statements -- these are guaranteed to not change anyway
      */
@@ -414,7 +414,7 @@ static void sync_context(struct pipe_context *restrict pipe)
     if(dirty & (ETNA_STATE_SCISSOR | ETNA_STATE_FRAMEBUFFER | ETNA_STATE_RASTERIZER))
     {
         /* this is a bit of a mess: rasterizer->scissor determines whether to use only the
-         * framebuffer scissor, or specific scissor state, so the logic spans three CSOs 
+         * framebuffer scissor, or specific scissor state, so the logic spans three CSOs
          */
         uint32_t scissor_left = e->framebuffer.SE_SCISSOR_LEFT;
         uint32_t scissor_top = e->framebuffer.SE_SCISSOR_TOP;
@@ -543,7 +543,7 @@ static void sync_context(struct pipe_context *restrict pipe)
         {
             /* set active samplers to their configuration value (determined by both the sampler state and sampler view),
              * set inactive sampler config to 0 */
-            /*02000*/ EMIT_STATE(TE_SAMPLER_CONFIG0(x), TE_SAMPLER_CONFIG0[x], 
+            /*02000*/ EMIT_STATE(TE_SAMPLER_CONFIG0(x), TE_SAMPLER_CONFIG0[x],
                     ((1<<x) & active_samplers)?(e->sampler[x]->TE_SAMPLER_CONFIG0 | e->sampler_view[x].TE_SAMPLER_CONFIG0):0);
         }
     }
@@ -571,17 +571,17 @@ static void sync_context(struct pipe_context *restrict pipe)
             if((1<<x) & active_samplers)
             {
                 /* min and max lod is determined both by the sampler and the view */
-                /*020C0*/ EMIT_STATE(TE_SAMPLER_LOD_CONFIG(x), TE_SAMPLER_LOD_CONFIG[x], 
-                        e->sampler[x]->TE_SAMPLER_LOD_CONFIG | 
-                        VIVS_TE_SAMPLER_LOD_CONFIG_MAX(MIN2(e->sampler[x]->max_lod, e->sampler_view[x].max_lod)) | 
-                        VIVS_TE_SAMPLER_LOD_CONFIG_MIN(MAX2(e->sampler[x]->min_lod, e->sampler_view[x].min_lod))); 
+                /*020C0*/ EMIT_STATE(TE_SAMPLER_LOD_CONFIG(x), TE_SAMPLER_LOD_CONFIG[x],
+                        e->sampler[x]->TE_SAMPLER_LOD_CONFIG |
+                        VIVS_TE_SAMPLER_LOD_CONFIG_MAX(MIN2(e->sampler[x]->max_lod, e->sampler_view[x].max_lod)) |
+                        VIVS_TE_SAMPLER_LOD_CONFIG_MIN(MAX2(e->sampler[x]->min_lod, e->sampler_view[x].min_lod)));
             }
         }
         for(int x=0; x<VIVS_TE_SAMPLER__LEN; ++x)
         {
             if((1<<x) & active_samplers)
             {
-                /*021C0*/ EMIT_STATE(TE_SAMPLER_CONFIG1(x), TE_SAMPLER_CONFIG1[x], 
+                /*021C0*/ EMIT_STATE(TE_SAMPLER_CONFIG1(x), TE_SAMPLER_CONFIG1[x],
                         e->sampler[x]->TE_SAMPLER_CONFIG1 | e->sampler_view[x].TE_SAMPLER_CONFIG1);
             }
         }
@@ -726,11 +726,11 @@ static void etna_pipe_draw_vbo(struct pipe_context *pipe,
     sync_context(pipe);
     if(info->indexed)
     {
-        etna_draw_indexed_primitives(priv->ctx, translate_draw_mode(info->mode), 
+        etna_draw_indexed_primitives(priv->ctx, translate_draw_mode(info->mode),
                 info->start, prims, info->index_bias);
     } else
     {
-        etna_draw_primitives(priv->ctx, translate_draw_mode(info->mode), 
+        etna_draw_primitives(priv->ctx, translate_draw_mode(info->mode),
                 info->start, prims);
     }
 }
@@ -744,13 +744,13 @@ static void *etna_pipe_create_vertex_elements_state(struct pipe_context *pipe,
 {
     struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct compiled_vertex_elements_state *cs = CALLOC_STRUCT(compiled_vertex_elements_state);
-    /* XXX could minimize number of consecutive stretches here by sorting, and 
+    /* XXX could minimize number of consecutive stretches here by sorting, and
      * permuting the inputs in shader or does Mesa do this already? */
 
     /* Check that vertex element binding is compatible with hardware; thus
      * elements[idx].vertex_buffer_index are < stream_count. If not, the binding
      * uses more streams than is supported, and u_vbuf should have done some reorganization
-     * for compatibility. 
+     * for compatibility.
      */
     bool incompatible = false;
     for(unsigned idx=0; idx<num_elements; ++idx)
@@ -775,7 +775,7 @@ static void *etna_pipe_create_vertex_elements_state(struct pipe_context *pipe,
                 start_offset = elements[idx].src_offset;
             assert(element_size != 0 && end_offset <= 256); /* maximum vertex size is 256 bytes */
             /* check whether next element is consecutive to this one */
-            nonconsecutive = (idx == (num_elements-1)) || 
+            nonconsecutive = (idx == (num_elements-1)) ||
                         elements[idx+1].vertex_buffer_index != elements[idx].vertex_buffer_index ||
                         end_offset != elements[idx+1].src_offset;
             cs->FE_VERTEX_ELEMENT_CONFIG[idx] =
@@ -907,7 +907,7 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
         pipe_surface_reference(&cs->zsbuf, &zsbuf->base);
         assert(zsbuf->layout & 1); /* Cannot render to linear surfaces */
         uint32_t depth_format = translate_depth_format(zsbuf->base.format, false);
-        unsigned depth_bits = depth_format == VIVS_PE_DEPTH_CONFIG_DEPTH_FORMAT_D16 ? 16 : 24; 
+        unsigned depth_bits = depth_format == VIVS_PE_DEPTH_CONFIG_DEPTH_FORMAT_D16 ? 16 : 24;
         bool depth_supertiled = (zsbuf->layout & 2)!=0;
         cs->PE_DEPTH_CONFIG =
                 depth_format |
@@ -930,7 +930,7 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
         if(zsbuf->surf.ts_address)
         {
             ts_mem_config |= VIVS_TS_MEM_CONFIG_DEPTH_FAST_CLEAR |
-                (depth_bits == 16 ? VIVS_TS_MEM_CONFIG_DEPTH_16BPP : 0) | 
+                (depth_bits == 16 ? VIVS_TS_MEM_CONFIG_DEPTH_16BPP : 0) |
                 VIVS_TS_MEM_CONFIG_DEPTH_COMPRESSION;
             cs->TS_DEPTH_CLEAR_VALUE = zsbuf->clear_value;
             cs->TS_DEPTH_STATUS_BASE = zsbuf->surf.ts_address;
@@ -1028,10 +1028,10 @@ static void etna_pipe_set_vertex_buffers( struct pipe_context *pipe,
         /* compiled state */
         cs->FE_VERTEX_STREAM_CONTROL = FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE(vbi->stride);
         cs->FE_VERTEX_STREAM_BASE_ADDR = gpu_addr;
-        
+
         etna_resource_touch(pipe, vbi->buffer);
     }
-    
+
     priv->dirty_bits |= ETNA_STATE_VERTEX_BUFFERS;
 }
 
@@ -1058,7 +1058,7 @@ static void etna_pipe_set_index_buffer( struct pipe_context *pipe,
                 translate_index_size(ib->index_size);
         cs->FE_INDEX_STREAM_BASE_ADDR = etna_resource(ib->buffer)->levels[0].address + ib->offset;
         cs->logical = etna_resource(ib->buffer)->levels[0].logical + ib->offset;
-        
+
         etna_resource_touch(pipe, ib->buffer);
     }
     priv->dirty_bits |= ETNA_STATE_INDEX_BUFFER;
@@ -1154,7 +1154,7 @@ struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct et
     /* XXX set_compute_resources */
     /* XXX set_global_binding */
     /* XXX launch_grid */
-    
+
     etna_pipe_blend_init(pc);
     etna_pipe_clear_blit_init(pc);
     etna_pipe_rasterizer_init(pc);

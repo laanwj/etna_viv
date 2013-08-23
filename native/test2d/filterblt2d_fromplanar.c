@@ -75,12 +75,12 @@ int main(int argc, char **argv)
     /* target width and height */
     int width = 176*2;
     int height = 144*2;
-    
+
     int padded_width = etna_align_up(width, 8);
     int padded_height = etna_align_up(height, 1);
 
     int dest_stride = padded_width * 4;
-    
+
     printf("padded_width %i padded_height %i\n", padded_width, padded_height);
     struct viv_conn *conn = 0;
     rv = viv_open(VIV_HW_2D, &conn);
@@ -90,7 +90,7 @@ int main(int argc, char **argv)
         exit(1);
     }
     printf("Succesfully opened device\n");
-   
+
     /* Allocate target bitmap */
     struct etna_vidmem *bmp = 0;
     size_t bmp_size = dest_stride * height;
@@ -113,7 +113,7 @@ int main(int argc, char **argv)
     src_width[2] = src_width[0] / 2;
     src_height[2] = src_height[0] / 2;
     src_stride[2] = etna_align_up(src_width[2], 8);
-    
+
     for(int plane=0; plane<3; ++plane)
     {
         src_size[plane] = src_stride[plane] * src_height[plane];
@@ -170,7 +170,7 @@ int main(int argc, char **argv)
     for(int i=0; i<bmp_size/4; ++i)
         ((uint32_t*)bmp->logical)[i] = 0xff404040;
 
-    /* Compute sinc filter kernel */
+    /* Compute lanczos filter kernel */
     uint32_t filter_kernel[FB_DWORD_COUNT] = {0};
     float kernel_in[FB_ROWS_TO_STORE][9] = {{0.0f}};
     float row_ofs = 0.5f;
@@ -209,7 +209,7 @@ int main(int argc, char **argv)
     {
         for(int val_idx=0; val_idx<FB_NR_VALUES; ++val_idx)
         {
-            /* -2.0 .. 2.0 to -0x8000..0x7fff 
+            /* -2.0 .. 2.0 to -0x8000..0x7fff
              * (1.14 fixed point with sign bit)
              */
             float val = kernel_in[row_idx][val_idx] * (1<<14);
@@ -230,7 +230,7 @@ int main(int argc, char **argv)
     for(int frame=0; frame<1; ++frame)
     {
         printf("*** FRAME %i ****\n", frame);
-        printf("[%ix%i] -> [%ix%i] -> [%ix%i]\n", 
+        printf("[%ix%i] -> [%ix%i] -> [%ix%i]\n",
                 src_width[0], src_height[0],
                 temp_width, temp_height,
                 width, height);
@@ -244,33 +244,33 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_DE_VPLANE_ADDRESS, src[2]->address);
         etna_set_state(ctx, VIVS_DE_VPLANE_STRIDE, src_stride[2]);
 
-        /* Are these used in VR blit? 
+        /* Are these used in VR blit?
          * Likely, only the source format is.
          */
         etna_set_state(ctx, VIVS_DE_SRC_ROTATION_CONFIG, 0);
-        etna_set_state(ctx, VIVS_DE_SRC_CONFIG, 
+        etna_set_state(ctx, VIVS_DE_SRC_CONFIG,
                 VIVS_DE_SRC_CONFIG_SOURCE_FORMAT(DE_FORMAT_YV12) |
                 VIVS_DE_SRC_CONFIG_LOCATION_MEMORY |
                 VIVS_DE_SRC_CONFIG_PE10_SOURCE_FORMAT(DE_FORMAT_YV12));
-        
+
         /* Compute stretch factors */
-        etna_set_state(ctx, VIVS_DE_STRETCH_FACTOR_LOW, 
+        etna_set_state(ctx, VIVS_DE_STRETCH_FACTOR_LOW,
                 VIVS_DE_STRETCH_FACTOR_LOW_X(((src_width[0] - 1) << 16) / (width - 1)));
         etna_set_state(ctx, VIVS_DE_STRETCH_FACTOR_HIGH,
                 VIVS_DE_STRETCH_FACTOR_HIGH_Y(((src_height[0] - 1) << 16) / (height - 1)));
-        
+
         /* Destination setup */
         etna_set_state(ctx, VIVS_DE_DEST_ADDRESS, temp->address);
         etna_set_state(ctx, VIVS_DE_DEST_STRIDE, temp_stride);
         etna_set_state(ctx, VIVS_DE_DEST_ROTATION_CONFIG, 0);
-        etna_set_state(ctx, VIVS_DE_DEST_CONFIG, 
+        etna_set_state(ctx, VIVS_DE_DEST_CONFIG,
                 VIVS_DE_DEST_CONFIG_FORMAT(DE_FORMAT_A8R8G8B8) |
                 VIVS_DE_DEST_CONFIG_SWIZZLE(DE_SWIZZLE_ARGB) |
                 VIVS_DE_DEST_CONFIG_TILED_DISABLE |
                 VIVS_DE_DEST_CONFIG_MINOR_TILED_DISABLE
                 // | VIVS_DE_DEST_CONFIG_GDI_STRE_ENABLE
                 );
-        etna_set_state(ctx, VIVS_DE_ROP, 
+        etna_set_state(ctx, VIVS_DE_ROP,
                 VIVS_DE_ROP_ROP_FG(0xcc) | VIVS_DE_ROP_ROP_BG(0xcc) | VIVS_DE_ROP_TYPE_ROP4);
 
         /* Clipping rectangle (not used in VR blit) */
@@ -301,10 +301,10 @@ int main(int argc, char **argv)
         /* Program video rasterizer */
         etna_set_state(ctx, VIVS_DE_VR_CONFIG_EX, 0);
         etna_set_state(ctx, VIVS_DE_VR_SOURCE_IMAGE_LOW,
-                VIVS_DE_VR_SOURCE_IMAGE_LOW_LEFT(0) | 
+                VIVS_DE_VR_SOURCE_IMAGE_LOW_LEFT(0) |
                 VIVS_DE_VR_SOURCE_IMAGE_LOW_TOP(0));
         etna_set_state(ctx, VIVS_DE_VR_SOURCE_IMAGE_HIGH,
-                VIVS_DE_VR_SOURCE_IMAGE_HIGH_RIGHT(src_width[0]) | 
+                VIVS_DE_VR_SOURCE_IMAGE_HIGH_RIGHT(src_width[0]) |
                 VIVS_DE_VR_SOURCE_IMAGE_HIGH_BOTTOM(src_height[0]));
 
         etna_set_state(ctx, VIVS_DE_VR_SOURCE_ORIGIN_LOW,
@@ -313,18 +313,18 @@ int main(int argc, char **argv)
                 VIVS_DE_VR_SOURCE_ORIGIN_HIGH_Y(0));
 
         etna_set_state(ctx, VIVS_DE_VR_TARGET_WINDOW_LOW,
-                VIVS_DE_VR_TARGET_WINDOW_LOW_LEFT(0) | 
+                VIVS_DE_VR_TARGET_WINDOW_LOW_LEFT(0) |
                 VIVS_DE_VR_TARGET_WINDOW_LOW_TOP(0));
         etna_set_state(ctx, VIVS_DE_VR_TARGET_WINDOW_HIGH,
-                VIVS_DE_VR_TARGET_WINDOW_HIGH_RIGHT(temp_width) | 
+                VIVS_DE_VR_TARGET_WINDOW_HIGH_RIGHT(temp_width) |
                 VIVS_DE_VR_TARGET_WINDOW_HIGH_BOTTOM(temp_height));
 
         etna_set_state_multi(ctx, VIVS_DE_FILTER_KERNEL(0), FB_DWORD_COUNT, filter_kernel);
 
         /* Kick off VR */
-        etna_set_state(ctx, VIVS_DE_VR_CONFIG, 
+        etna_set_state(ctx, VIVS_DE_VR_CONFIG,
                 VIVS_DE_VR_CONFIG_START_HORIZONTAL_BLIT);
-       
+
         /* (((Vertical pass))) */
         etna_set_state(ctx, VIVS_DE_SRC_ADDRESS, temp->address);
         etna_set_state(ctx, VIVS_DE_SRC_STRIDE, temp_stride);
@@ -332,29 +332,29 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_DE_UPLANE_STRIDE, 0);
         etna_set_state(ctx, VIVS_DE_VPLANE_ADDRESS, 0);
         etna_set_state(ctx, VIVS_DE_VPLANE_STRIDE, 0);
-        etna_set_state(ctx, VIVS_DE_SRC_CONFIG, 
+        etna_set_state(ctx, VIVS_DE_SRC_CONFIG,
                 VIVS_DE_SRC_CONFIG_SOURCE_FORMAT(DE_FORMAT_A8R8G8B8) |
                 VIVS_DE_SRC_CONFIG_LOCATION_MEMORY |
                 VIVS_DE_SRC_CONFIG_PE10_SOURCE_FORMAT(DE_FORMAT_A8R8G8B8));
         etna_set_state(ctx, VIVS_DE_VR_SOURCE_IMAGE_LOW,
-                VIVS_DE_VR_SOURCE_IMAGE_LOW_LEFT(0) | 
+                VIVS_DE_VR_SOURCE_IMAGE_LOW_LEFT(0) |
                 VIVS_DE_VR_SOURCE_IMAGE_LOW_TOP(0));
         etna_set_state(ctx, VIVS_DE_VR_SOURCE_IMAGE_HIGH,
-                VIVS_DE_VR_SOURCE_IMAGE_HIGH_RIGHT(temp_width) | 
+                VIVS_DE_VR_SOURCE_IMAGE_HIGH_RIGHT(temp_width) |
                 VIVS_DE_VR_SOURCE_IMAGE_HIGH_BOTTOM(temp_height));
 
         etna_set_state(ctx, VIVS_DE_DEST_ADDRESS, bmp->address);
         etna_set_state(ctx, VIVS_DE_DEST_STRIDE, dest_stride);
 
         etna_set_state(ctx, VIVS_DE_VR_TARGET_WINDOW_LOW,
-                VIVS_DE_VR_TARGET_WINDOW_LOW_LEFT(0) | 
+                VIVS_DE_VR_TARGET_WINDOW_LOW_LEFT(0) |
                 VIVS_DE_VR_TARGET_WINDOW_LOW_TOP(0));
         etna_set_state(ctx, VIVS_DE_VR_TARGET_WINDOW_HIGH,
-                VIVS_DE_VR_TARGET_WINDOW_HIGH_RIGHT(width) | 
+                VIVS_DE_VR_TARGET_WINDOW_HIGH_RIGHT(width) |
                 VIVS_DE_VR_TARGET_WINDOW_HIGH_BOTTOM(height));
 
         /* Kick off VR */
-        etna_set_state(ctx, VIVS_DE_VR_CONFIG, 
+        etna_set_state(ctx, VIVS_DE_VR_CONFIG,
                 VIVS_DE_VR_CONFIG_START_VERTICAL_BLIT);
 
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_PE2D);
@@ -362,7 +362,7 @@ int main(int argc, char **argv)
     }
     bmp_dump32_noflip(bmp->logical, width, height, true, "/tmp/fb.bmp");
     printf("Dump complete\n");
-    
+
     /* Unlock video memory */
     if(etna_vidmem_unlock(conn, bmp) != 0)
     {

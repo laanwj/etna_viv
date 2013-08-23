@@ -4,9 +4,9 @@ Introduction
 Project Etnaviv is an open source user-space driver for the Vivante GCxxx series of embedded GPUs.
 
 A Mesa fork with the etnaviv driver can be found in the [laanwj/mesa](https://github.com/laanwj/mesa) repository. 
-At the moment, this driver provides rudimentary OpenGL ES 2.0 accelerated rendering direct to framebuffer (fbdev).
-OpenGL ES 1.0 should also work, but has not been tested much. There may still be quite a few rendering bugs, 
-specific bug reports are very welcome.
+At the moment, this driver provides OpenGL ES 1.0 and 2.0 accelerated rendering direct to framebuffer (fbdev).
+This driver has been used to run glquake and d2x and other GLES games so it should be fairly stable.
+There may still be quite a few rendering bugs, specific bug reports are very welcome.
 
 SoCs with Vivante GPU
 =========================
@@ -34,12 +34,13 @@ Compatibility
 
 `etna_pipe` is currently compatible with at least the following GC chips:
 
-- GC600 (CuBox/dove)
-- GC800 (Rockchip/arnova)
-- GC860 (GCW Zero/v2)
-- GC880 (i.MX6)
+- GC600 (CuBox, GCABI `dove`)
+- GC800 (Rockchip, GCABI `arnova`)
+- GC860 (GCW Zero, GCABI `v2`)
+- GC880 (i.MX6, GCABI imx6 or `imx6_v4_0_0` depending on BSP)
 
-Support for GC2000 (i.MX6) and others with multiple pixel pipes requires a few changes.
+Support for GC2000 (i.MX6) and others with multiple pixel pipes (GC4000?) requires a few changes.
+The 2D demos do work for GC2000 and should work on all other known Vivante chips.
 
 Building
 =========
@@ -57,7 +58,7 @@ These values for environment variable `GCABI` are supported out of the box:
 - `imx6_v4_0_0`: v4 API, but i.MX6 specific, release 4.0.0
 
 If possible get the `gc_*.h` headers for your specific kernel version. If that's not possible, try to find which of the above sets
-of headers is most similar, and adapt that.
+of headers is most similar, and use or adapt that.
 
 General
 --------
@@ -397,7 +398,7 @@ Then generate the headers with
 Contact
 =============
 There is currently no mailing list for this project, and looking at other GPU reverse engineering projects the mailing lists
-usually see very little traffic, so I won't bother (but you're free to create one).
+usually see very little traffic, so I won't bother (but you're free to create one and let me know so I can join).
 
 We usually hang out in `#etnaviv` on `irc.freenode.net`. A related community, focused
 on Freescale i.MX6 sw/hw is in `#imx6-dongle`. Many SoC GPU developers also hang in `#lima`.
