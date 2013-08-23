@@ -48,7 +48,7 @@ static void *etna_pipe_create_blend_state(struct pipe_context *pipe,
     if(enable)
     {
         cs->PE_ALPHA_CONFIG =
-                VIVS_PE_ALPHA_CONFIG_BLEND_ENABLE_COLOR | 
+                VIVS_PE_ALPHA_CONFIG_BLEND_ENABLE_COLOR |
                 (separate_alpha ? VIVS_PE_ALPHA_CONFIG_BLEND_SEPARATE_ALPHA : 0) |
                 VIVS_PE_ALPHA_CONFIG_SRC_FUNC_COLOR(translate_blend_factor(rt0->rgb_src_factor)) |
                 VIVS_PE_ALPHA_CONFIG_SRC_FUNC_ALPHA(translate_blend_factor(rt0->alpha_src_factor)) |

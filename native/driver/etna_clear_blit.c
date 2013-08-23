@@ -66,7 +66,7 @@ void etna_rs_gen_clear_surface(struct etna_surface *surf, uint32_t clear_value)
 {
     uint bs = util_format_get_blocksize(surf->base.format);
     uint format = 0;
-    switch(bs) 
+    switch(bs)
     {
     case 2: format = RS_FORMAT_A1R5G5B5; break;
     case 4: format = RS_FORMAT_A8R8G8B8; break;
@@ -106,10 +106,10 @@ static void etna_pipe_clear(struct pipe_context *pipe,
      */
     etna_set_state(priv->ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
     /* No need to set up the TS here with sync_context.
-     * RS clear operations (in contrast to resolve and copy) do not require the TS state. 
+     * RS clear operations (in contrast to resolve and copy) do not require the TS state.
      */
     /* Need to update clear command in non-TS (fast clear) case *if*
-     * clear value is different from previous time. 
+     * clear value is different from previous time.
      */
     if(buffers & PIPE_CLEAR_COLOR)
     {
@@ -131,7 +131,7 @@ static void etna_pipe_clear(struct pipe_context *pipe,
                 etna_rs_gen_clear_surface(surf, new_clear_value);
             }
             etna_submit_rs_state(priv->ctx, &surf->clear_command);
-            surf->clear_value = new_clear_value; 
+            surf->clear_value = new_clear_value;
         }
     }
     if((buffers & PIPE_CLEAR_DEPTHSTENCIL) && priv->framebuffer_s.zsbuf != NULL)
@@ -202,8 +202,8 @@ static void etna_pipe_resource_copy_region(struct pipe_context *pipe,
     assert(src->format == dst->format);
     /* Resources with nr_samples > 1 are not allowed. */
     assert(src->nr_samples == 1 && dst->nr_samples == 1);
-    /* XXX we can use the RS as a literal copy engine here 
-     * the only complexity is tiling; the size of the boxes needs to be aligned to the tile size 
+    /* XXX we can use the RS as a literal copy engine here
+     * the only complexity is tiling; the size of the boxes needs to be aligned to the tile size
      * how to handle the case where a resource is copied from/to a non-aligned position?
      * from non-aligned: can fall back to rendering-based copy?
      * to non-aligned: can fall back to rendering-based copy?

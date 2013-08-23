@@ -8,8 +8,8 @@ Major optional blocks: each of these can be present or not depending on the spec
 - 3D engine
 - VG engine
 
-Some SoCs have multiple GPU cores, and have distributed the blocks mentioned above over the cores (I suppose 
-for extra parallelism and/or granularity in power switching). For example the Marvell Armada 620 has a GC2000 
+Some SoCs have multiple GPU cores, and have distributed the blocks mentioned above over the cores (I suppose
+for extra parallelism and/or granularity in power switching). For example the Marvell Armada 620 has a GC2000
 with only the 3D engine as well as a GC300 with only the 2D engine. Similarly, the Freescale i.mx6 SoC has a
 GC2000 with the 3D engine, a GC320 with 2D engine and a GC355 with VG engine.
 
@@ -28,7 +28,7 @@ GC2000 with the 3D engine, a GC320 with 2D engine and a GC355 with VG engine.
 Feature bits
 =================
 
-Which features are supported on a certain Vivante core is not only determined by the model number 
+Which features are supported on a certain Vivante core is not only determined by the model number
 (which AFAIK mainly determines the performance), but specified by a combination of factors:
 
  1) Chip features and minor feature flags
@@ -37,7 +37,7 @@ Which features are supported on a certain Vivante core is not only determined by
  4) Chip revision of the form 0x1234
 
 All of these are available in read-only registers on the hardware. On most cases it suffices to check the feature flags as
-Unlike NV, which parametrizes everything on the model and revision, for GC this is left for bugfixes (even these sometimes 
+Unlike NV, which parametrizes everything on the model and revision, for GC this is left for bugfixes (even these sometimes
 have their own feature bit).
 
 For an overview of the feature bits see the enumerations in `state.xml`.
@@ -104,7 +104,7 @@ Thread walker = Rectangle walker? (seems to have to do with OpenCL)
 [1] http://www.vivantecorp.com/Vivante_GC320_Technical_Reference_Manual_V1.0_A.pdf
 [2] http://2012ftf.ccidnet.com/pdf/0049.pdf
 
-Connections 
+Connections
 -------------
 Connections between the different modules follow the OpenGL pipeline design [3].
 
@@ -123,7 +123,7 @@ See also [1]
 - SE determines rasterization starting point for each primitive, and also culls based on trivial rejection
 - RA performs per-tile, per-subtile, per-quad and per-pixel clipping
 
-  [1] METHOD FOR DISTRIBUTED CLIPPING OUTSIDE OF VIEW VOLUME 
+  [1] METHOD FOR DISTRIBUTED CLIPPING OUTSIDE OF VIEW VOLUME
     http://www.freepatentsonline.com/y2010/0271370.html
   [2] Efficient tile-based rasterization
     http://www.google.com/patents/US8009169
@@ -133,7 +133,7 @@ See also [1]
 Command stream
 -------------------
 
-Commands and data are sent to the GPU through the FE (Front End interface). The 
+Commands and data are sent to the GPU through the FE (Front End interface). The
 command stream of the front-end interface has a specific format described in this section.
 
 Overall format
@@ -154,11 +154,11 @@ Opcodes
     00111 Wait ([15-0] count)
     01000 Link ([15-0] number of bytes, arg address)
     01001 Stall (argument seems same format as state 0380C)
-    01010 Call 
+    01010 Call
     01011 Return
     01101 Chip select
 
-Arguments are always padded to 2 32-bit words. Number of argument words depends on the opcode, and 
+Arguments are always padded to 2 32-bit words. Number of argument words depends on the opcode, and
 sometimes on the first word of the command.
 
 See `cmdstream.xml` for detailed overview of commands and arguments. The most commonly used command is
@@ -184,20 +184,20 @@ The following sequence of states is common:
     GL.SEMAPHORE_TOKEN := FROM=RA,TO=PE
     GL.STALL_TOKEN := FROM=RA,TO=PE
 
-The first state load arms the semaphore, the second one stalls the FROM module until the TO module has raised its semaphore. In 
-this example it stalls the rasterizer until the pixel engine has completed the commands up until now. 
+The first state load arms the semaphore, the second one stalls the FROM module until the TO module has raised its semaphore. In
+this example it stalls the rasterizer until the pixel engine has completed the commands up until now.
 
 The `STALL` command is used to stall the command queue until the semaphore has been received. The stall command has
-one argument that has the same format as the `_TOKEN` states above, except that the FROM module is always the FE. 
+one argument that has the same format as the `_TOKEN` states above, except that the FROM module is always the FE.
 
 Within the 3D engine, not many explicit synchronization points appear to be needed. Some exceptions:
 
-- The blob issues a semaphore and stall from RA to PE when 
+- The blob issues a semaphore and stall from RA to PE when
 
   - Changing depth configuration in PE
   - Sometimes when changing stencil config in PE
 
-- The blob issues a just a semaphore from RA to PE, and a stall before drawing a primitive when 
+- The blob issues a just a semaphore from RA to PE, and a stall before drawing a primitive when
 
   - Tile status address/configuration changes
   - Clearing depth
@@ -210,9 +210,9 @@ XXX (cwabbott) usually, isa's have some sort of texture barrier or sync operatio
 
 Resolve
 -----------
-The resolve module is a copy and fill engine. It can copy blocks of pixels from one GPU address to another, 
-optionally tiling/detiling, converting between pixel formats, or scaling down by a factor of 2. The source and 
-destination address can be the same to fill in tiles that were not touched during the rendering process 
+The resolve module is a copy and fill engine. It can copy blocks of pixels from one GPU address to another,
+optionally tiling/detiling, converting between pixel formats, or scaling down by a factor of 2. The source and
+destination address can be the same to fill in tiles that were not touched during the rendering process
 (according to the Tile Status, see below) with the background color.
 
 The RS and PE (drawing) share one set of pixel pipes. They will never be active concurrently (AFAIK).
@@ -244,18 +244,18 @@ the GPU to hang mysteriously on rendering.
 Shader ISA
 ================
 
-Vivante GPUs have a unified shader ISA, this means that vertex and pixel shaders share the same 
+Vivante GPUs have a unified shader ISA, this means that vertex and pixel shaders share the same
 instruction set. See `isa.xml` and `isa.md` for details of the instructions, this section only provides a high-level overview.
 
-- Each instruction consists of 4 32-bit words. These have a fixed format, with bitfields 
+- Each instruction consists of 4 32-bit words. These have a fixed format, with bitfields
 that have a meaning which differs only very little per opcode. Which of these fields is used (which operands) does differ per opcode.
 
 - Four-component SIMD processor (for most of the instructions)
 
-- Older GPUs have floating point operations only, the newer ones have support for integer operations in the context of OpenCL. 
+- Older GPUs have floating point operations only, the newer ones have support for integer operations in the context of OpenCL.
   The split is around GC1000, though this being Vivante there is likely some feature bit for it.
 
-- Instructions can have up to three source operands (`SRC0_*`, `SRC1_*`, `SRC2_*`), and one destination operand (`DST_`). 
+- Instructions can have up to three source operands (`SRC0_*`, `SRC1_*`, `SRC2_*`), and one destination operand (`DST_`).
    In addition to that, there is a specific operand for texture sampling (`TEX_*`).
 
 - Operands can have these properties:
@@ -269,7 +269,7 @@ that have a meaning which differs only very little per opcode. Which of these fi
 
 - Registers:
   - `N` four-component float temporary registers `tX` (actual number depends on the hardware, maximum seems to be 64 for all
-      vivante GPUs I've encountered up until now), but like with other GPUs using more registers will likely restrict 
+      vivante GPUs I've encountered up until now), but like with other GPUs using more registers will likely restrict
       the available paralellism)
   - `1` four-component address register `a0`
 
@@ -285,16 +285,16 @@ of the framebuffer using the `FBIOGET_VSCREENINFO` and `FBIOGET_FSCREENINFO` ioc
 This physical address can then directly be used as target address for a resolve operation, just like when copying
 to a normal bitmap.
 
-Even though it would save a resolve operation it is not useful to use the physical address of the frame buffer 
+Even though it would save a resolve operation it is not useful to use the physical address of the frame buffer
 directly for rendering, as it only possible to render to tiled and supertiled surfaces, and (afaik) no display controller
 supports scan out from tiled formats.
 
 In many cases there is more framebuffer memory than that which is used for the current screen, which causes larger virtual resolution
-to be returned than the physical resolution. Double-buffering is achieved by changing the y-offset within that virtual frame buffer. 
+to be returned than the physical resolution. Double-buffering is achieved by changing the y-offset within that virtual frame buffer.
 
 Operations
 ========================
-An attempt to figure out which operations can be triggered in the hardware, and what state is used to specify 
+An attempt to figure out which operations can be triggered in the hardware, and what state is used to specify
 their operation.
 
 - RS: Kick off resolve by writing a value with bit 0 set to `RS_KICKER`. State used:
@@ -328,8 +328,8 @@ Programming pecularities
   support. The blob driver uses it for some states (viewport scaling, offset, scissor, ...)
   but not others (uniforms etc).
 
-- It is quite easy to hang the GPU when making a minor programming mistake. 
-  When the GPU is stuck it is possible to submit command buffers, however nothing gets drawn and nothing 
+- It is quite easy to hang the GPU when making a minor programming mistake.
+  When the GPU is stuck it is possible to submit command buffers, however nothing gets drawn and nothing
   ever finishes.
 
   Ways I've already made it crash:
@@ -339,11 +339,11 @@ Programming pecularities
   - Sending 3D commands in the 2D pipe instead of 3D pipe (then using a signal waiting for them to complete)
   - Wrong length of shader
   - Texture sampling without properly setup texture units
-  - `SE_SCISSOR`: setting SCISSOR bottom/right to `(x<<16)|5` instead of `(x<<16)-1` causes crashes for higher resolutions 
+  - `SE_SCISSOR`: setting SCISSOR bottom/right to `(x<<16)|5` instead of `(x<<16)-1` causes crashes for higher resolutions
     such as 1920x1080 on GC600. I don't know why, maybe some buffer or cache overflow. The rockchip vivante driver always uses |5 AFAIK,
     this offset appears to be different per specific chip/revision.
 
-  This may be a (kernel) driver problem. It is possible to reset the GPU from user space with an ioctl, but 
+  This may be a (kernel) driver problem. It is possible to reset the GPU from user space with an ioctl, but
   this usually is not enough to make it un-stuck. It would probably be a better solution to introduce a kernel-based timeout
   instead of relying on userspace to be 100% correct (may exist on v4?).
 
@@ -355,10 +355,10 @@ When the mask bit belonging to a group of state bits is *set* on a state write, 
 state bits will be unaffected. If the mask bit is *unset*, the state bits will be written.
 
 This allows setting state per group of bits. For example, it allows setting only
-the destination alpha function (`ALPHA_CONFIG.DST_FUNC_ALPHA`) without affecting the 
+the destination alpha function (`ALPHA_CONFIG.DST_FUNC_ALPHA`) without affecting the
 other bits in that state word.
 
-If masking functionality is not desired, simply keep all the `_MASK` bits at zero and write all 
+If masking functionality is not desired, simply keep all the `_MASK` bits at zero and write all
 bits at once. This is what I used in `etna_pipe`, as I keep track of all state myself.
 
 Texture tiling
@@ -380,7 +380,7 @@ Supertiling
 ![supertile ordering](images/supertile.png)
 
 It appears that the blob always pads render buffers pixel sizes to a multiple of 64, ie, a width of 400 becomes 448 and 800 becomes 832.
-This is because the render buffer is also tiled, albeit differently than the 4x4 tiling format of the textures. 
+This is because the render buffer is also tiled, albeit differently than the 4x4 tiling format of the textures.
 On a fine level, every tile is the same as for normal tiled surfaces:
 
      0  1  2  3
@@ -416,7 +416,7 @@ but is only nested one level, in total this results in 64x64 sized tiles.
 The GPU can render to normal tiled surfaces (such as used by textures) as well as supertiled surfaces. However,
 rendering to supertiled surfaces is likely faster due to better cache locality.
 
-Stride, as used for resolve operations, is for a row of tiles not a row of pixels; 0x1c00 for width 448 (originally 400), 
+Stride, as used for resolve operations, is for a row of tiles not a row of pixels; 0x1c00 for width 448 (originally 400),
 0x3400 for width 832 (originally 800).
 
 Multisampling
@@ -445,7 +445,7 @@ GC600 supports 1, 2, or 4 MSAA samples. Vivante's patent [1] on anti-aliasing ma
 - 256x256 target with 4 samples creates a 512x512 render target and depth buffer
 
         GL.MULTI_SAMPLE_CONFIG := MSAA_SAMPLES=4X,MSAA_ENABLES=0xf,UNK12=0x0,UNK16=0x0
-        RA.MULTISAMPLE_UNK00E04 := 0x0 
+        RA.MULTISAMPLE_UNK00E04 := 0x0
         RA.MULTISAMPLE_UNK00E10[2] := 0xaaa22a22
         RA.CENTROID_TABLE[8] := 0x262a2288
         RA.CENTROID_TABLE[9] := 0x886688a2
@@ -466,7 +466,7 @@ GC600 supports 1, 2, or 4 MSAA samples. Vivante's patent [1] on anti-aliasing ma
 
 Other differences when MSAA is enabled:
 
-- `TS.MEM_CONFIG` is different when MSAA is used (see descriptions for fields `MSAA` and `MSAA_FORMAT`). 
+- `TS.MEM_CONFIG` is different when MSAA is used (see descriptions for fields `MSAA` and `MSAA_FORMAT`).
 - The TS surface belonging to the enlarged in the same way; it is treated as if there simply is a bigger render target.
 - It also looks like the PS gets an extra input/temporary when MSAA is enabled:
 
@@ -494,25 +494,25 @@ When rendering points (PRIMITIVE_TYPE_POINTS) there are some differences:
 - There is an extra varying for `gl_pointCoord` with two components. This varying has
   its components in `GL_VARYING_COMPONENT_USE` set to `POINTCOORD_X` and `POINTCOORD_Y`.
   Its `PA_SHADER_ATTRIBUTES` is set to `0x000002f1`.
-  The VS output associated to this varying in `VS_OUTPUT` is discarded, so can be set 
+  The VS output associated to this varying in `VS_OUTPUT` is discarded, so can be set
   to any output register.
 
-- `rasterizer.point_size_per_vertex` affects number of vs outputs (just like MSAA!). If point 
+- `rasterizer.point_size_per_vertex` affects number of vs outputs (just like MSAA!). If point
   size per vertex is not set, the value in `PA.POINT_SIZE` is used.
 
-- Distinction between sprite coordinate origin `UPPER_LEFT` / `LOWER_LEFT` is implemented by adding 
+- Distinction between sprite coordinate origin `UPPER_LEFT` / `LOWER_LEFT` is implemented by adding
   a 1.0-y instruction when glPointCoord is used. XXX figure out what is the default.
 
 Vertex texture fetch
 --------------------
 
 Vertex samplers live in the same space as fragment samplers. The blob uses a fixed mapping:
-sampler 0..7 are used as fragment samplers and 8..11 are used as vertex samplers. 
+sampler 0..7 are used as fragment samplers and 8..11 are used as vertex samplers.
 
 The shaders themselves refer to the absolute shader number; so tex8 is the first texture unit used in a
 vertex shader. The normal TEX instruction can be used to sample textures from a vertex shader.
 
-Vivante hw has two texture caches that need to be flushed separately, one for fragment shaders 
+Vivante hw has two texture caches that need to be flushed separately, one for fragment shaders
 one for vertex shaders (bits `GL.FLUSH_CACHE.TEXTURE` and `GL.FLUSH_CACHE.TEXTUREVS` respectively).
 
 This solves a problem with running `cubemap_sphere` after `displacement` demo;
@@ -525,16 +525,16 @@ Even adding a PE to FE semaphore afterwards or dummy state loads does not fix th
 
 All texture filtering options are allowed for vertex texture fetch.
 
-XXX maybe figure out if the sampler units are shared between fragment and vertex shaders and thus interchangeable. This is 
+XXX maybe figure out if the sampler units are shared between fragment and vertex shaders and thus interchangeable. This is
   not important for GL/Gallium because it already lives with the assumption that vertex and fragment shaders
   are distinct.
 
 Shader size on GC2000
 ----------------------
 
-The "query chip identity" ioctl on GC2000 reports an instructionCount of 512. Looking at the low-level command 
-stream dumps the device appears to have 0x0E000 - 0x0C000 = 8192 bytes of instruction memory, with 128 bit 
-instructions this indeed maps to 512 instructions. 
+The "query chip identity" ioctl on GC2000 reports an instructionCount of 512. Looking at the low-level command
+stream dumps the device appears to have 0x0E000 - 0x0C000 = 8192 bytes of instruction memory, with 128 bit
+instructions this indeed maps to 512 instructions.
 
 XXX does the VS/PS split at instruction 256 during rendering affect OpenCL? Hopefully not...
 

@@ -82,8 +82,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="5" name="X8R8G8B8"/>
         <value value="6" name="A8R8G8B8"/>
         <value value="7" name="YUY2"/><!-- only supported with YUY2_AVERAGING -->
-        <!-- 8..15 do show color and don't result in GPU crashes directly, also they don't 
-             seem to be direct aliases of 0..7, but it needs to be figured out if 
+        <!-- 8..15 do show color and don't result in GPU crashes directly, also they don't
+             seem to be direct aliases of 0..7, but it needs to be figured out if
              they're useful or just alternative names for formats in range 0..7
          -->
     </enum>
@@ -212,7 +212,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x00810" name="OUTPUT" value="0x00000000" brief="Output routing" length="4" stride="4">
             <doc>
-                Each bitfield (up to 16 in total) contains a temporary register number that 
+                Each bitfield (up to 16 in total) contains a temporary register number that
                 is used as output at the end of the shader for that varying.
             </doc>
             <bitfield high="7" low="0" name="O0" type="uint"/>
@@ -222,7 +222,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x00820" name="INPUT" value="0x00000000" brief="Input routing" length="4" stride="4">
             <doc>
-                Each bitfield (up to 16 in total) contains the number of a temporary register that 
+                Each bitfield (up to 16 in total) contains the number of a temporary register that
                 is assigned the input for that attribute at the beginning of shader execution.
             </doc>
             <bitfield high="7" low="0" name="I0" type="uint"/>
@@ -292,7 +292,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x00924" name="UNK00924" value="0x00000000"/>
     </stripe>
-    
+
     <stripe name="PA" brief="Primitive assembly states">
         <doc>Primitive assembly assembles primitives (tris, quads, lines, points etc) from vertices for 3D rendering.
             Viewport scaling, line width and point size is configured here.</doc>
@@ -358,7 +358,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00A84" name="VIEWPORT_UNK00A84" value="0x00000000" type="float"/>
         <reg32 offset="0x00A8C" name="VIEWPORT_UNK00A8C" value="0x00000000" type="float"/>
     </stripe>
-   
+
     <stripe name="SE" brief="Setup Engine states">
         <doc>The setup engine takes care of scissor, clipping, and depth scale.</doc>
         <reg32 offset="0x00C00" name="SCISSOR_LEFT" value="0x00000000" type="float"/>
@@ -376,7 +376,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00C20" name="CLIP_RIGHT" value="0x00000000" type="float"/>
         <reg32 offset="0x00C24" name="CLIP_BOTTOM" value="0x00000000" type="float"/>
     </stripe>
-    
+
     <stripe name="RA" brief="Raster states">
         <doc>Configuration for the rasterizer. This mainly controls multisampling.</doc>
         <reg32 offset="0x00E00" name="CONTROL" value="0x00000001">
@@ -388,7 +388,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00E10" name="MULTISAMPLE_UNK00E10" value="0x00000000" length="4" stride="4"/>
         <reg32 offset="0x00E40" name="CENTROID_TABLE" value="0x00000000" length="16" stride="4"/>
     </stripe>
-  
+
     <stripe name="PS" brief="Pixel Shader states">
         <doc>The Pixel (Fragment) shader to use is configured here</doc>
         <reg32 offset="0x01000" name="END_PC" value="0x00000000"/>
@@ -417,9 +417,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <!-- length="fragmentUniforms * 4" -->
         </reg32>
     </stripe>
-    
+
     <stripe name="PE" brief="Pixel Engine states">
-        <doc>The Pixel Engine takes care of writing pixels to the framebuffer, doing 
+        <doc>The Pixel Engine takes care of writing pixels to the framebuffer, doing
             blending, depth testing and alpha testing if needed.
 
             Some flags can be set either per group of bits, or all at once, by using masking flags.
@@ -560,7 +560,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="31" low="16" name="UNK16"/>
         </reg32>
         <reg32 offset="0x014A4" name="LOGIC_OP" masked="yes" value="0x000E400C">
-            <!-- only supported if feature bit LOGIC_OP present. 
+            <!-- only supported if feature bit LOGIC_OP present.
                  Either a coincidence or due to shared roots in DirectX: same enum as Gallium3D PIPE_LOGICOP -->
             <bitfield high="3" low="0" name="OP" type="LOGIC_OP"/>
             <bitfield pos="4" name="OP_MASK"/>
@@ -569,8 +569,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x014B0" name="UNK014B0" value="0x00000000"/>
         <reg32 offset="0x014B4" name="UNK014B4" value="0x00000000"/>
         <reg32 offset="0x01580" name="UNK01580" value="0x00000000" length="3" stride="4"/>
-    </stripe>     
-    
+    </stripe>
+
     <stripe name="CO" brief="Compose states">
         <doc>Hardware composer. This functionality is present on some GCxxxx chips and allows
             for blending surfaces together with Porter-Diff composition methods, to accelerate the
@@ -604,11 +604,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <array offset="0x03200" name="ADDR_UNK03200" length="8" stride="0x20">
             <reg32 offset="0" name="PPIPE" length="8"/> <!-- sampler*0x20 + pixelpipe*0x4 -->
         </array>
-    </stripe>     
-    
+    </stripe>
+
     <stripe name="RS" brief="Resolve states">
         <doc>To my current understanding, RESOLVE is a multifunctional copy/fill engine that can copy blocks of pixels from
-            one place in memory to another, actually clearing tiles that are marked as cleared in the process. 
+            one place in memory to another, actually clearing tiles that are marked as cleared in the process.
             Other capabilities are:
 
             - Conversion between pixel formats
@@ -665,7 +665,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x01620" name="WINDOW_SIZE" value="0x00000000" brief="Size of area to resolve">
             <doc>
-                When downsampling the source and destination size will be different. 
+                When downsampling the source and destination size will be different.
                 In this case, the WINDOW_SIZE will be the (unscaled) source size.
             </doc>
             <bitfield high="31" low="16" name="HEIGHT" type="uint"/>
@@ -712,7 +712,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             </reg32>
         </stripe>
     </stripe>
-    
+
     <stripe name="TS" brief="Tile Status">
         <doc>
         Tile status block contains information about the tiles to be resolved.
@@ -838,7 +838,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     </bitset>
     <stripe name="TE" brief="TExture sampler states">
         <doc>Texture sampling, filtering, LOD, etc</doc>
-        <stripe name="SAMPLER" length="12" stride="4"> 
+        <stripe name="SAMPLER" length="12" stride="4">
             <doc>8 fragment texture samplers, 4 vertex texture samplers</doc>
             <reg32 offset="0x2000" name="CONFIG0" value="0x00000000" type="TE_SAMPLER_CONFIG0"/>
             <reg32 offset="0x2040" name="SIZE" value="0x00000000" type="TE_SAMPLER_SIZE"/>
@@ -853,7 +853,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <reg32 offset="0x2400" name="LOD_ADDR" length="14" stride="0x40" type="VIVM"/> <!-- Base address, per LOD level -->
         </stripe>
     </stripe>
-    
+
     <stripe name="NTE" brief="New texture states">
         <doc>Extra texture states for newer hardware. These exist if chipMinorFeatures2 bit 11 set.</doc>
         <array offset="0x10000" name="SAMPLER" length="32" stride="4">
@@ -878,7 +878,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x12000" name="UNK12000" value="0x00000000" length="256" stride="4"/> <!-- chipMinorFeatures2 bit 15 set -->
         <reg32 offset="0x12400" name="UNK12400" value="0x00000000" length="256" stride="4"/> <!-- chipMinorFeatures2 bit 15 set -->
     </stripe>
-    
+
     <stripe name="SH" brief="Unified shader instruction memory">
         <doc>Shader instruction memory on new hardware that supports more than 256, or more than
             1024 shader instructions (different areas are used based on these cases).</doc>

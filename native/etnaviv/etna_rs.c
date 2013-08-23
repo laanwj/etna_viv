@@ -85,7 +85,7 @@ void etna_compile_rs_state(struct compiled_rs_state *cs, const struct rs_state *
     SET_STATE(RS_EXTRA_CONFIG, VIVS_RS_EXTRA_CONFIG_AA(rs->aa) | VIVS_RS_EXTRA_CONFIG_ENDIAN(rs->endian_mode));
 }
 
-/* submit RS state, without any processing and no dependence on context 
+/* submit RS state, without any processing and no dependence on context
  * except TS if this is a source-to-destination blit. */
 void etna_submit_rs_state(struct etna_ctx *restrict ctx, const struct compiled_rs_state *cs)
 {

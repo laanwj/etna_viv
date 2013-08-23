@@ -30,7 +30,7 @@
 #include "pipe/p_shader_tokens.h"
 
 /* XXX some of these such as ETNA_MAX_LABELS are pretty arbitrary limits, may be better to switch
- * to dynamic allocation at some point. 
+ * to dynamic allocation at some point.
  */
 #define ETNA_MAX_TEMPS (64) /* max temp register count of all Vivante hw */
 #define ETNA_MAX_TOKENS (2048)
@@ -65,12 +65,12 @@ struct etna_shader_object
     uint32_t imm_base; /* base of immediates (in 32 bit units) */
     uint32_t imm_size; /* size of immediates (in 32 bit units) */
     uint32_t *imm_data;
-  
-    /* inputs (for linking) 
+
+    /* inputs (for linking)
      *   for fs, the inputs must be in register 1..N */
     unsigned num_inputs;
     struct etna_shader_inout inputs[ETNA_NUM_INPUTS];
-    
+
     /* outputs (for linking) */
     unsigned num_outputs;
     struct etna_shader_inout outputs[ETNA_NUM_INPUTS];
@@ -108,7 +108,7 @@ int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct
 void etna_dump_shader_object(const struct etna_shader_object *sobj);
 
 /* Link two shader objects together, annotates each PS input with the VS
- * output register. Returns non-zero if the linking fails. 
+ * output register. Returns non-zero if the linking fails.
  */
 int etna_link_shader_objects(struct etna_shader_link_info *info, const struct etna_shader_object *vs, const struct etna_shader_object *fs);
 

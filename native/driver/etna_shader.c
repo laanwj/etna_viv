@@ -34,14 +34,14 @@
 #include <etnaviv/state_3d.xml.h>
 
 /* Link vs and fs together: fill in shader_state from vs and fs
- * as this function is called every time a new fs or vs is bound, the goal is to do 
- * little processing as possible here, and to precompute as much as possible in the 
+ * as this function is called every time a new fs or vs is bound, the goal is to do
+ * little processing as possible here, and to precompute as much as possible in the
  * vs/fs shader_object.
  * XXX we could cache the link result for a certain set of VS/PS; usually a pair
  * of VS and PS will be used together anyway.
  */
 void etna_link_shaders(struct pipe_context *pipe,
-                              struct compiled_shader_state *cs, 
+                              struct compiled_shader_state *cs,
                               const struct etna_shader_object *vs, const struct etna_shader_object *fs)
 {
     assert(vs->processor == TGSI_PROCESSOR_VERTEX);
@@ -84,7 +84,7 @@ void etna_link_shaders(struct pipe_context *pipe,
         DBG_F(ETNA_LINKER_MSGS,"  %i -> %i", link.varyings_vs_reg[idx], idx+1);
     }
 
-    /* vs outputs (varyings) */ 
+    /* vs outputs (varyings) */
     uint32_t vs_output[16] = {0};
     int varid = 0;
     vs_output[varid++] = vs->vs_pos_out_reg;
@@ -95,10 +95,10 @@ void etna_link_shaders(struct pipe_context *pipe,
 
     for(int idx=0; idx<4; ++idx)
     {
-        cs->VS_OUTPUT[idx] =(vs_output[idx*4+0] << 0)  | (vs_output[idx*4+1] << 8) | 
+        cs->VS_OUTPUT[idx] =(vs_output[idx*4+0] << 0)  | (vs_output[idx*4+1] << 8) |
                                  (vs_output[idx*4+2] << 16) | (vs_output[idx*4+3] << 24);
     }
-    
+
     /* vs inputs (attributes) */
     uint32_t vs_input[4] = {0};
     for(int idx=0; idx<vs->num_inputs; ++idx)
@@ -143,7 +143,7 @@ void etna_link_shaders(struct pipe_context *pipe,
     cs->GL_VARYING_NUM_COMPONENTS = num_components;
     cs->GL_VARYING_COMPONENT_USE[0] = component_use[0];
     cs->GL_VARYING_COMPONENT_USE[1] = component_use[1];
-    
+
     /* reference instruction memory */
     cs->vs_inst_mem_size = vs->code_size;
     cs->VS_INST_MEM = vs->code;
@@ -165,7 +165,7 @@ static void etna_set_constant_buffer(struct pipe_context *pipe,
     struct etna_pipe_context *priv = etna_pipe_context(pipe);
     if(buf == NULL) /* Unbinding constant buffer is a no-op as we don't keep a pointer */
         return;
-    assert(buf->buffer == NULL && buf->user_buffer != NULL); 
+    assert(buf->buffer == NULL && buf->user_buffer != NULL);
     /* support only user buffer for now */
     assert(priv->vs && priv->fs);
     if(likely(index == 0))

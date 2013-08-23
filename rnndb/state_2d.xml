@@ -185,7 +185,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <bitset name="2D_SRC_ORIGIN" inline="yes" brief="Source origin">
         <doc>
         Absolute or relative (determined by the SRC_RELATIVE field of the SRC_CONFIG register)
-        X and Y coordinates in pixels of the top left corner of the source rectangle within 
+        X and Y coordinates in pixels of the top left corner of the source rectangle within
         the source surface.
         </doc>
         <bitfield high="15" low="0" name="X"/>
@@ -370,7 +370,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <doc>
             In mono expansion this register defines the source color if the mono pixel is 0.
             The color must be set in A8R8G8B8 format.
-            In color blits it defines the source transparency color and must be of the same 
+            In color blits it defines the source transparency color and must be of the same
             format as the source format.
             </doc>
         </reg32>
@@ -384,7 +384,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="30" low="0" name="X" brief="Horizontal stretch factor in 15.16 fixed point format">
                 <doc>
                 The value is calculated using the following formula:
-                    
+
                     factor = ((srcWidth - 1) &lt;&lt; 16) / (dstWidth - 1)
 
                 Stretch blit uses only the integer part of the value while Filter blit uses all
@@ -396,7 +396,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="30" low="0" name="Y" brief="Vertical stretch factor in 15.16 fixed point format">
                 <doc>
                 The value is calculated using the following formula:
-                    
+
                     factor = ((srcWidth - 1) &lt;&lt; 16) / (dstWidth - 1)
 
                 Stretch blit uses only the integer part of the value while Filter blit uses all
@@ -488,7 +488,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <doc>
             Byte pattern mask used for clearing. PE1.0 uses a 8-byte pattern for clearing
             as specified in the CLEAR_PIXEL_VALUE_LOW and CLEAR_PIXEL_VALUE_HIGH registers.
-            Each of 8 bits refers to a byte. A value of 1 clears the respective byte, 
+            Each of 8 bits refers to a byte. A value of 1 clears the respective byte,
             and a value of 0 ignores it.
             </doc>
         </reg32>

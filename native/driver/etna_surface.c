@@ -48,7 +48,7 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
     unsigned layer = templat->u.tex.first_layer;
     unsigned level = templat->u.tex.level;
     assert(layer < resource->base.array_size);
-   
+
     surf->base.context = pipe;
 
     pipe_reference_init(&surf->base.reference, 1);
@@ -74,8 +74,8 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
 
     surf->layout = resource->layout;
     surf->surf = resource->levels[level];
-    surf->surf.address += layer * surf->surf.layer_stride; 
-    surf->surf.logical += layer * surf->surf.layer_stride; 
+    surf->surf.address += layer * surf->surf.layer_stride;
+    surf->surf.logical += layer * surf->surf.layer_stride;
     surf->clear_value = 0; /* last clear value */
 
     if(surf->surf.ts_address)

@@ -21,7 +21,7 @@ optionally blended with another data value and written to a memory device. Regis
 of filtering with the first coefficients. The block of data may be read from a location including a
 source coordinate. The final result of filtering may be written to a destination coordinate obtained
 by rotating and/or mirroring the source coordinate. The orientation of arrays filtered using the
-first coefficients varies according to a rotation mode. 
+first coefficients varies according to a rotation mode.
 
 - [US20130091189](https://www.google.com/patents/US20130091189) Single datapath floating point implementation of RCP, SQRT, EXP and LOG functions
 and a low latency RCP based on the same techniques
@@ -33,7 +33,7 @@ for performing a polynomial approximation (e.g. a quadratic polynomial approxima
 and one or more data tables corresponding to at least one of the RCP, SQRT, EXP or LOG functions
 operable to be coupled to the single pipeline according to one or more opcodes; wherein the single
 pipeline is operable for computing at least one of RCP, SQRT, EXP or LOG functions according to the
-one or more opcodes. 
+one or more opcodes.
 
 - [US20130002651](https://www.google.com/patents/US20130002651) Apparatus and Method For Texture Level Of Detail Computation
 
@@ -71,7 +71,7 @@ detect an object edge within the image. An edge style detector is configured to 
 edge end and a second edge end. The edge style detector also identifies an edge style associated
 with the detected edge based on the first edge end and the second edge end. The system also includes
 a restoration module configured to identify pixel data associated with the detected edge and a
-blending module configured to blend the pixel data associated with the detected edge. 
+blending module configured to blend the pixel data associated with the detected edge.
 
 - [US20110234609](https://www.google.com/patents/US20110234609) Hierarchical tile-based rasterization algorithm
 
@@ -98,7 +98,7 @@ as X, Y and far Z clipping.  In one embodiment, the SE module performs clipping 
 a initial point of rasterization. In one embodiment, the RA module performs clipping by way of
 conducting the rendering step of the rasterization process. This approach distributes the complexity
 in the graphics processing pipeline and makes the design simpler and faster, therefore design
-complexity, cost and performance may all be improved in hardware implementation. 
+complexity, cost and performance may all be improved in hardware implementation.
 
 - [US20100131786](https://www.google.com/patents/US20100131786) Single Chip 3D and 2D Graphics Processor with Embedded Memory and Multiple Levels of
 Power Controls
@@ -124,7 +124,7 @@ and to apply a de-ringing filter to a pixel within a pixel subset of the pixel l
 determination that the pixel is not an edge pixel. The determination that the pixel is not an edge
 pixel is based on the identified maximum pixel jump.
 
-- [US20090122076](https://www.google.com/patents/US20090122076) Thin-line detection apparatus and method 
+- [US20090122076](https://www.google.com/patents/US20090122076) Thin-line detection apparatus and method
 
 Published: 2009-05-14
 
@@ -138,7 +138,7 @@ of the pre-determined thin lines, the pixel block may be deemed to describe a th
 apparatus and method may preclude application of an anti-aliasing filter to the substantially
 central pixel of the pixel block in the event it describes a thin line.
 
-- [US20090122068](https://www.google.com/patents/US20090122068) Intelligent configurable graphics bandwidth modulator 
+- [US20090122068](https://www.google.com/patents/US20090122068) Intelligent configurable graphics bandwidth modulator
 
 Published: 2009-05-14
 
@@ -149,7 +149,7 @@ greater than a selected threshold, the graphics system is configured to operate 
 wherein vertex data is rendered immediately upon reception. In the event the rate is less than the
 selected threshold, the graphics system is configured to operate in retained mode, wherein vertex
 data is stored prior to being rendered. The apparatus and method switches between each of the modes
-on-the-fly in a manner that is transparent to the application. 
+on-the-fly in a manner that is transparent to the application.
 
 - [US20090122064](https://www.google.com/patents/US20090122064) Efficient tile-based rasterization
 

@@ -206,7 +206,7 @@ struct compiled_framebuffer_state
     uint32_t SE_SCISSOR_TOP; // fixp
     uint32_t SE_SCISSOR_RIGHT; // fixp
     uint32_t SE_SCISSOR_BOTTOM; // fixp
-    uint32_t TS_MEM_CONFIG; 
+    uint32_t TS_MEM_CONFIG;
     uint32_t TS_DEPTH_CLEAR_VALUE;
     uint32_t TS_DEPTH_STATUS_BASE;
     uint32_t TS_DEPTH_SURFACE_BASE;
@@ -239,7 +239,7 @@ struct compiled_set_index_buffer
 };
 
 /* Compiled linked VS+PS shader state */
-struct compiled_shader_state 
+struct compiled_shader_state
 {
     uint32_t RA_CONTROL;
     uint32_t PA_ATTRIBUTE_ELEMENT_COUNT;
@@ -250,7 +250,7 @@ struct compiled_shader_state
     uint32_t VS_TEMP_REGISTER_CONTROL;
     uint32_t VS_OUTPUT[4];
     uint32_t VS_INPUT[4];
-    uint32_t VS_LOAD_BALANCING; 
+    uint32_t VS_LOAD_BALANCING;
     uint32_t VS_START_PC;
     uint32_t PS_END_PC;
     uint32_t PS_OUTPUT_REG;
@@ -361,7 +361,7 @@ struct etna_3d_state
     uint32_t /*0163C*/ RS_CLEAR_CONTROL;
     uint32_t /*01640*/ RS_FILL_VALUE[4];
 
-    uint32_t /*01654*/ TS_MEM_CONFIG; 
+    uint32_t /*01654*/ TS_MEM_CONFIG;
     uint32_t /*01658*/ TS_COLOR_STATUS_BASE;
     uint32_t /*0165C*/ TS_COLOR_SURFACE_BASE;
     uint32_t /*01660*/ TS_COLOR_CLEAR_VALUE;

@@ -49,8 +49,8 @@ etna_fence(struct pipe_fence_handle *pfence)
  * Create a new fence that will be signalled after GPU completes rendering
  * after the next flush.
  */
-int etna_fence_new(struct pipe_screen *screen, 
-                   struct etna_ctx *ctx, 
+int etna_fence_new(struct pipe_screen *screen,
+                   struct etna_ctx *ctx,
                    struct pipe_fence_handle **fence);
 
 /**

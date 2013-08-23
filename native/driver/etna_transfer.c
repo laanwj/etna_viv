@@ -67,10 +67,10 @@ static void *etna_pipe_transfer_map(struct pipe_context *pipe,
     /* XXX we don't handle PIPE_TRANSFER_FLUSH_EXPLICIT; this flag can be ignored when mapping in-place,
      * but when not in place we need to fire off the copy operation in transfer_flush_region (currently
      * a no-op) instead of unmap. Need to handle this to support ARB_map_buffer_range extension at least.
-     */ 
+     */
     /* XXX we don't take care of current operations on the resource; which can be, at some point in the pipeline
        which is not yet executed:
-      
+
        - bound as surface
        - bound through vertex buffer
        - bound through index buffer
@@ -85,13 +85,13 @@ static void *etna_pipe_transfer_map(struct pipe_context *pipe,
        We also need to know whether the resource is in use to determine if a sync is needed (or just do it
        always, but that comes at the expense of performance).
 
-       A conservative approximation without too much overhead would be to mark all resources that have 
-       been bound at some point as busy. A drawback would be that accessing resources that have 
+       A conservative approximation without too much overhead would be to mark all resources that have
+       been bound at some point as busy. A drawback would be that accessing resources that have
        been bound but are no longer in use for a while still carry a performance penalty. On the other hand,
-       the program could be using PIPE_TRANSFER_DISCARD_WHOLE_RESOURCE or PIPE_TRANSFER_UNSYNCHRONIZED to 
+       the program could be using PIPE_TRANSFER_DISCARD_WHOLE_RESOURCE or PIPE_TRANSFER_UNSYNCHRONIZED to
        avoid this in the first place...
-       
-       A) We use an in-pipe copy engine, and queue the copy operation after unmap so that the copy 
+
+       A) We use an in-pipe copy engine, and queue the copy operation after unmap so that the copy
           will be performed when all current commands have been executed.
           Using the RS is possible, not sure if always efficient. This can also do any kind of tiling for us.
           Only possible when PIPE_TRANSFER_DISCARD_RANGE is set.
@@ -140,7 +140,7 @@ static void *etna_pipe_transfer_map(struct pipe_context *pipe,
                     uint bpe = util_format_get_blocksize(resource_priv->base.format);
                     /* XXX currently only handles multiples of the tile size */
                     void *ptr = res_level->logical + etna_compute_offset(resource_priv->base.format, &ptrans->base.box, res_level->stride, res_level->layer_stride);
-                    etna_texture_untile(ptrans->buffer, ptr, ptrans->base.box.width, ptrans->base.box.height, 
+                    etna_texture_untile(ptrans->buffer, ptr, ptrans->base.box.width, ptrans->base.box.height,
                             ptrans->base.stride, bpe);
                 } else { /* non-tiled or compressed format */
                     util_copy_box(ptrans->buffer,
@@ -162,7 +162,7 @@ static void *etna_pipe_transfer_map(struct pipe_context *pipe,
     *out_transfer = &ptrans->base;
     return ptrans->buffer;
 }
-   
+
 static void etna_pipe_transfer_flush_region(struct pipe_context *pipe,
 				  struct pipe_transfer *transfer_,
 				  const struct pipe_box *box)
@@ -176,7 +176,7 @@ static void etna_pipe_transfer_unmap(struct pipe_context *pipe,
     struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct etna_transfer *ptrans = etna_transfer(transfer_);
 
-    /* XXX 
+    /* XXX
      * When writing to a resource that is already in use, replace the resource with a completely new buffer
      * and free the old one using a fenced free.
      * The most tricky case to implement will be: tiled or supertiled surface, partial write, target not aligned to 4/64
@@ -197,7 +197,7 @@ static void etna_pipe_transfer_unmap(struct pipe_context *pipe,
                     uint bpe = util_format_get_blocksize(resource->base.format);
                     /* XXX currently only handles multiples of the tile size */
                     void *ptr = level->logical + etna_compute_offset(resource->base.format, &ptrans->base.box, level->stride, level->layer_stride);
-                    etna_texture_tile(ptr, ptrans->buffer, ptrans->base.box.width, ptrans->base.box.height, 
+                    etna_texture_tile(ptr, ptrans->buffer, ptrans->base.box.width, ptrans->base.box.height,
                             ptrans->base.stride, bpe);
                 } else { /* non-tiled or compressed format */
                     util_copy_box(level->logical,

@@ -29,7 +29,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 <domain name="VIVS" brief="GPU state">
     <!-- Hardware description fields.
          For access in userspace these are also exposed over the ioctl interface through QUERY_CHIP_IDENTITY.
-     --> 
+     -->
 
     <stripe name="HI" brief="Host Interface">
         <doc>Host interface contains bits to identify the chip, control clock speed,
@@ -162,9 +162,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <doc>New MMU unit. Only exists on more recent hardware.</doc>
         <reg32 offset="0x00180" name="SAFE_ADDRESS" brief="MMU safe address">
             <doc>
-            A 64-byte range starting from this address that will act as a 'safe' zone. 
-            Any address that would cause an exception is routed to this safe zone. 
-            Reads will happen and writes will go to this address, but with a write-enable 
+            A 64-byte range starting from this address that will act as a 'safe' zone.
+            Any address that would cause an exception is routed to this safe zone.
+            Reads will happen and writes will go to this address, but with a write-enable
             of 0. This register can only be programmed once after a reset. Any attempt to write
             to this register after the initial write-after-reset will be ignored.
             </doc>

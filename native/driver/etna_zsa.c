@@ -46,7 +46,7 @@ static void *etna_pipe_create_depth_stencil_alpha_state(struct pipe_context *pip
 
     /* Set operations to KEEP if write mask is 0.
      * When we don't do this, the depth buffer is written for the entire primitive instead of
-     * just where the stencil condition holds (GC600 rev 0x0019, without feature CORRECT_STENCIL). 
+     * just where the stencil condition holds (GC600 rev 0x0019, without feature CORRECT_STENCIL).
      * Not sure if this is a hardware bug or just a strange edge case.
      */
     for(i=0; i<2; ++i)
@@ -60,7 +60,7 @@ static void *etna_pipe_create_depth_stencil_alpha_state(struct pipe_context *pip
     /* Determine whether to enable early z reject. Don't enable it when any of the stencil functions is used. */
     if(dsa.stencil[0].enabled)
     {
-        if(dsa.stencil[0].fail_op != PIPE_STENCIL_OP_KEEP || 
+        if(dsa.stencil[0].fail_op != PIPE_STENCIL_OP_KEEP ||
            dsa.stencil[0].zfail_op != PIPE_STENCIL_OP_KEEP ||
            dsa.stencil[0].zpass_op != PIPE_STENCIL_OP_KEEP)
         {
@@ -68,7 +68,7 @@ static void *etna_pipe_create_depth_stencil_alpha_state(struct pipe_context *pip
         }
         else if(dsa.stencil[1].enabled)
         {
-            if(dsa.stencil[1].fail_op != PIPE_STENCIL_OP_KEEP || 
+            if(dsa.stencil[1].fail_op != PIPE_STENCIL_OP_KEEP ||
                dsa.stencil[1].zfail_op != PIPE_STENCIL_OP_KEEP ||
                dsa.stencil[1].zpass_op != PIPE_STENCIL_OP_KEEP)
             {
@@ -89,7 +89,7 @@ static void *etna_pipe_create_depth_stencil_alpha_state(struct pipe_context *pip
     cs->PE_STENCIL_OP =
             VIVS_PE_STENCIL_OP_FUNC_FRONT(dsa.stencil[0].func) |
             VIVS_PE_STENCIL_OP_FUNC_BACK(dsa.stencil[1].func) |
-            VIVS_PE_STENCIL_OP_FAIL_FRONT(translate_stencil_op(dsa.stencil[0].fail_op)) | 
+            VIVS_PE_STENCIL_OP_FAIL_FRONT(translate_stencil_op(dsa.stencil[0].fail_op)) |
             VIVS_PE_STENCIL_OP_FAIL_BACK(translate_stencil_op(dsa.stencil[1].fail_op)) |
             VIVS_PE_STENCIL_OP_DEPTH_FAIL_FRONT(translate_stencil_op(dsa.stencil[0].zfail_op)) |
             VIVS_PE_STENCIL_OP_DEPTH_FAIL_BACK(translate_stencil_op(dsa.stencil[1].zfail_op)) |
@@ -97,7 +97,7 @@ static void *etna_pipe_create_depth_stencil_alpha_state(struct pipe_context *pip
             VIVS_PE_STENCIL_OP_PASS_BACK(translate_stencil_op(dsa.stencil[1].zpass_op));
     cs->PE_STENCIL_CONFIG =
             translate_stencil_mode(dsa.stencil[0].enabled, dsa.stencil[1].enabled) |
-            VIVS_PE_STENCIL_CONFIG_MASK_FRONT(dsa.stencil[0].valuemask) | 
+            VIVS_PE_STENCIL_CONFIG_MASK_FRONT(dsa.stencil[0].valuemask) |
             VIVS_PE_STENCIL_CONFIG_WRITE_MASK(dsa.stencil[0].writemask);
             /* XXX back masks in VIVS_PE_DEPTH_CONFIG_EXT? */
             /* XXX VIVS_PE_STENCIL_CONFIG_REF_FRONT comes from pipe_stencil_ref */

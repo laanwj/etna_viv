@@ -163,7 +163,7 @@ int main(int argc, char **argv)
     {
         for(int val_idx=0; val_idx<FB_NR_VALUES; ++val_idx)
         {
-            /* -2.0 .. 2.0 to -0x8000..0x7fff 
+            /* -2.0 .. 2.0 to -0x8000..0x7fff
              * (1.14 fixed point with sign bit)
              */
             float val = kernel_in[row_idx][val_idx] * (1<<14);
@@ -192,24 +192,24 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_DE_VPLANE_ADDRESS, 0);
         etna_set_state(ctx, VIVS_DE_VPLANE_STRIDE, 0);
 
-        /* Are these used in VR blit? 
+        /* Are these used in VR blit?
          * Likely, only the source format is.
          */
         etna_set_state(ctx, VIVS_DE_SRC_ROTATION_CONFIG, 0);
-        etna_set_state(ctx, VIVS_DE_SRC_CONFIG, 
+        etna_set_state(ctx, VIVS_DE_SRC_CONFIG,
                 VIVS_DE_SRC_CONFIG_SOURCE_FORMAT(DE_FORMAT_A8R8G8B8) |
                 VIVS_DE_SRC_CONFIG_LOCATION_MEMORY |
                 VIVS_DE_SRC_CONFIG_PE10_SOURCE_FORMAT(DE_FORMAT_A8R8G8B8));
-        etna_set_state(ctx, VIVS_DE_SRC_ORIGIN, 
+        etna_set_state(ctx, VIVS_DE_SRC_ORIGIN,
                 VIVS_DE_SRC_ORIGIN_X(0) |
                 VIVS_DE_SRC_ORIGIN_Y(0));
-        etna_set_state(ctx, VIVS_DE_SRC_SIZE, 
+        etna_set_state(ctx, VIVS_DE_SRC_SIZE,
                 VIVS_DE_SRC_SIZE_X(src_width) |
                 VIVS_DE_SRC_SIZE_Y(src_height)
                 ); // source size is ignored
 
         /* Compute stretch factors */
-        etna_set_state(ctx, VIVS_DE_STRETCH_FACTOR_LOW, 
+        etna_set_state(ctx, VIVS_DE_STRETCH_FACTOR_LOW,
                 VIVS_DE_STRETCH_FACTOR_LOW_X(((src_width - 1) << 16) / (width - 1)));
         etna_set_state(ctx, VIVS_DE_STRETCH_FACTOR_HIGH,
                 VIVS_DE_STRETCH_FACTOR_HIGH_Y(((src_height - 1) << 16) / (height - 1)));
@@ -218,7 +218,7 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_DE_DEST_ADDRESS, bmp->address);
         etna_set_state(ctx, VIVS_DE_DEST_STRIDE, width*4);
         etna_set_state(ctx, VIVS_DE_DEST_ROTATION_CONFIG, 0);
-        etna_set_state(ctx, VIVS_DE_DEST_CONFIG, 
+        etna_set_state(ctx, VIVS_DE_DEST_CONFIG,
                 VIVS_DE_DEST_CONFIG_FORMAT(DE_FORMAT_A8R8G8B8) |
                 VIVS_DE_DEST_CONFIG_COMMAND_HOR_FILTER_BLT |
                 VIVS_DE_DEST_CONFIG_SWIZZLE(DE_SWIZZLE_ARGB) |
@@ -226,15 +226,15 @@ int main(int argc, char **argv)
                 VIVS_DE_DEST_CONFIG_MINOR_TILED_DISABLE
                 // | VIVS_DE_DEST_CONFIG_GDI_STRE_ENABLE
                 );
-        etna_set_state(ctx, VIVS_DE_ROP, 
+        etna_set_state(ctx, VIVS_DE_ROP,
                 VIVS_DE_ROP_ROP_FG(0xcc) | VIVS_DE_ROP_ROP_BG(0xcc) | VIVS_DE_ROP_TYPE_ROP4);
         /* Clipping rectangle (probably not used in VR blit) */
-        etna_set_state(ctx, VIVS_DE_CLIP_TOP_LEFT, 
+        etna_set_state(ctx, VIVS_DE_CLIP_TOP_LEFT,
                 VIVS_DE_CLIP_TOP_LEFT_X(0) |
                 VIVS_DE_CLIP_TOP_LEFT_Y(0)
                 );
-        etna_set_state(ctx, VIVS_DE_CLIP_BOTTOM_RIGHT, 
-                VIVS_DE_CLIP_BOTTOM_RIGHT_X(width) | 
+        etna_set_state(ctx, VIVS_DE_CLIP_BOTTOM_RIGHT,
+                VIVS_DE_CLIP_BOTTOM_RIGHT_X(width) |
                 VIVS_DE_CLIP_BOTTOM_RIGHT_Y(height)
                 );
 
@@ -259,10 +259,10 @@ int main(int argc, char **argv)
         /* Program video rasterizer */
         etna_set_state(ctx, VIVS_DE_VR_CONFIG_EX, 0);
         etna_set_state(ctx, VIVS_DE_VR_SOURCE_IMAGE_LOW,
-                VIVS_DE_VR_SOURCE_IMAGE_LOW_LEFT(0) | 
+                VIVS_DE_VR_SOURCE_IMAGE_LOW_LEFT(0) |
                 VIVS_DE_VR_SOURCE_IMAGE_LOW_TOP(0));
         etna_set_state(ctx, VIVS_DE_VR_SOURCE_IMAGE_HIGH,
-                VIVS_DE_VR_SOURCE_IMAGE_HIGH_RIGHT(src_width) | 
+                VIVS_DE_VR_SOURCE_IMAGE_HIGH_RIGHT(src_width) |
                 VIVS_DE_VR_SOURCE_IMAGE_HIGH_BOTTOM(src_height));
 
         etna_set_state(ctx, VIVS_DE_VR_SOURCE_ORIGIN_LOW,
@@ -271,16 +271,16 @@ int main(int argc, char **argv)
                 VIVS_DE_VR_SOURCE_ORIGIN_HIGH_Y(0));
 
         etna_set_state(ctx, VIVS_DE_VR_TARGET_WINDOW_LOW,
-                VIVS_DE_VR_TARGET_WINDOW_LOW_LEFT(0) | 
+                VIVS_DE_VR_TARGET_WINDOW_LOW_LEFT(0) |
                 VIVS_DE_VR_TARGET_WINDOW_LOW_TOP(0));
         etna_set_state(ctx, VIVS_DE_VR_TARGET_WINDOW_HIGH,
-                VIVS_DE_VR_TARGET_WINDOW_HIGH_RIGHT(width) | 
+                VIVS_DE_VR_TARGET_WINDOW_HIGH_RIGHT(width) |
                 VIVS_DE_VR_TARGET_WINDOW_HIGH_BOTTOM(height));
 
         etna_set_state_multi(ctx, VIVS_DE_FILTER_KERNEL(0), FB_DWORD_COUNT, filter_kernel);
 
         /* Kick off VR */
-        etna_set_state(ctx, VIVS_DE_VR_CONFIG, 
+        etna_set_state(ctx, VIVS_DE_VR_CONFIG,
                 VIVS_DE_VR_CONFIG_START_HORIZONTAL_BLIT);
 
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_PE2D);

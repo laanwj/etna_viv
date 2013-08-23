@@ -3,7 +3,7 @@ Introduction
 
 Project Etnaviv is an open source user-space driver for the Vivante GCxxx series of embedded GPUs.
 
-A Mesa fork with the etnaviv driver can be found in the [laanwj/mesa](https://github.com/laanwj/mesa) repository. 
+A Mesa fork with the etnaviv driver can be found in the [laanwj/mesa](https://github.com/laanwj/mesa) repository.
 At the moment, this driver provides OpenGL ES 1.0 and 2.0 accelerated rendering direct to framebuffer (fbdev).
 This driver has been used to run glquake and d2x and other GLES games so it should be fairly stable.
 There may still be quite a few rendering bugs, specific bug reports are very welcome.
@@ -26,7 +26,7 @@ MIPS-based:
 
 See also [wikipedia](https://en.wikipedia.org/wiki/Vivante_Corporation).
 
-For the Vivante GPUs on many platforms feature bits have been determined, these can be found in 
+For the Vivante GPUs on many platforms feature bits have been determined, these can be found in
 [doc/gpus_comparison.html](http://dev.visucore.com/etna_viv/gpus_comparison.html).
 
 Compatibility
@@ -45,8 +45,8 @@ The 2D demos do work for GC2000 and should work on all other known Vivante chips
 Building
 =========
 
-The build process is made more complicated by the existence of many different kernel drivers, with their subtly 
-different interface (different headers, different offsets for fields, different management of context, and so on). 
+The build process is made more complicated by the existence of many different kernel drivers, with their subtly
+different interface (different headers, different offsets for fields, different management of context, and so on).
 These values for environment variable `GCABI` are supported out of the box:
 
 - `dove`: Marvell Dove, newer drivers (0.8.0.3184)
@@ -87,8 +87,8 @@ very new drivers there is an ioctl call `gcvHAL_VERSION` that returns the major,
 Linux cross compile
 --------------------
 
-For non-Android Linux ARM cross compile, create a script like this (example for CuBox) to set up the build environment. 
-When command stream dumping the egl demos, don't forget to also copy the EGL/GLES2/KDR headers from 
+For non-Android Linux ARM cross compile, create a script like this (example for CuBox) to set up the build environment.
+When command stream dumping the egl demos, don't forget to also copy the EGL/GLES2/KDR headers from
 some place and put them in a directory `include` under the location
 where the script is installed, and get the `libEGL.so` and `libGLESv2.so` from the device into `lib`:
 
@@ -129,7 +129,7 @@ environment variables, for example like this:
     #export GCABI="v4"
     export GCABI="arnova"
 
-To build the egl samples (for command stream interception), you need to copy `libEGL_VIVANTE.so` `libGLESv2_VIVANTE.so` from 
+To build the egl samples (for command stream interception), you need to copy `libEGL_VIVANTE.so` `libGLESv2_VIVANTE.so` from
 the device `/system/lib/egl` to `native/lib/egl`. This is not needed if you just want to build the `replay`, `etna` or `fb`
 tests, which do not rely in any way on the userspace blob.
 
@@ -137,7 +137,7 @@ tests, which do not rely in any way on the userspace blob.
 Contents
 ==========
 
-The repository contains various tools and documentation related to figuring out how to 
+The repository contains various tools and documentation related to figuring out how to
 program Vivante GCxxx GPU cores.
 
 Framebuffer tests
@@ -153,8 +153,8 @@ To exercise the initial-stage driver there are a few framebuffer tests in:
 
     native/fb/
 
-These demos do double-buffered animated rendering of 1000 frames to the framebuffer using 
-the proof-of-concept `etna` rendering and command stream building API. The goal of this API is to provide a Gallium-like 
+These demos do double-buffered animated rendering of 1000 frames to the framebuffer using
+the proof-of-concept `etna` rendering and command stream building API. The goal of this API is to provide a Gallium-like
 low-level interface to the Vivante hardware while abstracting away kernel interface details.
 
 - `companion_cube`: Rotating "weighted companion cube", using array or indexed rendering. Exercised in this demo:
@@ -167,9 +167,9 @@ low-level interface to the Vivante hardware while abstracting away kernel interf
   - Double-buffered rendering to framebuffer
   - MSAA (off / 2X / 4X)
 
-- `mip_cube_state`: Rotating cube with a mipmapped texture loaded from a `dds` file provided on the command line. One 
-  of the example textures have a different color and number on each mipmap level, to explicitly show interpolation 
-  between mipmap levels as the surface 
+- `mip_cube_state`: Rotating cube with a mipmapped texture loaded from a `dds` file provided on the command line. One
+  of the example textures have a different color and number on each mipmap level, to explicitly show interpolation
+  between mipmap levels as the surface
   goes nearer or farther from the camera.
 
   - Mipmapping
@@ -199,7 +199,7 @@ libetnaviv
 ------------
 
 Low-level command buffer handling library and register definition headers.
-This library completely wraps the kernel interface, to isolate clients (such as Mesa) 
+This library completely wraps the kernel interface, to isolate clients (such as Mesa)
 from the madness of kernel-specific headers and defines.
 
 - ioctl (kernel interface) wrapping
@@ -232,18 +232,18 @@ Commands:
 - gpu-dis
 
   Disassemble the currently bound fragment and vertex shaders.
-    
+
 - gpu-trace
 
-  Trace and dump all submitted command buffers. This is similar to dumping to FDR 
-  (using one of the hook mechanisms) and then running `dump_cmdstream`, however this 
+  Trace and dump all submitted command buffers. This is similar to dumping to FDR
+  (using one of the hook mechanisms) and then running `dump_cmdstream`, however this
   works on the fly.
 
   Along with each command the physical address is printed, this should come in handy for
   searching back the physical address that the GPU is stuck on
   according to the kernel.
 
-   Usage: 
+   Usage:
       gpu-trace <on|off>      Enable/disable cmdbuffer trace
       gpu-trace stop <on|off> Enable/disable stopping on every commit
       gpu-trace output stdout Set tracing output to stdout (default)
@@ -252,7 +252,7 @@ Commands:
 These commands automatically find the gallium pipe and screen from the current Mesa
 context.
 
-State map 
+State map
 ----------
 
 Map of documentation for known render state and registers. Mapped in rules-ng-ng (envytools) format:
@@ -268,10 +268,10 @@ Other scattered bits of documentation about the hardware and ISA can be found in
 ISA documentation
 ------------------
 
-Vivante has a unified, fixed-size, predictable instruction format with explicit inputs 
-and outputs. This does simplify code generation, compared to a weird flow 
+Vivante has a unified, fixed-size, predictable instruction format with explicit inputs
+and outputs. This does simplify code generation, compared to a weird flow
 pipe system like the Mali 200/400.
-Shader (both vertex and fragment) instruction set description in rules-ng-ng format can be found here: 
+Shader (both vertex and fragment) instruction set description in rules-ng-ng format can be found here:
 
     rnndb/isa.xml
 
@@ -295,9 +295,9 @@ There is also an assembler, which accepts the same syntax that is produced by th
 Command stream format
 -----------------------
 
-Like other modern GPUs, the primary means of programming the chip is through a command stream 
+Like other modern GPUs, the primary means of programming the chip is through a command stream
 interpreted by a DMA engine. This "Front End" takes care of distributing state changes through
-the individual modules of the GPU, kicking off primitive rendering, synchronization, 
+the individual modules of the GPU, kicking off primitive rendering, synchronization,
 and also supports basic flow control (branch, call, return).
 
 Most of the relevant bits of this command stream have been deciphered.
@@ -309,17 +309,17 @@ The command stream format represented in rules-ng-ng XML format can be found her
 Command stream interception
 ----------------------------
 
-A significant part of reverse engineering was done by intercepting command streams while running GL simple demos. 
+A significant part of reverse engineering was done by intercepting command streams while running GL simple demos.
 `viv_hook` is a library to intercept and log the traffic between `libGAL` (the Vivante user space blob) and the kernel
 driver / hardware.
-    
+
 This library uses ELF hooks to intercept only system calls such as `ioctl` and `mmap` coming from the driver, not from
 other parts of the application, unlike more crude hacks using `LD_PRELOAD`.
 
-At the beginning of the program call `the_hook`, at the end of the program call `end_hook` to finalize 
+At the beginning of the program call `the_hook`, at the end of the program call `end_hook` to finalize
 and flush buffers. This should even work for native android applications that fork from the zygote.
 
-The raw binary structures interchanged with the kernel are written to disk in a `.fdr` file, along 
+The raw binary structures interchanged with the kernel are written to disk in a `.fdr` file, along
 with updates to video memory, to be parsed by the accompanying command stream dumper and other tools.
 
 Command stream dumper
@@ -342,7 +342,7 @@ Extract areas of video memory, images, and command buffers at certain points of 
 Replay tests
 --------------
 
-The replay tests replay the command stream and ioctl commands of the EGL demos, to get the same output. 
+The replay tests replay the command stream and ioctl commands of the EGL demos, to get the same output.
 
 They can be found in:
 
@@ -369,7 +369,7 @@ The headers and implementation files for the Vivante GPL kernel drivers are also
 
     kernel_drivers/
 
-Four GPL kernel driver versions, `gc600_driver_dove`, `v2` and `v4` and `imx6`, are provided. They are useful in understanding the kernel 
+Four GPL kernel driver versions, `gc600_driver_dove`, `v2` and `v4` and `imx6`, are provided. They are useful in understanding the kernel
 interface, and the hardware at a basic level.
 
 As open source drivers for the kernel are available, there are currently no plans to write a DRM/DRI kernel driver for Vivante.
@@ -380,8 +380,8 @@ Envytools fork
 ---------------
 
 [Envytools](https://github.com/pathscale/envytools) is a set of tools aimed at developers of the open source
-NVIDIA driver Nouveau, however some parts such as rnndb can be applied more generally. The repository 
-contains a slightly modified subset of envytools for header generation from 
+NVIDIA driver Nouveau, however some parts such as rnndb can be applied more generally. The repository
+contains a slightly modified subset of envytools for header generation from
 the state / command stream / ISA rnndb files, so they can be used from the C code (etna), build with
 
     cd envytools
@@ -417,4 +417,4 @@ Thanks
 
 - Luc Verhaegen (libv) of Lima project (basic framework, general idea)
 - Nouveau developers (rnndb, envytools)
- 
+

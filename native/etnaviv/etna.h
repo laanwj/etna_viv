@@ -21,7 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/* Buffer building and submission, abstracts away specific kernel interface 
+/* Buffer building and submission, abstracts away specific kernel interface
  * as much as practically possible.
  */
 #ifndef H_ETNA
@@ -79,7 +79,7 @@ enum etna_status {
 };
 
 /* HW pipes.
- * Used by GPU to tell front-end what back-end modules to synchronize operations with. 
+ * Used by GPU to tell front-end what back-end modules to synchronize operations with.
  */
 enum etna_pipe {
     ETNA_PIPE_3D = 0,
@@ -96,7 +96,7 @@ struct etna_context_info {
     void *logical;
 };
 
-typedef int (*etna_context_snapshot_cb_t)(void *data, struct etna_ctx *ctx, 
+typedef int (*etna_context_snapshot_cb_t)(void *data, struct etna_ctx *ctx,
         enum etna_pipe *initial_pipe, enum etna_pipe *final_pipe);
 
 struct etna_ctx {
@@ -250,9 +250,9 @@ int etna_set_context_cb(struct etna_ctx *ctx, etna_context_snapshot_cb_t snapsho
 /* print command buffer for debugging */
 void etna_dump_cmd_buffer(struct etna_ctx *ctx);
 
-/** 
+/**
  * Direct state setting functions; these can be used for convenience. When absolute performance
- * is required while updating big blocks of state at once, it is recommended to use the 
+ * is required while updating big blocks of state at once, it is recommended to use the
  * ETNA_EMIT_* macros and etna_reserve directly.
  */
 static inline void etna_set_state(struct etna_ctx *cmdbuf, uint32_t address, uint32_t value)

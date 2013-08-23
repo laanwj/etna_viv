@@ -149,7 +149,7 @@ typedef uint64_t viv_context_t;
 typedef uint64_t viv_usermem_t;
 
 /* kernel-interface independent chip specs structure, this is much easier to use
- * than checking GCABI defines all the time. 
+ * than checking GCABI defines all the time.
  */
 struct viv_specs {
     uint32_t chip_model;
@@ -177,7 +177,7 @@ struct viv_kernel_driver_version {
 struct viv_conn {
     int fd;
     enum viv_hw_type hw_type;
-    
+
     viv_addr_t base_address;
     void *mem;
     viv_addr_t mem_base;
@@ -256,7 +256,7 @@ int viv_user_signal_create(struct viv_conn *conn, int manualReset, int *id_out);
  */
 int viv_user_signal_signal(struct viv_conn *conn, int sig_id, int state);
 
-/** Wait for signal. 
+/** Wait for signal.
  * @param[in] wait Provide time to wait in milliseconds, or VIV_WAIT_INDEFINITE.
  */
 int viv_user_signal_wait(struct viv_conn *conn, int sig_id, int wait);
@@ -272,9 +272,9 @@ void viv_show_chip_info(struct viv_conn *conn);
  */
 int viv_reset(struct viv_conn *conn);
 
-/** Convenience macro to probe features from state.xml.h: 
- * VIV_FEATURE(chipFeatures, FAST_CLEAR) 
- * VIV_FEATURE(chipMinorFeatures1, AUTO_DISABLE) 
+/** Convenience macro to probe features from state.xml.h:
+ * VIV_FEATURE(chipFeatures, FAST_CLEAR)
+ * VIV_FEATURE(chipMinorFeatures1, AUTO_DISABLE)
  */
 #define VIV_FEATURE(conn, word, feature) ((conn->chip.chip_features[viv_ ## word] & (word ## _ ## feature))!=0)
 

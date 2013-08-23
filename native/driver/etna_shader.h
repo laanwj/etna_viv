@@ -30,7 +30,7 @@ struct etna_shader_object;
 struct compiled_shader_state;
 
 void etna_link_shaders(struct pipe_context *pipe,
-                              struct compiled_shader_state *cs, 
+                              struct compiled_shader_state *cs,
                               const struct etna_shader_object *vs, const struct etna_shader_object *fs);
 
 void etna_pipe_shader_init(struct pipe_context *pipe);

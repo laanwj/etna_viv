@@ -31,14 +31,14 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
  an instruction using the bitfields and instructions defined in this file.
  -->
 <enum name="INST_OPCODE" brief="Main opcode table">
-    <!-- TODO: match against TGSI instructions 
-         http://people.freedesktop.org/~csimpson/gallium-docs/tgsi.html 
+    <!-- TODO: match against TGSI instructions
+         http://people.freedesktop.org/~csimpson/gallium-docs/tgsi.html
 
          Overall the ISA seems to be based on DirectX shader assembly. This is pretty obvious in retrospect
          as Vivante started by marketing DirectX-compatible GPUs for playing desktop PC games.
 
          Restrictions:
-         - only one uniform can be read per instruction, however this single uniform can be used in 
+         - only one uniform can be read per instruction, however this single uniform can be used in
            multiple arguments.
             - when violating this restriction it will be as if the uniform in the last source register
               is broadcasted to all arguments that use an uniform.
@@ -88,7 +88,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <doc>
             dst := src0.x * src1.x + src0.y * src1.y + src0.z * src1.z
 
-            Computes the component-wise dot product of the first three components between src0 and src1 and 
+            Computes the component-wise dot product of the first three components between src0 and src1 and
             broadcasts the results to all destination components in temporary register dst.
         </doc>
     </value>
@@ -96,7 +96,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <doc>
             dst := src0.x * src1.x + src0.y * src1.y + src0.z * src1.z + src0.w * src1.w
 
-            Computes the component-wise dot product between src0 and src1 and broadcasts the results to all destination 
+            Computes the component-wise dot product between src0 and src1 and broadcasts the results to all destination
             components in temporary register dst.
         </doc>
     </value>
@@ -129,7 +129,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <doc>
             dst := 1.0 / sqrt(src2)
 
-            Computes the reciprocal of the square root of src2, and puts the result into 
+            Computes the reciprocal of the square root of src2, and puts the result into
             temporary register dst.
         </doc>
     </value>
@@ -153,7 +153,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             This operation is performed per-component. It is used to implement MIN(a,b) and MAX(a,b)
             in the following way:
             - MIN(a,b): SELECT.GT dst, a, b, a   (b > a ? a : b)
-            - MAX(a,b): SELECT.LT dst, a, b, a   (b &lt; a ? a : b) 
+            - MAX(a,b): SELECT.LT dst, a, b, a   (b &lt; a ? a : b)
         </doc>
     </value>
     <value value="0x10" name="SET">
@@ -167,7 +167,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <doc>
             dst := exp2(src2.x)
 
-            Sets temporary register dst to the 2-exponent of the x component of src2). 
+            Sets temporary register dst to the 2-exponent of the x component of src2).
             This is a scalar operation, the result is broadcasted over all active destination components.
         </doc>
     </value>
@@ -175,7 +175,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <doc>
             dst := log2(src2.x)
 
-            Sets temporary register dst to the 2-log of the x component of src2). 
+            Sets temporary register dst to the 2-log of the x component of src2).
             This is a scalar operation, the result is broadcasted over all active destination components.
         </doc>
     </value>
@@ -183,8 +183,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <doc>
             dst := frc(src2)
 
-            Sets temporary register dst to the fractional portion of src2 for positive values. For negative values, 
-            the returned value will be 1.0 - the fractional portion. For example, 1.5 will become 0.5, and -0.1 
+            Sets temporary register dst to the fractional portion of src2 for positive values. For negative values,
+            the returned value will be 1.0 - the fractional portion. For example, 1.5 will become 0.5, and -0.1
             will be turned into 0.9.
         </doc>
     </value>
@@ -202,7 +202,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <doc>
             Discards (kills) the current fragment. Can only be used in PS.
 
-            No input or output arguments. 
+            No input or output arguments.
 
             XXX figure out if the COND bits are used. It appears not, as the blob generates BRANCH.XX based flow
             control around it.
@@ -234,7 +234,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <doc>
             dst := sin(src2 * (PI/2))
 
-            Computes the sine of src2 and puts the result in temporary register dst. 
+            Computes the sine of src2 and puts the result in temporary register dst.
 
             The period of the sine is 4 and not 2 PI, thus to get normal behavior the instruction
             should be prefixed by a division by PI/2.
@@ -245,7 +245,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             dst := cos(src2 * (PI/2))
 
             Computes the cosine of src2 and puts the result in temporary register dst.
-            
+
             The period of the cosine is 4 and not 2 PI, thus to get normal behavior the instruction
             should be prefixed by a division by PI/2.
         </doc>
@@ -253,7 +253,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <value value="0x25" name="FLOOR" brief="Largest integral value not greater than the argument"> <!-- HAS_SIGN_FLOOR_CEIL -->
         <doc>
             dst := floor(src2)
-            
+
             Computes the largest integral value not greater than the argument, and puts the result in temporary
             register dst.
         </doc>
@@ -261,7 +261,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <value value="0x26" name="CEIL" brief="Smallest integral value not less than the argument"> <!-- HAS_SIGN_FLOOR_CEIL -->
         <doc>
             dst := ceil(src2)
-            
+
             Computes the smallest integral value not less than the argument, and puts the result in temporary
             register dst.
         </doc>
@@ -398,7 +398,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <bitfield high="2" low="0" name="SRC1_RGROUP" type="INST_RGROUP" brief="Source operand 1 register group"/>
     <!-- bits 7..21: instruction address, effectively takes the place of src2 operand -->
     <bitfield high="21" low="7" name="SRC2_IMM" brief="Immediate (address) operand"/>
-    <!-- operand 2 --> 
+    <!-- operand 2 -->
     <bitfield high="3" low="3" name="SRC2_USE" brief="Source operand 2 used"/>
     <bitfield high="12" low="4" name="SRC2_REG" brief="Source operand 2 register"/>
     <bitfield high="13" low="13" name="UNK3_13"/>

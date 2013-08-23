@@ -228,7 +228,7 @@ static void assign_temporaries_to_native(struct etna_compile_data *cd, struct et
     }
 }
 
-/* assign inputs and outputs to temporaries 
+/* assign inputs and outputs to temporaries
  * Gallium assumes that the hardware has separate registers for taking input and output,
  * however Vivante GPUs use temporaries both for passing in inputs and passing back outputs.
  * Try to re-use temporary registers where possible.
@@ -240,10 +240,10 @@ static void assign_inouts_to_temporaries(struct etna_compile_data *cd, uint file
     int temp_ptr = 0, num_temps;
     struct sort_rec inout_order[ETNA_MAX_TEMPS];
     struct sort_rec temps_order[ETNA_MAX_TEMPS];
-    num_inouts = sort_registers(inout_order, 
+    num_inouts = sort_registers(inout_order,
             cd->file[file], cd->file_size[file],
             mode_inputs ? LAST_USE_ASC : FIRST_USE_ASC);
-    num_temps = sort_registers(temps_order, 
+    num_temps = sort_registers(temps_order,
             cd->file[TGSI_FILE_TEMPORARY], cd->file_size[TGSI_FILE_TEMPORARY],
             mode_inputs ? FIRST_USE_ASC : LAST_USE_ASC);
 
@@ -278,7 +278,7 @@ static void assign_inouts_to_temporaries(struct etna_compile_data *cd, uint file
     }
 }
 
-/* Allocate an immediate with a certain value and return the index. If 
+/* Allocate an immediate with a certain value and return the index. If
  * there is already an immediate with that value, return that.
  */
 static struct etna_inst_src alloc_imm_u32(struct etna_compile_data *cd, uint32_t value)
@@ -334,7 +334,7 @@ static void etna_compile_parse_declarations(struct etna_compile_data *cd, const 
             decl = &ctx.FullToken.FullDeclaration;
             cd->file_size[decl->Declaration.File] = MAX2(cd->file_size[decl->Declaration.File], decl->Range.Last+1);
             break;
-        case TGSI_TOKEN_TYPE_IMMEDIATE: /* immediates are handled differently from other files; they are not declared 
+        case TGSI_TOKEN_TYPE_IMMEDIATE: /* immediates are handled differently from other files; they are not declared
                                            explicitly, and always add four components */
             imm = &ctx.FullToken.FullImmediate;
             assert(cd->imm_size <= (ETNA_MAX_IMM-4));
@@ -383,7 +383,7 @@ static void etna_compile_pass_check_usage(struct etna_compile_data *cd, const st
     while(!tgsi_parse_end_of_tokens(&ctx))
     {
         tgsi_parse_token(&ctx);
-        /* find out max register #s used 
+        /* find out max register #s used
          * for every register mark first and last instruction id where it's used
          * this allows finding slots that can be used as input and output registers
          *
@@ -449,7 +449,7 @@ static void assign_special_inputs(struct etna_compile_data *cd)
     if(cd->processor == TGSI_PROCESSOR_FRAGMENT)
     {
         /* never assign t0; writing to it causes fragment to be discarded? */
-        cd->next_free_native = 1; 
+        cd->next_free_native = 1;
         /* hardwire TGSI_SEMANTIC_POSITION (input and output) to t0 */
         for(int idx=0; idx<cd->total_decls; ++idx)
         {
@@ -464,12 +464,12 @@ static void assign_special_inputs(struct etna_compile_data *cd)
     }
 }
 
-/* Pass -- optimize outputs 
+/* Pass -- optimize outputs
  * Mesa tends to generate code like this at the end if their shaders
  *   MOV OUT[1], TEMP[2]
  *   MOV OUT[0], TEMP[0]
  *   MOV OUT[2], TEMP[1]
- * Recognize if 
+ * Recognize if
  * a) there is only a single assignment to an output register and
  * b) the temporary is not used after that
  * Also recognize direct assignment of IN to OUT (passthrough)
@@ -493,7 +493,7 @@ static void etna_compile_pass_optimize_outputs(struct etna_compile_data *cd, con
             inst = &ctx.FullToken.FullInstruction;
             switch(inst->Instruction.Opcode)
             {
-            case TGSI_OPCODE_MOV: 
+            case TGSI_OPCODE_MOV:
                 if(inst->Dst[0].Register.File == TGSI_FILE_OUTPUT &&
                    inst->Src[0].Register.File == TGSI_FILE_TEMPORARY)
                 {
@@ -509,7 +509,7 @@ static void etna_compile_pass_optimize_outputs(struct etna_compile_data *cd, con
                         cd->dead_inst[inst_idx] = true;
                     }
                 }
-                /* direct assignment of input to output -- 
+                /* direct assignment of input to output --
                  * allocate a new register, and associate both input and output to it */
                 if(inst->Dst[0].Register.File == TGSI_FILE_OUTPUT &&
                    inst->Src[0].Register.File == TGSI_FILE_INPUT)
@@ -517,7 +517,7 @@ static void etna_compile_pass_optimize_outputs(struct etna_compile_data *cd, con
                     uint out_idx = inst->Dst[0].Register.Index;
                     uint in_idx = inst->Src[0].Register.Index;
 
-                    cd->file[TGSI_FILE_OUTPUT][out_idx].native = cd->file[TGSI_FILE_INPUT][in_idx].native = 
+                    cd->file[TGSI_FILE_OUTPUT][out_idx].native = cd->file[TGSI_FILE_INPUT][in_idx].native =
                         alloc_new_native_reg(cd);
                     /* mark this MOV instruction as a no-op */
                     cd->dead_inst[inst_idx] = true;
@@ -587,7 +587,7 @@ static struct etna_inst_src convert_src(struct etna_compile_data *cd, const stru
     return rv;
 }
 
-/* convert destination to source operand (for operation in place) 
+/* convert destination to source operand (for operation in place)
  * i.e,
  *    MUL dst0.x__w, src0.xyzw, 2/PI
  *    SIN dst0.x__w, dst0.xyzw
@@ -829,7 +829,7 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         .src[1] = convert_src(cd, &inst->Src[1], INST_SWIZ_IDENTITY),
                         });
                 } break;
-            case TGSI_OPCODE_MAD: 
+            case TGSI_OPCODE_MAD:
                 emit_inst(cd, &(struct etna_inst) {
                         .opcode = INST_OPCODE_MAD,
                         .sat = sat,
@@ -860,9 +860,9 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         .dst = convert_dst(cd, &inst->Dst[0]),
                         .src[2] = convert_src(cd, &inst->Src[0], INST_SWIZ_IDENTITY),
                         });
-                break; 
+                break;
             case TGSI_OPCODE_DP2A: assert(0); break;
-            case TGSI_OPCODE_FRC: 
+            case TGSI_OPCODE_FRC:
                 emit_inst(cd, &(struct etna_inst) {
                         .opcode = INST_OPCODE_FRC,
                         .sat = sat,
@@ -924,7 +924,7 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         });
                 break;
             case TGSI_OPCODE_RCC: assert(0); break;
-            case TGSI_OPCODE_DPH: assert(0); break; /* src0.x * src1.x + src0.y * src1.y + src0.z * src1.z + src1.w */ 
+            case TGSI_OPCODE_DPH: assert(0); break; /* src0.x * src1.x + src0.y * src1.y + src0.z * src1.z + src1.w */
             case TGSI_OPCODE_COS: /* fall through */
             case TGSI_OPCODE_SIN:
                 if(cd->specs->has_sin_cos_sqrt)
@@ -1202,7 +1202,7 @@ static struct etna_reg_desc *find_decl_by_semantic(struct etna_compile_data *cd,
     return NULL; /* not found */
 }
 
-/** Add ADD and MUL instruction to bring Z/W to 0..1 if -1..1 if needed: 
+/** Add ADD and MUL instruction to bring Z/W to 0..1 if -1..1 if needed:
  * - this is a vertex shader
  * - and this is an older GPU
  */
@@ -1269,8 +1269,8 @@ static void etna_compile_add_nop_if_needed(struct etna_compile_data *cd)
 
 /* Allocate CONST and IMM to native ETNA_RGROUP_UNIFORM(x).
  * CONST must be consecutive as const buffers are supposed to be consecutive, and before IMM, as this is
- * more convenient because is possible for the compilation process itself to generate extra 
- * immediates for constants such as pi, one, zero. 
+ * more convenient because is possible for the compilation process itself to generate extra
+ * immediates for constants such as pi, one, zero.
  */
 static void assign_constants_and_immediates(struct etna_compile_data *cd)
 {
@@ -1296,7 +1296,7 @@ static void assign_constants_and_immediates(struct etna_compile_data *cd)
 static void assign_texture_units(struct etna_compile_data *cd)
 {
     uint tex_base = 0;
-    if(cd->processor == TGSI_PROCESSOR_VERTEX) 
+    if(cd->processor == TGSI_PROCESSOR_VERTEX)
     {
         tex_base = cd->specs->vertex_sampler_offset;
     }
@@ -1366,7 +1366,7 @@ static void permute_ps_inputs(struct etna_compile_data *cd)
                 .valid = 1,
                 .rgroup = INST_RGROUP_TEMP,
                 .id = input_id
-            }, cd->file[TGSI_FILE_INPUT][idx].native); 
+            }, cd->file[TGSI_FILE_INPUT][idx].native);
     }
     cd->num_varyings = native_idx-1;
     if(native_idx > cd->next_free_native)
@@ -1489,7 +1489,7 @@ static void fill_in_vs_outputs(struct etna_shader_object *sobj, struct etna_comp
      * in the unified shader architecture. More precisely, it is determined from the number of VS outputs, as well as chip-specific
      * vertex output buffer size, vertex cache size, and the number of shader cores.
      *
-     * XXX this is a conservative estimate, the "optimal" value is only known for sure at link time because some 
+     * XXX this is a conservative estimate, the "optimal" value is only known for sure at link time because some
      * outputs may be unused and thus unmapped. Then again, in the general use case with GLSL the vertex and fragment
      * shaders are linked already before submitting to Gallium, thus all outputs are used.
      */
@@ -1505,7 +1505,7 @@ static void fill_in_vs_outputs(struct etna_shader_object *sobj, struct etna_comp
 
 static bool etna_compile_check_limits(struct etna_compile_data *cd)
 {
-    int max_uniforms = (cd->processor == TGSI_PROCESSOR_VERTEX) ? 
+    int max_uniforms = (cd->processor == TGSI_PROCESSOR_VERTEX) ?
                         cd->specs->max_vs_uniforms :
                         cd->specs->max_ps_uniforms;
     if(cd->inst_ptr > cd->specs->max_instructions)
@@ -1541,7 +1541,7 @@ int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct
     cd->specs = specs;
 
     /* Build a map from gallium register to native registers for files
-     * CONST, SAMP, IMM, OUT, IN, TEMP. 
+     * CONST, SAMP, IMM, OUT, IN, TEMP.
      * SAMP will map as-is for fragment shaders, there will be a +8 offset for vertex shaders.
      */
     /* Pass one -- check register file declarations and immediates */
@@ -1561,7 +1561,7 @@ int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct
     etna_compile_pass_optimize_outputs(cd, tokens);
 
     /* XXX assign special inputs: gl_FrontFacing (VARYING_SLOT_FACE)
-     *     this is part of RGROUP_INTERNAL 
+     *     this is part of RGROUP_INTERNAL
      */
 
     /* assign inputs: last usage of input should be <= first usage of temp */
@@ -1585,9 +1585,9 @@ int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct
     assign_inouts_to_temporaries(cd, TGSI_FILE_INPUT);
 
     /* assign outputs: first usage of output should be >= last usage of temp */
-    /*   potential optimization case: 
+    /*   potential optimization case:
      *      if single MOV OUT[x], TEMP[y] (with full write mask, or at least writing all components that are used in
-     *        the shader) after which temp y is no longer used temp[y] can be used as output register as-is 
+     *        the shader) after which temp y is no longer used temp[y] can be used as output register as-is
      *
      *   potential problem: instruction with multiple outputs of which one is the temp and the other is the output;
      *      however, as the temp is not used after this, how would this make sense? could just discard the output value
@@ -1602,27 +1602,27 @@ int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct
      *       advance temporary pointer
      */
     assign_inouts_to_temporaries(cd, TGSI_FILE_OUTPUT);
-    
+
     assign_constants_and_immediates(cd);
     assign_texture_units(cd);
-    
+
     /* list declarations */
     for(int x=0; x<cd->total_decls; ++x)
     {
         DBG_F(ETNA_COMPILER_MSGS, "%i: %s,%d active=%i first_use=%i last_use=%i native=%i usage_mask=%x has_semantic=%i", x, tgsi_file_name(cd->decl[x].file), cd->decl[x].idx,
                 cd->decl[x].active,
                 cd->decl[x].first_use, cd->decl[x].last_use, cd->decl[x].native.valid?cd->decl[x].native.id:-1,
-                cd->decl[x].usage_mask, 
+                cd->decl[x].usage_mask,
                 cd->decl[x].has_semantic);
         if(cd->decl[x].has_semantic)
             DBG_F(ETNA_COMPILER_MSGS, " semantic_name=%s semantic_idx=%i",
                     tgsi_semantic_names[cd->decl[x].semantic.Name], cd->decl[x].semantic.Index);
     }
     /* XXX for PS we need to permute so that inputs are always in temporary 0..N-1.
-     * There is no "switchboard" for varyings (AFAIK!). The output color, however, can be routed 
+     * There is no "switchboard" for varyings (AFAIK!). The output color, however, can be routed
      * from an arbitrary temporary.
      */
-    if(cd->processor == TGSI_PROCESSOR_FRAGMENT) 
+    if(cd->processor == TGSI_PROCESSOR_FRAGMENT)
     {
         permute_ps_inputs(cd);
     }
@@ -1633,7 +1633,7 @@ int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct
         DBG_F(ETNA_COMPILER_MSGS, "%i: %s,%d active=%i first_use=%i last_use=%i native=%i usage_mask=%x has_semantic=%i", x, tgsi_file_name(cd->decl[x].file), cd->decl[x].idx,
                 cd->decl[x].active,
                 cd->decl[x].first_use, cd->decl[x].last_use, cd->decl[x].native.valid?cd->decl[x].native.id:-1,
-                cd->decl[x].usage_mask, 
+                cd->decl[x].usage_mask,
                 cd->decl[x].has_semantic);
         if(cd->decl[x].has_semantic)
             DBG_F(ETNA_COMPILER_MSGS, " semantic_name=%s semantic_idx=%i",
@@ -1700,22 +1700,22 @@ void etna_dump_shader_object(const struct etna_shader_object *sobj)
     printf("immediates:\n");
     for(int idx=0; idx<sobj->imm_size; ++idx)
     {
-        printf(" [%i].%s = %f (0x%08x)\n", (idx+sobj->imm_base)/4, tgsi_swizzle_names[idx%4], 
+        printf(" [%i].%s = %f (0x%08x)\n", (idx+sobj->imm_base)/4, tgsi_swizzle_names[idx%4],
                 *((float*)&sobj->imm_data[idx]), sobj->imm_data[idx]);
     }
     printf("inputs:\n");
     for(int idx=0; idx<sobj->num_inputs; ++idx)
     {
-        printf(" [%i] name=%s index=%i pa=%08x comps=%i\n", 
-                sobj->inputs[idx].reg, 
+        printf(" [%i] name=%s index=%i pa=%08x comps=%i\n",
+                sobj->inputs[idx].reg,
                 tgsi_semantic_names[sobj->inputs[idx].semantic.Name], sobj->inputs[idx].semantic.Index,
                 sobj->inputs[idx].pa_attributes, sobj->inputs[idx].num_components);
     }
     printf("outputs:\n");
     for(int idx=0; idx<sobj->num_outputs; ++idx)
     {
-        printf(" [%i] name=%s index=%i pa=%08x comps=%i\n", 
-                sobj->outputs[idx].reg, 
+        printf(" [%i] name=%s index=%i pa=%08x comps=%i\n",
+                sobj->outputs[idx].reg,
                 tgsi_semantic_names[sobj->outputs[idx].semantic.Name], sobj->outputs[idx].semantic.Index,
                 sobj->outputs[idx].pa_attributes, sobj->outputs[idx].num_components);
     }

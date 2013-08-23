@@ -20,14 +20,14 @@ along with the values on a RK2918 device:
 
 Most important to get right are registerMemSize, registerMemBase and irqLine as these allow the driver to find and
 communicate with the GPU hardware. They depend on the board, not on the GPU. For example, on a CuBox these settings are:
-    
+
     irqLine         42
     registerMemBase 0xf1840000
     contiguousBase  0x08000000
 
 The `dove` (cubox) driver also has a `gpu_frequency` parameter that sets the AXICLK/GCCLK clock at startup,
 if compiled with `ENABLE_GPU_CLOCK_BY_DRIVER`. Some devices may need this, although not the CuBox itself (it is disabled in the makefile).
-In that case your GPU will have an entry `GC` in `/proc/clocks`. 
+In that case your GPU will have an entry `GC` in `/proc/clocks`.
 
 On a Freescale i.MX6 (GK802) device the parameters are:
 
@@ -44,7 +44,7 @@ On a Freescale i.MX6 (GK802) device the parameters are:
     contiguousSize    0x0c000000  (192 MB)
     coreClock         156000000
     signal            48
-    baseAddress       0 
+    baseAddress       0
 
 Diagnostics
 ==============
@@ -173,9 +173,9 @@ At startup, the application connects to galcore device using `open` with the dev
 - `/dev/galcore`, or
 - `/dev/graphics/galcore`
 
-After connecting to the device the entire chunk of contiguous memory, after requesting its address and size, 
+After connecting to the device the entire chunk of contiguous memory, after requesting its address and size,
 is mapped into user space using `mmap`. The kernel will return addresses in this range when the user space driver allocates
-contiguous (unified) memory used for communication with the GPU. 
+contiguous (unified) memory used for communication with the GPU.
 
 Ioctl
 -------
@@ -189,7 +189,7 @@ Communication with the kernel driver happens through ioctl calls on the resultin
 `IOCTL_GCHAL_INTERFACE` is the only one of these that is actually used by the userspace blob. This ioctl is passed one argument
 which is a pointer to the following structure:
 
-    typedef struct 
+    typedef struct
     {
         void *in_buf;
         uint32_t in_buf_size;
@@ -197,28 +197,28 @@ which is a pointer to the following structure:
         uint32_t out_buf_size;
     } vivante_ioctl_data_t;
 
-When used by the blob, `in_buf` and `out_buf` point to the same memory address: a `gcsHAL_INTERFACE` structure that is 
+When used by the blob, `in_buf` and `out_buf` point to the same memory address: a `gcsHAL_INTERFACE` structure that is
 used both for input and output arguments.
 
 Command structure
 ------------------
-The `gcsHAL_INTERFACE` (defined in `gc_hal_driver`) is the structure used by the driver to communicate with the 
-kernel. It can be seen as a communication packet with a command opcode and an union with parameters. 
+The `gcsHAL_INTERFACE` (defined in `gc_hal_driver`) is the structure used by the driver to communicate with the
+kernel. It can be seen as a communication packet with a command opcode and an union with parameters.
 Depending on the `command` a different field of this union is used. The same structure is used both for input and output
-arguments. 
+arguments.
 
-For example, the command `gcvHAL_ALLOCATE_LINEAR_VIDEO_MEMORY` (I will leave off the `gcvHAL_` from now on) 
-uses the fields in `interface->u.AllocateLinearVideoMemory` to pass in the number of bytes to allocate, but 
-also to pass out the number of bytes actually allocated. 
+For example, the command `gcvHAL_ALLOCATE_LINEAR_VIDEO_MEMORY` (I will leave off the `gcvHAL_` from now on)
+uses the fields in `interface->u.AllocateLinearVideoMemory` to pass in the number of bytes to allocate, but
+also to pass out the number of bytes actually allocated.
 
-What is curious about the ioctl protocol is that the communication structures contains fields that are not 
-used by the kernel at all. There is no good reason why these values would need 
+What is curious about the ioctl protocol is that the communication structures contains fields that are not
+used by the kernel at all. There is no good reason why these values would need
 to be present in kernel-facing structures. The line is blurry sometimes.
 It also appears that the structure has been designed with platform-independence in mind, and so some of the fields are not used in the Linux
 drivers such as `status`, `handle`, `pid`.
 
 A possibly worthwhile long-term goal would be to clean up the kernel driver interface. This would break compatibility with
-the Vivante binary blobs, though, so maybe the effort would be better spent building a fully-fledged DRM/DRI 
+the Vivante binary blobs, though, so maybe the effort would be better spent building a fully-fledged DRM/DRI
 infrastructure driver instead.
 
 Allocations
@@ -240,29 +240,29 @@ Memory management happens in the kernel. Two types of memory are allocated:
   Allocated with command `ALLOCATE_LINEAR_VIDEO_MEMORY`
 
   Device memory, from one of the pools (default, local, unified or contiguous system memory)
-  The available pools depend on the hardware; many of the devices have no local memory, and simply 
+  The available pools depend on the hardware; many of the devices have no local memory, and simply
   use a part of system memory as video memory.
 
-`LOCK_VIDEO_MEMORY` locks the video memory both 
+`LOCK_VIDEO_MEMORY` locks the video memory both
 - into the GPU memory space so that it can be used by the GPU
-- into CPU memory so that the application can read/write. 
+- into CPU memory so that the application can read/write.
 It is interesting that these are done by
 the same call.
 
 Command buffers
 -------------------
 
-Like many other GPUs, the primary means of programming the chip is through a command stream 
+Like many other GPUs, the primary means of programming the chip is through a command stream
 interpreted by a DMA engine. This "Front End" takes care of distributing state changes through
-the individual modules of the GPU, kicking off primitive rendering, synchronization, 
+the individual modules of the GPU, kicking off primitive rendering, synchronization,
 and also supports some primitive flow control (branch, call, return).
 
-The command stream is submitted to the kernel by means of command buffers. As most important part these 
-structures contain a pointer to contiguous memory (allocated with command `ALLOCATE_CONTIGUOUS_MEMORY`) 
+The command stream is submitted to the kernel by means of command buffers. As most important part these
+structures contain a pointer to contiguous memory (allocated with command `ALLOCATE_CONTIGUOUS_MEMORY`)
 where the commands start.
 
-Command buffers are built in user space by the driver in a `gcoCMDBUF` structure, then submitted to the kernel with the 
-`COMMIT` command. 
+Command buffers are built in user space by the driver in a `gcoCMDBUF` structure, then submitted to the kernel with the
+`COMMIT` command.
 
 The following structure fields of `gcoCMDBUF` are used by the kernel:
 
@@ -276,16 +276,16 @@ The following structure fields of `gcoCMDBUF` are used by the kernel:
 
 User signal API
 ----------------
-Command `USER_SIGNAL` is used for synchronization signals between the kernel and userspace driver. 
+Command `USER_SIGNAL` is used for synchronization signals between the kernel and userspace driver.
 
 Note: the contents in this section only apply as-is if the kernel was *not* compiled with `USE_NEW_LINUX_SIGNAL`. If this
-flag was set, then a posix real-time signal will be used to notify the process of incoming signals, and the 
+flag was set, then a posix real-time signal will be used to notify the process of incoming signals, and the
 `USER_SIGNAL_WAIT` is a no-op.
 
 The subcommands are:
 
 - `USER_SIGNAL_CREATE` Create a new signal
-  Inputs: 
+  Inputs:
      - manualReset
      If set to gcvTRUE, the `SIGNAL` command must be used with state false to
      reset the signal. If set to gcvFALSE, the signal automatically resets
@@ -306,7 +306,7 @@ The subcommands are:
   Outputs: N/A
 
 - `USER_SIGNAL_WAIT` Wait on the signal (block current thread)
-  Inputs: 
+  Inputs:
     - id     Signal id to wait for
     - wait   Maximum duration to wait (in milliseconds)
   Outputs: N/A
@@ -319,7 +319,7 @@ The subcommands are:
   Inputs: id
   Outputs: N/A
 
-This is used to synchronize GPU and CPU. 
+This is used to synchronize GPU and CPU.
 Signals can be scheduled to be signalled/unsignalled when the GPU finished a certain operation (using an Event).
 They are also used for inter-thread synchronization by the EGL driver.
 
@@ -384,7 +384,7 @@ Context switching
 ==================
 Clients manage their own context, which is passed to COMMIT preemptively in case a context switch is needed.
 
-It appears that context switching is manual. Every process has to keep its own context structure for 
+It appears that context switching is manual. Every process has to keep its own context structure for
 context switching, and pass this to COMMIT. In case this is needed the kernel will then load the state
 from the context buffer.
 
@@ -399,7 +399,7 @@ The state `FE.VERTEX_ELEMENT_CONFIG` is handled specially: write only the elemen
 
 Used fields in `struct _gcoCONTEXT` from the kernel:
 
-- `id` 
+- `id`
     [in] This id is used to determine wether to switch context
     [out] A unique id for the context is generated the first time a COMMIT is done, with context->id==0
 - `hint*` only used when `SECURE_USER` is set
@@ -421,7 +421,7 @@ Profiling
 
 To enable profiling, the kernel most have been built with `VIVANTE_PROFILER` enabled in `gc_hal_options.h` or the appropriate
 `config` file.
-   
+
     USE_PROFILER                        = 1
 
 Vivante also recommends disabling power management features while profiling,
@@ -430,7 +430,7 @@ Vivante also recommends disabling power management features while profiling,
 
 HW profiling registers can be read using the command `READ_ALL_PROFILE_REGISTERS`.
 
-There are also the commands `GET_PROFILE_SETTING` and `SET_PROFILE_SETTING`, which set a flag for 
+There are also the commands `GET_PROFILE_SETTING` and `SET_PROFILE_SETTING`, which set a flag for
 logging to a file (`vprofiler.xml` by default), but this flag doesn't do anything in the kernel driver,
 likely it's meant to be read out by the user space driver.
 
@@ -539,12 +539,12 @@ TODO: input/output arguments.
 * `QUERY_CHIP_IDENTITY`
 
         Query chip identity.
-        
-        Calls: gckHARDWARE_QueryChipIdentity 
+
+        Calls: gckHARDWARE_QueryChipIdentity
 
 * `ALLOCATE_NON_PAGED_MEMORY`
 
-        Allocate non-paged memory. 
+        Allocate non-paged memory.
 
         Calls: gckOS_AllocateNonPagedMemory
 
@@ -558,7 +558,7 @@ TODO: input/output arguments.
 
         Allocate contiguous non-paged memory (used for command buffers).
 
-        Calls: gckOS_AllocateContiguous 
+        Calls: gckOS_AllocateContiguous
 
 * `FREE_CONTIGUOUS_MEMORY`
 
@@ -579,7 +579,7 @@ TODO: input/output arguments.
         Walks all required memory pools to allocate the requested amount of video memory.
 
         gcvPOOL_VIRTUAL: Virtual memory, allocated using gckVIDMEM_ConstructVirtual
-        gcvPOOL_CONTIGUOUS: Contiguous memory, allocated using gckVIDMEM_ConstructVirtual 
+        gcvPOOL_CONTIGUOUS: Contiguous memory, allocated using gckVIDMEM_ConstructVirtual
         gcvPOOL_SYSTEM: Contiguous system memory
         gcvPOOL_LOCAL_INTERNAL: Internal memory
         gcvPOOL_LOCAL_EXTERNAL: External memory
@@ -599,7 +599,7 @@ TODO: input/output arguments.
 
 * `FREE_VIDEO_MEMORY`
 
-        Calls: gckVIDMEM_Free 
+        Calls: gckVIDMEM_Free
 
 * `MAP_MEMORY`
 
@@ -610,7 +610,7 @@ TODO: input/output arguments.
 * `UNMAP_MEMORY`
 
         Unmap memory mapped with `MAP_MEMORY`.
-        
+
         Calls: gckKERNEL_UnmapMemory (gckOS_UnmapMemory)
 
 * `MAP_USER_MEMORY`
@@ -630,20 +630,20 @@ TODO: input/output arguments.
 
         Surface lock.
 
-        Calls: gckVIDMEM_Lock 
+        Calls: gckVIDMEM_Lock
 
 * `UNLOCK_VIDEO_MEMORY`
-        
+
         Surface unlock.
-        
-        Calls: gckVIDMEM_Unlock 
+
+        Calls: gckVIDMEM_Unlock
 
 * `EVENT_COMMIT`
-    
+
         Commit an event queue.
 
         Calls: gckEVENT_Commit
-    
+
 * `USER_SIGNAL`
 
         Dispatch depends on the user signal subcommands (refer to section `User signal API`).
@@ -662,7 +662,7 @@ TODO: input/output arguments.
 * `COMMIT`
 
         Commit a command and context buffer.
-        
+
         Calls: gckCOMMAND_Commit
 
 * `STALL`
@@ -680,7 +680,7 @@ TODO: input/output arguments.
         Calls: gckOS_ReadRegister
 
 * `WRITE_REGISTER`
-        
+
         Write a GPU register. Only enabled if kernel compiled with `gcdREGISTER_ACCESS_FROM_USER` (which
         is obviously an security risk, as it allows user-space to read and write arbitrary registers).
 
@@ -704,7 +704,7 @@ TODO: input/output arguments.
         Calls: gckHARDWARE_QueryProfileRegisters
 
 * `PROFILE_REGISTERS_2D`
-        
+
         Read all 2D profile registers. Only available if kernel compiled with `VIVANTE_PROFILER` enabled.
 
         Calls: gckHARDWARE_ProfileEngine2D
@@ -763,7 +763,7 @@ TODO: input/output arguments.
         Flush or invalidate the cache.
         NOTE: unimplemented on Linux, and also apparently not called by the blob on Linux.
 
-        In: 
+        In:
           invalidate: If FALSE, flush the cache (the GPU is going to need the data)
                       if TRUE, flush and invalidate the cache (if the GPU is going to modify the data)
           process: Process handle Logical belongs to or gcvNULL if Logical belongs to the kernel.
@@ -776,7 +776,7 @@ TODO: input/output arguments.
 
         Broadcast GPU stuck.
 
-        Calls: gckOS_Broadcast 
+        Calls: gckOS_Broadcast
 
 Crash recovery
 ================

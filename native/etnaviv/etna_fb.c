@@ -108,8 +108,8 @@ bool etna_fb_get_format(const struct fb_var_screeninfo *fb_var, unsigned *rs_for
                 (int)fb_var->transp.offset, (int)fb_var->transp.length);
         return false;
     } else {
-        printf("Framebuffer format: %i, flip_rb=%i\n", 
-                etna_fb_formats[fmt_idx].rs_format, 
+        printf("Framebuffer format: %i, flip_rb=%i\n",
+                etna_fb_formats[fmt_idx].rs_format,
                 etna_fb_formats[fmt_idx].swap_rb);
         *rs_format = etna_fb_formats[fmt_idx].rs_format;
         *swap_rb = etna_fb_formats[fmt_idx].swap_rb;

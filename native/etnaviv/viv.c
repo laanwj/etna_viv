@@ -178,7 +178,7 @@ int viv_open(enum viv_hw_type hw_type, struct viv_conn **out)
     conn->kernel_driver.patch = 0;
     conn->kernel_driver.build = 0;
 #endif
-    snprintf(conn->kernel_driver.name, sizeof(conn->kernel_driver.name), 
+    snprintf(conn->kernel_driver.name, sizeof(conn->kernel_driver.name),
             "Vivante GPL kernel driver %i.%i.%i.%i",
             conn->kernel_driver.major, conn->kernel_driver.minor,
             conn->kernel_driver.patch, conn->kernel_driver.build);
@@ -276,7 +276,7 @@ int viv_alloc_linear_vidmem(struct viv_conn *conn, size_t bytes, size_t alignmen
     *node = VIV_TO_HANDLE(id.u.AllocateLinearVideoMemory.node);
     if(bytes_out != NULL)
         *bytes_out = id.u.AllocateLinearVideoMemory.bytes;
-    return gcvSTATUS_OK; 
+    return gcvSTATUS_OK;
 }
 
 int viv_lock_vidmem(struct viv_conn *conn, viv_node_t node, viv_addr_t *physical, void **logical)
@@ -298,7 +298,7 @@ int viv_lock_vidmem(struct viv_conn *conn, viv_node_t node, viv_addr_t *physical
     }
     *physical = id.u.LockVideoMemory.address;
     *logical = VIV_TO_PTR(id.u.LockVideoMemory.memory);
-    return gcvSTATUS_OK; 
+    return gcvSTATUS_OK;
 }
 
 /** Unlock (unmap) video memory node from GPU and CPU memory.

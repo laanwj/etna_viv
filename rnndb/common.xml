@@ -25,7 +25,7 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 <!-- Shared enums and type definitions.
   -->
-    <enum name="ENABLE_DISABLE" inline="yes"> 
+    <enum name="ENABLE_DISABLE" inline="yes">
         <!-- Generic type for functionality that can be enabled/disabled, it can be somewhat clearer than a
              boolean (RNN default type for 1-bit values) in some cases.
           -->

@@ -36,7 +36,7 @@
 #include "util/u_transfer.h" /* u_default_resource_get_handle */
 
 /* Associate an resource with this context when it is bound in any way
- * (vertex buffer, index buffer, texture, surface, blit). 
+ * (vertex buffer, index buffer, texture, surface, blit).
  */
 void etna_resource_touch(struct pipe_context *pipe, struct pipe_resource *resource_)
 {
@@ -93,7 +93,7 @@ static boolean etna_screen_can_create_resource(struct pipe_screen *pscreen,
     }
     return true;
 }
-                           
+
 static struct pipe_resource * etna_screen_resource_from_handle(struct pipe_screen *screen,
                                               const struct pipe_resource *templat,
                                               struct winsys_handle *handle)
@@ -102,7 +102,7 @@ static struct pipe_resource * etna_screen_resource_from_handle(struct pipe_scree
     return NULL;
 }
 
-/* Allocate 2D texture or render target resource 
+/* Allocate 2D texture or render target resource
  */
 static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *screen,
                                          const struct pipe_resource *templat)
@@ -112,7 +112,7 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     unsigned element_size = util_format_get_blocksize(templat->format);
     if(!element_size)
         return NULL;
-    
+
     /* Check input */
     if(templat->target == PIPE_TEXTURE_CUBE)
     {
@@ -136,14 +136,14 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     assert(templat->array_size != 0);
 
     /* Figure out what tiling to use -- for now, assume that textures cannot be supertiled, and cannot be linear.
-     * There is a feature flag SUPERTILED_TEXTURE (not supported on any known hw) that may allow this, as well 
-     * as LINEAR_TEXTURE_SUPPORT (supported on gc880 and gc2000 at least), but not sure how it works. 
+     * There is a feature flag SUPERTILED_TEXTURE (not supported on any known hw) that may allow this, as well
+     * as LINEAR_TEXTURE_SUPPORT (supported on gc880 and gc2000 at least), but not sure how it works.
      * Buffers always have LINEAR layout.
      */
     unsigned layout = ETNA_LAYOUT_LINEAR;
     if(templat->target != PIPE_BUFFER)
     {
-        if(!(templat->bind & PIPE_BIND_SAMPLER_VIEW) && priv->specs.can_supertile) 
+        if(!(templat->bind & PIPE_BIND_SAMPLER_VIEW) && priv->specs.can_supertile)
             layout = ETNA_LAYOUT_SUPER_TILED;
         else
             layout = ETNA_LAYOUT_TILED;
@@ -183,7 +183,7 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
         mip->padded_height = align(y, paddingY);
         mip->stride = align(resource->levels[ix].padded_width, divSizeX)/divSizeX * element_size;
         mip->offset = offset;
-        mip->layer_stride = align(mip->padded_width, divSizeX)/divSizeX * 
+        mip->layer_stride = align(mip->padded_width, divSizeX)/divSizeX *
                       align(mip->padded_height, divSizeY)/divSizeY * element_size;
         mip->size = templat->array_size * mip->layer_stride;
         offset += mip->size;
@@ -196,7 +196,7 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
 
     /* Determine memory size, and whether to create a tile status */
     size_t rt_size = offset;
-    
+
     /* determine memory type */
     enum viv_surf_type memtype = VIV_SURF_UNKNOWN;
     if(templat->bind & PIPE_BIND_SAMPLER_VIEW)
@@ -205,14 +205,14 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
         memtype = VIV_SURF_RENDER_TARGET;
     else if(templat->bind & PIPE_BIND_DEPTH_STENCIL)
         memtype = VIV_SURF_DEPTH;
-    else if(templat->bind & PIPE_BIND_INDEX_BUFFER) 
+    else if(templat->bind & PIPE_BIND_INDEX_BUFFER)
         memtype = VIV_SURF_INDEX;
     else if(templat->bind & PIPE_BIND_VERTEX_BUFFER)
         memtype = VIV_SURF_VERTEX;
 
     DBG_F(ETNA_RESOURCE_MSGS, "%p: Allocate surface of %ix%i (padded to %ix%i) of format %i (%i bpe %ix%i), size %08x flags %08x, memtype %i",
             resource,
-            templat->width0, templat->height0, resource->levels[0].padded_width, resource->levels[0].padded_height, templat->format, 
+            templat->width0, templat->height0, resource->levels[0].padded_width, resource->levels[0].padded_height, templat->format,
             element_size, divSizeX, divSizeY, rt_size, templat->bind, memtype);
 
     struct etna_vidmem *rt = 0;
@@ -221,7 +221,7 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
         printf("Problem allocating video memory for resource\n");
         return NULL;
     }
-   
+
     resource->base = *templat;
     resource->base.last_level = ix; /* real last mipmap level */
     resource->base.screen = screen;
@@ -236,7 +236,7 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
         struct etna_resource_level *mip = &resource->levels[ix];
         mip->address = resource->surface->address + mip->offset;
         mip->logical = resource->surface->logical + mip->offset;
-        DBG_F(ETNA_RESOURCE_MSGS, "  %08x level %i: %ix%i (%i) stride=%i layer_stride=%i", 
+        DBG_F(ETNA_RESOURCE_MSGS, "  %08x level %i: %ix%i (%i) stride=%i layer_stride=%i",
                 (int)mip->address, ix, (int)mip->width, (int)mip->height, (int)mip->size,
                 (int)mip->stride, (int)mip->layer_stride);
     }
@@ -254,7 +254,7 @@ static void etna_screen_resource_destroy(struct pipe_screen *screen,
     if(resource->last_ctx != NULL)
     {
         /* XXX This could fail when multiple contexts share this resource,
-         * (the last one to bind it will "own" it) or fail miserably if 
+         * (the last one to bind it will "own" it) or fail miserably if
          * the context was since destroyed.
          */
         struct etna_pipe_context *ectx = resource->last_ctx;

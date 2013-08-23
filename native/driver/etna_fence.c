@@ -51,7 +51,7 @@ int etna_fence_new(struct pipe_screen *screen_h, struct etna_ctx *ctx, struct pi
         fence->signalled = false;
     } else {
         fence = CALLOC_STRUCT(etna_fence);
-        /* Create signal with manual reset; we want to be able to probe it 
+        /* Create signal with manual reset; we want to be able to probe it
          * or wait for it without resetting it.
          */
         if((rv = viv_user_signal_create(ctx->conn, /* manualReset */ true, &fence->signal)) != VIV_STATUS_OK)
@@ -90,7 +90,7 @@ static void etna_screen_fence_reference(struct pipe_screen *screen_h,
     struct etna_fence *fence = etna_fence(fence_h);
     struct etna_fence **ptr = (struct etna_fence **) ptr_h;
     struct etna_fence *old_fence = *ptr;
-    if (pipe_reference_described(&(*ptr)->reference, &fence->reference, 
+    if (pipe_reference_described(&(*ptr)->reference, &fence->reference,
                                  (debug_reference_descriptor)debug_describe_fence))
     {
         if(etna_screen_fence_signalled(screen_h, (struct pipe_fence_handle*)old_fence))
@@ -132,7 +132,7 @@ static boolean etna_screen_fence_finish(struct pipe_screen *screen_h,
     if(fence->signalled) /* avoid a kernel roundtrip */
         return true;
     /* nanoseconds to milliseconds */
-    rv = viv_user_signal_wait(screen->dev, fence->signal, 
+    rv = viv_user_signal_wait(screen->dev, fence->signal,
             timeout == PIPE_TIMEOUT_INFINITE ? VIV_WAIT_INDEFINITE : (timeout / 1000000ULL));
     if(rv != VIV_STATUS_OK && rv != VIV_STATUS_TIMEOUT)
     {

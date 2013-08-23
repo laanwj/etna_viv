@@ -32,7 +32,7 @@ static inline int rgroup_is_uniform(unsigned rgroup)
            rgroup == INST_RGROUP_UNIFORM_1;
 }
 
-/** An instruction can only read from one distinct uniform. 
+/** An instruction can only read from one distinct uniform.
  * This function verifies this property and returns true if the instruction
  * is deemed correct and false otherwise.
  */
@@ -71,16 +71,16 @@ int etna_assemble(uint32_t *out, const struct etna_inst *inst)
         DBG("warning: generating instruction that accesses two different uniforms");
     }
 
-    out[0] = VIV_ISA_WORD_0_OPCODE(inst->opcode) | 
-             VIV_ISA_WORD_0_COND(inst->cond) | 
-             (inst->sat ? VIV_ISA_WORD_0_SAT : 0) | 
-             (inst->dst.use ? VIV_ISA_WORD_0_DST_USE : 0) | 
+    out[0] = VIV_ISA_WORD_0_OPCODE(inst->opcode) |
+             VIV_ISA_WORD_0_COND(inst->cond) |
+             (inst->sat ? VIV_ISA_WORD_0_SAT : 0) |
+             (inst->dst.use ? VIV_ISA_WORD_0_DST_USE : 0) |
              VIV_ISA_WORD_0_DST_AMODE(inst->dst.amode) |
              VIV_ISA_WORD_0_DST_REG(inst->dst.reg) |
              VIV_ISA_WORD_0_DST_COMPS(inst->dst.comps) |
              VIV_ISA_WORD_0_TEX_ID(inst->tex.id);
     out[1] = VIV_ISA_WORD_1_TEX_AMODE(inst->tex.amode) |
-             VIV_ISA_WORD_1_TEX_SWIZ(inst->tex.swiz) | 
+             VIV_ISA_WORD_1_TEX_SWIZ(inst->tex.swiz) |
              (inst->src[0].use ? VIV_ISA_WORD_1_SRC0_USE : 0) |
              VIV_ISA_WORD_1_SRC0_REG(inst->src[0].reg) |
              VIV_ISA_WORD_1_SRC0_SWIZ(inst->src[0].swiz) |

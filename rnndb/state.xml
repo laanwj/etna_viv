@@ -42,7 +42,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
          - type="fixedp": (N/2).(N/2) fixed-point value, where N is the number of bits of the bit field,
              so in case of a 32 bit field it will be a 16.16 FP value.
          - domains can be used as types (to signify a memory address in that domain)
-         - for registers: masked="yes", defaults to "no" to mark registers that support partial 
+         - for registers: masked="yes", defaults to "no" to mark registers that support partial
            state writes by using masks per bit group (mask for state group A must be called A_MASK)
 
      TODO: variants are somewhat different from NV; what features are supported is determined by (most common first)
@@ -51,7 +51,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
          3) Chip model (GC800, GC2000, ...)
          4) Chip revision of the form 0x1234
 
-         Generally the chip feature flags are used to distinguish functionality, as well as the specs, and not the model 
+         Generally the chip feature flags are used to distinguish functionality, as well as the specs, and not the model
          and revision. Unlike NV which parametrizes everything on the model, for GC this is done only for bugfixes.
 -->
 <domain name="VIVM" brief="GPU memory domain">
@@ -83,7 +83,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             takes care of parsing the command stream and loading states, as well as loading
             vertex streams.</doc>
         <reg32 offset="0x00600" name="VERTEX_ELEMENT_CONFIG" value="0x00000000" length="16" stride="4">
-            <!-- length="attrCount" where attrCount, the number of attributes, 
+            <!-- length="attrCount" where attrCount, the number of attributes,
                  is 16 if chipMinorFeatures1 bit 23 set, otherwise 12.
              -->
             <bitfield high="3" low="0" name="TYPE" brief="Data type">
@@ -278,7 +278,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x03828" name="VARYING_COMPONENT_USE" brief="Varying component usage" value="0x00000000" length="2" stride="4">
             <doc>2 bits per varying component, 16 components per 32-bit word.</doc>
-            <bitfield high="1" low="0" name="COMP0" type="VARYING_COMPONENT_USE"/> 
+            <bitfield high="1" low="0" name="COMP0" type="VARYING_COMPONENT_USE"/>
             <bitfield high="3" low="2" name="COMP1" type="VARYING_COMPONENT_USE"/>
             <bitfield high="5" low="4" name="COMP2" type="VARYING_COMPONENT_USE"/>
             <bitfield high="7" low="6" name="COMP3" type="VARYING_COMPONENT_USE"/>

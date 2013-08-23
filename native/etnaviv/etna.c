@@ -194,7 +194,7 @@ static int gpu_context_clear(struct etna_ctx *ctx)
 }
 
 /** Start building context buffer.
- * Subsequent etna_reserve and other state setting commands will go to 
+ * Subsequent etna_reserve and other state setting commands will go to
  * the context buffer instead of the command buffer.
  * initial_pipe is the pipe as it has to be at the beginning of the context
  * buffer.
@@ -351,7 +351,7 @@ int etna_create(struct viv_conn *conn, struct etna_ctx **ctx_out)
             return ETNA_INTERNAL_ERROR;
         }
 #ifdef DEBUG
-        printf("Allocated buffer %i: phys=%08x log=%08x bytes=%08x [signal %i]\n", x, 
+        printf("Allocated buffer %i: phys=%08x log=%08x bytes=%08x [signal %i]\n", x,
                 (uint32_t)buf0_physical, (uint32_t)buf0_logical, buf0_bytes, ctx->cmdbuf_sig[x]);
 #endif
     }
@@ -427,10 +427,10 @@ int etna_free(struct etna_ctx *ctx)
     return ETNA_OK;
 }
 
-/* internal (non-inline) part of etna_reserve 
+/* internal (non-inline) part of etna_reserve
  * - commit current command buffer (if there is a current command buffer)
  * - signify when current command buffer becomes available using a signal
- * - switch to next command buffer 
+ * - switch to next command buffer
  */
 int _etna_reserve_internal(struct etna_ctx *ctx, size_t n)
 {
@@ -559,7 +559,7 @@ int etna_flush(struct etna_ctx *ctx)
         cur_buf->startOffset = cur_buf->offset = COMMAND_BUFFER_SIZE - END_COMMIT_CLEARANCE;
     }
 
-    /* Set writing offset for next etna_reserve. For convenience this is 
+    /* Set writing offset for next etna_reserve. For convenience this is
        stored as an index instead of a byte offset.  */
     ctx->offset = cur_buf->offset / 4;
 #ifdef DEBUG
@@ -687,7 +687,7 @@ int etna_set_context_cb(struct etna_ctx *ctx, etna_context_snapshot_cb_t snapsho
 void etna_dump_cmd_buffer(struct etna_ctx *ctx)
 {
     uint32_t start_offset = ctx->cmdbuf[ctx->cur_buf]->startOffset/4 + 8;
-    uint32_t *buf = &ctx->buf[start_offset]; 
+    uint32_t *buf = &ctx->buf[start_offset];
     size_t size = ctx->offset - start_offset;
     printf("cmdbuf:\n");
     for(unsigned idx=0; idx<size; ++idx)

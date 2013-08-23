@@ -54,7 +54,7 @@ enum etna_varying_special {
 struct etna_shader_varying
 {
     int num_components;
-    enum etna_varying_special special; 
+    enum etna_varying_special special;
     int pa_attributes;
     int vs_reg; /* VS output register */
 };
@@ -93,7 +93,7 @@ struct etna_resource
 struct etna_surface
 {
     struct pipe_surface base;
-   
+
     enum etna_surface_layout layout;
     struct etna_resource_level surf;
     uint32_t clear_value; // XXX remember depth/stencil clear value from ->clear

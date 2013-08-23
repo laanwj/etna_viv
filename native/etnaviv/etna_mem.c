@@ -40,7 +40,7 @@
 #include "gc_hal_types.h"
 
 //#define DEBUG
-#define ETNA_VIDMEM_ALIGNMENT (0x40) 
+#define ETNA_VIDMEM_ALIGNMENT (0x40)
 
 int etna_vidmem_alloc_linear(struct viv_conn *conn, struct etna_vidmem **mem_out, size_t bytes, enum viv_surf_type type, enum viv_pool pool, bool lock)
 {

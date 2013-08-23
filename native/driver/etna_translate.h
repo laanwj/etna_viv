@@ -70,7 +70,7 @@ static inline uint32_t translate_stencil_mode(bool enable_0, bool enable_1)
 {
     if(enable_0)
     {
-        return enable_1 ? VIVS_PE_STENCIL_CONFIG_MODE_TWO_SIDED : 
+        return enable_1 ? VIVS_PE_STENCIL_CONFIG_MODE_TWO_SIDED :
                           VIVS_PE_STENCIL_CONFIG_MODE_ONE_SIDED;
     } else {
         return VIVS_PE_STENCIL_CONFIG_MODE_DISABLED;
@@ -125,7 +125,7 @@ static inline uint32_t translate_blend_factor(unsigned blend_factor)
     case PIPE_BLENDFACTOR_INV_DST_COLOR: return BLEND_FUNC_ONE_MINUS_DST_COLOR;
     case PIPE_BLENDFACTOR_INV_CONST_COLOR: return BLEND_FUNC_ONE_MINUS_CONSTANT_COLOR;
     case PIPE_BLENDFACTOR_INV_CONST_ALPHA: return BLEND_FUNC_ONE_MINUS_CONSTANT_ALPHA;
-    case PIPE_BLENDFACTOR_SRC1_COLOR: 
+    case PIPE_BLENDFACTOR_SRC1_COLOR:
     case PIPE_BLENDFACTOR_SRC1_ALPHA:
     case PIPE_BLENDFACTOR_INV_SRC1_COLOR:
     case PIPE_BLENDFACTOR_INV_SRC1_ALPHA:
@@ -206,7 +206,7 @@ static inline uint32_t translate_texture_format(enum pipe_format fmt, bool silen
 /* render target format (non-rb swapped RS-supported formats) */
 static inline uint32_t translate_rt_format(enum pipe_format fmt, bool silent)
 {
-    switch(fmt) 
+    switch(fmt)
     {
     /* Note: Pipe format convention is LSB to MSB, VIVS is MSB to LSB */
     case PIPE_FORMAT_B4G4R4X4_UNORM: return RS_FORMAT_X4R4G4B4;
@@ -223,7 +223,7 @@ static inline uint32_t translate_rt_format(enum pipe_format fmt, bool silent)
 
 static inline uint32_t translate_depth_format(enum pipe_format fmt, bool silent)
 {
-    switch(fmt) 
+    switch(fmt)
     {
     /* Note: Pipe format convention is LSB to MSB, VIVS is MSB to LSB */
     case PIPE_FORMAT_Z16_UNORM: return VIVS_PE_DEPTH_CONFIG_DEPTH_FORMAT_D16;
@@ -236,7 +236,7 @@ static inline uint32_t translate_depth_format(enum pipe_format fmt, bool silent)
 /* render target format for MSAA */
 static inline uint32_t translate_msaa_format(enum pipe_format fmt, bool silent)
 {
-    switch(fmt) 
+    switch(fmt)
     {
     /* Note: Pipe format convention is LSB to MSB, VIVS is MSB to LSB */
     case PIPE_FORMAT_B4G4R4X4_UNORM: return VIVS_TS_MEM_CONFIG_MSAA_FORMAT_A4R4G4B4;
@@ -373,9 +373,9 @@ static inline uint32_t translate_vertex_format_type(enum pipe_format fmt, bool s
 static inline uint32_t translate_vertex_format_normalize(enum pipe_format fmt)
 {
     const struct util_format_description *desc = util_format_description(fmt);
-    if(!desc) 
+    if(!desc)
         return VIVS_FE_VERTEX_ELEMENT_CONFIG_NORMALIZE_OFF;
-    /* assumes that normalization of channel 0 holds for all channels; 
+    /* assumes that normalization of channel 0 holds for all channels;
      * this holds for all vertex formats that we support */
     return desc->channel[0].normalized ? VIVS_FE_VERTEX_ELEMENT_CONFIG_NORMALIZE_ON :
                                          VIVS_FE_VERTEX_ELEMENT_CONFIG_NORMALIZE_OFF;
@@ -408,7 +408,7 @@ static inline uint32_t translate_draw_mode(unsigned mode)
     }
 }
 
-/* Get size multiple for size of texture/rendertarget with a certain layout 
+/* Get size multiple for size of texture/rendertarget with a certain layout
  * This is affected by many different parameters:
  *   -  A horizontal multiple of 16 is used when possible as in this case tile status and resolve can be used
  *       at the cost of only a little bit extra memory usage.
@@ -449,7 +449,7 @@ static inline void etna_layout_multiple(unsigned layout, unsigned pixel_pipes,
         *paddingY = 64 * pixel_pipes;
         *halign = TEXTURE_HALIGN_SPLIT_SUPER_TILED;
         break;
-    default: DBG("Unhandled layout %i\n", layout); 
+    default: DBG("Unhandled layout %i\n", layout);
     }
 }
 
@@ -466,23 +466,23 @@ static inline uint32_t translate_clear_color(enum pipe_format format, const unio
                 (etna_cfloat_to_uintN(color->f[0], 8) << 16) |
                 (etna_cfloat_to_uintN(color->f[3], 8) << 24);
         break;
-    case PIPE_FORMAT_B4G4R4X4_UNORM: 
-    case PIPE_FORMAT_B4G4R4A4_UNORM: 
+    case PIPE_FORMAT_B4G4R4X4_UNORM:
+    case PIPE_FORMAT_B4G4R4A4_UNORM:
         clear_value = etna_cfloat_to_uintN(color->f[2], 4) |
                 (etna_cfloat_to_uintN(color->f[1], 4) << 4) |
                 (etna_cfloat_to_uintN(color->f[0], 4) << 8) |
                 (etna_cfloat_to_uintN(color->f[3], 4) << 12);
         clear_value |= clear_value << 16;
         break;
-    case PIPE_FORMAT_B5G5R5X1_UNORM: 
-    case PIPE_FORMAT_B5G5R5A1_UNORM: 
+    case PIPE_FORMAT_B5G5R5X1_UNORM:
+    case PIPE_FORMAT_B5G5R5A1_UNORM:
         clear_value = etna_cfloat_to_uintN(color->f[2], 5) |
                 (etna_cfloat_to_uintN(color->f[1], 5) << 5) |
                 (etna_cfloat_to_uintN(color->f[0], 5) << 10) |
                 (etna_cfloat_to_uintN(color->f[3], 1) << 15);
         clear_value |= clear_value << 16;
         break;
-    case PIPE_FORMAT_B5G6R5_UNORM: 
+    case PIPE_FORMAT_B5G6R5_UNORM:
         clear_value = etna_cfloat_to_uintN(color->f[2], 5) |
                 (etna_cfloat_to_uintN(color->f[1], 6) << 5) |
                 (etna_cfloat_to_uintN(color->f[0], 5) << 11);
@@ -499,12 +499,12 @@ static inline uint32_t translate_clear_depth_stencil(enum pipe_format format, fl
     uint32_t clear_value = 0;
     switch(format) // XXX util_pack_color
     {
-    case PIPE_FORMAT_Z16_UNORM: 
+    case PIPE_FORMAT_Z16_UNORM:
         clear_value = etna_cfloat_to_uintN(depth, 16);
         clear_value |= clear_value << 16;
         break;
-    case PIPE_FORMAT_X8Z24_UNORM: 
-    case PIPE_FORMAT_S8_UINT_Z24_UNORM: 
+    case PIPE_FORMAT_X8Z24_UNORM:
+    case PIPE_FORMAT_S8_UINT_Z24_UNORM:
         clear_value = (etna_cfloat_to_uintN(depth, 24) << 8) | (stencil & 0xFF);
         break;
     default:

@@ -56,8 +56,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 <domain name="VIVS"/>
 
 <domain name="VIV_FE">
-    <!-- A stripe for each command follows. 
-         The different commands are distinguished by the OP field. 
+    <!-- A stripe for each command follows.
+         The different commands are distinguished by the OP field.
      -->
     <stripe name="LOAD_STATE" varset="FE_OPCODE" variants="LOAD_STATE">
         <reg32 offset="0x00000" name="HEADER">

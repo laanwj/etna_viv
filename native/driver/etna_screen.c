@@ -238,12 +238,12 @@ static int etna_screen_get_shader_param( struct pipe_screen *screen, unsigned sh
     case PIPE_SHADER_CAP_MAX_ADDRS:
             return 1; /* Max native address registers */
     case PIPE_SHADER_CAP_MAX_CONSTS:
-            /* Absolute maximum on ideal hardware is 256 (as that's how much register space is reserved); 
-             * immediates are included in here, so actual space available for constants will always be less. 
-             * Also the amount of registers really available depends on the hw. 
+            /* Absolute maximum on ideal hardware is 256 (as that's how much register space is reserved);
+             * immediates are included in here, so actual space available for constants will always be less.
+             * Also the amount of registers really available depends on the hw.
              * XXX see also: viv_specs.num_constants, if this is 0 we need to come up with some default value.
              */
-            return 256; 
+            return 256;
     case PIPE_SHADER_CAP_MAX_CONST_BUFFERS:
             return 1;
     case PIPE_SHADER_CAP_MAX_PREDS:
@@ -266,7 +266,7 @@ static int etna_screen_get_shader_param( struct pipe_screen *screen, unsigned sh
     case PIPE_SHADER_CAP_INTEGERS: /* XXX supported on gc2000 but not yet implemented */
             return 0;
     case PIPE_SHADER_CAP_MAX_TEXTURE_SAMPLERS:
-            return shader==PIPE_SHADER_FRAGMENT ? priv->specs.fragment_sampler_count : 
+            return shader==PIPE_SHADER_FRAGMENT ? priv->specs.fragment_sampler_count :
                                                   priv->specs.vertex_sampler_count;
     case PIPE_SHADER_CAP_PREFERRED_IR:
             return PIPE_SHADER_IR_TGSI;
@@ -316,7 +316,7 @@ static boolean etna_screen_is_format_supported( struct pipe_screen *screen,
     struct etna_screen *priv = etna_screen(screen);
     unsigned allowed = 0;
     if ((target >= PIPE_MAX_TEXTURE_TYPES) ||
-                (sample_count > 1) /* TODO add MSAA */) 
+                (sample_count > 1) /* TODO add MSAA */)
     {
         return FALSE;
     }
@@ -364,7 +364,7 @@ static boolean etna_screen_is_format_supported( struct pipe_screen *screen,
         }
     }
     /* Always allowed */
-    allowed |= usage & (PIPE_BIND_DISPLAY_TARGET | PIPE_BIND_SCANOUT | 
+    allowed |= usage & (PIPE_BIND_DISPLAY_TARGET | PIPE_BIND_SCANOUT |
             PIPE_BIND_SHARED | PIPE_BIND_TRANSFER_READ | PIPE_BIND_TRANSFER_WRITE);
 
     return usage == allowed;
@@ -447,7 +447,7 @@ etna_screen_create(struct viv_conn *dev)
     screen->specs.shader_core_count = dev->chip.shader_core_count;
     screen->specs.stream_count = dev->chip.stream_count;
     screen->specs.has_sin_cos_sqrt = VIV_FEATURE(dev, chipMinorFeatures0, HAS_SQRT_TRIG);
-    screen->specs.has_shader_range_registers = dev->chip.chip_model >= 0x1000 || dev->chip.chip_model == 0x880;    
+    screen->specs.has_shader_range_registers = dev->chip.chip_model >= 0x1000 || dev->chip.chip_model == 0x880;
     if (dev->chip.instruction_count > 256) /* unified instruction memory? */
     {
         screen->specs.vs_offset = 0xC000;

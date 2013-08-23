@@ -44,7 +44,7 @@ static void *etna_pipe_create_rasterizer_state(struct pipe_context *pipe,
         printf("Different front and back fill mode not supported\n");
     }
     cs->PA_CONFIG =
-            (rs->flatshade ? VIVS_PA_CONFIG_SHADE_MODEL_FLAT : VIVS_PA_CONFIG_SHADE_MODEL_SMOOTH) | 
+            (rs->flatshade ? VIVS_PA_CONFIG_SHADE_MODEL_FLAT : VIVS_PA_CONFIG_SHADE_MODEL_SMOOTH) |
             translate_cull_face(rs->cull_face, rs->front_ccw) |
             translate_polygon_mode(rs->fill_front) |
             (rs->point_quad_rasterization ? VIVS_PA_CONFIG_POINT_SPRITE_ENABLE : 0) |
