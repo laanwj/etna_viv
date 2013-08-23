@@ -1156,13 +1156,13 @@ struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct et
     /* XXX launch_grid */
 
     etna_pipe_blend_init(pc);
-    etna_pipe_clear_blit_init(pc);
     etna_pipe_rasterizer_init(pc);
     etna_pipe_shader_init(pc);
     etna_pipe_surface_init(pc);
     etna_pipe_texture_init(pc);
     etna_pipe_transfer_init(pc);
     etna_pipe_zsa_init(pc);
+    etna_pipe_clear_blit_init(pc);
 
     /* Reset GPU to initial state */
     reset_context(pc);
