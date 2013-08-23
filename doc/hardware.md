@@ -237,6 +237,10 @@ The tile status bits are cleared using RS, by clearing a small surface with the 
 0x55555555. When clearing, only the destination address and stride needs to be set,
 the source is ignored.
 
+An invalid pattern in the tile status memory can result in hangs when rendering. This was discovered
+in tests that used a depth surface but did not clear it. The residual data in the TS are caused
+the GPU to hang mysteriously on rendering.
+
 Shader ISA
 ================
 
