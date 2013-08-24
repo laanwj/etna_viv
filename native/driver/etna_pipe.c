@@ -760,34 +760,34 @@ static void *etna_pipe_create_vertex_elements_state(struct pipe_context *pipe,
             incompatible = true;
     }
     cs->num_elements = num_elements;
-    if(incompatible)
+    if(incompatible || num_elements == 0)
     {
-        DBG("Error: more vertex buffers used than supported");
-        cs->num_elements = 0;
-    } else {
-        unsigned start_offset = 0; /* start of current consecutive stretch */
-        bool nonconsecutive = true; /* previous value of nonconsecutive */
-        for(unsigned idx=0; idx<num_elements; ++idx)
-        {
-            unsigned element_size = util_format_get_blocksize(elements[idx].src_format);
-            unsigned end_offset = elements[idx].src_offset + element_size;
-            if(nonconsecutive)
-                start_offset = elements[idx].src_offset;
-            assert(element_size != 0 && end_offset <= 256); /* maximum vertex size is 256 bytes */
-            /* check whether next element is consecutive to this one */
-            nonconsecutive = (idx == (num_elements-1)) ||
-                        elements[idx+1].vertex_buffer_index != elements[idx].vertex_buffer_index ||
-                        end_offset != elements[idx+1].src_offset;
-            cs->FE_VERTEX_ELEMENT_CONFIG[idx] =
-                    (nonconsecutive ? VIVS_FE_VERTEX_ELEMENT_CONFIG_NONCONSECUTIVE : 0) |
-                    translate_vertex_format_type(elements[idx].src_format, false) |
-                    VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM(util_format_get_nr_components(elements[idx].src_format)) |
-                    translate_vertex_format_normalize(elements[idx].src_format) |
-                    VIVS_FE_VERTEX_ELEMENT_CONFIG_ENDIAN(ENDIAN_MODE_NO_SWAP) |
-                    VIVS_FE_VERTEX_ELEMENT_CONFIG_STREAM(elements[idx].vertex_buffer_index) |
-                    VIVS_FE_VERTEX_ELEMENT_CONFIG_START(elements[idx].src_offset) |
-                    VIVS_FE_VERTEX_ELEMENT_CONFIG_END(end_offset - start_offset);
-        }
+        DBG("Error: zero vertex elements, or more vertex buffers used than supported");
+        FREE(cs);
+        return NULL;
+    }
+    unsigned start_offset = 0; /* start of current consecutive stretch */
+    bool nonconsecutive = true; /* previous value of nonconsecutive */
+    for(unsigned idx=0; idx<num_elements; ++idx)
+    {
+        unsigned element_size = util_format_get_blocksize(elements[idx].src_format);
+        unsigned end_offset = elements[idx].src_offset + element_size;
+        if(nonconsecutive)
+            start_offset = elements[idx].src_offset;
+        assert(element_size != 0 && end_offset <= 256); /* maximum vertex size is 256 bytes */
+        /* check whether next element is consecutive to this one */
+        nonconsecutive = (idx == (num_elements-1)) ||
+                    elements[idx+1].vertex_buffer_index != elements[idx].vertex_buffer_index ||
+                    end_offset != elements[idx+1].src_offset;
+        cs->FE_VERTEX_ELEMENT_CONFIG[idx] =
+                (nonconsecutive ? VIVS_FE_VERTEX_ELEMENT_CONFIG_NONCONSECUTIVE : 0) |
+                translate_vertex_format_type(elements[idx].src_format, false) |
+                VIVS_FE_VERTEX_ELEMENT_CONFIG_NUM(util_format_get_nr_components(elements[idx].src_format)) |
+                translate_vertex_format_normalize(elements[idx].src_format) |
+                VIVS_FE_VERTEX_ELEMENT_CONFIG_ENDIAN(ENDIAN_MODE_NO_SWAP) |
+                VIVS_FE_VERTEX_ELEMENT_CONFIG_STREAM(elements[idx].vertex_buffer_index) |
+                VIVS_FE_VERTEX_ELEMENT_CONFIG_START(elements[idx].src_offset) |
+                VIVS_FE_VERTEX_ELEMENT_CONFIG_END(end_offset - start_offset);
     }
     return cs;
 }
