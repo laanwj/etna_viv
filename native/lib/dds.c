@@ -42,35 +42,37 @@
 #define DDS_MAGIC 0x20534444
 
 //  DDS_header.dwFlags
-#define DDSD_CAPS                   0x00000001 
-#define DDSD_HEIGHT                 0x00000002 
-#define DDSD_WIDTH                  0x00000004 
-#define DDSD_PITCH                  0x00000008 
-#define DDSD_PIXELFORMAT            0x00001000 
-#define DDSD_MIPMAPCOUNT            0x00020000 
-#define DDSD_LINEARSIZE             0x00080000 
-#define DDSD_DEPTH                  0x00800000 
+#define DDSD_CAPS                   0x00000001
+#define DDSD_HEIGHT                 0x00000002
+#define DDSD_WIDTH                  0x00000004
+#define DDSD_PITCH                  0x00000008
+#define DDSD_PIXELFORMAT            0x00001000
+#define DDSD_MIPMAPCOUNT            0x00020000
+#define DDSD_LINEARSIZE             0x00080000
+#define DDSD_DEPTH                  0x00800000
 
 //  DDS_header.sPixelFormat.dwFlags
-#define DDPF_ALPHAPIXELS            0x00000001 
-#define DDPF_FOURCC                 0x00000004 
-#define DDPF_INDEXED                0x00000020 
-#define DDPF_RGB                    0x00000040 
+#define DDPF_ALPHAPIXELS            0x00000001
+#define DDPF_ALPHA                  0x00000002
+#define DDPF_FOURCC                 0x00000004
+#define DDPF_INDEXED                0x00000020
+#define DDPF_RGB                    0x00000040
+#define DDPF_LUMINANCE              0x00020000
 
 //  DDS_header.sCaps.dwCaps1
-#define DDSCAPS_COMPLEX             0x00000008 
-#define DDSCAPS_TEXTURE             0x00001000 
-#define DDSCAPS_MIPMAP              0x00400000 
+#define DDSCAPS_COMPLEX             0x00000008
+#define DDSCAPS_TEXTURE             0x00001000
+#define DDSCAPS_MIPMAP              0x00400000
 
 //  DDS_header.sCaps.dwCaps2
-#define DDSCAPS2_CUBEMAP            0x00000200 
-#define DDSCAPS2_CUBEMAP_POSITIVEX  0x00000400 
-#define DDSCAPS2_CUBEMAP_NEGATIVEX  0x00000800 
-#define DDSCAPS2_CUBEMAP_POSITIVEY  0x00001000 
-#define DDSCAPS2_CUBEMAP_NEGATIVEY  0x00002000 
-#define DDSCAPS2_CUBEMAP_POSITIVEZ  0x00004000 
-#define DDSCAPS2_CUBEMAP_NEGATIVEZ  0x00008000 
-#define DDSCAPS2_VOLUME             0x00200000 
+#define DDSCAPS2_CUBEMAP            0x00000200
+#define DDSCAPS2_CUBEMAP_POSITIVEX  0x00000400
+#define DDSCAPS2_CUBEMAP_NEGATIVEX  0x00000800
+#define DDSCAPS2_CUBEMAP_POSITIVEY  0x00001000
+#define DDSCAPS2_CUBEMAP_NEGATIVEY  0x00002000
+#define DDSCAPS2_CUBEMAP_POSITIVEZ  0x00004000
+#define DDSCAPS2_CUBEMAP_NEGATIVEZ  0x00008000
+#define DDSCAPS2_VOLUME             0x00200000
 
 #define MAKEFOURCC(ch0, ch1, ch2, ch3) \
   (uint32_t)( \
@@ -79,11 +81,11 @@
     (((uint32_t)(uint8_t)(ch1) <<  8) & 0x0000FF00) | \
      ((uint32_t)(uint8_t)(ch0)        & 0x000000FF) )
 
-#define D3DFMT_DXT1     MAKEFOURCC('D','X','T','1')    //  DXT1 compression texture format 
-#define D3DFMT_DXT2     MAKEFOURCC('D','X','T','2')    //  DXT2 compression texture format 
-#define D3DFMT_DXT3     MAKEFOURCC('D','X','T','3')    //  DXT3 compression texture format 
-#define D3DFMT_DXT4     MAKEFOURCC('D','X','T','4')    //  DXT4 compression texture format 
-#define D3DFMT_DXT5     MAKEFOURCC('D','X','T','5')    //  DXT5 compression texture format 
+#define D3DFMT_DXT1     MAKEFOURCC('D','X','T','1')    //  DXT1 compression texture format
+#define D3DFMT_DXT2     MAKEFOURCC('D','X','T','2')    //  DXT2 compression texture format
+#define D3DFMT_DXT3     MAKEFOURCC('D','X','T','3')    //  DXT3 compression texture format
+#define D3DFMT_DXT4     MAKEFOURCC('D','X','T','4')    //  DXT4 compression texture format
+#define D3DFMT_DXT5     MAKEFOURCC('D','X','T','5')    //  DXT5 compression texture format
 #define D3DFMT_ETC1     MAKEFOURCC('E','T','C','1')    //  Custom (Ericcson Texture Compression)
 
 struct _DDS_pixelformat {
@@ -128,6 +130,7 @@ typedef struct _DdsLoadInfo {
     bool compressed;
     unsigned int divSize;
     unsigned int blockBytes;
+    uint32_t flags;
     int bitcount;
     uint32_t rmask;
     uint32_t gmask;
@@ -136,16 +139,19 @@ typedef struct _DdsLoadInfo {
 } DdsLoadInfo;
 
 static DdsLoadInfo loadInfo[] = {
-    [FMT_A8R8G8B8] = {false, 1, 4, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000},
-    [FMT_X8R8G8B8] = {false, 1, 4, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000},
-    [FMT_R8G8B8]   = {false, 1, 3, 24, 0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000},
-    [FMT_A1R5G5B5] = {false, 1, 2, 16, 0x00007c00, 0x000003e0, 0x0000001f, 0x00008000},
-    [FMT_X1R5G5B5] = {false, 1, 2, 16, 0x00007c00, 0x000003e0, 0x0000001f, 0x00000000},
-    [FMT_R5G6B5]   = {false, 1, 2, 16, 0x0000f800, 0x000007e0, 0x0000001f, 0x00000000},
-    [FMT_DXT1]     = {true, 4, 8, 0, D3DFMT_DXT1},
-    [FMT_DXT3]     = {true, 4, 16, 0, D3DFMT_DXT3},
-    [FMT_DXT5]     = {true, 4, 16, 0, D3DFMT_DXT5},
-    [FMT_ETC1]     = {true, 4, 8, 0, D3DFMT_ETC1}
+    [FMT_A8R8G8B8] = {false, 1, 4, DDPF_RGB, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000},
+    [FMT_X8R8G8B8] = {false, 1, 4, DDPF_RGB, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000},
+    [FMT_R8G8B8]   = {false, 1, 3, DDPF_RGB, 24, 0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000},
+    [FMT_A1R5G5B5] = {false, 1, 2, DDPF_RGB, 16, 0x00007c00, 0x000003e0, 0x0000001f, 0x00008000},
+    [FMT_X1R5G5B5] = {false, 1, 2, DDPF_RGB, 16, 0x00007c00, 0x000003e0, 0x0000001f, 0x00000000},
+    [FMT_R5G6B5]   = {false, 1, 2, DDPF_RGB, 16, 0x0000f800, 0x000007e0, 0x0000001f, 0x00000000},
+    [FMT_A8]       = {false, 1, 1, DDPF_ALPHA, 8,  0x00000000, 0, 0, 0x000000ff},
+    [FMT_L8]       = {false, 1, 1, DDPF_LUMINANCE, 8,  0x000000ff, 0, 0, 0x00000000},
+    [FMT_A8L8]     = {false, 1, 2, DDPF_LUMINANCE, 16, 0x000000ff, 0, 0, 0x0000ff00},
+    [FMT_DXT1]     = {true, 4, 8, DDPF_FOURCC, 0, D3DFMT_DXT1},
+    [FMT_DXT3]     = {true, 4, 16, DDPF_FOURCC, 0, D3DFMT_DXT3},
+    [FMT_DXT5]     = {true, 4, 16, DDPF_FOURCC, 0, D3DFMT_DXT5},
+    [FMT_ETC1]     = {true, 4, 8, DDPF_FOURCC, 0, D3DFMT_ETC1}
 };
 #define NUM_FORMATS (sizeof(loadInfo) / sizeof(DdsLoadInfo))
 
@@ -160,16 +166,36 @@ static int find_fmt(struct _DDS_pixelformat *pf)
         DdsLoadInfo *li = &loadInfo[fmt];
         if(pf->dwFlags & DDPF_FOURCC)
         {
-            if(li->bitcount == 0 && li->rmask == pf->dwFourCC)
+            if(li->flags == DDPF_FOURCC && li->bitcount == 0 && li->rmask == pf->dwFourCC)
             {
                 return fmt;
             }
         }
         else if(pf->dwFlags & DDPF_RGB)
         {
-            if((li->bitcount == pf->dwRGBBitCount) &&
-               (li->rmask == pf->dwRBitMask) && (li->gmask == pf->dwGBitMask) && 
+            if((li->flags == DDPF_RGB) &&
+               (li->bitcount == pf->dwRGBBitCount) &&
+               (li->rmask == pf->dwRBitMask) && (li->gmask == pf->dwGBitMask) &&
                (li->bmask == pf->dwBBitMask) && (li->amask == ((pf->dwFlags & DDPF_ALPHAPIXELS)?pf->dwAlphaBitMask:0)))
+            {
+                return fmt;
+            }
+        }
+        else if(pf->dwFlags & DDPF_LUMINANCE)
+        {
+            bool formatHasAlpha = pf->dwAlphaBitMask != 0;
+            bool ddsHasAlpha = (pf->dwFlags & DDPF_ALPHAPIXELS) != 0;
+            if(li->flags == DDPF_LUMINANCE &&
+               li->bitcount == pf->dwRGBBitCount &&
+               formatHasAlpha == ddsHasAlpha)
+            {
+                return fmt;
+            }
+        }
+        else if(pf->dwFlags & DDPF_ALPHA)
+        {
+            if(li->flags == DDPF_ALPHA &&
+               li->bitcount == pf->dwRGBBitCount)
             {
                 return fmt;
             }
@@ -209,7 +235,7 @@ bool dds_load_file(FILE *f, dds_texture **out)
     }
     DdsLoadInfo *li = &loadInfo[fmt];
     dds_texture *rv = (dds_texture*)malloc(sizeof(dds_texture));
-    if(!rv) 
+    if(!rv)
         goto failure;
 
     //fixme: do cube maps later
@@ -232,7 +258,7 @@ bool dds_load_file(FILE *f, dds_texture **out)
     }
     if((hdr.dwFlags & DDSD_PITCH) && (hdr.dwPitchOrLinearSize != x*li->blockBytes))
         goto failure;
-    
+
     rv->fmt = fmt;
     rv->num_slices = 1;
     rv->num_mipmaps = mipMapCount;
@@ -246,7 +272,7 @@ bool dds_load_file(FILE *f, dds_texture **out)
 
     /* compute offsets */
     size_t offset = 0;
-    for(unsigned int ix = 0; ix < mipMapCount; ++ix) 
+    for(unsigned int ix = 0; ix < mipMapCount; ++ix)
     {
         dds_mipmap *mip = &rv->slices[0][ix];
         mip->width = x;
@@ -255,7 +281,7 @@ bool dds_load_file(FILE *f, dds_texture **out)
         mip->offset = offset;
         mip->size = size;
 #ifdef DEBUG
-        printf("%08x Loading mipmap %i: %ix%i (%i) stride=%i\n", 
+        printf("%08x Loading mipmap %i: %ix%i (%i) stride=%i\n",
                 (int)mip->offset, ix, (int)mip->width, (int)mip->height, (int)mip->size,
                 (int)mip->stride);
 #endif
@@ -266,10 +292,10 @@ bool dds_load_file(FILE *f, dds_texture **out)
     }
     rv->data = malloc(offset);
     rv->size = offset;
-    if(!rv->data) 
+    if(!rv->data)
         goto failure;
     fread(rv->data, rv->size, 1, f);
-    for(unsigned int ix = 0; ix < mipMapCount; ++ix) 
+    for(unsigned int ix = 0; ix < mipMapCount; ++ix)
     {
         rv->slices[0][ix].data = (void*)((size_t)rv->data + rv->slices[0][ix].offset);
     }
@@ -283,7 +309,7 @@ failure:
 bool dds_load(const char *filename, dds_texture **out)
 {
     FILE *f = fopen(filename, "rb");
-    if(f == NULL) 
+    if(f == NULL)
     {
 #ifdef DEBUG
         printf("Cannot open texture file\n");

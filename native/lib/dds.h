@@ -38,6 +38,9 @@
 #define FMT_DXT3     7
 #define FMT_DXT5     8
 #define FMT_ETC1     9
+#define FMT_A8       10
+#define FMT_L8       11
+#define FMT_A8L8     12
 
 typedef struct _dds_mipmap
 {
@@ -46,7 +49,7 @@ typedef struct _dds_mipmap
     size_t offset;
 } dds_mipmap;
 
-typedef struct _dds_texture 
+typedef struct _dds_texture
 {
     int fmt;
     unsigned int div_size;
@@ -62,5 +65,5 @@ bool dds_load(const char *filename, dds_texture **out);
 bool dds_load_file(FILE *f, dds_texture **out);
 void dds_free(dds_texture *tex);
 
-#endif 
+#endif
 

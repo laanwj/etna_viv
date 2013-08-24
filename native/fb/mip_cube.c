@@ -149,7 +149,7 @@ float vNormals[] = {
 #define COMPONENTS_PER_VERTEX (3)
 #define NUM_VERTICES (6*4)
 
-static const char mip_cube_vert[] = 
+static const char mip_cube_vert[] =
 "VERT\n"
 "DCL IN[0]\n"
 "DCL IN[1]\n"
@@ -187,7 +187,7 @@ static const char mip_cube_vert[] =
 " 24: MOV OUT[2], TEMP[1]\n"
 " 25: END\n";
 
-static const char mip_cube_frag[] = 
+static const char mip_cube_frag[] =
 "FRAG\n"
 "PROPERTY FS_COLOR0_WRITES_ALL_CBUFS 1\n"
 "DCL IN[0], GENERIC[0], PERSPECTIVE\n"
@@ -226,16 +226,19 @@ int main(int argc, char **argv)
     case FMT_DXT3: tex_format = PIPE_FORMAT_DXT3_RGBA; break;
     case FMT_DXT5: tex_format = PIPE_FORMAT_DXT5_RGBA; break;
     case FMT_ETC1: tex_format = PIPE_FORMAT_ETC1_RGB8; break;
+    case FMT_A8: tex_format = PIPE_FORMAT_A8_UNORM; break;
+    case FMT_L8: tex_format = PIPE_FORMAT_L8_UNORM; break;
+    case FMT_A8L8: tex_format = PIPE_FORMAT_L8A8_UNORM; break;
     default:
         printf("Unknown texture format\n");
         exit(1);
     }
-    
-    struct pipe_resource *tex_resource = fbdemo_create_2d(fbs->screen, PIPE_BIND_SAMPLER_VIEW, tex_format, tex_base_width, tex_base_height, 
+
+    struct pipe_resource *tex_resource = fbdemo_create_2d(fbs->screen, PIPE_BIND_SAMPLER_VIEW, tex_format, tex_base_width, tex_base_height,
             dds->num_mipmaps - 1);
-    
+
     printf("Loading compressed texture (format %i, %ix%i)\n", dds->fmt, tex_base_width, tex_base_height);
-    
+
     for(int ix=0; ix<dds->num_mipmaps; ++ix)
     {
         printf("%08x: Uploading mipmap %i (%ix%i)\n", dds->slices[0][ix].offset, ix, dds->slices[0][ix].width, dds->slices[0][ix].height);
@@ -271,7 +274,23 @@ int main(int argc, char **argv)
     pipe_buffer_unmap(pipe, vtx_transfer);
 
     /* compile gallium3d states */
-    void *blend = pipe->create_blend_state(pipe, &(struct pipe_blend_state) {
+    void *blend = NULL;
+    if(tex_format == PIPE_FORMAT_A8_UNORM || tex_format == PIPE_FORMAT_L8A8_UNORM) /* if alpha texture, enable blending */
+    {
+        blend = pipe->create_blend_state(pipe, &(struct pipe_blend_state) {
+                .rt[0] = {
+                    .blend_enable = 1,
+                    .rgb_func = PIPE_BLEND_ADD,
+                    .rgb_src_factor = PIPE_BLENDFACTOR_SRC_ALPHA,
+                    .rgb_dst_factor = PIPE_BLENDFACTOR_INV_SRC_ALPHA,
+                    .alpha_func = PIPE_BLEND_ADD,
+                    .alpha_src_factor = PIPE_BLENDFACTOR_SRC_ALPHA,
+                    .alpha_dst_factor = PIPE_BLENDFACTOR_INV_SRC_ALPHA,
+                    .colormask = 0xf
+                }
+            });
+    } else {
+        blend = pipe->create_blend_state(pipe, &(struct pipe_blend_state) {
                 .rt[0] = {
                     .blend_enable = 0,
                     .rgb_func = PIPE_BLEND_ADD,
@@ -283,6 +302,7 @@ int main(int argc, char **argv)
                     .colormask = 0xf
                 }
             });
+    }
 
     void *sampler = pipe->create_sampler_state(pipe, &(struct pipe_sampler_state) {
                 .wrap_s = PIPE_TEX_WRAP_CLAMP_TO_EDGE,
@@ -356,13 +376,13 @@ int main(int argc, char **argv)
             .src_offset = 0,
             .instance_divisor = 0,
             .vertex_buffer_index = 0,
-            .src_format = PIPE_FORMAT_R32G32B32_FLOAT 
+            .src_format = PIPE_FORMAT_R32G32B32_FLOAT
         },
         { /* normals */
             .src_offset = 0xc,
             .instance_divisor = 0,
             .vertex_buffer_index = 0,
-            .src_format = PIPE_FORMAT_R32G32B32_FLOAT 
+            .src_format = PIPE_FORMAT_R32G32B32_FLOAT
         },
         { /* texture coord */
             .src_offset = 0x18,
@@ -371,7 +391,7 @@ int main(int argc, char **argv)
             .src_format = PIPE_FORMAT_R32G32_FLOAT
         }
     };
-    void *vertex_elements = pipe->create_vertex_elements_state(pipe, 
+    void *vertex_elements = pipe->create_vertex_elements_state(pipe,
             sizeof(pipe_vertex_elements)/sizeof(pipe_vertex_elements[0]), pipe_vertex_elements);
     struct pipe_sampler_view *sampler_view = pipe->create_sampler_view(pipe, tex_resource, &(struct pipe_sampler_view){
             .format = tex_format,
@@ -392,7 +412,7 @@ int main(int argc, char **argv)
         .format = z_resource->format,
         .u.tex.level = 0
         });
-    
+
     /* bind */
     pipe->bind_blend_state(pipe, blend);
     pipe->bind_fragment_sampler_states(pipe, 1, &sampler);
@@ -438,7 +458,7 @@ int main(int argc, char **argv)
             .buffer = 0,
             .user_buffer = 0
             });*/ /* non-indexed rendering */
-    
+
     void *vtx_shader = graw_parse_vertex_shader(pipe, mip_cube_vert);
     void *frag_shader = graw_parse_fragment_shader(pipe, mip_cube_frag);
     pipe->bind_vs_state(pipe, vtx_shader);
@@ -449,9 +469,9 @@ int main(int argc, char **argv)
         float vs_const[11*4];
         if(frame%50 == 0)
             printf("*** FRAME %i ****\n", frame);
-        /*   Compute transform matrices in the same way as cube egl demo */ 
+        /*   Compute transform matrices in the same way as cube egl demo */
         ESMatrix modelview, projection, modelviewprojection;
-        ESMatrix inverse, normal; 
+        ESMatrix inverse, normal;
         esMatrixLoadIdentity(&modelview);
         esTranslate(&modelview, 0.0f, 0.0f, -8.0f);
         esRotate(&modelview, 45.0f, 1.0f, 0.0f, 0.0f);
@@ -464,12 +484,12 @@ int main(int argc, char **argv)
         esMatrixMultiply(&modelviewprojection, &modelview, &projection);
         esMatrixInverse3x3(&inverse, &modelview);
         esMatrixTranspose(&normal, &inverse);
-       
+
         /* Clear render target */
         pipe->clear(pipe, PIPE_CLEAR_COLOR | PIPE_CLEAR_DEPTHSTENCIL, &(const union pipe_color_union) {
                 .f = {0.2, 0.2, 0.2, 1.0}
                 }, 1.0, 0xff);
-        
+
         memcpy(&vs_const[0*4], &normal.m[0][0], 3*4); /* CONST[0] */
         memcpy(&vs_const[1*4], &normal.m[1][0], 3*4); /* CONST[1] */
         memcpy(&vs_const[2*4], &normal.m[2][0], 3*4); /* CONST[2] */
