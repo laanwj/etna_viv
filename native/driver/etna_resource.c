@@ -210,9 +210,9 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     else if(templat->bind & PIPE_BIND_VERTEX_BUFFER)
         memtype = VIV_SURF_VERTEX;
 
-    DBG_F(ETNA_RESOURCE_MSGS, "%p: Allocate surface of %ix%i (padded to %ix%i) of format %i (%i bpe %ix%i), size %08x flags %08x, memtype %i",
+    DBG_F(ETNA_RESOURCE_MSGS, "%p: Allocate surface of %ix%i (padded to %ix%i) of format %s (%i bpe %ix%i), size %08x flags %08x, memtype %i",
             resource,
-            templat->width0, templat->height0, resource->levels[0].padded_width, resource->levels[0].padded_height, templat->format,
+            templat->width0, templat->height0, resource->levels[0].padded_width, resource->levels[0].padded_height, util_format_name(templat->format),
             element_size, divSizeX, divSizeY, rt_size, templat->bind, memtype);
 
     struct etna_vidmem *rt = 0;
