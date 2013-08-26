@@ -56,7 +56,7 @@
 #endif
 //#define DEBUG
 
-const char *galcore_device[] = {"/dev/galcore", "/dev/graphics/galcore", NULL};
+const char *galcore_device[] = {"/dev/gal3d", "/dev/galcore", "/dev/graphics/galcore", NULL};
 #define INTERFACE_SIZE (sizeof(gcsHAL_INTERFACE))
 
 /* Call ioctl interface with structure cmd as input and output.
