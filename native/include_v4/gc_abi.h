@@ -26,6 +26,8 @@
 #define GCABI_HAS_MINOR_FEATURES_2
 #define GCABI_HAS_MINOR_FEATURES_3
 
+#define GCABI_CHIPIDENTITY_EXT
+
 // One of these must be set:
 //#define GCABI_HAS_CONTEXT
 #define GCABI_HAS_STATE_DELTAS
