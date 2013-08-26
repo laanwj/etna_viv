@@ -365,8 +365,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00C04" name="SCISSOR_TOP" value="0x00000000" type="float"/>
         <reg32 offset="0x00C08" name="SCISSOR_RIGHT" value="0x45000000" type="float"/>
         <reg32 offset="0x00C0C" name="SCISSOR_BOTTOM" value="0x45000000" type="float"/>
-        <reg32 offset="0x00C10" name="DEPTH_SCALE" value="0x00000000" type="float"/>
-        <reg32 offset="0x00C14" name="DEPTH_BIAS" value="0x00000000" type="float"/>
+        <reg32 offset="0x00C10" name="DEPTH_SCALE" value="0x00000000" type="float" brief="Depth scale"/>
+        <reg32 offset="0x00C14" name="DEPTH_BIAS" value="0x00000000" type="float" brief="Depth bias (divided by 65535)"/>
         <reg32 offset="0x00C18" name="CONFIG" value="0x00000000">
             <bitfield pos="0" name="LAST_PIXEL_ENABLE" brief="Render last pixel of line">
                 <doc>Always disabled for OpenGL</doc>

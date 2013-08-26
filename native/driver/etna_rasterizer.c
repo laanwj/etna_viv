@@ -52,7 +52,7 @@ static void *etna_pipe_create_rasterizer_state(struct pipe_context *pipe,
     cs->PA_LINE_WIDTH = etna_f32_to_u32(rs->line_width / 2.0f);
     cs->PA_POINT_SIZE = etna_f32_to_u32(rs->point_size);
     cs->SE_DEPTH_SCALE = etna_f32_to_u32(rs->offset_scale);
-    cs->SE_DEPTH_BIAS = etna_f32_to_u32(rs->offset_units);
+    cs->SE_DEPTH_BIAS = etna_f32_to_u32(rs->offset_units) / 65535.0f;
     cs->SE_CONFIG =
             (rs->line_last_pixel ? VIVS_SE_CONFIG_LAST_PIXEL_ENABLE : 0);
             /* XXX anything else? */
