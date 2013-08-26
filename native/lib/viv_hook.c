@@ -82,7 +82,7 @@ int my_open(const char* path, int flags, ...)
         ret = open(path, flags);
     }
     
-    if(ret >= 0 && (!strcmp(path, "/dev/galcore") || !strcmp(path, "/dev/graphics/galcore") == 0))
+    if(ret >= 0 && (!strcmp(path, "/dev/galcore") || !strcmp(path, "/dev/graphics/galcore")))
     {
         _galcore_handle = ret;
         printf("opened galcore: %i\n", ret);
