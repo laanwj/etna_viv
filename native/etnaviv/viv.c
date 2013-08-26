@@ -160,7 +160,7 @@ int viv_open(enum viv_hw_type hw_type, struct viv_conn **out)
     if((err=conn->fd) < 0)
         goto error;
 
-#ifdef VIV_HAS_STATE_DELTAS
+#ifdef GCABI_HAS_STATE_DELTAS
     /* Determine version */
     id.command = gcvHAL_VERSION;
     if((err=viv_invoke(conn, &id)) != gcvSTATUS_OK)
