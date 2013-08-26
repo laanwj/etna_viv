@@ -36,8 +36,8 @@ enum etna_surface_layout
     ETNA_LAYOUT_MULTI_SUPERTILED = 4|1|2 /* multi pipe supertiled */
 };
 
-void etna_texture_tile(void *dest, void *src, unsigned width, unsigned height, unsigned src_stride, unsigned elmtsize);
-void etna_texture_untile(void *dest, void *src, unsigned width, unsigned height, unsigned dst_stride, unsigned elmtsize);
+void etna_texture_tile(void *dest, void *src, unsigned basex, unsigned basey, unsigned width, unsigned height, unsigned src_stride, unsigned elmtsize);
+void etna_texture_untile(void *dest, void *src, unsigned basex, unsigned basey, unsigned width, unsigned height, unsigned dst_stride, unsigned elmtsize);
 
 /* XXX from/to supertiling (can have different layouts, may be better to leave to RS) */
 

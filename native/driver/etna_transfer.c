@@ -137,11 +137,9 @@ static void *etna_pipe_transfer_map(struct pipe_context *pipe,
             {
                 if(resource_priv->layout == ETNA_LAYOUT_TILED && !util_format_is_compressed(resource_priv->base.format))
                 {
-                    uint bpe = util_format_get_blocksize(resource_priv->base.format);
-                    /* XXX currently only handles multiples of the tile size */
-                    void *ptr = res_level->logical + etna_compute_offset(resource_priv->base.format, &ptrans->base.box, res_level->stride, res_level->layer_stride);
-                    etna_texture_untile(ptrans->buffer, ptr, ptrans->base.box.width, ptrans->base.box.height,
-                            ptrans->base.stride, bpe);
+                    etna_texture_untile(ptrans->buffer, res_level->logical, ptrans->base.box.x, ptrans->base.box.y,
+                            ptrans->base.box.width, ptrans->base.box.height,
+                            ptrans->base.stride, util_format_get_blocksize(resource_priv->base.format));
                 } else { /* non-tiled or compressed format */
                     util_copy_box(ptrans->buffer,
                       resource_priv->base.format,
@@ -194,11 +192,9 @@ static void etna_pipe_transfer_unmap(struct pipe_context *pipe,
             {
                 if(resource->layout == ETNA_LAYOUT_TILED && !util_format_is_compressed(resource->base.format))
                 {
-                    uint bpe = util_format_get_blocksize(resource->base.format);
-                    /* XXX currently only handles multiples of the tile size */
-                    void *ptr = level->logical + etna_compute_offset(resource->base.format, &ptrans->base.box, level->stride, level->layer_stride);
-                    etna_texture_tile(ptr, ptrans->buffer, ptrans->base.box.width, ptrans->base.box.height,
-                            ptrans->base.stride, bpe);
+                    etna_texture_tile(level->logical, ptrans->buffer, ptrans->base.box.x, ptrans->base.box.y,
+                            ptrans->base.box.width, ptrans->base.box.height,
+                            ptrans->base.stride, util_format_get_blocksize(resource->base.format));
                 } else { /* non-tiled or compressed format */
                     util_copy_box(level->logical,
                       resource->base.format,

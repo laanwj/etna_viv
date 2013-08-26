@@ -34,10 +34,17 @@
 #define ETNA_CALLOC_STRUCT_ARRAY(N, T)   (struct T *) calloc((N), sizeof(struct T))
 #define ETNA_FREE(_ptr) free(_ptr)
 
+/* align to a value divisable by granularity >= value, works only for powers of two */
 static inline uint32_t etna_align_up(uint32_t value, uint32_t granularity)
 {
     return (value + (granularity-1)) & (~(granularity-1));
 }
+/* align to a value divisable by granularity <= value, works only for powers of two */
+static inline uint32_t etna_align_down(uint32_t value, uint32_t granularity)
+{
+    return (value) & (~(granularity-1));
+}
+
 static inline uint32_t etna_umin(uint32_t a, uint32_t b) { return (a<b)?a:b; }
 static inline uint32_t etna_umax(uint32_t a, uint32_t b) { return (a>b)?a:b; }
 static inline uint32_t etna_smin(int32_t a, int32_t b) { return (a<b)?a:b; }
