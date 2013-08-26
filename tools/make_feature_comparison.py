@@ -97,7 +97,8 @@ def main():
 
     cur_row += 1
     table.append(Cell(cur_row, 0, 'Specs', colspan=full_width, cls='category'))
-    spec_fields = ["streamCount", "registerMax", "threadCount", "shaderCoreCount",  "vertexCacheSize", "vertexOutputBufferSize"]
+    spec_fields = ["streamCount", "registerMax", "threadCount", "shaderCoreCount",  "vertexCacheSize", "vertexOutputBufferSize",
+              "pixelPipes", "instructionCount", "numConstants", "bufferSize", "numVaryings", "superTileLayout"]
     for (field) in spec_fields:
         cur_row += 1
         table.append(Cell(cur_row, 0, field, cls='subheader'))

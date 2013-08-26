@@ -214,6 +214,29 @@
             "numVaryings": "8",
             "superTileLayout": "0"
         }]
+    },
+    {
+        "platform": "Marvell Armada 1500",
+        "chips": [{
+            "type": "GC1000",
+            "chipModel": "0x1000",
+            "chipRevision": "0x5015",
+            "chipFeatures": "0xe0286eed",
+            "chipMinorFeatures": "0xc3799eff",
+            "chipMinorFeatures1": "0x2e13b2d9",
+            "chipMinorFeatures2": "0x00100000",
+            "chipMinorFeatures3": "0x00000000",
+            "streamCount": "4",
+            "registerMax": "64",
+            "threadCount": "512",
+            "shaderCoreCount": "2",
+            "vertexCacheSize": "8",
+            "vertexOutputBufferSize": "512",
+            "pixelPipes": "1",
+            "instructionCount": "256",
+            "numConstants": "0",
+            "bufferSize": "0"
+        }]
     }
 ]
 
