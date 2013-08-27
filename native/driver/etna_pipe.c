@@ -275,10 +275,30 @@ static void sync_context(struct pipe_context *restrict pipe)
     /* CSOs must be bound before calling this */
     assert(e->blend && e->rasterizer && e->depth_stencil_alpha && e->vertex_elements);
 
+    /* pre-processing: re-link shader if needed.
+     */
     if((dirty & ETNA_STATE_SHADER) && e->vs && e->fs)
     {
         /* re-link vs and fs if needed */
         etna_link_shaders(pipe, &e->shader_state, e->vs, e->fs);
+    }
+
+    /* pre-processing: see what caches we need to flush before making state
+     * changes.
+     */
+    uint32_t to_flush = 0;
+    if(dirty & (ETNA_STATE_BLEND))
+    {
+        /* Need flush when changing "PE.COLOR_FORMAT_OVERWRITE".
+         */
+        if((e->gpu3d.PE_COLOR_FORMAT & VIVS_PE_COLOR_FORMAT_OVERWRITE) !=
+           (e->blend->PE_COLOR_FORMAT & VIVS_PE_COLOR_FORMAT_OVERWRITE))
+            to_flush |= VIVS_GL_FLUSH_CACHE_COLOR;
+    }
+    if(to_flush)
+    {
+        etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, to_flush);
+        etna_stall(ctx, SYNC_RECIPIENT_RA, SYNC_RECIPIENT_PE);
     }
 
     e->gpu3d.num_vertex_elements = e->vertex_elements->num_elements;
