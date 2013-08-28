@@ -538,3 +538,13 @@ instructions this indeed maps to 512 instructions.
 
 XXX does the VS/PS split at instruction 256 during rendering affect OpenCL? Hopefully not...
 
+State changes and caches
+--------------------------
+
+It looks like some state changes invalidate the cache. Before these state changes it is important to flush
+the appropriate cache so that the rendered cache tiles are properly written back. These are at least:
+
+    PE.COLOR_FORMAT.OVERWRITE -> flush COLOR
+
+(others will be added when found)
+

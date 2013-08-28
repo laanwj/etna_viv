@@ -289,7 +289,7 @@ static void sync_context(struct pipe_context *restrict pipe)
     uint32_t to_flush = 0;
     if(dirty & (ETNA_STATE_BLEND))
     {
-        /* Need flush when changing "PE.COLOR_FORMAT_OVERWRITE".
+        /* Need flush when changing "PE.COLOR_FORMAT.OVERWRITE".
          */
         if((e->gpu3d.PE_COLOR_FORMAT & VIVS_PE_COLOR_FORMAT_OVERWRITE) !=
            (e->blend->PE_COLOR_FORMAT & VIVS_PE_COLOR_FORMAT_OVERWRITE))
