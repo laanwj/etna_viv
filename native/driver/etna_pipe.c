@@ -275,7 +275,7 @@ static void sync_context(struct pipe_context *restrict pipe)
     /* CSOs must be bound before calling this */
     assert(e->blend && e->rasterizer && e->depth_stencil_alpha && e->vertex_elements);
 
-    /* pre-processing: re-link shader if needed.
+    /* Pre-processing: re-link shader if needed.
      */
     if((dirty & ETNA_STATE_SHADER) && e->vs && e->fs)
     {
@@ -283,18 +283,20 @@ static void sync_context(struct pipe_context *restrict pipe)
         etna_link_shaders(pipe, &e->shader_state, e->vs, e->fs);
     }
 
-    /* pre-processing: see what caches we need to flush before making state
+    /* Pre-processing: see what caches we need to flush before making state
      * changes.
      */
     uint32_t to_flush = 0;
     if(dirty & (ETNA_STATE_BLEND))
     {
-        /* Need flush when changing "PE.COLOR_FORMAT.OVERWRITE".
+        /* Need flush COLOR when changing PE.COLOR_FORMAT.OVERWRITE.
          */
         if((e->gpu3d.PE_COLOR_FORMAT & VIVS_PE_COLOR_FORMAT_OVERWRITE) !=
            (e->blend->PE_COLOR_FORMAT & VIVS_PE_COLOR_FORMAT_OVERWRITE))
             to_flush |= VIVS_GL_FLUSH_CACHE_COLOR;
     }
+    if(dirty & (ETNA_STATE_TEXTURE_CACHES))
+        to_flush |= VIVS_GL_FLUSH_CACHE_TEXTURE;
     if(to_flush)
     {
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, to_flush);
@@ -681,17 +683,10 @@ static void sync_context(struct pipe_context *restrict pipe)
     /**** End of state update ****/
 #undef EMIT_STATE
 #undef EMIT_STATE_FIXP
-    /**** Start of flushes ****/
-    if(dirty & (ETNA_STATE_TEXTURE_CACHES))
-    {
-        /* clear texture cache (both fragment and vertex) */
-        /* don't flush TEXTUREVS until we figure out how to make it not crash */
-        etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_TEXTURE);
-    }
+    /**** Post processing ****/
     if(dirty & (ETNA_STATE_FRAMEBUFFER | ETNA_STATE_TS))
     {
-        /* Wait rasterizer until RS (PE) finished configuration.
-         * Also wait after texture cache was flushed, otherwise rendering may hang. */
+        /* Wait rasterizer until RS (PE) finished configuration. */
         etna_stall(ctx, SYNC_RECIPIENT_RA, SYNC_RECIPIENT_PE);
     }
 

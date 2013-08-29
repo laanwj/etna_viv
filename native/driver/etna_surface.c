@@ -92,7 +92,7 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
                 .dither = {0xffffffff, 0xffffffff},
                 .width = 16,
                 .height = surf->surf.ts_size/0x40,
-                .clear_value = {priv->specs.ts_clear_value},  /* XXX should be 0x11111111 for non-2BITPERTILE GPUs */
+                .clear_value = {priv->specs.ts_clear_value},
                 .clear_mode = VIVS_RS_CLEAR_CONTROL_MODE_ENABLED1,
                 .clear_bits = 0xffff
             });

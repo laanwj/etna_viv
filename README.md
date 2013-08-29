@@ -12,7 +12,8 @@ SoCs with Vivante GPU
 =========================
 
 ARM-based:
-- Marvell Armada 1500 has a GC1000: Google TV, OLPC
+- Marvell Armada 1500 has a GC1000: Google TV, OLPC XO-4
+- Marvell Armada 610 has a GC860: OLPC XO-1.75
 - Marvell Armada 510 has a GC600: [CuBox](http://www.solid-run.com/cubox)
 - Rockchip 2918 has a GC800: some Arnova tablets
 - Freescale i.MX6 Quad and Dual have a GC2000 + GC320 + GC355
