@@ -70,7 +70,7 @@ float vNormals[] = {
 };
 
 #define COMPONENTS_PER_VERTEX (3)
-#define NUM_VERTICES (8)
+#define NUM_VERTICES (4)
 
 static const char alpha_blend_vert[] = 
 "VERT\n"

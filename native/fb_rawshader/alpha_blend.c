@@ -71,7 +71,7 @@ float vNormals[] = {
 };
 
 #define COMPONENTS_PER_VERTEX (3)
-#define NUM_VERTICES (8)
+#define NUM_VERTICES (4)
 
 /* alpha_blend_vs.asm */
 uint32_t vs[] = {
