@@ -70,6 +70,7 @@ struct etna_resource_level
    void *logical; /* cached CPU pointer */
    uint32_t ts_address;
    uint32_t ts_size;
+   uint32_t clear_value; /* clear value of resource level (mainly for TS) */
    uint32_t stride; /* VIVS_PE_(COLOR|DEPTH)_STRIDE */
    uint32_t layer_stride;
 };
@@ -96,8 +97,9 @@ struct etna_surface
 
     enum etna_surface_layout layout;
     struct etna_resource_level surf;
-    uint32_t clear_value; // XXX remember depth/stencil clear value from ->clear
     struct compiled_rs_state clear_command;
+    /* Keep pointer to resource level, for fast clear */
+    struct etna_resource_level *level;
 };
 
 struct etna_sampler_view

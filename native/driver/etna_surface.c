@@ -60,8 +60,8 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
     /* XXX for now, don't do TS for render textures as this path
      * is not stable.
      */
-#if 0 /* XXX for now, disable TS completely until we properly manage the state */
-    if(!resource->ts & !(resource->base.bind & PIPE_BIND_SAMPLER_VIEW) &&
+#if 1
+    if(!resource->ts & !(resource->base.bind & (PIPE_BIND_SAMPLER_VIEW)) &&
             (resource->levels[level].padded_width & ETNA_RS_WIDTH_MASK) == 0 &&
             (resource->levels[level].padded_height & ETNA_RS_HEIGHT_MASK) == 0)
         etna_screen_resource_alloc_ts(pipe->screen, resource);
@@ -74,10 +74,11 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
     surf->base.u = templat->u;
 
     surf->layout = resource->layout;
-    surf->surf = resource->levels[level];
+    surf->level = &resource->levels[level]; /* Keep pointer to actual level to set clear color */
+    surf->surf = resource->levels[level]; /* Make copy of level to narrow down address to layer */
+                                        /* XXX we don't really need a copy */
     surf->surf.address += layer * surf->surf.layer_stride;
     surf->surf.logical += layer * surf->surf.layer_stride;
-    surf->clear_value = 0; /* last clear value */
 
     if(surf->surf.ts_address)
     {
@@ -85,19 +86,20 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
            Currently uses a fixed row size of 64 bytes. Some benchmarking with different sizes may be in order.
          */
         etna_compile_rs_state(&surf->clear_command, &(struct rs_state){
-                .source_format = RS_FORMAT_X8R8G8B8,
-                .dest_format = RS_FORMAT_X8R8G8B8,
+                .source_format = RS_FORMAT_A8R8G8B8,
+                .dest_format = RS_FORMAT_A8R8G8B8,
                 .dest_addr = surf->surf.ts_address,
                 .dest_stride = 0x40,
+                /* XXX .dest_tiling = ETNA_LAYOUT_TILED, could be slightly faster */
                 .dither = {0xffffffff, 0xffffffff},
                 .width = 16,
-                .height = surf->surf.ts_size/0x40,
+                .height = etna_align_up(surf->surf.ts_size/0x40, 4),
                 .clear_value = {priv->specs.ts_clear_value},
                 .clear_mode = VIVS_RS_CLEAR_CONTROL_MODE_ENABLED1,
                 .clear_bits = 0xffff
             });
     } else {
-        etna_rs_gen_clear_surface(surf, surf->clear_value);
+        etna_rs_gen_clear_surface(surf, surf->level->clear_value);
     }
     etna_resource_touch(pipe, surf->base.texture);
     return &surf->base;

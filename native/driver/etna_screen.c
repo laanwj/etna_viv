@@ -399,7 +399,27 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
     if(drawable->want_fence)
         fence = &drawable->fence;
 
-    /* XXX set up TS */
+    etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR);
+    etna_stall(ctx, SYNC_RECIPIENT_RA, SYNC_RECIPIENT_PE);
+
+    /* Set up TS before blit */
+    /* Could leave the depth bits alone here */
+#if 0
+    if(rt_resource->levels[level].ts_address)
+    {
+        etna_set_state_multi(ctx, VIVS_TS_MEM_CONFIG, 4, (uint32_t[]) {
+          ectx->gpu3d.TS_MEM_CONFIG = VIVS_TS_MEM_CONFIG_COLOR_FAST_CLEAR, /* XXX |= VIVS_TS_MEM_CONFIG_MSAA | translate_msaa_format(cbuf->format) */
+          ectx->gpu3d.TS_COLOR_STATUS_BASE = rt_resource->levels[level].ts_address,
+          ectx->gpu3d.TS_COLOR_SURFACE_BASE = rt_resource->levels[level].address,
+          ectx->gpu3d.TS_COLOR_CLEAR_VALUE = rt_resource->levels[level].clear_value
+          });
+    } else {
+        etna_set_state(ctx, VIVS_TS_MEM_CONFIG, 0x00000000);
+        ectx->gpu3d.TS_MEM_CONFIG = 0;
+    }
+    ectx->dirty_bits |= ETNA_STATE_TS;
+#endif
+
     /* Kick off RS here */
     struct compiled_rs_state copy_to_screen;
     etna_compile_rs_state(&copy_to_screen, &(struct rs_state){
@@ -417,7 +437,6 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
                 .width = drawable->width,
                 .height = drawable->height
             });
-    etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
     etna_submit_rs_state(ctx, &copy_to_screen);
     DBG_F(ETNA_FRAME_MSGS,
             "Queued RS command to flush screen from %08x to %08x stride=%08x width=%i height=%i, ctx %p",

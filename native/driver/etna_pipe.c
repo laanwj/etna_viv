@@ -890,7 +890,7 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
         pipe_surface_reference(&cs->cbuf, &cbuf->base);
         cs->PE_COLOR_FORMAT =
                 VIVS_PE_COLOR_FORMAT_FORMAT(translate_rt_format(cbuf->base.format, false)) |
-                (color_supertiled ? VIVS_PE_COLOR_FORMAT_SUPER_TILED : 0); /* XXX depends on layout */
+                (color_supertiled ? VIVS_PE_COLOR_FORMAT_SUPER_TILED : 0);
                 /* XXX VIVS_PE_COLOR_FORMAT_OVERWRITE and the rest comes from blend_state / depth_stencil_alpha */
                 /* merged with depth_stencil_alpha */
         if (priv->ctx->conn->chip.pixel_pipes == 1)
@@ -906,7 +906,7 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
         if(cbuf->surf.ts_address)
         {
             ts_mem_config |= VIVS_TS_MEM_CONFIG_COLOR_FAST_CLEAR;
-            cs->TS_COLOR_CLEAR_VALUE = cbuf->clear_value;
+            cs->TS_COLOR_CLEAR_VALUE = cbuf->level->clear_value;
             cs->TS_COLOR_STATUS_BASE = cbuf->surf.ts_address;
             cs->TS_COLOR_SURFACE_BASE = cbuf->surf.address;
         }
@@ -947,7 +947,7 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
             ts_mem_config |= VIVS_TS_MEM_CONFIG_DEPTH_FAST_CLEAR |
                 (depth_bits == 16 ? VIVS_TS_MEM_CONFIG_DEPTH_16BPP : 0) |
                 VIVS_TS_MEM_CONFIG_DEPTH_COMPRESSION;
-            cs->TS_DEPTH_CLEAR_VALUE = zsbuf->clear_value;
+            cs->TS_DEPTH_CLEAR_VALUE = zsbuf->level->clear_value;
             cs->TS_DEPTH_STATUS_BASE = zsbuf->surf.ts_address;
             cs->TS_DEPTH_SURFACE_BASE = zsbuf->surf.address;
         }
