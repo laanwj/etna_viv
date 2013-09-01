@@ -945,8 +945,9 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
         if(zsbuf->surf.ts_address)
         {
             ts_mem_config |= VIVS_TS_MEM_CONFIG_DEPTH_FAST_CLEAR |
-                (depth_bits == 16 ? VIVS_TS_MEM_CONFIG_DEPTH_16BPP : 0) |
-                VIVS_TS_MEM_CONFIG_DEPTH_COMPRESSION;
+                (depth_bits == 16 ? VIVS_TS_MEM_CONFIG_DEPTH_16BPP : 0);
+                /* XXX VIVS_TS_MEM_CONFIG_DEPTH_COMPRESSION;
+                 * Disable for now, as it causes corruption in glquake. */
             cs->TS_DEPTH_CLEAR_VALUE = zsbuf->level->clear_value;
             cs->TS_DEPTH_STATUS_BASE = zsbuf->surf.ts_address;
             cs->TS_DEPTH_SURFACE_BASE = zsbuf->surf.address;
