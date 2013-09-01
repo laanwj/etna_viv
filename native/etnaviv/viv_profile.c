@@ -9,7 +9,7 @@
 #ifdef GCABI_HAS_CONTEXT
 #include "gc_hal_user_context.h"
 #else
-#include "gc_hal_kernel_context.h"
+#include "gc_hal_kernel_buffer.h"
 #endif
 #include "gc_hal_types.h"
 
