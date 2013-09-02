@@ -99,7 +99,7 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
                 .clear_bits = 0xffff
             });
     } else {
-        etna_rs_gen_clear_surface(surf, surf->level->clear_value);
+        etna_rs_gen_clear_surface(&surf->clear_command, surf, surf->level->clear_value);
     }
     etna_resource_touch(pipe, surf->base.texture);
     return &surf->base;

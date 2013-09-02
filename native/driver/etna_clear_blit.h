@@ -28,8 +28,9 @@
 
 struct pipe_context;
 struct etna_surface;
+struct compiled_rs_state;
 
-void etna_rs_gen_clear_surface(struct etna_surface *surf, uint32_t clear_value);
+void etna_rs_gen_clear_surface(struct compiled_rs_state *rs_state, struct etna_surface *surf, uint32_t clear_value);
 
 void etna_pipe_clear_blit_init(struct pipe_context *pipe);
 

@@ -62,7 +62,7 @@ static void etna_pipe_blit_save_state(struct pipe_context *pipe)
 }
 
 /* Generate clear command for a surface (non-TS case) */
-void etna_rs_gen_clear_surface(struct etna_surface *surf, uint32_t clear_value)
+void etna_rs_gen_clear_surface(struct compiled_rs_state *rs_state, struct etna_surface *surf, uint32_t clear_value)
 {
     uint bs = util_format_get_blocksize(surf->base.format);
     uint format = 0;
@@ -77,7 +77,7 @@ void etna_rs_gen_clear_surface(struct etna_surface *surf, uint32_t clear_value)
     /* use tiled clear if width is multiple of 16 */
     bool tiled_clear = (surf->surf.padded_width & ETNA_RS_WIDTH_MASK) == 0 &&
                        (surf->surf.padded_height & ETNA_RS_HEIGHT_MASK) == 0;
-    etna_compile_rs_state(&surf->clear_command, &(struct rs_state){
+    etna_compile_rs_state(rs_state, &(struct rs_state){
             .source_format = format,
             .dest_format = format,
             .dest_addr = surf->surf.address,
@@ -128,7 +128,7 @@ static void etna_pipe_clear(struct pipe_context *pipe,
             }
             else if(unlikely(new_clear_value != surf->level->clear_value)) /* Queue normal RS clear for non-TS surfaces */
             {
-                etna_rs_gen_clear_surface(surf, new_clear_value);
+                etna_rs_gen_clear_surface(&surf->clear_command, surf, new_clear_value);
             }
             etna_submit_rs_state(priv->ctx, &surf->clear_command);
             surf->level->clear_value = new_clear_value;
@@ -147,7 +147,7 @@ static void etna_pipe_clear(struct pipe_context *pipe,
             }
         } else if(unlikely(new_clear_value != surf->level->clear_value)) /* Queue normal RS clear for non-TS surfaces */
         {
-            etna_rs_gen_clear_surface(surf, new_clear_value);
+            etna_rs_gen_clear_surface(&surf->clear_command, surf, new_clear_value);
         }
         etna_submit_rs_state(priv->ctx, &surf->clear_command);
         surf->level->clear_value = new_clear_value;
