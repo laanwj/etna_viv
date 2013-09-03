@@ -41,7 +41,35 @@
 
 #include <stdio.h>
 
-int etna_mesa_debug = ETNA_DBG_MSGS | ETNA_RESOURCE_MSGS | ETNA_COMPILER_MSGS;  /* XXX */
+uint32_t etna_mesa_debug = 0;
+
+/* Set debug flags from environment variable */
+static void etna_set_debug_flags(const char *str)
+{
+   struct option {
+      const char *name;
+      uint32_t flag;
+   };
+   static const struct option opts[] = {
+      { "dbg_msgs", ETNA_DBG_MSGS },
+      { "frame_msgs", ETNA_DBG_FRAME_MSGS },
+      { "resource_msgs", ETNA_DBG_RESOURCE_MSGS },
+      { "compiler_msgs", ETNA_DBG_COMPILER_MSGS },
+      { "linker_msgs", ETNA_DBG_LINKER_MSGS },
+      { "dump_shaders", ETNA_DBG_DUMP_SHADERS },
+      { "no_ts", ETNA_DBG_NO_TS },
+      { "cflush_all", ETNA_DBG_CFLUSH_ALL }
+   };
+   int i;
+
+   if (!str)
+      return;
+
+   for (i = 0; i < Elements(opts); i++) {
+      if (strstr(str, opts[i].name))
+         etna_mesa_debug |= opts[i].flag;
+   }
+}
 
 static void etna_screen_destroy( struct pipe_screen *screen )
 {
@@ -438,7 +466,7 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
                 .height = drawable->height
             });
     etna_submit_rs_state(ctx, &copy_to_screen);
-    DBG_F(ETNA_FRAME_MSGS,
+    DBG_F(ETNA_DBG_FRAME_MSGS,
             "Queued RS command to flush screen from %08x to %08x stride=%08x width=%i height=%i, ctx %p",
             rt_resource->levels[0].address,
             drawable->addr, drawable->stride,
@@ -452,6 +480,8 @@ etna_screen_create(struct viv_conn *dev)
     struct etna_screen *screen = CALLOC_STRUCT(etna_screen);
     struct pipe_screen *pscreen = &screen->base;
     screen->dev = dev;
+
+    etna_set_debug_flags(getenv("ETNA_DEBUG"));
 
     /* Determine specs for device */
     screen->specs.can_supertile = VIV_FEATURE(dev, chipMinorFeatures0, SUPER_TILED);

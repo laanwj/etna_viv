@@ -60,12 +60,15 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
     /* XXX for now, don't do TS for render textures as this path
      * is not stable.
      */
-#if 1
-    if(!resource->ts & !(resource->base.bind & (PIPE_BIND_SAMPLER_VIEW)) &&
+    if(!DBG_ENABLED(ETNA_DBG_NO_TS) &&
+            !resource->ts &&
+            !(resource->base.bind & (PIPE_BIND_SAMPLER_VIEW)) &&
             (resource->levels[level].padded_width & ETNA_RS_WIDTH_MASK) == 0 &&
             (resource->levels[level].padded_height & ETNA_RS_HEIGHT_MASK) == 0)
+    {
         etna_screen_resource_alloc_ts(pipe->screen, resource);
-#endif
+    }
+
     surf->base.texture = &resource->base;
     surf->base.format = resource->base.format;
     surf->base.width = resource->levels[level].width;

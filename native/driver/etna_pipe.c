@@ -297,6 +297,8 @@ static void sync_context(struct pipe_context *restrict pipe)
     }
     if(dirty & (ETNA_STATE_TEXTURE_CACHES))
         to_flush |= VIVS_GL_FLUSH_CACHE_TEXTURE;
+    if(DBG_ENABLED(ETNA_DBG_CFLUSH_ALL))
+        to_flush |= VIVS_GL_FLUSH_CACHE_TEXTURE | VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH;
     if(to_flush)
     {
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, to_flush);

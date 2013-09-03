@@ -1288,7 +1288,7 @@ static void assign_constants_and_immediates(struct etna_compile_data *cd)
         cd->file[TGSI_FILE_IMMEDIATE][idx].native.rgroup = INST_RGROUP_UNIFORM_0;
         cd->file[TGSI_FILE_IMMEDIATE][idx].native.id = cd->imm_base/4 + idx;
     }
-    DBG_F(ETNA_COMPILER_MSGS, "imm base: %i size: %i", cd->imm_base, cd->imm_size);
+    DBG_F(ETNA_DBG_COMPILER_MSGS, "imm base: %i size: %i", cd->imm_base, cd->imm_size);
     cd->num_uniforms = cd->imm_base/4 + cd->file_size[TGSI_FILE_IMMEDIATE];
 }
 
@@ -1609,13 +1609,13 @@ int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct
     /* list declarations */
     for(int x=0; x<cd->total_decls; ++x)
     {
-        DBG_F(ETNA_COMPILER_MSGS, "%i: %s,%d active=%i first_use=%i last_use=%i native=%i usage_mask=%x has_semantic=%i", x, tgsi_file_name(cd->decl[x].file), cd->decl[x].idx,
+        DBG_F(ETNA_DBG_COMPILER_MSGS, "%i: %s,%d active=%i first_use=%i last_use=%i native=%i usage_mask=%x has_semantic=%i", x, tgsi_file_name(cd->decl[x].file), cd->decl[x].idx,
                 cd->decl[x].active,
                 cd->decl[x].first_use, cd->decl[x].last_use, cd->decl[x].native.valid?cd->decl[x].native.id:-1,
                 cd->decl[x].usage_mask,
                 cd->decl[x].has_semantic);
         if(cd->decl[x].has_semantic)
-            DBG_F(ETNA_COMPILER_MSGS, " semantic_name=%s semantic_idx=%i",
+            DBG_F(ETNA_DBG_COMPILER_MSGS, " semantic_name=%s semantic_idx=%i",
                     tgsi_semantic_names[cd->decl[x].semantic.Name], cd->decl[x].semantic.Index);
     }
     /* XXX for PS we need to permute so that inputs are always in temporary 0..N-1.
@@ -1630,13 +1630,13 @@ int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct
     /* list declarations */
     for(int x=0; x<cd->total_decls; ++x)
     {
-        DBG_F(ETNA_COMPILER_MSGS, "%i: %s,%d active=%i first_use=%i last_use=%i native=%i usage_mask=%x has_semantic=%i", x, tgsi_file_name(cd->decl[x].file), cd->decl[x].idx,
+        DBG_F(ETNA_DBG_COMPILER_MSGS, "%i: %s,%d active=%i first_use=%i last_use=%i native=%i usage_mask=%x has_semantic=%i", x, tgsi_file_name(cd->decl[x].file), cd->decl[x].idx,
                 cd->decl[x].active,
                 cd->decl[x].first_use, cd->decl[x].last_use, cd->decl[x].native.valid?cd->decl[x].native.id:-1,
                 cd->decl[x].usage_mask,
                 cd->decl[x].has_semantic);
         if(cd->decl[x].has_semantic)
-            DBG_F(ETNA_COMPILER_MSGS, " semantic_name=%s semantic_idx=%i",
+            DBG_F(ETNA_DBG_COMPILER_MSGS, " semantic_name=%s semantic_idx=%i",
                     tgsi_semantic_names[cd->decl[x].semantic.Name], cd->decl[x].semantic.Index);
     }
 

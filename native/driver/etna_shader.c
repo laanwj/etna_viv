@@ -47,7 +47,7 @@ void etna_link_shaders(struct pipe_context *pipe,
     assert(vs->processor == TGSI_PROCESSOR_VERTEX);
     assert(fs->processor == TGSI_PROCESSOR_FRAGMENT);
 #ifdef DEBUG
-    if(DBG_ENABLED(ETNA_DUMP_SHADERS))
+    if(DBG_ENABLED(ETNA_DBG_DUMP_SHADERS))
     {
         etna_dump_shader_object(vs);
         etna_dump_shader_object(fs);
@@ -78,10 +78,10 @@ void etna_link_shaders(struct pipe_context *pipe,
     {
         assert(0); /* linking failed: some fs inputs do not have corresponding vs outputs */
     }
-    DBG_F(ETNA_LINKER_MSGS, "link result:");
+    DBG_F(ETNA_DBG_LINKER_MSGS, "link result:");
     for(int idx=0; idx<fs->num_inputs; ++idx)
     {
-        DBG_F(ETNA_LINKER_MSGS,"  %i -> %i", link.varyings_vs_reg[idx], idx+1);
+        DBG_F(ETNA_DBG_LINKER_MSGS,"  %i -> %i", link.varyings_vs_reg[idx], idx+1);
     }
 
     /* vs outputs (varyings) */

@@ -29,14 +29,19 @@
 #include <stdlib.h>
 #include "util/u_debug.h"
 
-#define ETNA_DBG_MSGS      0x1 /* Warnings and non-fatal errors */
-#define ETNA_FRAME_MSGS    0x2
-#define ETNA_RESOURCE_MSGS 0x4
-#define ETNA_COMPILER_MSGS 0x8
-#define ETNA_LINKER_MSGS   0x10
-#define ETNA_DUMP_SHADERS  0x20
+/* Logging */
+#define ETNA_DBG_MSGS          0x1 /* Warnings and non-fatal errors */
+#define ETNA_DBG_FRAME_MSGS    0x2
+#define ETNA_DBG_RESOURCE_MSGS 0x4
+#define ETNA_DBG_COMPILER_MSGS 0x8
+#define ETNA_DBG_LINKER_MSGS   0x10
+#define ETNA_DBG_DUMP_SHADERS  0x20
 
-extern int etna_mesa_debug;
+/* Bypasses */
+#define ETNA_DBG_NO_TS         0x1000 /* Disable TS */
+#define ETNA_DBG_CFLUSH_ALL    0x2000 /* Flush before every state update + draw call */
+
+extern uint32_t etna_mesa_debug; /* set in etna_screen.c from ETNA_DEBUG */
 
 #define DBG_ENABLED(flag) (etna_mesa_debug & (flag))
 

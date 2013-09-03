@@ -57,7 +57,7 @@ bool etna_screen_resource_alloc_ts(struct pipe_screen *screen, struct etna_resou
     if(rt_ts_size == 0)
         return true;
 
-    DBG_F(ETNA_RESOURCE_MSGS, "%p: Allocating tile status of size %i", resource, rt_ts_size);
+    DBG_F(ETNA_DBG_RESOURCE_MSGS, "%p: Allocating tile status of size %i", resource, rt_ts_size);
     struct etna_vidmem *rt_ts = 0;
     if(unlikely(etna_vidmem_alloc_linear(priv->dev, &rt_ts, rt_ts_size, VIV_SURF_TILE_STATUS, VIV_POOL_DEFAULT, true)!=ETNA_OK))
     {
@@ -210,7 +210,7 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     else if(templat->bind & PIPE_BIND_VERTEX_BUFFER)
         memtype = VIV_SURF_VERTEX;
 
-    DBG_F(ETNA_RESOURCE_MSGS, "%p: Allocate surface of %ix%i (padded to %ix%i) of format %s (%i bpe %ix%i), size %08x flags %08x, memtype %i",
+    DBG_F(ETNA_DBG_RESOURCE_MSGS, "%p: Allocate surface of %ix%i (padded to %ix%i) of format %s (%i bpe %ix%i), size %08x flags %08x, memtype %i",
             resource,
             templat->width0, templat->height0, resource->levels[0].padded_width, resource->levels[0].padded_height, util_format_name(templat->format),
             element_size, divSizeX, divSizeY, rt_size, templat->bind, memtype);
@@ -236,7 +236,7 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
         struct etna_resource_level *mip = &resource->levels[ix];
         mip->address = resource->surface->address + mip->offset;
         mip->logical = resource->surface->logical + mip->offset;
-        DBG_F(ETNA_RESOURCE_MSGS, "  %08x level %i: %ix%i (%i) stride=%i layer_stride=%i",
+        DBG_F(ETNA_DBG_RESOURCE_MSGS, "  %08x level %i: %ix%i (%i) stride=%i layer_stride=%i",
                 (int)mip->address, ix, (int)mip->width, (int)mip->height, (int)mip->size,
                 (int)mip->stride, (int)mip->layer_stride);
     }
@@ -258,11 +258,11 @@ static void etna_screen_resource_destroy(struct pipe_screen *screen,
          * the context was since destroyed.
          */
         struct etna_pipe_context *ectx = resource->last_ctx;
-        DBG_F(ETNA_RESOURCE_MSGS, "%p: resource queued destroyed (%ix%ix%i)", resource, resource_->width0, resource_->height0, resource_->depth0);
+        DBG_F(ETNA_DBG_RESOURCE_MSGS, "%p: resource queued destroyed (%ix%ix%i)", resource, resource_->width0, resource_->height0, resource_->depth0);
         etna_vidmem_queue_free(ectx->ctx->queue, resource->surface);
         etna_vidmem_queue_free(ectx->ctx->queue, resource->ts);
     } else {
-        DBG_F(ETNA_RESOURCE_MSGS, "%p: resource destroyed (%ix%ix%i)", resource, resource_->width0, resource_->height0, resource_->depth0);
+        DBG_F(ETNA_DBG_RESOURCE_MSGS, "%p: resource destroyed (%ix%ix%i)", resource, resource_->width0, resource_->height0, resource_->depth0);
         etna_vidmem_free(priv->dev, resource->surface);
         etna_vidmem_free(priv->dev, resource->ts);
     }
