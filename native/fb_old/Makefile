@@ -9,9 +9,9 @@ LDFLAGS += -lm ../driver/libetnadriver.a ../gallium/libminigallium.a ../etnaviv/
 
 TARGETS = fbtest etna_test rotate_cube cube_companion rstests mip_cube_raw
 COMPANION_OBJS = ../resources/companion_array.o ../resources/companion_mesh.o ../resources/companion_texture.o
-ETNA_OBJS = ../lib/etna_bswap.o
+ETNA_OBJS = ../lib/etna_bswap.o ../lib/fbdemos.o
 
-all: $(TARGETS)
+all: cube_companion_msaa
 
 clean:
 	rm -f *.o ../lib/*.o
@@ -29,7 +29,7 @@ rotate_cube: rotate_cube.o ../lib/write_bmp.o $(ETNA_OBJS) ../lib/esTransform.o
 mip_cube_raw: mip_cube_raw.o ../lib/write_bmp.o ../lib/esTransform.o ../lib/dds.o $(ETNA_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 
-cube_companion: cube_companion.o ../lib/write_bmp.o ../lib/esTransform.o $(COMPANION_OBJS) $(ETNA_OBJS)
+cube_companion_msaa: cube_companion.o ../lib/write_bmp.o ../lib/esTransform.o $(COMPANION_OBJS) $(ETNA_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 
 rstests: rstests.o ../lib/write_bmp.o ../lib/esTransform.o $(COMPANION_OBJS) $(ETNA_OBJS)
