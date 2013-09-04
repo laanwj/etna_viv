@@ -43,7 +43,7 @@
 
 uint32_t etna_mesa_debug = 0;
 
-/* Set debug flags from environment variable */
+/* Set debug flags from ETNA_DEBUG environment variable */
 static void etna_set_debug_flags(const char *str)
 {
    struct option {
@@ -58,7 +58,9 @@ static void etna_set_debug_flags(const char *str)
       { "linker_msgs", ETNA_DBG_LINKER_MSGS },
       { "dump_shaders", ETNA_DBG_DUMP_SHADERS },
       { "no_ts", ETNA_DBG_NO_TS },
-      { "cflush_all", ETNA_DBG_CFLUSH_ALL }
+      { "cflush_all", ETNA_DBG_CFLUSH_ALL },
+      { "msaa2x", ETNA_DBG_MSAA_2X },
+      { "msaa4x", ETNA_DBG_MSAA_4X }
    };
    int i;
 
@@ -343,8 +345,7 @@ static boolean etna_screen_is_format_supported( struct pipe_screen *screen,
 {
     struct etna_screen *priv = etna_screen(screen);
     unsigned allowed = 0;
-    if ((target >= PIPE_MAX_TEXTURE_TYPES) ||
-                (sample_count > 1) /* TODO add MSAA */)
+    if (target >= PIPE_MAX_TEXTURE_TYPES)
     {
         return FALSE;
     }
@@ -354,7 +355,19 @@ static boolean etna_screen_is_format_supported( struct pipe_screen *screen,
         /* if render target, must be RS-supported format */
         if(translate_rt_format(format, true) != ETNA_NO_MATCH)
         {
-            allowed |= PIPE_BIND_RENDER_TARGET;
+            /* Validate MSAA; number of samples must be allowed, and render target must have
+             * MSAA'able format.
+             */
+            if(sample_count > 1)
+            {
+                if(translate_samples_to_xyscale(sample_count, NULL, NULL, NULL) &&
+                   translate_msaa_format(format, true) != ETNA_NO_MATCH)
+                {
+                    allowed |= PIPE_BIND_RENDER_TARGET;
+                }
+            } else {
+                allowed |= PIPE_BIND_RENDER_TARGET;
+            }
         }
     }
     if (usage & PIPE_BIND_DEPTH_STENCIL)
@@ -368,7 +381,7 @@ static boolean etna_screen_is_format_supported( struct pipe_screen *screen,
     if (usage & PIPE_BIND_SAMPLER_VIEW)
     {
         /* must be supported texture format */
-        if(translate_texture_format(format, true) != ETNA_NO_MATCH)
+        if(sample_count < 2 && translate_texture_format(format, true) != ETNA_NO_MATCH)
         {
             allowed |= PIPE_BIND_SAMPLER_VIEW;
         }
@@ -448,6 +461,10 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
         ectx->dirty_bits |= ETNA_STATE_TS;
     }
 
+    int msaa_xscale=1, msaa_yscale=1;
+    if(!translate_samples_to_xyscale(resource->nr_samples, &msaa_xscale, &msaa_yscale, NULL))
+        return;
+
     /* Kick off RS here */
     struct compiled_rs_state copy_to_screen;
     etna_compile_rs_state(&copy_to_screen, &(struct rs_state){
@@ -459,11 +476,13 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
                 .dest_tiling = ETNA_LAYOUT_LINEAR,
                 .dest_addr = drawable->addr,
                 .dest_stride = drawable->stride,
+                .downsample_x = msaa_xscale > 1,
+                .downsample_y = msaa_yscale > 1,
                 .swap_rb = drawable->swap_rb,
                 .dither = {0xffffffff, 0xffffffff}, // XXX dither when going from 24 to 16 bit?
                 .clear_mode = VIVS_RS_CLEAR_CONTROL_MODE_DISABLED,
-                .width = drawable->width,
-                .height = drawable->height
+                .width = drawable->width * msaa_xscale,
+                .height = drawable->height * msaa_yscale
             });
     etna_submit_rs_state(ctx, &copy_to_screen);
     DBG_F(ETNA_DBG_FRAME_MSGS,

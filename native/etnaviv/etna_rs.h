@@ -27,9 +27,10 @@
 
 struct rs_state
 {
+    uint8_t downsample_x:1; // Downsample in x direction
+    uint8_t downsample_y:1; // Downsample in y direction
+
     uint8_t source_format; // RS_FORMAT_XXX
-    uint8_t downsample_x; // Downsample in x direction
-    uint8_t downsample_y; // Downsample in y direction
     uint8_t source_tiling; // ETNA_LAYOUT_XXX
     uint8_t dest_tiling;   // ETNA_LAYOUT_XXX
     uint8_t dest_format;  // RS_FORMAT_XXX
@@ -39,8 +40,8 @@ struct rs_state
     uint32_t source_stride;
     uint32_t dest_addr;
     uint32_t dest_stride;
-    uint16_t width;
-    uint16_t height;
+    uint16_t width; // source width
+    uint16_t height; // source height
     uint32_t dither[2];
     uint32_t clear_bits;
     uint32_t clear_mode; // VIVS_RS_CLEAR_CONTROL_MODE_XXX

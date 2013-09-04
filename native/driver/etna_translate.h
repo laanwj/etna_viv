@@ -513,5 +513,42 @@ static inline uint32_t translate_clear_depth_stencil(enum pipe_format format, fl
     return clear_value;
 }
 
+/* Convert MSAA number of samples to x and y scaling factor and VIVS_GL_MULTI_SAMPLE_CONFIG value.
+ * Return true if supported and false otherwise.
+ */
+static inline bool translate_samples_to_xyscale(int num_samples, int *xscale_out, int *yscale_out, uint32_t *config_out)
+{
+    int xscale, yscale;
+    uint32_t config;
+    switch(num_samples)
+    {
+    case 0:
+    case 1:
+        xscale = 1;
+        yscale = 1;
+        config = VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_SAMPLES_NONE;
+        break;
+    case 2:
+        xscale = 2;
+        yscale = 1;
+        config = VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_SAMPLES_2X;
+        break;
+    case 4:
+        xscale = 2;
+        yscale = 2;
+        config = VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_SAMPLES_4X;
+        break;
+    default:
+        return false;
+    }
+    if(xscale_out)
+        *xscale_out = xscale;
+    if(yscale_out)
+        *yscale_out = yscale;
+    if(config_out)
+        *config_out = config;
+    return true;
+}
+
 #endif
 

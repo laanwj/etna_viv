@@ -47,6 +47,7 @@
 #define FBDEV_DEV "/dev/fb%i"
 #endif
 struct fbdemos_scaffold *_fbs; /* for gdb */
+int fbdemos_msaa_samples = 0;
 
 void fbdemo_init(struct fbdemos_scaffold **out)
 {
@@ -60,6 +61,9 @@ void fbdemo_init(struct fbdemos_scaffold **out)
     }
     fbs->width = fbs->fb.fb_var.xres;
     fbs->height = fbs->fb.fb_var.yres;
+
+    if(getenv("ETNA_MSAA_SAMPLES"))
+        fbdemos_msaa_samples = atoi(getenv("ETNA_MSAA_SAMPLES"));
 
     rv = viv_open(VIV_HW_3D, &fbs->conn);
     if(rv!=0)
@@ -82,7 +86,7 @@ void fbdemo_init(struct fbdemos_scaffold **out)
         exit(1);
     }
     fbs->ctx = etna_pipe_context(fbs->pipe)->ctx;
-    
+
     if(etna_bswap_create(fbs->ctx, &fbs->buffers, fbs->fb.num_buffers, (etna_set_buffer_cb_t)&fb_set_buffer, (etna_copy_buffer_cb_t)&etna_fb_copy_buffer, &fbs->fb) != ETNA_OK)
     {
         printf("Unable to create buffer swapper\n");
@@ -110,7 +114,7 @@ struct pipe_resource *fbdemo_create_2d(struct pipe_screen *screen, unsigned bind
             .depth0 = 1,
             .array_size = 1,
             .last_level = max_mip_level,
-            .nr_samples = 1,
+            .nr_samples = ((bind == PIPE_BIND_DEPTH_STENCIL || bind == PIPE_BIND_RENDER_TARGET) ? fbdemos_msaa_samples : 1),
             .usage = PIPE_USAGE_IMMUTABLE,
             .bind = bind,
             .flags = 0,
@@ -272,6 +276,10 @@ int etna_fb_bind_resource(struct fb_info *fb, struct pipe_resource *rt_resource_
     struct etna_resource *rt_resource = etna_resource(rt_resource_);
     fb->resource = rt_resource;
     assert(rt_resource->base.width0 <= fb->fb_var.xres && rt_resource->base.height0 <= fb->fb_var.yres);
+    int msaa_xscale=1, msaa_yscale=1;
+    if(!translate_samples_to_xyscale(rt_resource_->nr_samples, &msaa_xscale, &msaa_yscale, NULL))
+        abort();
+
     for(int bi=0; bi<ETNA_FB_MAX_BUFFERS; ++bi)
     {
         etna_compile_rs_state(&fb->copy_to_screen[bi], &(struct rs_state){
@@ -283,11 +291,13 @@ int etna_fb_bind_resource(struct fb_info *fb, struct pipe_resource *rt_resource_
                     .dest_tiling = ETNA_LAYOUT_LINEAR,
                     .dest_addr = fb->physical[bi],
                     .dest_stride = fb->fb_fix.line_length,
+                    .downsample_x = msaa_xscale > 1,
+                    .downsample_y = msaa_yscale > 1,
                     .swap_rb = fb->swap_rb,
                     .dither = {0xffffffff, 0xffffffff}, // XXX dither when going from 24 to 16 bit?
                     .clear_mode = VIVS_RS_CLEAR_CONTROL_MODE_DISABLED,
-                    .width = fb->fb_var.xres,
-                    .height = fb->fb_var.yres
+                    .width = fb->fb_var.xres * msaa_xscale,
+                    .height = fb->fb_var.yres * msaa_yscale
                 });
     }
     return 0;

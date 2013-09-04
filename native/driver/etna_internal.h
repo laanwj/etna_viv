@@ -206,6 +206,9 @@ struct compiled_framebuffer_state
     uint32_t SE_SCISSOR_TOP; // fixp
     uint32_t SE_SCISSOR_RIGHT; // fixp
     uint32_t SE_SCISSOR_BOTTOM; // fixp
+    uint32_t RA_MULTISAMPLE_UNK00E04;
+    uint32_t RA_MULTISAMPLE_UNK00E10[VIVS_RA_MULTISAMPLE_UNK00E10__LEN];
+    uint32_t RA_CENTROID_TABLE[VIVS_RA_CENTROID_TABLE__LEN];
     uint32_t TS_MEM_CONFIG;
     uint32_t TS_DEPTH_CLEAR_VALUE;
     uint32_t TS_DEPTH_STATUS_BASE;
@@ -213,6 +216,7 @@ struct compiled_framebuffer_state
     uint32_t TS_COLOR_CLEAR_VALUE;
     uint32_t TS_COLOR_STATUS_BASE;
     uint32_t TS_COLOR_SURFACE_BASE;
+    bool msaa_mode; // adds input (and possible temp) to PS
 };
 
 /* Compiled context->create_vertex_elements_state */
@@ -255,7 +259,9 @@ struct compiled_shader_state
     uint32_t PS_END_PC;
     uint32_t PS_OUTPUT_REG;
     uint32_t PS_INPUT_COUNT;
+    uint32_t PS_INPUT_COUNT_MSAA; /* Adds an input */
     uint32_t PS_TEMP_REGISTER_CONTROL;
+    uint32_t PS_TEMP_REGISTER_CONTROL_MSAA; /* Adds a temporary if needed to make space for extra input */
     uint32_t PS_CONTROL;
     uint32_t PS_START_PC;
     uint32_t GL_VARYING_TOTAL_COMPONENTS;
@@ -321,6 +327,9 @@ struct etna_3d_state
     uint32_t /*00C18*/ SE_CONFIG;
 
     uint32_t /*00E00*/ RA_CONTROL;
+    uint32_t /*00E04*/ RA_MULTISAMPLE_UNK00E04;
+    uint32_t /*00E10*/ RA_MULTISAMPLE_UNK00E10[VIVS_RA_MULTISAMPLE_UNK00E10__LEN];
+    uint32_t /*00E40*/ RA_CENTROID_TABLE[VIVS_RA_CENTROID_TABLE__LEN];
 
     uint32_t /*01000*/ PS_END_PC;
     uint32_t /*01004*/ PS_OUTPUT_REG;

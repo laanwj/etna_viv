@@ -40,6 +40,8 @@
 /* Bypasses */
 #define ETNA_DBG_NO_TS         0x1000 /* Disable TS */
 #define ETNA_DBG_CFLUSH_ALL    0x2000 /* Flush before every state update + draw call */
+#define ETNA_DBG_MSAA_2X       0x4000 /* Force 2X MSAA for screen */
+#define ETNA_DBG_MSAA_4X       0x8000 /* Force 4X MSAA for screen */
 
 extern uint32_t etna_mesa_debug; /* set in etna_screen.c from ETNA_DEBUG */
 

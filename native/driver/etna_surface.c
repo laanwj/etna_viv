@@ -77,9 +77,10 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
     surf->base.u = templat->u;
 
     surf->layout = resource->layout;
-    surf->level = &resource->levels[level]; /* Keep pointer to actual level to set clear color */
+    surf->level = &resource->levels[level]; /* Keep pointer to actual level to set clear color on */
+                                            /* underlying resource instead of surface */
     surf->surf = resource->levels[level]; /* Make copy of level to narrow down address to layer */
-                                        /* XXX we don't really need a copy */
+                                        /* XXX we don't really need a copy but it's convenient */
     surf->surf.address += layer * surf->surf.layer_stride;
     surf->surf.logical += layer * surf->surf.layer_stride;
 

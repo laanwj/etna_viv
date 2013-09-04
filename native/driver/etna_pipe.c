@@ -89,8 +89,8 @@ static uint32_t active_samplers_bits(struct pipe_context *pipe)
  *
  * This pushes the current register state in pipe->gpu3d to the GPU.
  * The function is used to initialize the GPU in a predictable state
- * at the beginning of the rendering, as well as to create a context
- * buffer for the kernel driver before flush.
+ * at the beginning of rendering, as well as to create a context
+ * buffer for the kernel driver.
  */
 static void reset_context(struct pipe_context *restrict pipe)
 {
@@ -166,6 +166,15 @@ static void reset_context(struct pipe_context *restrict pipe)
     /*00C14*/ EMIT_STATE(SE_DEPTH_BIAS, SE_DEPTH_BIAS);
     /*00C18*/ EMIT_STATE(SE_CONFIG, SE_CONFIG);
     /*00E00*/ EMIT_STATE(RA_CONTROL, RA_CONTROL);
+    /*00E04*/ EMIT_STATE(RA_MULTISAMPLE_UNK00E04, RA_MULTISAMPLE_UNK00E04);
+    for(int x=0; x<4; ++x)
+    {
+        /*00E10*/ EMIT_STATE(RA_MULTISAMPLE_UNK00E10(x), RA_MULTISAMPLE_UNK00E10[x]);
+    }
+    for(int x=0; x<16; ++x)
+    {
+        /*00E40*/ EMIT_STATE(RA_CENTROID_TABLE(x), RA_CENTROID_TABLE[x]);
+    }
     /*01000*/ EMIT_STATE(PS_END_PC, PS_END_PC);
     /*01004*/ EMIT_STATE(PS_OUTPUT_REG, PS_OUTPUT_REG);
     /*01008*/ EMIT_STATE(PS_INPUT_COUNT, PS_INPUT_COUNT);
@@ -340,7 +349,7 @@ static void sync_context(struct pipe_context *restrict pipe)
      * emit state in increasing order of address (this makes it possible to merge
      * consecutive register updates into one SET_STATE command)
      *
-     * There have been some manual changes, where the weving operation is not
+     * There have been some manual changes, where the weaving operation is not
      * simply bitwise or:
      * - scissor fixp
      * - num vertex elements
@@ -349,6 +358,7 @@ static void sync_context(struct pipe_context *restrict pipe)
      * - texture lod
      * - ETNA_STATE_TS
      * - removed ETNA_STATE_BASE_SETUP statements -- these are guaranteed to not change anyway
+     * - PS / framebuffer interaction for MSAA
      */
     uint32_t last_reg, last_fixp, span_start;
     ETNA_COALESCE_STATE_OPEN(ETNA_3D_CONTEXT_SIZE);
@@ -465,11 +475,31 @@ static void sync_context(struct pipe_context *restrict pipe)
     if(dirty & (ETNA_STATE_SHADER))
     {
         /*00E00*/ EMIT_STATE(RA_CONTROL, RA_CONTROL, e->shader_state.RA_CONTROL);
+    }
+    if(dirty & (ETNA_STATE_FRAMEBUFFER))
+    {
+        /*00E04*/ EMIT_STATE(RA_MULTISAMPLE_UNK00E04, RA_MULTISAMPLE_UNK00E04, e->framebuffer.RA_MULTISAMPLE_UNK00E04);
+        for(int x=0; x<4; ++x)
+        {
+            /*00E10*/ EMIT_STATE(RA_MULTISAMPLE_UNK00E10(x), RA_MULTISAMPLE_UNK00E10[x], e->framebuffer.RA_MULTISAMPLE_UNK00E10[x]);
+        }
+        for(int x=0; x<16; ++x)
+        {
+            /*00E40*/ EMIT_STATE(RA_CENTROID_TABLE(x), RA_CENTROID_TABLE[x], e->framebuffer.RA_CENTROID_TABLE[x]);
+        }
+    }
+    if(dirty & (ETNA_STATE_SHADER | ETNA_STATE_FRAMEBUFFER))
+    {
         /*01000*/ EMIT_STATE(PS_END_PC, PS_END_PC, e->shader_state.PS_END_PC);
         /*01004*/ EMIT_STATE(PS_OUTPUT_REG, PS_OUTPUT_REG, e->shader_state.PS_OUTPUT_REG);
-        /* XXX affected by supersampling as well (supersampling adds a PS input, and thus a temp when that makes #inputs>#temps) */
-        /*01008*/ EMIT_STATE(PS_INPUT_COUNT, PS_INPUT_COUNT, e->shader_state.PS_INPUT_COUNT);
-        /*0100C*/ EMIT_STATE(PS_TEMP_REGISTER_CONTROL, PS_TEMP_REGISTER_CONTROL, e->shader_state.PS_TEMP_REGISTER_CONTROL);
+        /*01008*/ EMIT_STATE(PS_INPUT_COUNT, PS_INPUT_COUNT,
+                e->framebuffer.msaa_mode ?
+                    e->shader_state.PS_INPUT_COUNT_MSAA :
+                    e->shader_state.PS_INPUT_COUNT);
+        /*0100C*/ EMIT_STATE(PS_TEMP_REGISTER_CONTROL, PS_TEMP_REGISTER_CONTROL,
+                e->framebuffer.msaa_mode ?
+                    e->shader_state.PS_TEMP_REGISTER_CONTROL_MSAA :
+                    e->shader_state.PS_TEMP_REGISTER_CONTROL);
         /*01010*/ EMIT_STATE(PS_CONTROL, PS_CONTROL, e->shader_state.PS_CONTROL);
         /*01018*/ EMIT_STATE(PS_START_PC, PS_START_PC, e->shader_state.PS_START_PC);
         if (e->specs.has_shader_range_registers)
@@ -871,16 +901,9 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
 {
     struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct compiled_framebuffer_state *cs = &priv->framebuffer;
+    int nr_samples_color = -1;
+    int nr_samples_depth = -1;
 
-    /* XXX support multisample 2X/4X, take care that required width/height is doubled
-     * for both depth and color surfaces.
-     */
-    cs->GL_MULTI_SAMPLE_CONFIG =
-            VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_SAMPLES_NONE;
-            /* VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_ENABLES(0xf)
-            VIVS_GL_MULTI_SAMPLE_CONFIG_UNK12 |
-            VIVS_GL_MULTI_SAMPLE_CONFIG_UNK16 */
-            /* merged with sample_mask */
 
     /* Set up TS as well. Warning: this state is used by both the RS and PE */
     uint32_t ts_mem_config = 0;
@@ -912,7 +935,10 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
             cs->TS_COLOR_STATUS_BASE = cbuf->surf.ts_address;
             cs->TS_COLOR_SURFACE_BASE = cbuf->surf.address;
         }
-        /* XXX ts_mem_config |= VIVS_TS_MEM_CONFIG_MSAA | translate_msaa_format(cbuf->format) */
+        /* MSAA */
+        if(cbuf->base.texture->nr_samples > 1)
+            ts_mem_config |= VIVS_TS_MEM_CONFIG_MSAA | translate_msaa_format(cbuf->base.format, false);
+        nr_samples_color = cbuf->base.texture->nr_samples;
     } else {
         pipe_surface_reference(&cs->cbuf, NULL);
         cs->PE_COLOR_FORMAT = 0; /* Is this enough to render without color? */
@@ -928,8 +954,8 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
         bool depth_supertiled = (zsbuf->layout & 2)!=0;
         cs->PE_DEPTH_CONFIG =
                 depth_format |
-                (depth_supertiled ? VIVS_PE_DEPTH_CONFIG_SUPER_TILED : 0) | /* XXX depends on layout */
-                VIVS_PE_DEPTH_CONFIG_DEPTH_MODE_Z; /* XXX set to NONE if no Z buffer */
+                (depth_supertiled ? VIVS_PE_DEPTH_CONFIG_SUPER_TILED : 0) |
+                VIVS_PE_DEPTH_CONFIG_DEPTH_MODE_Z;
                 /* VIVS_PE_DEPTH_CONFIG_ONLY_DEPTH */
                 /* merged with depth_stencil_alpha */
         if (priv->ctx->conn->chip.pixel_pipes == 1)
@@ -946,19 +972,70 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
         cs->PE_DEPTH_NORMALIZE = etna_f32_to_u32(exp2f(depth_bits) - 1.0f);
         if(zsbuf->surf.ts_address)
         {
-            ts_mem_config |= VIVS_TS_MEM_CONFIG_DEPTH_FAST_CLEAR |
-                (depth_bits == 16 ? VIVS_TS_MEM_CONFIG_DEPTH_16BPP : 0);
-                /* XXX VIVS_TS_MEM_CONFIG_DEPTH_COMPRESSION;
-                 * Disable for now, as it causes corruption in glquake. */
+            ts_mem_config |= VIVS_TS_MEM_CONFIG_DEPTH_FAST_CLEAR;
             cs->TS_DEPTH_CLEAR_VALUE = zsbuf->level->clear_value;
             cs->TS_DEPTH_STATUS_BASE = zsbuf->surf.ts_address;
             cs->TS_DEPTH_SURFACE_BASE = zsbuf->surf.address;
         }
+        ts_mem_config |= (depth_bits == 16 ? VIVS_TS_MEM_CONFIG_DEPTH_16BPP : 0);
+        /* MSAA */
+        if(zsbuf->base.texture->nr_samples > 1)
+            /* XXX VIVS_TS_MEM_CONFIG_DEPTH_COMPRESSION;
+             * Disable without MSAA for now, as it causes corruption in glquake. */
+            ts_mem_config |= VIVS_TS_MEM_CONFIG_DEPTH_COMPRESSION;
+        nr_samples_depth = zsbuf->base.texture->nr_samples;
     } else {
         pipe_surface_reference(&cs->zsbuf, NULL);
         cs->PE_DEPTH_CONFIG = VIVS_PE_DEPTH_CONFIG_DEPTH_MODE_NONE;
     }
 
+    /* MSAA setup */
+    if(nr_samples_depth != -1 && nr_samples_color != -1 &&
+        nr_samples_depth != nr_samples_color)
+    {
+        printf("%s: Number of samples in color and depth texture must match (%i and %i respectively)\n", __func__,
+                nr_samples_color, nr_samples_depth);
+    }
+    switch(MAX2(nr_samples_depth, nr_samples_color))
+    {
+    case 0:
+    case 1: /* Are 0 and 1 samples allowed? */
+        cs->GL_MULTI_SAMPLE_CONFIG = VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_SAMPLES_NONE;
+        cs->msaa_mode = false;
+        break;
+    case 2:
+        cs->GL_MULTI_SAMPLE_CONFIG = VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_SAMPLES_2X;
+        cs->msaa_mode = true; /* Add input to PS */
+        cs->RA_MULTISAMPLE_UNK00E04 = 0x0;
+        cs->RA_MULTISAMPLE_UNK00E10[0] = 0x0000aa22;
+        cs->RA_CENTROID_TABLE[0] = 0x66aa2288;
+        cs->RA_CENTROID_TABLE[1] = 0x88558800;
+        cs->RA_CENTROID_TABLE[2] = 0x88881100;
+        cs->RA_CENTROID_TABLE[3] = 0x33888800;
+        break;
+    case 4:
+        cs->GL_MULTI_SAMPLE_CONFIG = VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_SAMPLES_4X;
+        cs->msaa_mode = true; /* Add input to PS */
+        cs->RA_MULTISAMPLE_UNK00E04 = 0x0;
+        cs->RA_MULTISAMPLE_UNK00E10[0] = 0xeaa26e26;
+        cs->RA_MULTISAMPLE_UNK00E10[1] = 0xe6ae622a;
+        cs->RA_MULTISAMPLE_UNK00E10[2] = 0xaaa22a22;
+        cs->RA_CENTROID_TABLE[0] = 0x4a6e2688;
+        cs->RA_CENTROID_TABLE[1] = 0x888888a2;
+        cs->RA_CENTROID_TABLE[2] = 0x888888ea;
+        cs->RA_CENTROID_TABLE[3] = 0x888888c6;
+        cs->RA_CENTROID_TABLE[4] = 0x46622a88;
+        cs->RA_CENTROID_TABLE[5] = 0x888888ae;
+        cs->RA_CENTROID_TABLE[6] = 0x888888e6;
+        cs->RA_CENTROID_TABLE[7] = 0x888888ca;
+        cs->RA_CENTROID_TABLE[8] = 0x262a2288;
+        cs->RA_CENTROID_TABLE[9] = 0x886688a2;
+        cs->RA_CENTROID_TABLE[10] = 0x888866aa;
+        cs->RA_CENTROID_TABLE[11] = 0x668888a6;
+        break;
+    }
+
+    /* Scissor setup */
     cs->SE_SCISSOR_LEFT = 0; /* affected by rasterizer and scissor state as well */
     cs->SE_SCISSOR_TOP = 0;
     cs->SE_SCISSOR_RIGHT = (sv->width << 16)-1;

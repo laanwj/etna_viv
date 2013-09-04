@@ -111,12 +111,20 @@ void etna_link_shaders(struct pipe_context *pipe,
 
     cs->PS_END_PC = fs->code_size / 4;
     cs->PS_OUTPUT_REG = fs->ps_color_out_reg;
-    cs->PS_INPUT_COUNT = VIVS_PS_INPUT_COUNT_COUNT(fs->num_inputs + 1) |  /* XXX MSAA adds another input */
+    cs->PS_INPUT_COUNT = VIVS_PS_INPUT_COUNT_COUNT(fs->num_inputs + 1) | /* Number of inputs plus position */
                               VIVS_PS_INPUT_COUNT_UNK8(fs->input_count_unk8);
     cs->PS_TEMP_REGISTER_CONTROL =
-                              VIVS_PS_TEMP_REGISTER_CONTROL_NUM_TEMPS(fs->num_temps);
+                              VIVS_PS_TEMP_REGISTER_CONTROL_NUM_TEMPS(MAX2(fs->num_temps, fs->num_inputs + 1));
     cs->PS_CONTROL = VIVS_PS_CONTROL_UNK1; /* XXX when can we set BYPASS? */
     cs->PS_START_PC = 0;
+
+    /* Precompute PS_INPUT_COUNT and TEMP_REGISTER_CONTROL in the case of MSAA mode, avoids
+     * some fumbling in sync_context.
+     */
+    cs->PS_INPUT_COUNT_MSAA = VIVS_PS_INPUT_COUNT_COUNT(fs->num_inputs + 2) | /* MSAA adds another input */
+                              VIVS_PS_INPUT_COUNT_UNK8(fs->input_count_unk8);
+    cs->PS_TEMP_REGISTER_CONTROL_MSAA =
+                              VIVS_PS_TEMP_REGISTER_CONTROL_NUM_TEMPS(MAX2(fs->num_temps, fs->num_inputs + 2));
 
     uint32_t total_components = 0;
     uint32_t num_components = 0;
