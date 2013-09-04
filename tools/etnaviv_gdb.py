@@ -176,7 +176,7 @@ class GPUState(gdb.Command):
             prefix = arg.lower()
 
         for key in gpu3d.type.keys():
-            if key in {'VS_UNIFORMS', 'PS_UNIFORMS'} or not key.lower().startswith(prefix):
+            if key in {'VS_UNIFORMS', 'PS_UNIFORMS', 'VS_INST_MEM', 'PS_INST_MEM'} or not key.lower().startswith(prefix):
                 # handled separately
                 continue
             val = gpu3d[key]
