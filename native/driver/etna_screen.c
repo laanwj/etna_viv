@@ -83,7 +83,8 @@ static void etna_screen_destroy( struct pipe_screen *screen )
 
 static const char *etna_screen_get_name( struct pipe_screen *screen )
 {
-    return "ETNA0";
+    struct etna_screen *priv = etna_screen(screen);
+    return priv->name;
 }
 
 static const char *etna_screen_get_vendor( struct pipe_screen *screen )
@@ -501,6 +502,10 @@ etna_screen_create(struct viv_conn *dev)
     screen->dev = dev;
 
     etna_set_debug_flags(getenv("ETNA_DEBUG"));
+
+    /* Set up driver identification */
+    snprintf(screen->name, ETNA_SCREEN_NAME_LEN, "Vivante GC%x rev %04x, %s",
+            dev->chip.chip_model, dev->chip.chip_revision, dev->kernel_driver.name);
 
     /* Determine specs for device */
     screen->specs.can_supertile = VIV_FEATURE(dev, chipMinorFeatures0, SUPER_TILED);

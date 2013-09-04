@@ -30,10 +30,12 @@
 
 struct viv_conn;
 
+#define ETNA_SCREEN_NAME_LEN (64)
 /* Gallium screen structure for etna driver.
  */
 struct etna_screen {
     struct pipe_screen base;
+    char name[ETNA_SCREEN_NAME_LEN];
     struct viv_conn *dev;
     struct etna_pipe_specs specs;
 
