@@ -27,10 +27,10 @@
  *  1) instruction data
  *  2) input-to-temporary mapping (fixed for ps)
  *      *) in case of ps, semantic -> varying id mapping
- *      *) for each varying: number of components used
- *  3) temporary-to-output mapping
+ *      *) for each varying: number of components used (r, rg, rgb, rgba)
+ *  3) temporary-to-output mapping (in case of vs, fixed for ps)
  *  4) for each input/output: possible semantic (position, color, glpointcoord, ...)
- *  5) immediates base offset, immediate data
+ *  5) immediates base offset, immediates data
  *  6) used texture units (and possibly the TGSI_TEXTURE_* type); not needed to configure the hw, but useful
  *       for error checking
  *  7) enough information to add the z=(z+w)/2.0 necessary for older chips (output reg id is enough)
@@ -81,6 +81,7 @@ static inline uint32_t inst_swiz_compose(uint32_t swz1, uint32_t swz2)
            INST_SWIZ_W((swz1 >> (((swz2 >> 6)&3)*2))&3);
 }
 
+/* Native register description structure */
 struct etna_native_reg
 {
     unsigned valid:1;
@@ -95,19 +96,19 @@ struct etna_reg_desc
     int idx; /* index into file */
     bool active; /* used in program */
     int first_use; /* instruction id of first use (scope begin) */
-    int last_use;  /* instruction id of last use (scope end) */
+    int last_use;  /* instruction id of last use (scope end, inclusive) */
 
     struct etna_native_reg native; /* native register to map to */
     unsigned usage_mask:4; /* usage, per channel */
-    bool has_semantic;
-    struct tgsi_declaration_semantic semantic;
-    struct tgsi_declaration_interp interp;
+    bool has_semantic; /* register has associated TGSI semantic */
+    struct tgsi_declaration_semantic semantic; /* TGSI semantic */
+    struct tgsi_declaration_interp interp; /* Interpolation type */
 };
 
-/* a label */
+/* Label information structure */
 struct etna_compile_label
 {
-    int inst_idx;
+    int inst_idx; /* Instruction id that label points to */
 };
 
 enum etna_compile_frame_type {
@@ -123,37 +124,54 @@ struct etna_compile_frame
     struct etna_compile_label *lbl_endif;
 };
 
-/* scratch area for compiling shader */
+/* scratch area for compiling shader, freed after compilation finishes */
 struct etna_compile_data
 {
     uint processor; /* TGSI_PROCESSOR_... */
 
+    /* Register descriptions, per TGSI file, per register index */
     struct etna_reg_desc *file[TGSI_FILE_COUNT];
+
+    /* Number of registers in each TGSI file (max register+1) */
     uint file_size[TGSI_FILE_COUNT];
+
+    /* Keep track of TGSI register declarations */
     struct etna_reg_desc decl[ETNA_MAX_DECL];
     uint total_decls;
+
+    /* Bitmap of dead instructions which are removed in a separate pass */
     bool dead_inst[ETNA_MAX_TOKENS]; /* mark dead input instructions */
+
+    /* Immediate data */
     uint32_t imm_data[ETNA_MAX_IMM];
     uint32_t imm_base; /* base of immediates (in 32 bit units) */
     uint32_t imm_size; /* size of immediates (in 32 bit units) */
-    uint32_t next_free_native;
-    int num_uniforms;
-    struct etna_native_reg inner_temp; /* temporary for use within translated TGSI instruction */
 
-    /* conditionals */
+    /* Next free native register, for register allocation */
+    uint32_t next_free_native;
+
+    /* Temporary register for use within translated TGSI instruction,
+     * only allocated when needed.
+     */
+    struct etna_native_reg inner_temp;
+
+    /* Fields for handling nested conditionals */
     struct etna_compile_frame frame_stack[ETNA_MAX_DEPTH];
     int frame_sp;
     struct etna_compile_label *lbl_usage[ETNA_MAX_INSTRUCTIONS]; /* label usage reference, per instruction */
     struct etna_compile_label labels[ETNA_MAX_LABELS]; /* XXX use subheap allocation */
     int num_labels;
 
-    /* code generation */
+    /* Code generation */
     int inst_ptr; /* current instruction pointer */
     uint32_t code[ETNA_MAX_INSTRUCTIONS*4];
 
-    /* i/o */
+    /* I/O */
+
+    /* Number of varyings (PS only) */
     int num_varyings;
 
+    /* GPU hardware specs */
     const struct etna_pipe_specs *specs;
 };
 
@@ -166,6 +184,7 @@ enum reg_sort_order
     LAST_USE_DESC
 };
 
+/* Augmented register description for sorting */
 struct sort_rec
 {
     struct etna_reg_desc *ptr;
@@ -308,6 +327,9 @@ static struct etna_inst_src alloc_imm_u32(struct etna_compile_data *cd, uint32_t
     return imm_src;
 }
 
+/* Allocate immediate with a certain float value. If there is already an
+ * immediate with that value, return that.
+ */
 static struct etna_inst_src alloc_imm_f32(struct etna_compile_data *cd, float value)
 {
     return alloc_imm_u32(cd, etna_f32_to_u32(value));
@@ -326,24 +348,22 @@ static void etna_compile_parse_declarations(struct etna_compile_data *cd, const 
     while(!tgsi_parse_end_of_tokens(&ctx))
     {
         tgsi_parse_token(&ctx);
-        const struct tgsi_full_declaration *decl = 0;
-        const struct tgsi_full_immediate *imm = 0;
         switch(ctx.FullToken.Token.Type)
         {
-        case TGSI_TOKEN_TYPE_DECLARATION:
-            decl = &ctx.FullToken.FullDeclaration;
+        case TGSI_TOKEN_TYPE_DECLARATION: {
+            const struct tgsi_full_declaration *decl = &ctx.FullToken.FullDeclaration;
             cd->file_size[decl->Declaration.File] = MAX2(cd->file_size[decl->Declaration.File], decl->Range.Last+1);
-            break;
-        case TGSI_TOKEN_TYPE_IMMEDIATE: /* immediates are handled differently from other files; they are not declared
+            } break;
+        case TGSI_TOKEN_TYPE_IMMEDIATE: { /* immediates are handled differently from other files; they are not declared
                                            explicitly, and always add four components */
-            imm = &ctx.FullToken.FullImmediate;
+            const struct tgsi_full_immediate *imm = &ctx.FullToken.FullImmediate;
             assert(cd->imm_size <= (ETNA_MAX_IMM-4));
             for(int i=0; i<4; ++i)
             {
                 cd->imm_data[cd->imm_size++] = imm->u[i].Uint;
             }
             cd->file_size[TGSI_FILE_IMMEDIATE] = cd->imm_size / 4;
-            break;
+            } break;
         }
     }
     tgsi_parse_free(&ctx);
@@ -384,24 +404,25 @@ static void etna_compile_pass_check_usage(struct etna_compile_data *cd, const st
     {
         tgsi_parse_token(&ctx);
         /* find out max register #s used
-         * for every register mark first and last instruction id where it's used
-         * this allows finding slots that can be used as input and output registers
+         * For every register mark first and last instruction index where it's
+         * used this allows finding ranges where the temporary can be borrowed
+         * as input and/or output register
          *
          * XXX in the case of loops this needs special care, as the last usage of a register
-         * inside a loop means it can still be used on next loop iteration. The register can
-         * only be declared "free" after the loop finishes.
+         * inside a loop means it can still be used on next loop iteration (execution is no longer
+         * chronological). The register can only be declared "free" after the loop finishes.
+         *
          * Same for inputs: the first usage of a register inside a loop doesn't mean that the register
          * won't have been overwritten in previous iteration. The register can only be declared free before the loop
          * starts.
          * The proper way would be to do full dominator / post-dominator analysis (especially with more complicated
          * control flow such as direct branch instructions) but not for now...
          */
-        const struct tgsi_full_declaration *decl = 0;
-        const struct tgsi_full_instruction *inst = 0;
         switch(ctx.FullToken.Token.Type)
         {
-        case TGSI_TOKEN_TYPE_DECLARATION:
-            decl = &ctx.FullToken.FullDeclaration;
+        case TGSI_TOKEN_TYPE_DECLARATION: {
+            /* Declaration: fill in file details */
+            const struct tgsi_full_declaration *decl = &ctx.FullToken.FullDeclaration;
             for(int idx=decl->Range.First; idx<=decl->Range.Last; ++idx)
             {
                 cd->file[decl->Declaration.File][idx].usage_mask = 0; // we'll compute this ourselves
@@ -409,10 +430,10 @@ static void etna_compile_pass_check_usage(struct etna_compile_data *cd, const st
                 cd->file[decl->Declaration.File][idx].semantic = decl->Semantic;
                 cd->file[decl->Declaration.File][idx].interp = decl->Interp;
             }
-            break;
-        case TGSI_TOKEN_TYPE_INSTRUCTION:
-            /* iterate over operands */
-            inst = &ctx.FullToken.FullInstruction;
+            } break;
+        case TGSI_TOKEN_TYPE_INSTRUCTION: {
+            /* Instruction: iterate over operands of instruction */
+            const struct tgsi_full_instruction *inst = &ctx.FullToken.FullInstruction;
             //printf("instruction: opcode=%i num_src=%i num_dest=%i\n", inst->Instruction.Opcode,
             //        inst->Instruction.NumSrcRegs, inst->Instruction.NumDstRegs);
             /* iterate over destination registers */
@@ -432,10 +453,12 @@ static void etna_compile_pass_check_usage(struct etna_compile_data *cd, const st
                     reg_desc->first_use = inst_idx;
                 reg_desc->last_use = inst_idx;
                 reg_desc->active = true;
+                /* accumulate usage mask for register, this is used to determine how many slots for varyings
+                 * should be allocated */
                 reg_desc->usage_mask |= tgsi_util_get_inst_usage_mask(inst, idx);
             }
             inst_idx += 1;
-            break;
+            } break;
         default:
             break;
         }
@@ -464,6 +487,18 @@ static void assign_special_inputs(struct etna_compile_data *cd)
     }
 }
 
+/* Check that a move instruction does not swizzle any of the components
+ * that it writes.
+ */
+static bool etna_mov_check_no_swizzle(const struct tgsi_dst_register dst, const struct tgsi_src_register src)
+{
+    return (!(dst.WriteMask & TGSI_WRITEMASK_X) || src.SwizzleX == TGSI_SWIZZLE_X) &&
+           (!(dst.WriteMask & TGSI_WRITEMASK_Y) || src.SwizzleY == TGSI_SWIZZLE_Y) &&
+           (!(dst.WriteMask & TGSI_WRITEMASK_Z) || src.SwizzleZ == TGSI_SWIZZLE_Z) &&
+           (!(dst.WriteMask & TGSI_WRITEMASK_W) || src.SwizzleW == TGSI_SWIZZLE_W);
+
+}
+
 /* Pass -- optimize outputs
  * Mesa tends to generate code like this at the end if their shaders
  *   MOV OUT[1], TEMP[2]
@@ -485,48 +520,53 @@ static void etna_compile_pass_optimize_outputs(struct etna_compile_data *cd, con
     while(!tgsi_parse_end_of_tokens(&ctx))
     {
         tgsi_parse_token(&ctx);
-        const struct tgsi_full_instruction *inst = 0;
         switch(ctx.FullToken.Token.Type)
         {
-        case TGSI_TOKEN_TYPE_INSTRUCTION:
+        case TGSI_TOKEN_TYPE_INSTRUCTION: {
+            const struct tgsi_full_instruction *inst = &ctx.FullToken.FullInstruction;
             /* iterate over operands */
-            inst = &ctx.FullToken.FullInstruction;
             switch(inst->Instruction.Opcode)
             {
-            case TGSI_OPCODE_MOV:
+            case TGSI_OPCODE_MOV: {
+                uint out_idx = inst->Dst[0].Register.Index;
+                uint in_idx = inst->Src[0].Register.Index;
+                /* assignment of temporary to output --
+                 * and the output doesn't yet have a native register assigned
+                 * and the last use of the temporary is this instruction
+                 */
                 if(inst->Dst[0].Register.File == TGSI_FILE_OUTPUT &&
-                   inst->Src[0].Register.File == TGSI_FILE_TEMPORARY)
+                   inst->Src[0].Register.File == TGSI_FILE_TEMPORARY &&
+                   !cd->file[TGSI_FILE_OUTPUT][out_idx].native.valid &&
+                   cd->file[TGSI_FILE_TEMPORARY][in_idx].last_use == inst_idx)
                 {
-                    uint out_idx = inst->Dst[0].Register.Index;
-                    uint reg_idx = inst->Src[0].Register.Index;
-                    if(cd->file[TGSI_FILE_TEMPORARY][reg_idx].last_use == inst_idx)
-                    {
-                        /* this is the last use of the temp, good */
-                        cd->file[TGSI_FILE_OUTPUT][out_idx].native = cd->file[TGSI_FILE_TEMPORARY][reg_idx].native;
-                        /* prevent temp from being re-used for the rest of the shader */
-                        cd->file[TGSI_FILE_TEMPORARY][reg_idx].last_use = ETNA_MAX_TOKENS;
-                        /* mark this MOV instruction as a no-op */
-                        cd->dead_inst[inst_idx] = true;
-                    }
+                    cd->file[TGSI_FILE_OUTPUT][out_idx].native = cd->file[TGSI_FILE_TEMPORARY][in_idx].native;
+                    /* prevent temp from being re-used for the rest of the shader */
+                    cd->file[TGSI_FILE_TEMPORARY][in_idx].last_use = ETNA_MAX_TOKENS;
+                    /* mark this MOV instruction as a no-op */
+                    cd->dead_inst[inst_idx] = true;
                 }
                 /* direct assignment of input to output --
+                 * and the input or output doesn't yet have a native register assigned
+                 * and the output is only used in this instruction,
                  * allocate a new register, and associate both input and output to it */
                 if(inst->Dst[0].Register.File == TGSI_FILE_OUTPUT &&
-                   inst->Src[0].Register.File == TGSI_FILE_INPUT)
+                   inst->Src[0].Register.File == TGSI_FILE_INPUT &&
+                   !cd->file[TGSI_FILE_INPUT][in_idx].native.valid &&
+                   !cd->file[TGSI_FILE_OUTPUT][out_idx].native.valid &&
+                   cd->file[TGSI_FILE_OUTPUT][out_idx].last_use == inst_idx &&
+                   cd->file[TGSI_FILE_OUTPUT][out_idx].first_use == inst_idx &&
+                   etna_mov_check_no_swizzle(inst->Dst[0].Register, inst->Src[0].Register))
                 {
-                    uint out_idx = inst->Dst[0].Register.Index;
-                    uint in_idx = inst->Src[0].Register.Index;
-
                     cd->file[TGSI_FILE_OUTPUT][out_idx].native = cd->file[TGSI_FILE_INPUT][in_idx].native =
                         alloc_new_native_reg(cd);
                     /* mark this MOV instruction as a no-op */
                     cd->dead_inst[inst_idx] = true;
                 }
-                break;
+                } break;
             default: ;
             }
             inst_idx += 1;
-            break;
+            } break;
         }
     }
     tgsi_parse_free(&ctx);
@@ -1289,7 +1329,6 @@ static void assign_constants_and_immediates(struct etna_compile_data *cd)
         cd->file[TGSI_FILE_IMMEDIATE][idx].native.id = cd->imm_base/4 + idx;
     }
     DBG_F(ETNA_DBG_COMPILER_MSGS, "imm base: %i size: %i", cd->imm_base, cd->imm_size);
-    cd->num_uniforms = cd->imm_base/4 + cd->file_size[TGSI_FILE_IMMEDIATE];
 }
 
 /* Assign declared samplers to native texture units */
@@ -1390,13 +1429,19 @@ static void fill_in_ps_inputs(struct etna_shader_object *sobj, struct etna_compi
                 sobj->inputs[input_id].pa_attributes = 0x200;
             else /* texture coord or other bypasses flat shading */
                 sobj->inputs[input_id].pa_attributes = 0x2f1;
+            /* convert usage mask to number of components (*=wildcard)
+             *   .r    (0..1)  -> 1 component
+             *   .*g   (2..3)  -> 2 component
+             *   .**b  (4..7)  -> 3 components
+             *   .***a (8..15) -> 4 components
+             */
             sobj->inputs[input_id].num_components = util_last_bit(reg->usage_mask);
         }
     }
     sobj->input_count_unk8 = 31; /* XXX what is this */
 }
 
-/* fill in outputs for ps into shader object */
+/* fill in output mapping for ps into shader object */
 static void fill_in_ps_outputs(struct etna_shader_object *sobj, struct etna_compile_data *cd)
 {
     sobj->num_outputs = 0;
@@ -1409,10 +1454,10 @@ static void fill_in_ps_outputs(struct etna_shader_object *sobj, struct etna_comp
             sobj->ps_color_out_reg = reg->native.id;
             break;
         case TGSI_SEMANTIC_POSITION: /* FRAG_RESULT_DEPTH */
-            sobj->ps_depth_out_reg = reg->native.id; /* =always 0, only z component should be assigned */
+            sobj->ps_depth_out_reg = reg->native.id; /* =always native reg 0, only z component should be assigned */
             break;
         default:
-            assert(0); /* only output supported is COLOR at the moment */
+            assert(0); /* only outputs supported are COLOR and POSITION at the moment */
         }
     }
 }
@@ -1428,7 +1473,7 @@ static void fill_in_vs_inputs(struct etna_shader_object *sobj, struct etna_compi
         /* XXX exclude inputs with special semantics such as gl_frontFacing */
         sobj->inputs[sobj->num_inputs].reg = reg->native.id;
         sobj->inputs[sobj->num_inputs].semantic = reg->semantic;
-        sobj->inputs[sobj->num_inputs].num_components = 4; // XXX reg->num_components;
+        sobj->inputs[sobj->num_inputs].num_components = util_last_bit(reg->usage_mask);
         sobj->num_inputs++;
     }
     sobj->input_count_unk8 = (sobj->num_inputs + 19)/16; /* XXX what is this */
@@ -1508,6 +1553,8 @@ static bool etna_compile_check_limits(struct etna_compile_data *cd)
     int max_uniforms = (cd->processor == TGSI_PROCESSOR_VERTEX) ?
                         cd->specs->max_vs_uniforms :
                         cd->specs->max_ps_uniforms;
+    /* round up number of uniforms, including immediates, in units of four */
+    int num_uniforms = cd->imm_base/4 + (cd->imm_size+3)/4;
     if(cd->inst_ptr > cd->specs->max_instructions)
     {
         DBG("Number of instructions (%d) exceeds maximum %d", cd->inst_ptr, cd->specs->max_instructions);
@@ -1518,9 +1565,9 @@ static bool etna_compile_check_limits(struct etna_compile_data *cd)
         DBG("Number of registers (%d) exceeds maximum %d", cd->next_free_native, cd->specs->max_registers);
         return false;
     }
-    if(cd->num_uniforms > max_uniforms)
+    if(num_uniforms > max_uniforms)
     {
-        DBG("Number of uniforms (%d) exceeds maximum %d", cd->num_uniforms, max_uniforms);
+        DBG("Number of uniforms (%d) exceeds maximum %d", num_uniforms, max_uniforms);
         return false;
     }
     if(cd->num_varyings > cd->specs->max_varyings)

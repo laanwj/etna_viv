@@ -226,7 +226,7 @@ int viv_commit(struct viv_conn *conn, struct _gcoCMDBUF *commandBuffer, viv_cont
  *
  * If submit_as_event is set, submit the unlock as an event immediately, otherwise send it as command.
  * If submit_as_event is not set, the function will return 0 or 1 in *async depending on whether a second
- * unlock stage is needed to be submitted event (either through this function with submit_as_event=true
+ * unlock stage must be submitted as event (either through this function with submit_as_event=true
  * or through etna_queue_unlock_vidmem).
  */
 int viv_unlock_vidmem(struct viv_conn *conn, viv_node_t node, enum viv_surf_type type, bool submit_as_event, int *async);
