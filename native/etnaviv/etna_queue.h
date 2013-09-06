@@ -84,7 +84,7 @@ int etna_queue_free_contiguous(struct etna_queue *queue, size_t bytes, viv_addr_
 
 /** Queue unlock (unmap) video memory node from GPU and CPU memory.
  */
-int etna_queue_unlock_vidmem(struct etna_queue *queue, viv_node_t node, enum viv_surf_type type, int async);
+int etna_queue_unlock_vidmem(struct etna_queue *queue, viv_node_t node, enum viv_surf_type type);
 
 /** Queue free block of video memory previously allocated with viv_alloc_linear_vidmem.
  */

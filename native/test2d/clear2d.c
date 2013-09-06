@@ -170,9 +170,9 @@ int main(int argc, char **argv)
     }
     bmp_dump32(bmp->logical, width, height, false, "/tmp/fb.bmp");
     printf("Dump complete\n");
-    
+
     /* Unlock video memory */
-    if(etna_vidmem_unlock(conn, bmp) != 0)
+    if(etna_vidmem_unlock(conn, NULL, bmp) != 0)
     {
         fprintf(stderr, "Cannot unlock vidmem\n");
         exit(1);

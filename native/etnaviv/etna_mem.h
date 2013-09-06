@@ -52,11 +52,8 @@ int etna_vidmem_alloc_linear(struct viv_conn *conn, struct etna_vidmem **mem_out
 /* Lock video memory into GPU and CPU memory space */
 int etna_vidmem_lock(struct viv_conn *conn, struct etna_vidmem *mem);
 
-/* Unlock video memory from GPU and CPU memory space */
-int etna_vidmem_unlock(struct viv_conn *conn, struct etna_vidmem *mem);
-
-/* Deferred unlock video memory */
-int etna_vidmem_queue_unlock(struct etna_queue *queue, struct etna_vidmem *mem);
+/* Unlock video memory. Pass a queue for deferred usage, otherwise pass queue as NULL. */
+int etna_vidmem_unlock(struct viv_conn *conn, struct etna_queue *queue, struct etna_vidmem *mem);
 
 /* Free video memory node */
 int etna_vidmem_free(struct viv_conn *conn, struct etna_vidmem *mem);

@@ -96,7 +96,7 @@ int etna_queue_free_contiguous(struct etna_queue *queue, size_t bytes, viv_addr_
     return ETNA_OK;
 }
 
-int etna_queue_unlock_vidmem(struct etna_queue *queue, viv_node_t node, enum viv_surf_type type, int async)
+int etna_queue_unlock_vidmem(struct etna_queue *queue, viv_node_t node, enum viv_surf_type type)
 {
     struct _gcsHAL_INTERFACE *cmd = NULL;
     int rv;
@@ -105,7 +105,6 @@ int etna_queue_unlock_vidmem(struct etna_queue *queue, viv_node_t node, enum viv
     cmd->command = gcvHAL_UNLOCK_VIDEO_MEMORY;
     cmd->u.UnlockVideoMemory.node = HANDLE_TO_VIV(node);
     cmd->u.UnlockVideoMemory.type = convert_surf_type(type);
-    cmd->u.UnlockVideoMemory.asynchroneous = async;
     return ETNA_OK;
 }
 

@@ -92,25 +92,34 @@ int etna_vidmem_lock(struct viv_conn *conn, struct etna_vidmem *mem)
     return ETNA_OK;
 }
 
-int etna_vidmem_unlock(struct viv_conn *conn, struct etna_vidmem *mem)
+int etna_vidmem_unlock(struct viv_conn *conn, struct etna_queue *queue, struct etna_vidmem *mem)
 {
     if(mem == NULL) return ETNA_INVALID_ADDR;
-
-    if(viv_unlock_vidmem(conn, mem->node, mem->type, 0 /* async */) != ETNA_OK)
+    int async = 0;
+    /* Unlocking video memory seems to be a two-step process. First try it synchronously
+     * then the kernel can request an asynchronous component. Just queueing it asynchronously
+     * in the first place will not free the virtual memory on v4 */
+    if(viv_unlock_vidmem(conn, mem->node, mem->type, false, &async) != ETNA_OK)
     {
         return ETNA_INTERNAL_ERROR;
     }
-    mem->logical = NULL;
-    mem->address = 0;
-    return ETNA_OK;
-}
-
-int etna_vidmem_queue_unlock(struct etna_queue *queue, struct etna_vidmem *mem)
-{
-    if(mem == NULL) return ETNA_INVALID_ADDR;
-    if(etna_queue_unlock_vidmem(queue, mem->node, mem->type, 0 /* async */) != ETNA_OK)
+    if(async)
     {
-        return ETNA_INTERNAL_ERROR;
+        if(queue)
+        {
+            /* If a queue is passed, add the async part at the end of the queue, to be submitted
+             * with next flush.
+             */
+            if(etna_queue_unlock_vidmem(queue, mem->node, mem->type) != ETNA_OK)
+            {
+                return ETNA_INTERNAL_ERROR;
+            }
+        } else { /* No queue, need to submit async part directly as event */
+            if(viv_unlock_vidmem(conn, mem->node, mem->type, true, &async) != ETNA_OK)
+            {
+                return ETNA_INTERNAL_ERROR;
+            }
+        }
     }
     mem->logical = NULL;
     mem->address = 0;
@@ -122,7 +131,7 @@ int etna_vidmem_free(struct viv_conn *conn, struct etna_vidmem *mem)
     if(mem == NULL) return ETNA_OK;
     if(mem->logical != NULL)
     {
-        if(etna_vidmem_unlock(conn, mem) != ETNA_OK)
+        if(etna_vidmem_unlock(conn, NULL, mem) != ETNA_OK)
         {
             printf("etna: Warning: could not unlock memory\n");
         }
@@ -140,7 +149,7 @@ int etna_vidmem_queue_free(struct etna_queue *queue, struct etna_vidmem *mem)
     if(mem == NULL) return ETNA_OK;
     if(mem->logical != NULL)
     {
-        if(etna_vidmem_queue_unlock(queue, mem) != ETNA_OK)
+        if(etna_vidmem_unlock(queue->ctx->conn, queue, mem) != ETNA_OK)
         {
             printf("etna: Warning: could not queue unlock memory\n");
         }

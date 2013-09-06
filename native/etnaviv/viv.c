@@ -301,21 +301,33 @@ int viv_lock_vidmem(struct viv_conn *conn, viv_node_t node, viv_addr_t *physical
     return gcvSTATUS_OK;
 }
 
-/** Unlock (unmap) video memory node from GPU and CPU memory.
- */
-int viv_unlock_vidmem(struct viv_conn *conn, viv_node_t node, enum viv_surf_type type, int async)
+int viv_unlock_vidmem(struct viv_conn *conn, viv_node_t node, enum viv_surf_type type, bool submit_as_event, int *async)
 {
+    int rv;
+    if(!submit_as_event && async == NULL)
+        return VIV_STATUS_INVALID_ADDRESS;
     gcsHAL_INTERFACE id = {
         .command = gcvHAL_UNLOCK_VIDEO_MEMORY,
         .u = {
             .UnlockVideoMemory = {
                 .node = HANDLE_TO_VIV(node),
                 .type = convert_surf_type(type), /* why does this need type? */
-                .asynchroneous = async
+                .asynchroneous = 0
             }
         }
     };
-    return viv_invoke(conn, &id);
+    if(submit_as_event) /* submit as event immediately */
+    {
+        struct _gcsQUEUE queue = {
+            .next = NULL,
+            .iface = id
+        };
+        rv = viv_event_commit(conn, &queue);
+    } else { /* submit as command, return async flag */
+        rv = viv_invoke(conn, &id);
+        *async = id.u.UnlockVideoMemory.asynchroneous;
+    }
+    return rv;
 }
 
 #ifdef GCABI_HAS_CONTEXT
