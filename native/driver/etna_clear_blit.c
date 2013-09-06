@@ -103,9 +103,11 @@ static void etna_pipe_clear(struct pipe_context *pipe,
      * This is especially important when coming from another surface, as otherwise it may clear
      * part of the old surface instead.
      */
-    etna_set_state(priv->ctx, VIVS_TS_FLUSH_CACHE, VIVS_TS_FLUSH_CACHE_FLUSH); /* XXX only needed if cbuf or zbuf has TS */
     etna_set_state(priv->ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
     etna_stall(priv->ctx, SYNC_RECIPIENT_RA, SYNC_RECIPIENT_PE);
+    /* Flush the TS. This must be done after flushing color and depth, otherwise it can result in crashes
+     * at least on cubox. */
+    etna_set_state(priv->ctx, VIVS_TS_FLUSH_CACHE, VIVS_TS_FLUSH_CACHE_FLUSH); /* XXX only needed if cbuf or zbuf has TS */
     /* No need to set up the TS here with sync_context.
      * RS clear operations (in contrast to resolve and copy) do not require the TS state.
      */
