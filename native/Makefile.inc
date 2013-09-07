@@ -7,7 +7,7 @@ LD = $(GCCPREFIX)ld
 AR = $(GCCPREFIX)ar
 
 GCC_CFLAGS = -D_POSIX_C_SOURCE=200809 -D_GNU_SOURCE
-COMMON_FLAGS = -O2 -g3 -Wall -Wmissing-prototypes -DGCABI_${GCABI} $(GCC_CFLAGS) -I$(TOP)/lib -I$(TOP)/include_$(GCABI) -g -fPIC \
+COMMON_FLAGS = -O2 -g3 -ggdb3 -Wall -Wmissing-prototypes -DGCABI_${GCABI} $(GCC_CFLAGS) -I$(TOP)/lib -I$(TOP)/include_$(GCABI) -fPIC \
           -I$(TOP)/gallium/include -I$(TOP)/gallium/auxiliary -I$(TOP) \
           -fdiagnostics-show-option \
           -Werror=missing-prototypes -Werror=missing-declarations -Werror=implicit-function-declaration \

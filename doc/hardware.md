@@ -521,7 +521,9 @@ caused the texture in `cubemap_sphere` (which is only 1x1x6) to be messed
 up (due to containing old values).
 
 Warning: setting the `TEXTUREVS` bit seems to result in crashes when rendering directly afterwards.
-Even adding a PE to FE semaphore afterwards or dummy state loads does not fix this.
+Even adding a PE to FE semaphore afterwards or dummy state loads does not fix this. It could be that
+a RA to PE (or FE) semaphore *before* the flush solves this crash. A similar issue exists when flushing
+the TS cache.
 
 All texture filtering options are allowed for vertex texture fetch.
 
@@ -548,3 +550,5 @@ the appropriate cache so that the rendered cache tiles are properly written back
 
 (others will be added when found)
 
+- before flushing the TS cache (as before a clear) first make sure that DEPTH
+  and COLOR are flushed, and a stall from RA to PE is done, otherwise a crash will happen.
