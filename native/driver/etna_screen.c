@@ -60,7 +60,9 @@ static void etna_set_debug_flags(const char *str)
       { "no_ts", ETNA_DBG_NO_TS },
       { "cflush_all", ETNA_DBG_CFLUSH_ALL },
       { "msaa2x", ETNA_DBG_MSAA_2X },
-      { "msaa4x", ETNA_DBG_MSAA_4X }
+      { "msaa4x", ETNA_DBG_MSAA_4X },
+      { "finish_all", ETNA_DBG_FINISH_ALL },
+      { "flush_all", ETNA_DBG_FLUSH_ALL }
    };
    int i;
 

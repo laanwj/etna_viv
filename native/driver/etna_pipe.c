@@ -780,6 +780,10 @@ static void etna_pipe_draw_vbo(struct pipe_context *pipe,
         etna_draw_primitives(priv->ctx, translate_draw_mode(info->mode),
                 info->start, prims);
     }
+    if(DBG_ENABLED(ETNA_DBG_FLUSH_ALL))
+    {
+        pipe->flush(pipe, NULL, 0);
+    }
 }
 
 /** Create vertex element states, which define a layout for fetching
@@ -1174,6 +1178,14 @@ static void etna_pipe_flush(struct pipe_context *pipe,
     if(etna_flush(priv->ctx) != ETNA_OK)
     {
         printf("Error: %s: etna_flush failed, GPU may be in unpredictable state\n", __func__);
+    }
+    if(DBG_ENABLED(ETNA_DBG_FINISH_ALL))
+    {
+        if(etna_finish(priv->ctx) != ETNA_OK)
+        {
+            printf("Error: %s: etna_finish failed, GPU may be in unpredictable state\n", __func__);
+            abort();
+        }
     }
 }
 

@@ -42,6 +42,8 @@
 #define ETNA_DBG_CFLUSH_ALL    0x2000 /* Flush before every state update + draw call */
 #define ETNA_DBG_MSAA_2X       0x4000 /* Force 2X MSAA for screen */
 #define ETNA_DBG_MSAA_4X       0x8000 /* Force 4X MSAA for screen */
+#define ETNA_DBG_FINISH_ALL    0x10000 /* Finish on every flush */
+#define ETNA_DBG_FLUSH_ALL     0x20000 /* Flush after every rendered primitive */
 
 extern uint32_t etna_mesa_debug; /* set in etna_screen.c from ETNA_DEBUG */
 
