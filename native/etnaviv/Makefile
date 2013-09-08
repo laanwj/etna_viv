@@ -15,7 +15,7 @@ ETNAVIV_OBJS += ../lib/viv_hook.o ../lib/flightrecorder.o ../lib/elf_hook.o
 endif
 
 ifeq ($(ETNAVIV_PROFILER), 1)
-# Define ETNAVIV_PROFILE=1 if the kernel was built with VIVANTE_PROFILER 
+# Define ETNAVIV_PROFILER=1 if the kernel was built with VIVANTE_PROFILER
 # enabled
 COMMON_FLAGS += -DVIVANTE_PROFILER=1
 endif
