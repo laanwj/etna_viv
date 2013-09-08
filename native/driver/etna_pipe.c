@@ -359,11 +359,20 @@ static void sync_context(struct pipe_context *restrict pipe)
      * - ETNA_STATE_TS
      * - removed ETNA_STATE_BASE_SETUP statements -- these are guaranteed to not change anyway
      * - PS / framebuffer interaction for MSAA
+     * - move update of GL_MULTI_SAMPLE_CONFIG first
      */
     uint32_t last_reg, last_fixp, span_start;
     ETNA_COALESCE_STATE_OPEN(ETNA_3D_CONTEXT_SIZE);
     /* begin only EMIT_STATE -- make sure no new etna_reserve calls are done here directly
      *    or indirectly */
+    /* multi sample config is set first, and outside of the normal sorting
+     * order, as changing the multisample state clobbers PS.INPUT_COUNT (and
+     * possibly PS.TEMP_REGISTER_CONTROL).
+     */
+    if(dirty & (ETNA_STATE_FRAMEBUFFER | ETNA_STATE_SAMPLE_MASK))
+    {
+        /*03818*/ EMIT_STATE(GL_MULTI_SAMPLE_CONFIG, GL_MULTI_SAMPLE_CONFIG, e->sample_mask.GL_MULTI_SAMPLE_CONFIG | e->framebuffer.GL_MULTI_SAMPLE_CONFIG);
+    }
     if(dirty & (ETNA_STATE_INDEX_BUFFER))
     {
         /*00644*/ EMIT_STATE(FE_INDEX_STREAM_BASE_ADDR, FE_INDEX_STREAM_BASE_ADDR, e->index_buffer.FE_INDEX_STREAM_BASE_ADDR);
@@ -652,10 +661,6 @@ static void sync_context(struct pipe_context *restrict pipe)
                 }
             }
         }
-    }
-    if(dirty & (ETNA_STATE_FRAMEBUFFER | ETNA_STATE_SAMPLE_MASK))
-    {
-        /*03818*/ EMIT_STATE(GL_MULTI_SAMPLE_CONFIG, GL_MULTI_SAMPLE_CONFIG, e->sample_mask.GL_MULTI_SAMPLE_CONFIG | e->framebuffer.GL_MULTI_SAMPLE_CONFIG);
     }
     if(dirty & (ETNA_STATE_SHADER))
     {
