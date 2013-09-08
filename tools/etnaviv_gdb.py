@@ -318,7 +318,7 @@ class CommitBreakpoint(gdb.Breakpoint):
         logical = int(commandBuffer['logical'].cast(self.size_t_type)) # CPU address
 
         buffer = indirect_memcpy(logical + startOffset, logical + offset)
-        data = struct.unpack_from(b'%dL' % (len(buffer)/4), buffer)
+        data = struct.unpack_from(b'%dI' % (len(buffer)/4), buffer)
 
         # "cast" byte-based buffer to uint32_t
         # iterate over buffer, one 32 bit word at a time
