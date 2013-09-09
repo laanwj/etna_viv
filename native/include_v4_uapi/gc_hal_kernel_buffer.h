@@ -49,11 +49,6 @@ gcsSTATE_DELTA_RECORD;
 /* State delta. */
 typedef struct _gcsSTATE_DELTA
 {
-    /* For debugging: the number of delta in the order of creation. */
-#if gcmIS_DEBUG(gcdDEBUG_CODE)
-    gctUINT                     num;
-#endif
-
     /* Main state delta ID. Every time state delta structure gets reinitialized,
        main ID is incremented. If main state ID overflows, all map entry IDs get
        reinitialized to make sure there is no potential erroneous match after
@@ -131,13 +126,6 @@ struct _gcoCMDBUF
     gctUINT                     hintArraySize;
     gctUINT32_PTR               hintArray;
     gctUINT32_PTR               hintArrayTail;
-#endif
-
-#if gcmIS_DEBUG(gcdDEBUG_CODE)
-    /* Last load state command location and hardware address. */
-    gctUINT32_PTR               lastLoadStatePtr;
-    gctUINT32                   lastLoadStateAddress;
-    gctUINT32                   lastLoadStateCount;
 #endif
 };
 
