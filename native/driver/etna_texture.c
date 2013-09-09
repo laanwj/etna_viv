@@ -51,13 +51,13 @@ static void *etna_pipe_create_sampler_state(struct pipe_context *pipe,
     cs->TE_SAMPLER_CONFIG1 = 0; /* VIVS_TE_SAMPLER_CONFIG1 (swizzle, extended format) fully determined by sampler view */
     cs->TE_SAMPLER_LOD_CONFIG =
             (ss->lod_bias != 0.0 ? VIVS_TE_SAMPLER_LOD_CONFIG_BIAS_ENABLE : 0) |
-            VIVS_TE_SAMPLER_LOD_CONFIG_BIAS(float_to_fixp55(ss->lod_bias));
+            VIVS_TE_SAMPLER_LOD_CONFIG_BIAS(etna_float_to_fixp55(ss->lod_bias));
     if(ss->min_mip_filter != PIPE_TEX_MIPFILTER_NONE)
     {
-        cs->min_lod = float_to_fixp55(ss->min_lod);
-        cs->max_lod = float_to_fixp55(ss->max_lod);
+        cs->min_lod = etna_float_to_fixp55(ss->min_lod);
+        cs->max_lod = etna_float_to_fixp55(ss->max_lod);
     } else { /* when not mipmapping, we need to set max/min lod so that always lowest LOD is selected */
-        cs->min_lod = cs->max_lod = float_to_fixp55(ss->min_lod);
+        cs->min_lod = cs->max_lod = etna_float_to_fixp55(ss->min_lod);
     }
     return cs;
 }
@@ -121,8 +121,8 @@ static struct pipe_sampler_view *etna_pipe_create_sampler_view(struct pipe_conte
             VIVS_TE_SAMPLER_SIZE_WIDTH(res->base.width0)|
             VIVS_TE_SAMPLER_SIZE_HEIGHT(res->base.height0);
     cs->TE_SAMPLER_LOG_SIZE =
-            VIVS_TE_SAMPLER_LOG_SIZE_WIDTH(log2_fixp55(res->base.width0)) |
-            VIVS_TE_SAMPLER_LOG_SIZE_HEIGHT(log2_fixp55(res->base.height0));
+            VIVS_TE_SAMPLER_LOG_SIZE_WIDTH(etna_log2_fixp55(res->base.width0)) |
+            VIVS_TE_SAMPLER_LOG_SIZE_HEIGHT(etna_log2_fixp55(res->base.height0));
     /* XXX in principle we only have to define lods sv->first_level .. sv->last_level */
     for(int lod=0; lod<=res->base.last_level; ++lod)
     {

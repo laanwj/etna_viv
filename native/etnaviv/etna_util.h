@@ -81,7 +81,7 @@ static inline uint32_t etna_f32_to_u32(float value)
 #define RCPLOG2 (1.4426950408889634f)
 
 /* float to fixp 5.5 */
-static inline uint32_t float_to_fixp55(float f)
+static inline uint32_t etna_float_to_fixp55(float f)
 {
     if(f >= 15.953125f) return 511;
     if(f < -16.0f) return 512;
@@ -97,9 +97,9 @@ static inline uint32_t etna_f32_to_fixp16(float f)
 }
 
 /* texture size to log2 in fixp 5.5 format */
-static inline uint32_t log2_fixp55(unsigned width)
+static inline uint32_t etna_log2_fixp55(unsigned width)
 {
-    return float_to_fixp55(logf((float)width) * RCPLOG2);
+    return etna_float_to_fixp55(logf((float)width) * RCPLOG2);
 }
 
 #endif
