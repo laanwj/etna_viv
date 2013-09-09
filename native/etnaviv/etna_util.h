@@ -88,6 +88,14 @@ static inline uint32_t float_to_fixp55(float f)
     return (uint32_t) (f * 32.0f + 0.5f);
 }
 
+/* float to fixp 16.16 */
+static inline uint32_t etna_f32_to_fixp16(float f)
+{
+    if(f >= (32768.0f-1.0f/65536.0f)) return 0x7fffffff;
+    if(f < -32768.0f) return 0x80000000;
+    return (uint32_t) (f * 65536.0f + 0.5f);
+}
+
 /* texture size to log2 in fixp 5.5 format */
 static inline uint32_t log2_fixp55(unsigned width)
 {

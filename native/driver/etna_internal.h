@@ -155,6 +155,10 @@ struct compiled_viewport_state
     uint32_t PA_VIEWPORT_OFFSET_X;
     uint32_t PA_VIEWPORT_OFFSET_Y;
     uint32_t PA_VIEWPORT_OFFSET_Z;
+    uint32_t SE_SCISSOR_LEFT; // fixp
+    uint32_t SE_SCISSOR_TOP; // fixp
+    uint32_t SE_SCISSOR_RIGHT; // fixp
+    uint32_t SE_SCISSOR_BOTTOM; // fixp
     uint32_t PE_DEPTH_NEAR;
     uint32_t PE_DEPTH_FAR;
 };

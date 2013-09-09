@@ -473,15 +473,16 @@ static void sync_context(struct pipe_context *restrict pipe)
             /*00A40*/ EMIT_STATE(PA_SHADER_ATTRIBUTES(x), PA_SHADER_ATTRIBUTES[x], e->shader_state.PA_SHADER_ATTRIBUTES[x]);
         }
     }
-    if(dirty & (ETNA_STATE_SCISSOR | ETNA_STATE_FRAMEBUFFER | ETNA_STATE_RASTERIZER))
+    if(dirty & (ETNA_STATE_SCISSOR | ETNA_STATE_FRAMEBUFFER | ETNA_STATE_RASTERIZER | ETNA_STATE_VIEWPORT))
     {
         /* this is a bit of a mess: rasterizer->scissor determines whether to use only the
-         * framebuffer scissor, or specific scissor state, so the logic spans three CSOs
+         * framebuffer scissor, or specific scissor state, and the viewport clips too so the logic
+         * spans four CSOs
          */
-        uint32_t scissor_left = e->framebuffer.SE_SCISSOR_LEFT;
-        uint32_t scissor_top = e->framebuffer.SE_SCISSOR_TOP;
-        uint32_t scissor_right = e->framebuffer.SE_SCISSOR_RIGHT;
-        uint32_t scissor_bottom = e->framebuffer.SE_SCISSOR_BOTTOM;
+        uint32_t scissor_left = MAX2(e->framebuffer.SE_SCISSOR_LEFT, e->viewport.SE_SCISSOR_LEFT);
+        uint32_t scissor_top = MAX2(e->framebuffer.SE_SCISSOR_TOP, e->viewport.SE_SCISSOR_TOP);
+        uint32_t scissor_right = MIN2(e->framebuffer.SE_SCISSOR_RIGHT, e->viewport.SE_SCISSOR_RIGHT);
+        uint32_t scissor_bottom = MIN2(e->framebuffer.SE_SCISSOR_BOTTOM, e->viewport.SE_SCISSOR_BOTTOM);
         if(e->rasterizer->scissor)
         {
             scissor_left = MAX2(e->scissor.SE_SCISSOR_LEFT, scissor_left);
@@ -1115,6 +1116,26 @@ static void etna_pipe_set_viewport_states( struct pipe_context *pipe,
     cs->PA_VIEWPORT_OFFSET_X = etna_f32_to_u32(vs->translate[0]);
     cs->PA_VIEWPORT_OFFSET_Y = etna_f32_to_u32(vs->translate[1]);
     cs->PA_VIEWPORT_OFFSET_Z = etna_f32_to_u32(vs->translate[2] - vs->scale[2]);
+
+    /* Compute scissor rectangle (fixp) from viewport.
+     * Make sure left is always < right and top always < bottom.
+     */
+    cs->SE_SCISSOR_LEFT = etna_f32_to_fixp16(MAX2(vs->translate[0] - vs->scale[0], 0.0f));
+    cs->SE_SCISSOR_TOP = etna_f32_to_fixp16(MAX2(vs->translate[1] - vs->scale[1], 0.0f));
+    cs->SE_SCISSOR_RIGHT = etna_f32_to_fixp16(MAX2(vs->translate[0] + vs->scale[0], 0.0f));
+    cs->SE_SCISSOR_BOTTOM = etna_f32_to_fixp16(MAX2(vs->translate[1] + vs->scale[1], 0.0f));
+    if(cs->SE_SCISSOR_LEFT > cs->SE_SCISSOR_RIGHT)
+    {
+        uint32_t tmp = cs->SE_SCISSOR_RIGHT;
+        cs->SE_SCISSOR_RIGHT = cs->SE_SCISSOR_LEFT;
+        cs->SE_SCISSOR_LEFT = tmp;
+    }
+    if(cs->SE_SCISSOR_TOP > cs->SE_SCISSOR_BOTTOM)
+    {
+        uint32_t tmp = cs->SE_SCISSOR_BOTTOM;
+        cs->SE_SCISSOR_BOTTOM = cs->SE_SCISSOR_TOP;
+        cs->SE_SCISSOR_TOP = tmp;
+    }
 
     cs->PE_DEPTH_NEAR = etna_f32_to_u32(0.0); /* not affected if depth mode is Z (as in GL) */
     cs->PE_DEPTH_FAR = etna_f32_to_u32(1.0);
