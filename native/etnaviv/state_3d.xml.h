@@ -8,12 +8,12 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- /home/orion/projects/etna_viv/rnndb/state.xml    (  17973 bytes, from 2013-08-13 20:21:24)
-- /home/orion/projects/etna_viv/rnndb/common.xml   (  16005 bytes, from 2013-08-12 13:59:19)
-- /home/orion/projects/etna_viv/rnndb/state_hi.xml (  21543 bytes, from 2013-08-07 09:21:45)
-- /home/orion/projects/etna_viv/rnndb/state_2d.xml (  51089 bytes, from 2013-08-14 09:57:40)
-- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  54011 bytes, from 2013-08-09 06:55:20)
-- /home/orion/projects/etna_viv/rnndb/state_vg.xml (   5942 bytes, from 2013-08-13 20:21:24)
+- /home/orion/projects/etna_viv/rnndb/state.xml    (  18253 bytes, from 2013-09-01 10:53:22)
+- /home/orion/projects/etna_viv/rnndb/common.xml   (  16543 bytes, from 2013-09-01 10:53:22)
+- /home/orion/projects/etna_viv/rnndb/state_hi.xml (  21682 bytes, from 2013-09-10 09:11:57)
+- /home/orion/projects/etna_viv/rnndb/state_2d.xml (  51058 bytes, from 2013-09-01 10:53:22)
+- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  54038 bytes, from 2013-09-10 11:31:44)
+- /home/orion/projects/etna_viv/rnndb/state_vg.xml (   5942 bytes, from 2013-09-01 10:53:22)
 
 Copyright (C) 2013
 */
@@ -416,7 +416,7 @@ Copyright (C) 2013
 
 #define VIVS_RA_MULTISAMPLE_UNK00E04				0x00000e04
 
-#define VIVS_RA_DEPTH_UNK00E08					0x00000e08
+#define VIVS_RA_EARLY_DEPTH					0x00000e08
 
 #define VIVS_RA_MULTISAMPLE_UNK00E10(i0)		       (0x00000e10 + 0x4*(i0))
 #define VIVS_RA_MULTISAMPLE_UNK00E10__ESIZE			0x00000004

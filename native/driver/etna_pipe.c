@@ -172,6 +172,7 @@ static void reset_context(struct pipe_context *restrict pipe)
     /*00C18*/ EMIT_STATE(SE_CONFIG, SE_CONFIG);
     /*00E00*/ EMIT_STATE(RA_CONTROL, RA_CONTROL);
     /*00E04*/ EMIT_STATE(RA_MULTISAMPLE_UNK00E04, RA_MULTISAMPLE_UNK00E04);
+    /*00E08*/ EMIT_STATE(RA_EARLY_DEPTH, RA_EARLY_DEPTH);
     for(int x=0; x<4; ++x)
     {
         /*00E10*/ EMIT_STATE(RA_MULTISAMPLE_UNK00E10(x), RA_MULTISAMPLE_UNK00E10[x]);
@@ -1271,6 +1272,7 @@ struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct et
     ectx->gpu3d.PA_W_CLIP_LIMIT = 0x34000001;
     ectx->gpu3d.GL_VERTEX_ELEMENT_CONFIG = 0x1;
     ectx->gpu3d.GL_API_MODE = VIVS_GL_API_MODE_OPENGL;
+    ectx->gpu3d.RA_EARLY_DEPTH = 0x00000031; /* enable */
 
     /* fill in vtable entries one by one */
     pc->destroy = etna_pipe_destroy;

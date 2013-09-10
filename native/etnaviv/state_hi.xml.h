@@ -8,12 +8,12 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- /home/orion/projects/etna_viv/rnndb/state.xml    (  17973 bytes, from 2013-08-13 20:21:24)
-- /home/orion/projects/etna_viv/rnndb/common.xml   (  16005 bytes, from 2013-08-12 13:59:19)
-- /home/orion/projects/etna_viv/rnndb/state_hi.xml (  21543 bytes, from 2013-08-07 09:21:45)
-- /home/orion/projects/etna_viv/rnndb/state_2d.xml (  51089 bytes, from 2013-08-14 09:57:40)
-- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  54011 bytes, from 2013-08-09 06:55:20)
-- /home/orion/projects/etna_viv/rnndb/state_vg.xml (   5942 bytes, from 2013-08-13 20:21:24)
+- /home/orion/projects/etna_viv/rnndb/state.xml    (  18253 bytes, from 2013-09-01 10:53:22)
+- /home/orion/projects/etna_viv/rnndb/common.xml   (  16543 bytes, from 2013-09-01 10:53:22)
+- /home/orion/projects/etna_viv/rnndb/state_hi.xml (  21682 bytes, from 2013-09-10 09:11:57)
+- /home/orion/projects/etna_viv/rnndb/state_2d.xml (  51058 bytes, from 2013-09-01 10:53:22)
+- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  54038 bytes, from 2013-09-10 11:31:44)
+- /home/orion/projects/etna_viv/rnndb/state_vg.xml (   5942 bytes, from 2013-09-01 10:53:22)
 
 Copyright (C) 2013
 */
@@ -285,6 +285,7 @@ Copyright (C) 2013
 #define VIVS_MC_PROFILE_CONFIG0_PE_RESET			0x000f0000
 #define VIVS_MC_PROFILE_CONFIG0_SH__MASK			0x0f000000
 #define VIVS_MC_PROFILE_CONFIG0_SH__SHIFT			24
+#define VIVS_MC_PROFILE_CONFIG0_SH_SHADER_CYCLES		0x04000000
 #define VIVS_MC_PROFILE_CONFIG0_SH_PS_INST_COUNTER		0x07000000
 #define VIVS_MC_PROFILE_CONFIG0_SH_RENDERED_PIXEL_COUNTER	0x08000000
 #define VIVS_MC_PROFILE_CONFIG0_SH_VS_INST_COUNTER		0x09000000
@@ -318,6 +319,7 @@ Copyright (C) 2013
 #define VIVS_MC_PROFILE_CONFIG1_RA_TOTAL_PRIMITIVE_COUNT	0x00030000
 #define VIVS_MC_PROFILE_CONFIG1_RA_PIPE_CACHE_MISS_COUNTER	0x00090000
 #define VIVS_MC_PROFILE_CONFIG1_RA_PREFETCH_CACHE_MISS_COUNTER	0x000a0000
+#define VIVS_MC_PROFILE_CONFIG1_RA_CULLED_QUAD_COUNT		0x000b0000
 #define VIVS_MC_PROFILE_CONFIG1_RA_RESET			0x000f0000
 #define VIVS_MC_PROFILE_CONFIG1_TX__MASK			0x0f000000
 #define VIVS_MC_PROFILE_CONFIG1_TX__SHIFT			24

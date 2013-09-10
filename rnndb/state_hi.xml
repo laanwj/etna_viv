@@ -257,6 +257,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <value value="15" name="RESET"/>
             </bitfield>
             <bitfield high="27" low="24" name="SH">
+                <value value="4" name="SHADER_CYCLES"/>
                 <value value="7" name="PS_INST_COUNTER"/>
                 <value value="8" name="RENDERED_PIXEL_COUNTER"/>
                 <value value="9" name="VS_INST_COUNTER"/>
@@ -292,9 +293,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <value value="0" name="VALID_PIXEL_COUNT"/>
                 <value value="1" name="TOTAL_QUAD_COUNT"/>
                 <value value="2" name="VALID_QUAD_COUNT_AFTER_EARLY_Z"/>
-                <value value="3" name="TOTAL_PRIMITIVE_COUNT"/>
+                <value value="3" name="TOTAL_PRIMITIVE_COUNT"/> <!-- input primitives -->
                 <value value="9" name="PIPE_CACHE_MISS_COUNTER"/>
                 <value value="10" name="PREFETCH_CACHE_MISS_COUNTER"/>
+                <value value="11" name="CULLED_QUAD_COUNT"/>
                 <value value="15" name="RESET"/>
             </bitfield>
             <bitfield high="27" low="24" name="TX">

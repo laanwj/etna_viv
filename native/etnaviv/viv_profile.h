@@ -42,7 +42,7 @@ enum viv_profile_counter
     VIV_PROF_RA_TOTAL_PRIMITIVE_COUNT               = 31, /* RA debug reg 3 */
     VIV_PROF_RA_PIPE_CACHE_MISS_COUNTER             = 32, /* RA debug reg 9 */
     VIV_PROF_RA_PREFETCH_CACHE_MISS_COUNTER         = 33, /* RA debug reg A */
-    VIV_PROF_RA_EEZ_CULLED_COUNTER                  = 34, /* never set in kernel */
+    VIV_PROF_RA_EEZ_CULLED_COUNTER                  = 34, /* RA debug reg B */
     VIV_PROF_TX_TOTAL_BILINEAR_REQUESTS             = 35, /* TX debug reg 0 */
     VIV_PROF_TX_TOTAL_TRILINEAR_REQUESTS            = 36, /* TX debug reg 1 */
     VIV_PROF_TX_TOTAL_DISCARDED_TEXTURE_REQUESTS    = 37, /* TX debug reg 2 */

@@ -384,7 +384,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="1" name="LAST_VARYING_2X" brief="Last varying has 1 or 2 components"></bitfield>
         </reg32>
         <reg32 offset="0x00E04" name="MULTISAMPLE_UNK00E04" value="0x00000000"/>
-        <reg32 offset="0x00E08" name="DEPTH_UNK00E08" value="0x00000031"/>
+        <reg32 offset="0x00E08" name="EARLY_DEPTH" value="0x00000031" brief="Early depth control"/>
         <reg32 offset="0x00E10" name="MULTISAMPLE_UNK00E10" value="0x00000000" length="4" stride="4"/>
         <reg32 offset="0x00E40" name="CENTROID_TABLE" value="0x00000000" length="16" stride="4"/>
     </stripe>
