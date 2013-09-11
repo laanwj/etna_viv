@@ -446,7 +446,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="17" name="EARLY_Z_MASK"/>
             <bitfield pos="20" name="ONLY_DEPTH"/>
             <bitfield pos="21" name="ONLY_DEPTH_MASK"/>
-            <bitfield pos="24" name="UNK24"/>
+            <bitfield pos="24" name="DISABLE_ZS" brief="Completely disables writing to depth stencil buffer"/>
+            <bitfield pos="25" name="DISABLE_ZS_MASK"/>
             <bitfield pos="26" name="SUPER_TILED"/>
             <bitfield pos="27" name="SUPER_TILED_MASK"/>
         </reg32>

@@ -215,11 +215,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x0040C" name="MMU_PEZ_PAGE_TABLE" brief="Page table for PE depth"/>
         <reg32 offset="0x00410" name="MMU_RA_PAGE_TABLE" brief="Page table for rasterize"/>
         <reg32 offset="0x00414" name="DEBUG_MEMORY"/>
-        <reg32 offset="0x00418" name="MEMORY_BASE_ADDR_RA"/>
-        <reg32 offset="0x0041C" name="MEMORY_BASE_ADDR_FE"/>
-        <reg32 offset="0x00420" name="MEMORY_BASE_ADDR_TX"/>
-        <reg32 offset="0x00424" name="MEMORY_BASE_ADDR_PEZ"/>
-        <reg32 offset="0x00428" name="MEMORY_BASE_ADDR_PE"/>
+        <reg32 offset="0x00418" name="MEMORY_BASE_ADDR_RA" brief="Base address for RA"/>
+        <reg32 offset="0x0041C" name="MEMORY_BASE_ADDR_FE" brief="Base address for FE"/>
+        <reg32 offset="0x00420" name="MEMORY_BASE_ADDR_TX" brief="Base address for TX"/>
+        <reg32 offset="0x00424" name="MEMORY_BASE_ADDR_PEZ" brief="Base address for PE depth"/>
+        <reg32 offset="0x00428" name="MEMORY_BASE_ADDR_PE" brief="Base address for PE color"/>
         <reg32 offset="0x0042C" name="MEMORY_TIMING_CONTROL"/>
         <reg32 offset="0x00430" name="MEMORY_FLUSH"/>
         <reg32 offset="0x00438" name="PROFILE_CYCLE_COUNTER" brief="Cycles counter"/>

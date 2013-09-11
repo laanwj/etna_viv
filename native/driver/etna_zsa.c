@@ -42,6 +42,7 @@ static void *etna_pipe_create_depth_stencil_alpha_state(struct pipe_context *pip
     struct pipe_depth_stencil_alpha_state dsa = *dsa_p;
     /* XXX does stencil[0] / stencil[1] order depend on rs->front_ccw? */
     bool early_z = true;
+    bool disable_zs = !dsa.depth.writemask;
     int i;
 
     /* Set operations to KEEP if write mask is 0.
@@ -57,14 +58,15 @@ static void *etna_pipe_create_depth_stencil_alpha_state(struct pipe_context *pip
         }
     }
 
-    /* Determine whether to enable early z reject. Don't enable it when any of the stencil functions is used. */
+    /* Determine whether to enable early z reject. Don't enable it when any of
+     * the stencil-modifying functions is used. */
     if(dsa.stencil[0].enabled)
     {
         if(dsa.stencil[0].fail_op != PIPE_STENCIL_OP_KEEP ||
            dsa.stencil[0].zfail_op != PIPE_STENCIL_OP_KEEP ||
            dsa.stencil[0].zpass_op != PIPE_STENCIL_OP_KEEP)
         {
-            early_z = false;
+            disable_zs = early_z = false;
         }
         else if(dsa.stencil[1].enabled)
         {
@@ -72,16 +74,16 @@ static void *etna_pipe_create_depth_stencil_alpha_state(struct pipe_context *pip
                dsa.stencil[1].zfail_op != PIPE_STENCIL_OP_KEEP ||
                dsa.stencil[1].zpass_op != PIPE_STENCIL_OP_KEEP)
             {
-                early_z = false;
+                disable_zs = early_z = false;
             }
         }
     }
-
     /* compare funcs have 1 to 1 mapping */
     cs->PE_DEPTH_CONFIG =
             VIVS_PE_DEPTH_CONFIG_DEPTH_FUNC(dsa.depth.enabled ? dsa.depth.func : PIPE_FUNC_ALWAYS) |
             (dsa.depth.writemask ? VIVS_PE_DEPTH_CONFIG_WRITE_ENABLE : 0) |
-            (early_z ? VIVS_PE_DEPTH_CONFIG_EARLY_Z : 0);
+            (early_z ? VIVS_PE_DEPTH_CONFIG_EARLY_Z : 0) |
+            (disable_zs ? VIVS_PE_DEPTH_CONFIG_DISABLE_ZS : 0);
     cs->PE_ALPHA_OP =
             (dsa.alpha.enabled ? VIVS_PE_ALPHA_OP_ALPHA_TEST : 0) |
             VIVS_PE_ALPHA_OP_ALPHA_FUNC(dsa.alpha.func) |
