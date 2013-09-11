@@ -25,3 +25,5 @@ Directory contents
 
 - `test2d`: 2D engine tests
 
+- `util`: Various utilities for developing, debugging and profiling for Vivante GPUS
+

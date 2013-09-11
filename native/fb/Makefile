@@ -8,7 +8,7 @@ CXXFLAGS +=
 LDFLAGS +=  
 
 TARGETS = rotate_cube alpha_blend cube_companion cubemap_sphere particle_system etna_gears stencil_test displacement mip_cube viv_profile ps_sandbox \
-	  viv_gpu_top downsample_test
+	  downsample_test
 COMPANION_OBJS = ../resources/companion_array.o ../resources/companion_mesh.o ../resources/companion_texture.o
 ETNA_OBJS = ../lib/fbdemos.o ../lib/etna_bswap.o ../driver/libetnadriver.a ../gallium/libminigallium.a ../etnaviv/libetnaviv.a
 
