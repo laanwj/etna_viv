@@ -25,6 +25,16 @@
  * Important: Needs kernel module compiled with user space register access
  * (gcdREGISTER_ACCESS_FROM_USER=1)
  */
+/*
+ * Warning: this utility can result in crashes inside the kernel such as (on ARM),
+ *
+ *     Unhandled fault: external abort on non-linefetch (0x1028) at 0xfe641000
+ *     Internal error: : 1028 [#1] PREEMPT ARM
+ *
+ * It looks as if the actually accessible registers differ per SoC.
+ * When a non-accessible register is loaded, a fault happens. So expect crashes
+ * when using this utility.
+ */
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>

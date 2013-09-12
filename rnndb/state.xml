@@ -302,7 +302,12 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <value value="1" name="OPENVG"/>
             <value value="2" name="OPENCL"/>
         </reg32>
-        <reg32 offset="0x03850" name="CONTEXT_POINTER"/> <!-- DEBUG -->
+        <reg32 offset="0x03850" name="CONTEXT_POINTER" brief="Context token"> <!-- DEBUG -->
+            <doc>
+            The current context pointer is stored here by the v4 kernel driver if debugging is enabled.
+            Likely this register is not used by the hardware, but only by debugging software.
+            </doc>
+        </reg32>
         <reg32 offset="0x03A00" name="UNK03A00"/>
         <reg32 offset="0x03C00" name="STALL_TOKEN">
             <bitfield high="4" low="0" name="FROM" type="SYNC_RECIPIENT"/>

@@ -48,6 +48,7 @@ static const char clear_screen[] = {0x1b, '[', 'H',
                                     0x0};
 static const char color_num_zero[] = "\x1b[1;30m";
 static const char color_num[] = "\x1b[1;33m";
+static const char color_head[] = "\x1b[1;37;100m";
 static const char color_reset[] = "\x1b[0m";
 
 static void write_register(uint32_t address, uint32_t data)
@@ -140,15 +141,15 @@ int main()
             write_register(debug_registers[rid].select_reg, 0 << rdesc->select_shift);
         }
 
-        printf("     ");
+        printf("%s  ", color_head);
         for(unsigned int rid=0; rid<NUM_MODULES; ++rid)
         {
-            printf("%-8s ", debug_registers[rid].module);
+            printf("   %-2s    ", debug_registers[rid].module);
         }
-        printf("\n");
+        printf("%s\n",color_reset);
         for(unsigned int sid=0; sid<MAX_COUNT ; ++sid)
         {
-            printf("%01x ", sid);
+            printf("%s%01x%s ", color_head, sid, color_reset);
             for(unsigned int rid=0; rid<NUM_MODULES; ++rid)
             {
                 const char *color = "";

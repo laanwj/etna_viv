@@ -252,7 +252,7 @@ int main()
                     if(color)
                         printf("%s", color_reset);
                     printf(" ");
-                    printf("%-30.30s", info->name);
+                    printf("%-30.30s", info->description);
                     printf("\n");
                 }
             } else if(mode == MODE_ALL)
@@ -272,7 +272,7 @@ int main()
                         if(color)
                             printf("%s", color_reset);
                         printf(" ");
-                        printf("%-30.30s", info->name);
+                        printf("%-30.30s", info->description);
                         printf("  ");
                         c += max_lines;
                     }

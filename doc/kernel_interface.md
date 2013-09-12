@@ -802,4 +802,51 @@ The contents of the `IDLE_STATE`, `AXI_STATUS` and `DMA_ADDRESS` will be printed
 
 XXX how to trigger from user space?
 
+State deltas
+=============
+
+The v4 version has abandoned the user-space context approach of the v2 versions, and introduced a
+new mechanism with state deltas. The kernel now maintains the current values
+of all 3D states for the userspace-driver connection.
+
+A state delta (`gcsSTATE_DELTA`) structure contains new values for a subset of all GPU state
+addresses defined in the kernel context.
+
+User space has to generate a state delta structure before (XXX or after?) every COMMIT to let the
+kernel know of the changes made in the state buffer.
+
+State deltas have a refcount that tracks the number of contexts that are pending update by the state
+delta.
+
+State deltas are not copied from user space until actually needed (due to a context switch). This
+means that it is possible to keep updating the current state delta *until* the kernel increases it's
+refcount.
+
+When the refcount reaches zero they can be freed. This happens from user space as well.
+
+State delta records form a doubly-linked list. They contains an array of modified states
+(`_gcsSTATE_DELTA_RECORD`) in `recordArray` which are (address, mask, data) tuples. The mask is
+normally 0xffffffff which means update the whole state, but partial updates are possible as well by
+specifying a bitfield.
+
+The `vertexElementCount` of the state delta specifies how many vertex elements (state 00800) are
+used. These need to be handled specifically because they must always all be written, in consecutive
+order, up to the number of elements actually used (if they are all written, all vertex elements
+would be enabled).
+
+Fields `mapEntryID`, `mapEntryIDSize` and `mapEntryIndex` are not used from kernel space.
+
+A context has multiple buffers to prevent (de)allocation overhead; these are stored in a
+doubly-linked list and used in round-robin fashion.
+
+Pseudocode (simplified a lot):
+
+    COMMIT(Ctx, CmdBuf, NewStateDelta)
+    - If context switch needed (Ctx.id != CurCtx.id)
+      - Get current context buffer CurBuf for context Ctx
+      - Merge pending state deltas for context Ctx into CurBuf, and reset pending deltas
+      - Append NewStateDelta to list of pending deltas of all buffers for context Ctx
+      - Send commands in CurBuf to GPU
+    - Send commands in CmdBuf to GPU
+
 

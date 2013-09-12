@@ -8,11 +8,11 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- /home/orion/projects/etna_viv/rnndb/state.xml    (  18253 bytes, from 2013-09-01 10:53:22)
+- /home/orion/projects/etna_viv/rnndb/state.xml    (  18526 bytes, from 2013-09-11 16:52:32)
 - /home/orion/projects/etna_viv/rnndb/common.xml   (  16543 bytes, from 2013-09-01 10:53:22)
-- /home/orion/projects/etna_viv/rnndb/state_hi.xml (  21682 bytes, from 2013-09-10 09:11:57)
+- /home/orion/projects/etna_viv/rnndb/state_hi.xml (  21834 bytes, from 2013-09-11 15:58:37)
 - /home/orion/projects/etna_viv/rnndb/state_2d.xml (  51058 bytes, from 2013-09-01 10:53:22)
-- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  54159 bytes, from 2013-09-11 14:17:21)
+- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  54251 bytes, from 2013-09-11 16:55:59)
 - /home/orion/projects/etna_viv/rnndb/state_vg.xml (   5942 bytes, from 2013-09-01 10:53:22)
 
 Copyright (C) 2013
@@ -858,9 +858,8 @@ Copyright (C) 2013
 #define VIVS_TS_MEM_CONFIG_MSAA_FORMAT_R5G6B5			0x00000200
 #define VIVS_TS_MEM_CONFIG_MSAA_FORMAT_A8R8G8B8			0x00000300
 #define VIVS_TS_MEM_CONFIG_MSAA_FORMAT_X8R8G8B8			0x00000400
-#define VIVS_TS_MEM_CONFIG_HDEPTH__MASK				0x00003000
-#define VIVS_TS_MEM_CONFIG_HDEPTH__SHIFT			12
-#define VIVS_TS_MEM_CONFIG_HDEPTH(x)				(((x) << VIVS_TS_MEM_CONFIG_HDEPTH__SHIFT) & VIVS_TS_MEM_CONFIG_HDEPTH__MASK)
+#define VIVS_TS_MEM_CONFIG_UNK12				0x00001000
+#define VIVS_TS_MEM_CONFIG_HDEPTH_AUTO_DISABLE			0x00002000
 
 #define VIVS_TS_COLOR_STATUS_BASE				0x00001658
 
