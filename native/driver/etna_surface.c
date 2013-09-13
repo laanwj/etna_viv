@@ -94,7 +94,7 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
                 .dest_format = RS_FORMAT_A8R8G8B8,
                 .dest_addr = surf->surf.ts_address,
                 .dest_stride = 0x40,
-                /* XXX .dest_tiling = ETNA_LAYOUT_TILED, could be slightly faster */
+                .dest_tiling = ETNA_LAYOUT_TILED,
                 .dither = {0xffffffff, 0xffffffff},
                 .width = 16,
                 .height = etna_align_up(surf->surf.ts_size/0x40, 4),

@@ -154,6 +154,7 @@ static void etna_pipe_clear(struct pipe_context *pipe,
         etna_submit_rs_state(priv->ctx, &surf->clear_command);
         surf->level->clear_value = new_clear_value;
     }
+    etna_stall(priv->ctx, SYNC_RECIPIENT_RA, SYNC_RECIPIENT_PE);
 }
 
 static void etna_pipe_clear_render_target(struct pipe_context *pipe,
