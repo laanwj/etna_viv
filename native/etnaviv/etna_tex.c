@@ -9,6 +9,7 @@
 
 #define DO_TILE(type) \
         src_stride /= sizeof(type); \
+        dst_stride = (dst_stride * TEX_TILE_HEIGHT) / sizeof(type); \
         for(unsigned srcy=0; srcy<height; ++srcy) \
         { \
             unsigned dsty = basey + srcy; \
@@ -22,6 +23,7 @@
         }
 
 #define DO_UNTILE(type) \
+        src_stride = (src_stride * TEX_TILE_HEIGHT) / sizeof(type); \
         dst_stride /= sizeof(type); \
         for(unsigned dsty=0; dsty<height; ++dsty) \
         { \
@@ -35,11 +37,8 @@
             } \
         }
 
-void etna_texture_tile(void *dest, void *src, unsigned basex, unsigned basey, unsigned width, unsigned height, unsigned src_stride, unsigned elmtsize)
+void etna_texture_tile(void *dest, void *src, unsigned basex, unsigned basey, unsigned dst_stride, unsigned width, unsigned height, unsigned src_stride, unsigned elmtsize)
 {
-    //unsigned ytiles = (height + TEX_TILE_HEIGHT - 1) / TEX_TILE_HEIGHT;
-    unsigned xtiles = (width + TEX_TILE_WIDTH - 1) / TEX_TILE_WIDTH;
-    unsigned dst_stride = xtiles * TEX_TILE_WORDS;
     if(elmtsize == 4)
     {
         DO_TILE(uint32_t)
@@ -56,11 +55,8 @@ void etna_texture_tile(void *dest, void *src, unsigned basex, unsigned basey, un
     }
 }
 
-void etna_texture_untile(void *dest, void *src, unsigned basex, unsigned basey, unsigned width, unsigned height, unsigned dst_stride, unsigned elmtsize)
+void etna_texture_untile(void *dest, void *src, unsigned basex, unsigned basey, unsigned src_stride, unsigned width, unsigned height, unsigned dst_stride, unsigned elmtsize)
 {
-    //unsigned ytiles = (height + TEX_TILE_HEIGHT - 1) / TEX_TILE_HEIGHT;
-    unsigned xtiles = (width + TEX_TILE_WIDTH - 1) / TEX_TILE_WIDTH;
-    unsigned src_stride = xtiles * TEX_TILE_WORDS;
     if(elmtsize == 4)
     {
         DO_UNTILE(uint32_t);

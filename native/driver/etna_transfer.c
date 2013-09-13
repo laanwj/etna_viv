@@ -137,9 +137,10 @@ static void *etna_pipe_transfer_map(struct pipe_context *pipe,
             {
                 if(resource_priv->layout == ETNA_LAYOUT_TILED && !util_format_is_compressed(resource_priv->base.format))
                 {
-                    etna_texture_untile(ptrans->buffer, res_level->logical, ptrans->base.box.x, ptrans->base.box.y,
-                            ptrans->base.box.width, ptrans->base.box.height,
-                            ptrans->base.stride, util_format_get_blocksize(resource_priv->base.format));
+                    etna_texture_untile(ptrans->buffer, res_level->logical,
+                            ptrans->base.box.x, ptrans->base.box.y, res_level->stride,
+                            ptrans->base.box.width, ptrans->base.box.height, ptrans->base.stride,
+                            util_format_get_blocksize(resource_priv->base.format));
                 } else { /* non-tiled or compressed format */
                     util_copy_box(ptrans->buffer,
                       resource_priv->base.format,
@@ -192,9 +193,10 @@ static void etna_pipe_transfer_unmap(struct pipe_context *pipe,
             {
                 if(resource->layout == ETNA_LAYOUT_TILED && !util_format_is_compressed(resource->base.format))
                 {
-                    etna_texture_tile(level->logical, ptrans->buffer, ptrans->base.box.x, ptrans->base.box.y,
-                            ptrans->base.box.width, ptrans->base.box.height,
-                            ptrans->base.stride, util_format_get_blocksize(resource->base.format));
+                    etna_texture_tile(level->logical, ptrans->buffer,
+                            ptrans->base.box.x, ptrans->base.box.y, level->stride,
+                            ptrans->base.box.width, ptrans->base.box.height, ptrans->base.stride,
+                            util_format_get_blocksize(resource->base.format));
                 } else { /* non-tiled or compressed format */
                     util_copy_box(level->logical,
                       resource->base.format,
