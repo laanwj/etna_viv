@@ -76,7 +76,9 @@ static void etna_pipe_bind_blend_state(struct pipe_context *pipe, void *bs)
 {
     struct etna_pipe_context *priv = etna_pipe_context(pipe);
     priv->dirty_bits |= ETNA_STATE_BLEND;
-    priv->blend = bs;
+    priv->blend_p = bs;
+    if(bs)
+        priv->blend = *(struct compiled_blend_state*)bs;
 }
 
 static void etna_pipe_delete_blend_state(struct pipe_context *pipe, void *bs)

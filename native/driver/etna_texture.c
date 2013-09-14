@@ -70,7 +70,11 @@ static void etna_pipe_bind_fragment_sampler_states(struct pipe_context *pipe,
     priv->dirty_bits |= ETNA_STATE_SAMPLERS;
     priv->num_fragment_samplers = num_samplers;
     for(int idx=0; idx<num_samplers; ++idx)
-        priv->sampler[idx] = samplers[idx];
+    {
+        priv->sampler_p[idx] = samplers[idx];
+        if(samplers[idx])
+            priv->sampler[idx] = *(struct compiled_sampler_state*)samplers[idx];
+    }
 }
 
 static void etna_pipe_bind_vertex_sampler_states(struct pipe_context *pipe,
@@ -81,7 +85,11 @@ static void etna_pipe_bind_vertex_sampler_states(struct pipe_context *pipe,
     priv->dirty_bits |= ETNA_STATE_SAMPLERS;
     priv->num_vertex_samplers = num_samplers;
     for(int idx=0; idx<num_samplers; ++idx)
-        priv->sampler[priv->specs.vertex_sampler_offset + idx] = samplers[idx];
+    {
+        priv->sampler_p[priv->specs.vertex_sampler_offset + idx] = samplers[idx];
+        if(samplers[idx])
+            priv->sampler[priv->specs.vertex_sampler_offset + idx] = *(struct compiled_sampler_state*)samplers[idx];
+    }
 }
 
 static void etna_pipe_delete_sampler_state(struct pipe_context *pipe, void *ss)

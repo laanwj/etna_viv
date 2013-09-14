@@ -287,11 +287,11 @@ static void sync_context(struct pipe_context *restrict pipe)
     uint32_t dirty = e->dirty_bits;
 
     /* CSOs must be bound before calling this */
-    assert(e->blend && e->rasterizer && e->depth_stencil_alpha && e->vertex_elements);
+    assert(e->blend_p && e->rasterizer_p && e->depth_stencil_alpha_p && e->vertex_elements_p);
 
     /* Pre-processing: re-link shader if needed.
      */
-    if((dirty & ETNA_STATE_SHADER) && e->vs && e->fs)
+    if(unlikely((dirty & ETNA_STATE_SHADER)) && e->vs && e->fs)
     {
         /* re-link vs and fs if needed */
         etna_link_shaders(pipe, &e->shader_state, e->vs, e->fs);
@@ -301,15 +301,15 @@ static void sync_context(struct pipe_context *restrict pipe)
      * changes.
      */
     uint32_t to_flush = 0;
-    if(dirty & (ETNA_STATE_BLEND))
+    if(unlikely(dirty & (ETNA_STATE_BLEND)))
     {
         /* Need flush COLOR when changing PE.COLOR_FORMAT.OVERWRITE.
          */
         if((e->gpu3d.PE_COLOR_FORMAT & VIVS_PE_COLOR_FORMAT_OVERWRITE) !=
-           (e->blend->PE_COLOR_FORMAT & VIVS_PE_COLOR_FORMAT_OVERWRITE))
+           (e->blend.PE_COLOR_FORMAT & VIVS_PE_COLOR_FORMAT_OVERWRITE))
             to_flush |= VIVS_GL_FLUSH_CACHE_COLOR;
     }
-    if(dirty & (ETNA_STATE_TEXTURE_CACHES))
+    if(unlikely(dirty & (ETNA_STATE_TEXTURE_CACHES)))
         to_flush |= VIVS_GL_FLUSH_CACHE_TEXTURE;
     if(DBG_ENABLED(ETNA_DBG_CFLUSH_ALL))
         to_flush |= VIVS_GL_FLUSH_CACHE_TEXTURE | VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH;
@@ -321,7 +321,7 @@ static void sync_context(struct pipe_context *restrict pipe)
 
     /* If MULTI_SAMPLE_CONFIG.MSAA_SAMPLES changed, clobber affected shader
      * state to make sure it is always rewritten. */
-    if(dirty & (ETNA_STATE_FRAMEBUFFER))
+    if(unlikely(dirty & (ETNA_STATE_FRAMEBUFFER)))
     {
         if((e->gpu3d.GL_MULTI_SAMPLE_CONFIG & VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_SAMPLES__MASK) !=
            (e->framebuffer.GL_MULTI_SAMPLE_CONFIG & VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_SAMPLES__MASK))
@@ -358,14 +358,14 @@ static void sync_context(struct pipe_context *restrict pipe)
      */
     if(dirty & (ETNA_STATE_VERTEX_ELEMENTS))
     {
-        if(e->gpu3d.num_vertex_elements != e->vertex_elements->num_elements ||
-           memcmp(e->gpu3d.FE_VERTEX_ELEMENT_CONFIG, e->vertex_elements->FE_VERTEX_ELEMENT_CONFIG, e->gpu3d.num_vertex_elements * 4))
+        if(e->gpu3d.num_vertex_elements != e->vertex_elements.num_elements ||
+           memcmp(e->gpu3d.FE_VERTEX_ELEMENT_CONFIG, e->vertex_elements.FE_VERTEX_ELEMENT_CONFIG, e->gpu3d.num_vertex_elements * 4))
         {
             /* Special case: vertex elements must always be sent in full if changed */
-            /*00600*/ etna_set_state_multi(ctx, VIVS_FE_VERTEX_ELEMENT_CONFIG(0), e->vertex_elements->num_elements, e->vertex_elements->FE_VERTEX_ELEMENT_CONFIG);
-            memcpy(e->gpu3d.FE_VERTEX_ELEMENT_CONFIG, e->vertex_elements->FE_VERTEX_ELEMENT_CONFIG, e->vertex_elements->num_elements * 4);
+            /*00600*/ etna_set_state_multi(ctx, VIVS_FE_VERTEX_ELEMENT_CONFIG(0), e->vertex_elements.num_elements, e->vertex_elements.FE_VERTEX_ELEMENT_CONFIG);
+            memcpy(e->gpu3d.FE_VERTEX_ELEMENT_CONFIG, e->vertex_elements.FE_VERTEX_ELEMENT_CONFIG, e->vertex_elements.num_elements * 4);
 
-            e->gpu3d.num_vertex_elements = e->vertex_elements->num_elements;
+            e->gpu3d.num_vertex_elements = e->vertex_elements.num_elements;
         }
     }
 
@@ -384,6 +384,7 @@ static void sync_context(struct pipe_context *restrict pipe)
      * - removed ETNA_STATE_BASE_SETUP statements -- these are guaranteed to not change anyway
      * - PS / framebuffer interaction for MSAA
      * - move update of GL_MULTI_SAMPLE_CONFIG first
+     * - add unlikely()/likely()
      */
     uint32_t last_reg, last_fixp, span_start;
     ETNA_COALESCE_STATE_OPEN(ETNA_3D_CONTEXT_SIZE);
@@ -393,16 +394,16 @@ static void sync_context(struct pipe_context *restrict pipe)
      * order, as changing the multisample state clobbers PS.INPUT_COUNT (and
      * possibly PS.TEMP_REGISTER_CONTROL).
      */
-    if(dirty & (ETNA_STATE_FRAMEBUFFER | ETNA_STATE_SAMPLE_MASK))
+    if(unlikely(dirty & (ETNA_STATE_FRAMEBUFFER | ETNA_STATE_SAMPLE_MASK)))
     {
         /*03818*/ EMIT_STATE(GL_MULTI_SAMPLE_CONFIG, GL_MULTI_SAMPLE_CONFIG, e->sample_mask.GL_MULTI_SAMPLE_CONFIG | e->framebuffer.GL_MULTI_SAMPLE_CONFIG);
     }
-    if(dirty & (ETNA_STATE_INDEX_BUFFER))
+    if(likely(dirty & (ETNA_STATE_INDEX_BUFFER)))
     {
         /*00644*/ EMIT_STATE(FE_INDEX_STREAM_BASE_ADDR, FE_INDEX_STREAM_BASE_ADDR, e->index_buffer.FE_INDEX_STREAM_BASE_ADDR);
         /*00648*/ EMIT_STATE(FE_INDEX_STREAM_CONTROL, FE_INDEX_STREAM_CONTROL, e->index_buffer.FE_INDEX_STREAM_CONTROL);
     }
-    if(dirty & (ETNA_STATE_VERTEX_BUFFERS))
+    if(likely(dirty & (ETNA_STATE_VERTEX_BUFFERS)))
     {
         /*0064C*/ EMIT_STATE(FE_VERTEX_STREAM_BASE_ADDR, FE_VERTEX_STREAM_BASE_ADDR, e->vertex_buffer[0].FE_VERTEX_STREAM_BASE_ADDR);
         /*00650*/ EMIT_STATE(FE_VERTEX_STREAM_CONTROL, FE_VERTEX_STREAM_CONTROL, e->vertex_buffer[0].FE_VERTEX_STREAM_CONTROL);
@@ -418,19 +419,19 @@ static void sync_context(struct pipe_context *restrict pipe)
             }
         }
     }
-    if(dirty & (ETNA_STATE_SHADER))
+    if(unlikely(dirty & (ETNA_STATE_SHADER)))
     {
         /*00800*/ EMIT_STATE(VS_END_PC, VS_END_PC, e->shader_state.VS_END_PC);
     }
-    if(dirty & (ETNA_STATE_SHADER | ETNA_STATE_RASTERIZER))
+    if(unlikely(dirty & (ETNA_STATE_SHADER | ETNA_STATE_RASTERIZER)))
     {
-        /*00804*/ EMIT_STATE(VS_OUTPUT_COUNT, VS_OUTPUT_COUNT, e->shader_state.VS_OUTPUT_COUNT + e->rasterizer->VS_OUTPUT_COUNT);
+        /*00804*/ EMIT_STATE(VS_OUTPUT_COUNT, VS_OUTPUT_COUNT, e->shader_state.VS_OUTPUT_COUNT + e->rasterizer.VS_OUTPUT_COUNT);
     }
-    if(dirty & (ETNA_STATE_VERTEX_ELEMENTS | ETNA_STATE_SHADER))
+    if(unlikely(dirty & (ETNA_STATE_VERTEX_ELEMENTS | ETNA_STATE_SHADER)))
     {
-        /*00808*/ EMIT_STATE(VS_INPUT_COUNT, VS_INPUT_COUNT, VIVS_VS_INPUT_COUNT_COUNT(e->vertex_elements->num_elements) | e->shader_state.VS_INPUT_COUNT);
+        /*00808*/ EMIT_STATE(VS_INPUT_COUNT, VS_INPUT_COUNT, VIVS_VS_INPUT_COUNT_COUNT(e->vertex_elements.num_elements) | e->shader_state.VS_INPUT_COUNT);
     }
-    if(dirty & (ETNA_STATE_SHADER))
+    if(unlikely(dirty & (ETNA_STATE_SHADER)))
     {
         /*0080C*/ EMIT_STATE(VS_TEMP_REGISTER_CONTROL, VS_TEMP_REGISTER_CONTROL, e->shader_state.VS_TEMP_REGISTER_CONTROL);
         for(int x=0; x<4; ++x)
@@ -448,7 +449,7 @@ static void sync_context(struct pipe_context *restrict pipe)
             /*0085C*/ EMIT_STATE(VS_RANGE, VS_RANGE, (e->shader_state.vs_inst_mem_size/4-1)<<16);
         }
     }
-    if(dirty & (ETNA_STATE_VIEWPORT))
+    if(unlikely(dirty & (ETNA_STATE_VIEWPORT)))
     {
         /*00A00*/ EMIT_STATE(PA_VIEWPORT_SCALE_X, PA_VIEWPORT_SCALE_X, e->viewport.PA_VIEWPORT_SCALE_X);
         /*00A04*/ EMIT_STATE(PA_VIEWPORT_SCALE_Y, PA_VIEWPORT_SCALE_Y, e->viewport.PA_VIEWPORT_SCALE_Y);
@@ -457,30 +458,30 @@ static void sync_context(struct pipe_context *restrict pipe)
         /*00A10*/ EMIT_STATE(PA_VIEWPORT_OFFSET_Y, PA_VIEWPORT_OFFSET_Y, e->viewport.PA_VIEWPORT_OFFSET_Y);
         /*00A14*/ EMIT_STATE(PA_VIEWPORT_OFFSET_Z, PA_VIEWPORT_OFFSET_Z, e->viewport.PA_VIEWPORT_OFFSET_Z);
     }
-    if(dirty & (ETNA_STATE_RASTERIZER))
+    if(unlikely(dirty & (ETNA_STATE_RASTERIZER)))
     {
-        /*00A18*/ EMIT_STATE(PA_LINE_WIDTH, PA_LINE_WIDTH, e->rasterizer->PA_LINE_WIDTH);
-        /*00A1C*/ EMIT_STATE(PA_POINT_SIZE, PA_POINT_SIZE, e->rasterizer->PA_POINT_SIZE);
-        /*00A28*/ EMIT_STATE(PA_SYSTEM_MODE, PA_SYSTEM_MODE, e->rasterizer->PA_SYSTEM_MODE);
+        /*00A18*/ EMIT_STATE(PA_LINE_WIDTH, PA_LINE_WIDTH, e->rasterizer.PA_LINE_WIDTH);
+        /*00A1C*/ EMIT_STATE(PA_POINT_SIZE, PA_POINT_SIZE, e->rasterizer.PA_POINT_SIZE);
+        /*00A28*/ EMIT_STATE(PA_SYSTEM_MODE, PA_SYSTEM_MODE, e->rasterizer.PA_SYSTEM_MODE);
     }
-    if(dirty & (ETNA_STATE_SHADER))
+    if(unlikely(dirty & (ETNA_STATE_SHADER)))
     {
         /*00A30*/ EMIT_STATE(PA_ATTRIBUTE_ELEMENT_COUNT, PA_ATTRIBUTE_ELEMENT_COUNT, e->shader_state.PA_ATTRIBUTE_ELEMENT_COUNT);
     }
-    if(dirty & (ETNA_STATE_RASTERIZER))
+    if(unlikely(dirty & (ETNA_STATE_RASTERIZER)))
     {
-        /*00A34*/ EMIT_STATE(PA_CONFIG, PA_CONFIG, e->rasterizer->PA_CONFIG);
+        /*00A34*/ EMIT_STATE(PA_CONFIG, PA_CONFIG, e->rasterizer.PA_CONFIG);
     }
-    if(dirty & (ETNA_STATE_SHADER))
+    if(unlikely(dirty & (ETNA_STATE_SHADER)))
     {
         for(int x=0; x<10; ++x)
         {
             /*00A40*/ EMIT_STATE(PA_SHADER_ATTRIBUTES(x), PA_SHADER_ATTRIBUTES[x], e->shader_state.PA_SHADER_ATTRIBUTES[x]);
         }
     }
-    if(dirty & (ETNA_STATE_SCISSOR | ETNA_STATE_FRAMEBUFFER | ETNA_STATE_RASTERIZER | ETNA_STATE_VIEWPORT))
+    if(unlikely(dirty & (ETNA_STATE_SCISSOR | ETNA_STATE_FRAMEBUFFER | ETNA_STATE_RASTERIZER | ETNA_STATE_VIEWPORT)))
     {
-        /* this is a bit of a mess: rasterizer->scissor determines whether to use only the
+        /* this is a bit of a mess: rasterizer.scissor determines whether to use only the
          * framebuffer scissor, or specific scissor state, and the viewport clips too so the logic
          * spans four CSOs
          */
@@ -488,7 +489,7 @@ static void sync_context(struct pipe_context *restrict pipe)
         uint32_t scissor_top = MAX2(e->framebuffer.SE_SCISSOR_TOP, e->viewport.SE_SCISSOR_TOP);
         uint32_t scissor_right = MIN2(e->framebuffer.SE_SCISSOR_RIGHT, e->viewport.SE_SCISSOR_RIGHT);
         uint32_t scissor_bottom = MIN2(e->framebuffer.SE_SCISSOR_BOTTOM, e->viewport.SE_SCISSOR_BOTTOM);
-        if(e->rasterizer->scissor)
+        if(e->rasterizer.scissor)
         {
             scissor_left = MAX2(e->scissor.SE_SCISSOR_LEFT, scissor_left);
             scissor_top = MAX2(e->scissor.SE_SCISSOR_TOP, scissor_top);
@@ -500,17 +501,17 @@ static void sync_context(struct pipe_context *restrict pipe)
         /*00C08*/ EMIT_STATE_FIXP(SE_SCISSOR_RIGHT, SE_SCISSOR_RIGHT, scissor_right);
         /*00C0C*/ EMIT_STATE_FIXP(SE_SCISSOR_BOTTOM, SE_SCISSOR_BOTTOM, scissor_bottom);
     }
-    if(dirty & (ETNA_STATE_RASTERIZER))
+    if(unlikely(dirty & (ETNA_STATE_RASTERIZER)))
     {
-        /*00C10*/ EMIT_STATE(SE_DEPTH_SCALE, SE_DEPTH_SCALE, e->rasterizer->SE_DEPTH_SCALE);
-        /*00C14*/ EMIT_STATE(SE_DEPTH_BIAS, SE_DEPTH_BIAS, e->rasterizer->SE_DEPTH_BIAS);
-        /*00C18*/ EMIT_STATE(SE_CONFIG, SE_CONFIG, e->rasterizer->SE_CONFIG);
+        /*00C10*/ EMIT_STATE(SE_DEPTH_SCALE, SE_DEPTH_SCALE, e->rasterizer.SE_DEPTH_SCALE);
+        /*00C14*/ EMIT_STATE(SE_DEPTH_BIAS, SE_DEPTH_BIAS, e->rasterizer.SE_DEPTH_BIAS);
+        /*00C18*/ EMIT_STATE(SE_CONFIG, SE_CONFIG, e->rasterizer.SE_CONFIG);
     }
-    if(dirty & (ETNA_STATE_SHADER))
+    if(unlikely(dirty & (ETNA_STATE_SHADER)))
     {
         /*00E00*/ EMIT_STATE(RA_CONTROL, RA_CONTROL, e->shader_state.RA_CONTROL);
     }
-    if(dirty & (ETNA_STATE_FRAMEBUFFER))
+    if(unlikely(dirty & (ETNA_STATE_FRAMEBUFFER)))
     {
         /*00E04*/ EMIT_STATE(RA_MULTISAMPLE_UNK00E04, RA_MULTISAMPLE_UNK00E04, e->framebuffer.RA_MULTISAMPLE_UNK00E04);
         for(int x=0; x<4; ++x)
@@ -522,7 +523,7 @@ static void sync_context(struct pipe_context *restrict pipe)
             /*00E40*/ EMIT_STATE(RA_CENTROID_TABLE(x), RA_CENTROID_TABLE[x], e->framebuffer.RA_CENTROID_TABLE[x]);
         }
     }
-    if(dirty & (ETNA_STATE_SHADER | ETNA_STATE_FRAMEBUFFER))
+    if(unlikely(dirty & (ETNA_STATE_SHADER | ETNA_STATE_FRAMEBUFFER)))
     {
         /*01000*/ EMIT_STATE(PS_END_PC, PS_END_PC, e->shader_state.PS_END_PC);
         /*01004*/ EMIT_STATE(PS_OUTPUT_REG, PS_OUTPUT_REG, e->shader_state.PS_OUTPUT_REG);
@@ -541,16 +542,16 @@ static void sync_context(struct pipe_context *restrict pipe)
             /*0101C*/ EMIT_STATE(PS_RANGE, PS_RANGE, ((e->shader_state.ps_inst_mem_size/4-1+0x100)<<16) | 0x100);
         }
     }
-    if(dirty & (ETNA_STATE_DSA | ETNA_STATE_FRAMEBUFFER))
+    if(unlikely(dirty & (ETNA_STATE_DSA | ETNA_STATE_FRAMEBUFFER)))
     {
-        /*01400*/ EMIT_STATE(PE_DEPTH_CONFIG, PE_DEPTH_CONFIG, e->depth_stencil_alpha->PE_DEPTH_CONFIG | e->framebuffer.PE_DEPTH_CONFIG);
+        /*01400*/ EMIT_STATE(PE_DEPTH_CONFIG, PE_DEPTH_CONFIG, e->depth_stencil_alpha.PE_DEPTH_CONFIG | e->framebuffer.PE_DEPTH_CONFIG);
     }
-    if(dirty & (ETNA_STATE_VIEWPORT))
+    if(unlikely(dirty & (ETNA_STATE_VIEWPORT)))
     {
         /*01404*/ EMIT_STATE(PE_DEPTH_NEAR, PE_DEPTH_NEAR, e->viewport.PE_DEPTH_NEAR);
         /*01408*/ EMIT_STATE(PE_DEPTH_FAR, PE_DEPTH_FAR, e->viewport.PE_DEPTH_FAR);
     }
-    if(dirty & (ETNA_STATE_FRAMEBUFFER))
+    if(unlikely(dirty & (ETNA_STATE_FRAMEBUFFER)))
     {
         /*0140C*/ EMIT_STATE(PE_DEPTH_NORMALIZE, PE_DEPTH_NORMALIZE, e->framebuffer.PE_DEPTH_NORMALIZE);
 
@@ -561,31 +562,31 @@ static void sync_context(struct pipe_context *restrict pipe)
 
         /*01414*/ EMIT_STATE(PE_DEPTH_STRIDE, PE_DEPTH_STRIDE, e->framebuffer.PE_DEPTH_STRIDE);
     }
-    if(dirty & (ETNA_STATE_DSA))
+    if(unlikely(dirty & (ETNA_STATE_DSA)))
     {
-        /*01418*/ EMIT_STATE(PE_STENCIL_OP, PE_STENCIL_OP, e->depth_stencil_alpha->PE_STENCIL_OP);
+        /*01418*/ EMIT_STATE(PE_STENCIL_OP, PE_STENCIL_OP, e->depth_stencil_alpha.PE_STENCIL_OP);
     }
-    if(dirty & (ETNA_STATE_DSA | ETNA_STATE_STENCIL_REF))
+    if(unlikely(dirty & (ETNA_STATE_DSA | ETNA_STATE_STENCIL_REF)))
     {
-        /*0141C*/ EMIT_STATE(PE_STENCIL_CONFIG, PE_STENCIL_CONFIG, e->depth_stencil_alpha->PE_STENCIL_CONFIG | e->stencil_ref.PE_STENCIL_CONFIG);
+        /*0141C*/ EMIT_STATE(PE_STENCIL_CONFIG, PE_STENCIL_CONFIG, e->depth_stencil_alpha.PE_STENCIL_CONFIG | e->stencil_ref.PE_STENCIL_CONFIG);
     }
-    if(dirty & (ETNA_STATE_DSA))
+    if(unlikely(dirty & (ETNA_STATE_DSA)))
     {
-        /*01420*/ EMIT_STATE(PE_ALPHA_OP, PE_ALPHA_OP, e->depth_stencil_alpha->PE_ALPHA_OP);
+        /*01420*/ EMIT_STATE(PE_ALPHA_OP, PE_ALPHA_OP, e->depth_stencil_alpha.PE_ALPHA_OP);
     }
-    if(dirty & (ETNA_STATE_BLEND_COLOR))
+    if(unlikely(dirty & (ETNA_STATE_BLEND_COLOR)))
     {
         /*01424*/ EMIT_STATE(PE_ALPHA_BLEND_COLOR, PE_ALPHA_BLEND_COLOR, e->blend_color.PE_ALPHA_BLEND_COLOR);
     }
-    if(dirty & (ETNA_STATE_BLEND))
+    if(unlikely(dirty & (ETNA_STATE_BLEND)))
     {
-        /*01428*/ EMIT_STATE(PE_ALPHA_CONFIG, PE_ALPHA_CONFIG, e->blend->PE_ALPHA_CONFIG);
+        /*01428*/ EMIT_STATE(PE_ALPHA_CONFIG, PE_ALPHA_CONFIG, e->blend.PE_ALPHA_CONFIG);
     }
-    if(dirty & (ETNA_STATE_BLEND | ETNA_STATE_FRAMEBUFFER))
+    if(unlikely(dirty & (ETNA_STATE_BLEND | ETNA_STATE_FRAMEBUFFER)))
     {
-        /*0142C*/ EMIT_STATE(PE_COLOR_FORMAT, PE_COLOR_FORMAT, e->blend->PE_COLOR_FORMAT | e->framebuffer.PE_COLOR_FORMAT);
+        /*0142C*/ EMIT_STATE(PE_COLOR_FORMAT, PE_COLOR_FORMAT, e->blend.PE_COLOR_FORMAT | e->framebuffer.PE_COLOR_FORMAT);
     }
-    if(dirty & (ETNA_STATE_FRAMEBUFFER))
+    if(unlikely(dirty & (ETNA_STATE_FRAMEBUFFER)))
     {
         if (ctx->conn->chip.pixel_pipes == 1)
         {
@@ -603,19 +604,19 @@ static void sync_context(struct pipe_context *restrict pipe)
             /*01484*/ EMIT_STATE(PE_PIPE_DEPTH_ADDR(1), PE_PIPE_DEPTH_ADDR[1], e->framebuffer.PE_PIPE_DEPTH_ADDR[1]);
         }
     }
-    if(dirty & (ETNA_STATE_STENCIL_REF))
+    if(unlikely(dirty & (ETNA_STATE_STENCIL_REF)))
     {
         /*014A0*/ EMIT_STATE(PE_STENCIL_CONFIG_EXT, PE_STENCIL_CONFIG_EXT, e->stencil_ref.PE_STENCIL_CONFIG_EXT);
     }
-    if(dirty & (ETNA_STATE_BLEND))
+    if(unlikely(dirty & (ETNA_STATE_BLEND)))
     {
-        /*014A4*/ EMIT_STATE(PE_LOGIC_OP, PE_LOGIC_OP, e->blend->PE_LOGIC_OP);
+        /*014A4*/ EMIT_STATE(PE_LOGIC_OP, PE_LOGIC_OP, e->blend.PE_LOGIC_OP);
         for(int x=0; x<2; ++x)
         {
-            /*014A8*/ EMIT_STATE(PE_DITHER(x), PE_DITHER[x], e->blend->PE_DITHER[x]);
+            /*014A8*/ EMIT_STATE(PE_DITHER(x), PE_DITHER[x], e->blend.PE_DITHER[x]);
         }
     }
-    if(dirty & (ETNA_STATE_FRAMEBUFFER | ETNA_STATE_TS))
+    if(unlikely(dirty & (ETNA_STATE_FRAMEBUFFER | ETNA_STATE_TS)))
     {
         /*01654*/ EMIT_STATE(TS_MEM_CONFIG, TS_MEM_CONFIG, e->framebuffer.TS_MEM_CONFIG);
         /*01658*/ EMIT_STATE(TS_COLOR_STATUS_BASE, TS_COLOR_STATUS_BASE, e->framebuffer.TS_COLOR_STATUS_BASE);
@@ -625,17 +626,17 @@ static void sync_context(struct pipe_context *restrict pipe)
         /*01668*/ EMIT_STATE(TS_DEPTH_SURFACE_BASE, TS_DEPTH_SURFACE_BASE, e->framebuffer.TS_DEPTH_SURFACE_BASE);
         /*0166C*/ EMIT_STATE(TS_DEPTH_CLEAR_VALUE, TS_DEPTH_CLEAR_VALUE, e->framebuffer.TS_DEPTH_CLEAR_VALUE);
     }
-    if(dirty & (ETNA_STATE_SAMPLER_VIEWS | ETNA_STATE_SAMPLERS))
+    if(unlikely(dirty & (ETNA_STATE_SAMPLER_VIEWS | ETNA_STATE_SAMPLERS)))
     {
         for(int x=0; x<VIVS_TE_SAMPLER__LEN; ++x)
         {
             /* set active samplers to their configuration value (determined by both the sampler state and sampler view),
              * set inactive sampler config to 0 */
             /*02000*/ EMIT_STATE(TE_SAMPLER_CONFIG0(x), TE_SAMPLER_CONFIG0[x],
-                    ((1<<x) & active_samplers)?(e->sampler[x]->TE_SAMPLER_CONFIG0 | e->sampler_view[x].TE_SAMPLER_CONFIG0):0);
+                    ((1<<x) & active_samplers)?(e->sampler[x].TE_SAMPLER_CONFIG0 | e->sampler_view[x].TE_SAMPLER_CONFIG0):0);
         }
     }
-    if(dirty & (ETNA_STATE_SAMPLER_VIEWS))
+    if(unlikely(dirty & (ETNA_STATE_SAMPLER_VIEWS)))
     {
         for(int x=0; x<VIVS_TE_SAMPLER__LEN; ++x)
         {
@@ -652,7 +653,7 @@ static void sync_context(struct pipe_context *restrict pipe)
             }
         }
     }
-    if(dirty & (ETNA_STATE_SAMPLER_VIEWS | ETNA_STATE_SAMPLERS))
+    if(unlikely(dirty & (ETNA_STATE_SAMPLER_VIEWS | ETNA_STATE_SAMPLERS)))
     {
         for(int x=0; x<VIVS_TE_SAMPLER__LEN; ++x)
         {
@@ -660,9 +661,9 @@ static void sync_context(struct pipe_context *restrict pipe)
             {
                 /* min and max lod is determined both by the sampler and the view */
                 /*020C0*/ EMIT_STATE(TE_SAMPLER_LOD_CONFIG(x), TE_SAMPLER_LOD_CONFIG[x],
-                        e->sampler[x]->TE_SAMPLER_LOD_CONFIG |
-                        VIVS_TE_SAMPLER_LOD_CONFIG_MAX(MIN2(e->sampler[x]->max_lod, e->sampler_view[x].max_lod)) |
-                        VIVS_TE_SAMPLER_LOD_CONFIG_MIN(MAX2(e->sampler[x]->min_lod, e->sampler_view[x].min_lod)));
+                        e->sampler[x].TE_SAMPLER_LOD_CONFIG |
+                        VIVS_TE_SAMPLER_LOD_CONFIG_MAX(MIN2(e->sampler[x].max_lod, e->sampler_view[x].max_lod)) |
+                        VIVS_TE_SAMPLER_LOD_CONFIG_MIN(MAX2(e->sampler[x].min_lod, e->sampler_view[x].min_lod)));
             }
         }
         for(int x=0; x<VIVS_TE_SAMPLER__LEN; ++x)
@@ -670,11 +671,11 @@ static void sync_context(struct pipe_context *restrict pipe)
             if((1<<x) & active_samplers)
             {
                 /*021C0*/ EMIT_STATE(TE_SAMPLER_CONFIG1(x), TE_SAMPLER_CONFIG1[x],
-                        e->sampler[x]->TE_SAMPLER_CONFIG1 | e->sampler_view[x].TE_SAMPLER_CONFIG1);
+                        e->sampler[x].TE_SAMPLER_CONFIG1 | e->sampler_view[x].TE_SAMPLER_CONFIG1);
             }
         }
     }
-    if(dirty & (ETNA_STATE_SAMPLER_VIEWS))
+    if(unlikely(dirty & (ETNA_STATE_SAMPLER_VIEWS)))
     {
         for(int y=0; y<VIVS_TE_SAMPLER_LOD_ADDR__LEN; ++y)
         {
@@ -687,7 +688,7 @@ static void sync_context(struct pipe_context *restrict pipe)
             }
         }
     }
-    if(dirty & (ETNA_STATE_SHADER))
+    if(unlikely(dirty & (ETNA_STATE_SHADER)))
     {
         /*0381C*/ EMIT_STATE(GL_VARYING_TOTAL_COMPONENTS, GL_VARYING_TOTAL_COMPONENTS, e->shader_state.GL_VARYING_TOTAL_COMPONENTS);
         /*03820*/ EMIT_STATE(GL_VARYING_NUM_COMPONENTS, GL_VARYING_NUM_COMPONENTS, e->shader_state.GL_VARYING_NUM_COMPONENTS);
@@ -746,7 +747,7 @@ static void sync_context(struct pipe_context *restrict pipe)
 #undef EMIT_STATE
 #undef EMIT_STATE_FIXP
     /**** Post processing ****/
-    if(dirty & (ETNA_STATE_FRAMEBUFFER | ETNA_STATE_TS))
+    if(unlikely(dirty & (ETNA_STATE_FRAMEBUFFER | ETNA_STATE_TS)))
     {
         /* Wait rasterizer until RS (PE) finished configuration. */
         etna_stall(ctx, SYNC_RECIPIENT_RA, SYNC_RECIPIENT_PE);
@@ -791,7 +792,7 @@ static void etna_pipe_draw_vbo(struct pipe_context *pipe,
                  const struct pipe_draw_info *info)
 {
     struct etna_pipe_context *priv = etna_pipe_context(pipe);
-    if(priv->vertex_elements == NULL || priv->vertex_elements->num_elements == 0)
+    if(priv->vertex_elements_p == NULL || priv->vertex_elements.num_elements == 0)
         return; /* Nothing to do */
     int prims = u_decomposed_prims_for_vertices(info->mode, info->count);
     if(unlikely(prims <= 0))
@@ -876,10 +877,10 @@ static void *etna_pipe_create_vertex_elements_state(struct pipe_context *pipe,
 static void etna_pipe_bind_vertex_elements_state(struct pipe_context *pipe, void *ve)
 {
     struct etna_pipe_context *priv = etna_pipe_context(pipe);
-    if(priv->vertex_elements == ve)
-        return;
     priv->dirty_bits |= ETNA_STATE_VERTEX_ELEMENTS;
-    priv->vertex_elements = ve;
+    priv->vertex_elements_p = ve;
+    if(ve)
+        priv->vertex_elements = *(struct compiled_vertex_elements_state*)ve;
 }
 
 static void etna_pipe_delete_vertex_elements_state(struct pipe_context *pipe, void *ve)

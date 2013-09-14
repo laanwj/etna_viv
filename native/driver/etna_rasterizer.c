@@ -72,7 +72,9 @@ static void etna_pipe_bind_rasterizer_state(struct pipe_context *pipe, void *rs)
 {
     struct etna_pipe_context *priv = etna_pipe_context(pipe);
     priv->dirty_bits |= ETNA_STATE_RASTERIZER;
-    priv->rasterizer = rs;
+    priv->rasterizer_p = rs;
+    if(rs)
+        priv->rasterizer = *(struct compiled_rasterizer_state*)rs;
 }
 
 static void etna_pipe_delete_rasterizer_state(struct pipe_context *pipe, void *rs)

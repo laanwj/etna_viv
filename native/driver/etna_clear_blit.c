@@ -43,14 +43,14 @@ static void etna_pipe_blit_save_state(struct pipe_context *pipe)
 {
     struct etna_pipe_context *priv = etna_pipe_context(pipe);
     util_blitter_save_vertex_buffer_slot(priv->blitter, &priv->vertex_buffer_s[0]);
-    util_blitter_save_vertex_elements(priv->blitter, priv->vertex_elements);
+    util_blitter_save_vertex_elements(priv->blitter, priv->vertex_elements_p);
     util_blitter_save_vertex_shader(priv->blitter, priv->vs);
-    util_blitter_save_rasterizer(priv->blitter, priv->rasterizer);
+    util_blitter_save_rasterizer(priv->blitter, priv->rasterizer_p);
     util_blitter_save_viewport(priv->blitter, &priv->viewport_s);
     util_blitter_save_scissor(priv->blitter, &priv->scissor_s);
     util_blitter_save_fragment_shader(priv->blitter, priv->fs);
-    util_blitter_save_blend(priv->blitter, priv->blend);
-    util_blitter_save_depth_stencil_alpha(priv->blitter, priv->depth_stencil_alpha);
+    util_blitter_save_blend(priv->blitter, priv->blend_p);
+    util_blitter_save_depth_stencil_alpha(priv->blitter, priv->depth_stencil_alpha_p);
     util_blitter_save_stencil_ref(priv->blitter, &priv->stencil_ref_s);
     util_blitter_save_sample_mask(priv->blitter, priv->sample_mask_s);
     util_blitter_save_framebuffer(priv->blitter, &priv->framebuffer_s);

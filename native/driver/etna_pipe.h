@@ -157,14 +157,21 @@ struct etna_pipe_context
     struct blitter_context *blitter;
 
     /* bindable state */
-    struct compiled_blend_state *blend;
+    struct compiled_blend_state blend;
     unsigned num_vertex_samplers;
     unsigned num_fragment_samplers;
-    struct compiled_sampler_state *sampler[PIPE_MAX_SAMPLERS];
-    struct compiled_rasterizer_state *rasterizer;
-    struct compiled_depth_stencil_alpha_state *depth_stencil_alpha;
-    struct compiled_vertex_elements_state *vertex_elements;
+    struct compiled_sampler_state sampler[PIPE_MAX_SAMPLERS];
+    struct compiled_rasterizer_state rasterizer;
+    struct compiled_depth_stencil_alpha_state depth_stencil_alpha;
+    struct compiled_vertex_elements_state vertex_elements;
     struct compiled_shader_state shader_state;
+
+    /* pointers to the bound state */
+    struct compiled_blend_state *blend_p;
+    struct compiled_sampler_state *sampler_p[PIPE_MAX_SAMPLERS];
+    struct compiled_rasterizer_state *rasterizer_p;
+    struct compiled_depth_stencil_alpha_state *depth_stencil_alpha_p;
+    struct compiled_vertex_elements_state *vertex_elements_p;
     struct etna_shader_object *vs;
     struct etna_shader_object *fs;
 
