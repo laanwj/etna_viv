@@ -156,7 +156,7 @@ struct etna_pipe_context
     struct util_slab_mempool transfer_pool;
     struct blitter_context *blitter;
 
-    /* bindable state */
+    /* compiled bindable state */
     struct compiled_blend_state blend;
     unsigned num_vertex_samplers;
     unsigned num_fragment_samplers;
@@ -165,25 +165,6 @@ struct etna_pipe_context
     struct compiled_depth_stencil_alpha_state depth_stencil_alpha;
     struct compiled_vertex_elements_state vertex_elements;
     struct compiled_shader_state shader_state;
-
-    /* pointers to the bound state */
-    struct compiled_blend_state *blend_p;
-    struct compiled_sampler_state *sampler_p[PIPE_MAX_SAMPLERS];
-    struct compiled_rasterizer_state *rasterizer_p;
-    struct compiled_depth_stencil_alpha_state *depth_stencil_alpha_p;
-    struct compiled_vertex_elements_state *vertex_elements_p;
-    struct etna_shader_object *vs;
-    struct etna_shader_object *fs;
-
-    /* saved parameter-like state. this is mainly kept around for the blitter. */
-    struct pipe_framebuffer_state framebuffer_s;
-    unsigned sample_mask_s;
-    struct pipe_stencil_ref stencil_ref_s;
-    struct pipe_viewport_state viewport_s;
-    struct pipe_scissor_state scissor_s;
-    struct pipe_sampler_view *sampler_view_s[PIPE_MAX_SAMPLERS];
-    struct pipe_vertex_buffer vertex_buffer_s[PIPE_MAX_ATTRIBS];
-    struct pipe_index_buffer index_buffer_s;
 
     /* compiled parameter-like state */
     struct compiled_blend_color blend_color;
@@ -198,7 +179,26 @@ struct etna_pipe_context
     struct compiled_set_vertex_buffer vertex_buffer[PIPE_MAX_ATTRIBS];
     struct compiled_set_index_buffer index_buffer;
 
-    /* cached state */
+    /* pointers to the bound state. these are mainly kept around for the blitter. */
+    struct compiled_blend_state *blend_p;
+    struct compiled_sampler_state *sampler_p[PIPE_MAX_SAMPLERS];
+    struct compiled_rasterizer_state *rasterizer_p;
+    struct compiled_depth_stencil_alpha_state *depth_stencil_alpha_p;
+    struct compiled_vertex_elements_state *vertex_elements_p;
+    struct etna_shader_object *vs;
+    struct etna_shader_object *fs;
+
+    /* saved parameter-like state. these are mainly kept around for the blitter. */
+    struct pipe_framebuffer_state framebuffer_s;
+    unsigned sample_mask_s;
+    struct pipe_stencil_ref stencil_ref_s;
+    struct pipe_viewport_state viewport_s;
+    struct pipe_scissor_state scissor_s;
+    struct pipe_sampler_view *sampler_view_s[PIPE_MAX_SAMPLERS];
+    struct pipe_vertex_buffer vertex_buffer_s[PIPE_MAX_ATTRIBS];
+    struct pipe_index_buffer index_buffer_s;
+
+    /* cached state of entire GPU */
     struct etna_3d_state gpu3d;
 };
 

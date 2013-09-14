@@ -147,11 +147,11 @@ static void reset_context(struct pipe_context *restrict pipe)
     {
         /*0085C*/ EMIT_STATE(VS_RANGE, VS_RANGE);
     }
-    /*00A00*/ EMIT_STATE(PA_VIEWPORT_SCALE_X, PA_VIEWPORT_SCALE_X);
-    /*00A04*/ EMIT_STATE(PA_VIEWPORT_SCALE_Y, PA_VIEWPORT_SCALE_Y);
+    /*00A00*/ EMIT_STATE_FIXP(PA_VIEWPORT_SCALE_X, PA_VIEWPORT_SCALE_X);
+    /*00A04*/ EMIT_STATE_FIXP(PA_VIEWPORT_SCALE_Y, PA_VIEWPORT_SCALE_Y);
     /*00A08*/ EMIT_STATE(PA_VIEWPORT_SCALE_Z, PA_VIEWPORT_SCALE_Z);
-    /*00A0C*/ EMIT_STATE(PA_VIEWPORT_OFFSET_X, PA_VIEWPORT_OFFSET_X);
-    /*00A10*/ EMIT_STATE(PA_VIEWPORT_OFFSET_Y, PA_VIEWPORT_OFFSET_Y);
+    /*00A0C*/ EMIT_STATE_FIXP(PA_VIEWPORT_OFFSET_X, PA_VIEWPORT_OFFSET_X);
+    /*00A10*/ EMIT_STATE_FIXP(PA_VIEWPORT_OFFSET_Y, PA_VIEWPORT_OFFSET_Y);
     /*00A14*/ EMIT_STATE(PA_VIEWPORT_OFFSET_Z, PA_VIEWPORT_OFFSET_Z);
     /*00A18*/ EMIT_STATE(PA_LINE_WIDTH, PA_LINE_WIDTH);
     /*00A1C*/ EMIT_STATE(PA_POINT_SIZE, PA_POINT_SIZE);
@@ -451,11 +451,11 @@ static void sync_context(struct pipe_context *restrict pipe)
     }
     if(unlikely(dirty & (ETNA_STATE_VIEWPORT)))
     {
-        /*00A00*/ EMIT_STATE(PA_VIEWPORT_SCALE_X, PA_VIEWPORT_SCALE_X, e->viewport.PA_VIEWPORT_SCALE_X);
-        /*00A04*/ EMIT_STATE(PA_VIEWPORT_SCALE_Y, PA_VIEWPORT_SCALE_Y, e->viewport.PA_VIEWPORT_SCALE_Y);
+        /*00A00*/ EMIT_STATE_FIXP(PA_VIEWPORT_SCALE_X, PA_VIEWPORT_SCALE_X, e->viewport.PA_VIEWPORT_SCALE_X);
+        /*00A04*/ EMIT_STATE_FIXP(PA_VIEWPORT_SCALE_Y, PA_VIEWPORT_SCALE_Y, e->viewport.PA_VIEWPORT_SCALE_Y);
         /*00A08*/ EMIT_STATE(PA_VIEWPORT_SCALE_Z, PA_VIEWPORT_SCALE_Z, e->viewport.PA_VIEWPORT_SCALE_Z);
-        /*00A0C*/ EMIT_STATE(PA_VIEWPORT_OFFSET_X, PA_VIEWPORT_OFFSET_X, e->viewport.PA_VIEWPORT_OFFSET_X);
-        /*00A10*/ EMIT_STATE(PA_VIEWPORT_OFFSET_Y, PA_VIEWPORT_OFFSET_Y, e->viewport.PA_VIEWPORT_OFFSET_Y);
+        /*00A0C*/ EMIT_STATE_FIXP(PA_VIEWPORT_OFFSET_X, PA_VIEWPORT_OFFSET_X, e->viewport.PA_VIEWPORT_OFFSET_X);
+        /*00A10*/ EMIT_STATE_FIXP(PA_VIEWPORT_OFFSET_Y, PA_VIEWPORT_OFFSET_Y, e->viewport.PA_VIEWPORT_OFFSET_Y);
         /*00A14*/ EMIT_STATE(PA_VIEWPORT_OFFSET_Z, PA_VIEWPORT_OFFSET_Z, e->viewport.PA_VIEWPORT_OFFSET_Z);
     }
     if(unlikely(dirty & (ETNA_STATE_RASTERIZER)))
@@ -1118,11 +1118,11 @@ static void etna_pipe_set_viewport_states( struct pipe_context *pipe,
      * scale' = 2 * scale
      * translate' = translate - scale
      */
-    cs->PA_VIEWPORT_SCALE_X = etna_f32_to_u32(vs->scale[0]);
-    cs->PA_VIEWPORT_SCALE_Y = etna_f32_to_u32(vs->scale[1]);
+    cs->PA_VIEWPORT_SCALE_X = etna_f32_to_fixp16(vs->scale[0]); /* must be fixp as v4 state deltas assume it is */
+    cs->PA_VIEWPORT_SCALE_Y = etna_f32_to_fixp16(vs->scale[1]);
     cs->PA_VIEWPORT_SCALE_Z = etna_f32_to_u32(vs->scale[2] * 2.0f);
-    cs->PA_VIEWPORT_OFFSET_X = etna_f32_to_u32(vs->translate[0]);
-    cs->PA_VIEWPORT_OFFSET_Y = etna_f32_to_u32(vs->translate[1]);
+    cs->PA_VIEWPORT_OFFSET_X = etna_f32_to_fixp16(vs->translate[0]);
+    cs->PA_VIEWPORT_OFFSET_Y = etna_f32_to_fixp16(vs->translate[1]);
     cs->PA_VIEWPORT_OFFSET_Z = etna_f32_to_u32(vs->translate[2] - vs->scale[2]);
 
     /* Compute scissor rectangle (fixp) from viewport.
