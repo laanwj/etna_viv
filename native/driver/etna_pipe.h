@@ -197,6 +197,8 @@ struct etna_pipe_context
     struct pipe_sampler_view *sampler_view_s[PIPE_MAX_SAMPLERS];
     struct pipe_vertex_buffer vertex_buffer_s[PIPE_MAX_ATTRIBS];
     struct pipe_index_buffer index_buffer_s;
+    struct pipe_constant_buffer vs_cbuf_s;
+    struct pipe_constant_buffer fs_cbuf_s;
 
     /* cached state of entire GPU */
     struct etna_3d_state gpu3d;

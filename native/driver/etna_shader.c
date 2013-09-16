@@ -33,6 +33,35 @@
 
 #include <etnaviv/state_3d.xml.h>
 
+/* Fetch uniforms from user buffer, if bound, and mark respective uniform
+ * bank as dirty. */
+static void etna_fetch_uniforms(struct pipe_context *pipe, uint shader)
+{
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
+    struct pipe_constant_buffer *buf = NULL;
+    switch(shader)
+    {
+    case PIPE_SHADER_VERTEX:
+        buf = &priv->vs_cbuf_s;
+        if(buf->user_buffer)
+        {
+            memcpy(priv->shader_state.VS_UNIFORMS, buf->user_buffer, MIN2(buf->buffer_size, priv->vs->const_size * 4));
+            priv->dirty_bits |= ETNA_STATE_VS_UNIFORMS;
+        }
+        break;
+    case PIPE_SHADER_FRAGMENT:
+        buf = &priv->fs_cbuf_s;
+        if(buf->user_buffer)
+        {
+            memcpy(priv->shader_state.PS_UNIFORMS, buf->user_buffer, MIN2(buf->buffer_size, priv->fs->const_size * 4));
+            priv->dirty_bits |= ETNA_STATE_PS_UNIFORMS;
+        }
+        break;
+    default: printf("Unhandled shader type %i\n", shader);
+    }
+}
+
+
 /* Link vs and fs together: fill in shader_state from vs and fs
  * as this function is called every time a new fs or vs is bound, the goal is to do
  * little processing as possible here, and to precompute as much as possible in the
@@ -177,6 +206,10 @@ void etna_link_shaders(struct pipe_context *pipe,
 
     cs->ps_uniforms_size = fs->const_size + fs->imm_size;
     memcpy(&cs->PS_UNIFORMS[fs->imm_base], fs->imm_data, fs->imm_size*4);
+
+    /* fetch any previous uniforms from buffer */
+    etna_fetch_uniforms(pipe, PIPE_SHADER_VERTEX);
+    etna_fetch_uniforms(pipe, PIPE_SHADER_FRAGMENT);
 }
 
 static void etna_set_constant_buffer(struct pipe_context *pipe,
@@ -184,28 +217,36 @@ static void etna_set_constant_buffer(struct pipe_context *pipe,
                                 struct pipe_constant_buffer *buf)
 {
     struct etna_pipe_context *priv = etna_pipe_context(pipe);
-    if(buf == NULL) /* Unbinding constant buffer is a no-op as we don't keep a pointer */
-        return;
-    assert(buf->buffer == NULL && buf->user_buffer != NULL);
-    /* support only user buffer for now */
-    assert(priv->vs && priv->fs);
-    if(likely(index == 0))
+    if(buf == NULL) /* Unbinding constant buffer */
     {
-        /* copy only up to shader-specific constant size; never overwrite immediates */
-        switch(shader)
+        if(likely(index == 0))
         {
-        case PIPE_SHADER_VERTEX:
-            memcpy(priv->shader_state.VS_UNIFORMS, buf->user_buffer, MIN2(buf->buffer_size, priv->vs->const_size * 4));
-            priv->dirty_bits |= ETNA_STATE_VS_UNIFORMS;
-            break;
-        case PIPE_SHADER_FRAGMENT:
-            memcpy(priv->shader_state.PS_UNIFORMS, buf->user_buffer, MIN2(buf->buffer_size, priv->fs->const_size * 4));
-            priv->dirty_bits |= ETNA_STATE_PS_UNIFORMS;
-            break;
-        default: printf("Unhandled shader type %i\n", shader);
+            switch(shader)
+            {
+            case PIPE_SHADER_VERTEX: priv->vs_cbuf_s.user_buffer = 0; break;
+            case PIPE_SHADER_FRAGMENT: priv->fs_cbuf_s.user_buffer = 0; break;
+            default: printf("Unhandled shader type %i\n", shader);
+            }
+        } else {
+            printf("Unhandled buffer index %i\n", index);
         }
     } else {
-        printf("Unhandled buffer index %i\n", index);
+        assert(buf->buffer == NULL && buf->user_buffer != NULL);
+        assert(priv->vs && priv->fs);
+        /* support only user buffer for now */
+        if(likely(index == 0))
+        {
+            /* copy only up to shader-specific constant size; never overwrite immediates */
+            switch(shader)
+            {
+            case PIPE_SHADER_VERTEX: priv->vs_cbuf_s = *buf; break;
+            case PIPE_SHADER_FRAGMENT: priv->fs_cbuf_s = *buf; break;
+            default: printf("Unhandled shader type %i\n", shader);
+            }
+            etna_fetch_uniforms(pipe, shader);
+        } else {
+            printf("Unhandled buffer index %i\n", index);
+        }
     }
 }
 
