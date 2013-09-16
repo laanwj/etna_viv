@@ -151,6 +151,23 @@ enum display_mode
     MODE_SORTED = 2
 };
 
+/* derived counters (derived information computed from existing counters) */
+#define NUM_DERIVED_COUNTERS (1)
+
+static uint32_t derived_counters_base;
+
+static struct viv_profile_counter_info derived_counter_info[] = {
+    [0] = {"TOTAL_INST_COUNTER", "Total inst counter"},
+};
+
+static struct viv_profile_counter_info *get_counter_info(uint32_t idx)
+{
+    if(idx < derived_counters_base)
+        return viv_get_profile_counter_info(idx);
+    else
+        return &derived_counter_info[idx - derived_counters_base];
+}
+
 int main(int argc, char **argv)
 {
     struct viv_conn *conn = 0;
@@ -161,13 +178,17 @@ int main(int argc, char **argv)
         fprintf(stderr, "Error opening device\n");
         exit(1);
     }
-    uint32_t num_profile_counters = viv_get_num_profile_counters();
+    uint32_t orig_num_profile_counters = viv_get_num_profile_counters();
+    derived_counters_base = orig_num_profile_counters;
+    uint32_t num_profile_counters = derived_counters_base + NUM_DERIVED_COUNTERS;
 
     /* XXX parameter parsing */
     int samples_per_second = 100;
     bool interactive = true;
     int mode = MODE_ALL;
     bool color = true;
+    /* Dove driver amongst others doesn't reset perf counters properly */
+    bool olddriver = conn->kernel_driver.major < 4;
     int opt;
 
     while ((opt = getopt(argc, argv, "m:s:n")) != -1) {
@@ -218,19 +239,25 @@ int main(int argc, char **argv)
             }
             for(int c=0; c<num_profile_counters; ++c)
             {
-                /* some counters don't reset when read */
-                if(c == VIV_PROF_PS_INST_COUNTER ||
+                if(c == VIV_PROF_SE_CULLED_TRIANGLE_COUNT ||
+                   c == VIV_PROF_SE_CULLED_LINES_COUNT || 
+                   (olddriver && (
+                   c == VIV_PROF_PS_INST_COUNTER ||
                    c == VIV_PROF_VS_INST_COUNTER ||
                    c == VIV_PROF_RENDERED_PIXEL_COUNTER ||
                    c == VIV_PROF_RENDERED_VERTICE_COUNTER ||
                    c == VIV_PROF_PXL_TEXLD_INST_COUNTER ||
                    c == VIV_PROF_PXL_BRANCH_INST_COUNTER ||
                    c == VIV_PROF_VTX_TEXLD_INST_COUNTER ||
-                   c == VIV_PROF_VTX_BRANCH_INST_COUNTER ||
-                   c == VIV_PROF_SE_CULLED_TRIANGLE_COUNT ||
-                   c == VIV_PROF_SE_CULLED_LINES_COUNT)
-                    events_per_s[c] += counter_data[c] - counter_data_last[c];
-                else
+                   c == VIV_PROF_VTX_BRANCH_INST_COUNTER)))
+                {
+                    if(counter_data_last[c] > counter_data[c])
+                    {
+                        events_per_s[c] += counter_data[c];
+                    } else {
+                        events_per_s[c] += (uint32_t)(counter_data[c] - counter_data_last[c]);
+                    }
+                } else
                     events_per_s[c] += counter_data[c];
             }
             for(int c=0; c<num_profile_counters; ++c)
@@ -246,6 +273,8 @@ int main(int argc, char **argv)
         {
             events_per_s[c] = events_per_s[c] * 1000000LL / (uint64_t)diff_time;
         }
+
+        events_per_s[derived_counters_base + 0] = events_per_s[VIV_PROF_VS_INST_COUNTER] + events_per_s[VIV_PROF_PS_INST_COUNTER];
 
         /* Compute maxima */
         for(int c=0; c<num_profile_counters; ++c)
@@ -273,7 +302,7 @@ int main(int argc, char **argv)
                 for(int c=0; c<count; ++c)
                 {
                     char num[100];
-                    struct viv_profile_counter_info *info = viv_get_profile_counter_info(sorted[c].id);
+                    struct viv_profile_counter_info *info = get_counter_info(sorted[c].id);
                     format_number(num, sizeof(num), sorted[c].events_per_s);
                     if(color)
                         printf("%s", sorted[c].events_per_s == 0 ? color_num_zero : color_num);
@@ -293,7 +322,7 @@ int main(int argc, char **argv)
                     while(c < num_profile_counters)
                     {
                         char num[100];
-                        struct viv_profile_counter_info *info = viv_get_profile_counter_info(c);
+                        struct viv_profile_counter_info *info = get_counter_info(c);
                         format_number(num, sizeof(num), events_per_s[c]);
                         if(color)
                             printf("%s", events_per_s_max[c] == 0 ? color_num_zero : color_num);
@@ -316,7 +345,7 @@ int main(int argc, char **argv)
                     while(c < num_profile_counters)
                     {
                         char num[100];
-                        struct viv_profile_counter_info *info = viv_get_profile_counter_info(c);
+                        struct viv_profile_counter_info *info = get_counter_info(c);
                         format_number(num, sizeof(num), events_per_s_max[c]);
                         if(color)
                             printf("%s", events_per_s[c] == events_per_s_max[c] ? color_num_max : color_num);
