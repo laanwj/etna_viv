@@ -425,7 +425,8 @@ static void sync_context(struct pipe_context *restrict pipe)
     }
     if(unlikely(dirty & (ETNA_STATE_SHADER | ETNA_STATE_RASTERIZER)))
     {
-        /*00804*/ EMIT_STATE(VS_OUTPUT_COUNT, VS_OUTPUT_COUNT, e->shader_state.VS_OUTPUT_COUNT + e->rasterizer.VS_OUTPUT_COUNT);
+        /*00804*/ EMIT_STATE(VS_OUTPUT_COUNT, VS_OUTPUT_COUNT,
+                e->rasterizer.point_size_per_vertex ? e->shader_state.VS_OUTPUT_COUNT_PSIZE : e->shader_state.VS_OUTPUT_COUNT);
     }
     if(unlikely(dirty & (ETNA_STATE_VERTEX_ELEMENTS | ETNA_STATE_SHADER)))
     {
@@ -468,9 +469,9 @@ static void sync_context(struct pipe_context *restrict pipe)
     {
         /*00A30*/ EMIT_STATE(PA_ATTRIBUTE_ELEMENT_COUNT, PA_ATTRIBUTE_ELEMENT_COUNT, e->shader_state.PA_ATTRIBUTE_ELEMENT_COUNT);
     }
-    if(unlikely(dirty & (ETNA_STATE_RASTERIZER)))
+    if(unlikely(dirty & (ETNA_STATE_RASTERIZER | ETNA_STATE_SHADER)))
     {
-        /*00A34*/ EMIT_STATE(PA_CONFIG, PA_CONFIG, e->rasterizer.PA_CONFIG);
+        /*00A34*/ EMIT_STATE(PA_CONFIG, PA_CONFIG, e->rasterizer.PA_CONFIG & e->shader_state.PA_CONFIG);
     }
     if(unlikely(dirty & (ETNA_STATE_SHADER)))
     {

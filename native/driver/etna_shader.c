@@ -99,6 +99,19 @@ void etna_link_shaders(struct pipe_context *pipe,
                                  (vs_output[idx*4+2] << 16) | (vs_output[idx*4+3] << 24);
     }
 
+    if(vs->vs_pointsize_out_reg != -1)
+    {
+        /* vertex shader outputs point coordinate, provide extra output and make sure PA config is
+         * not masked */
+        cs->PA_CONFIG = ~0;
+        cs->VS_OUTPUT_COUNT_PSIZE = cs->VS_OUTPUT_COUNT + 1;
+    } else {
+        /* vertex shader does not output point coordinate, make sure thate POINT_SIZE_ENABLE is masked
+         * and no extra output is given */
+        cs->PA_CONFIG = ~VIVS_PA_CONFIG_POINT_SIZE_ENABLE;
+        cs->VS_OUTPUT_COUNT_PSIZE = cs->VS_OUTPUT_COUNT;
+    }
+
     /* vs inputs (attributes) */
     uint32_t vs_input[4] = {0};
     for(int idx=0; idx<vs->num_inputs; ++idx)

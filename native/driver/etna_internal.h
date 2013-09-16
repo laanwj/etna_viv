@@ -102,7 +102,7 @@ struct compiled_rasterizer_state
     uint32_t SE_DEPTH_SCALE;
     uint32_t SE_DEPTH_BIAS;
     uint32_t SE_CONFIG;
-    uint32_t VS_OUTPUT_COUNT; /* # outs added by rasterizer -- 0 or 1 */
+    bool point_size_per_vertex;
     bool scissor;
 };
 
@@ -251,9 +251,11 @@ struct compiled_shader_state
 {
     uint32_t RA_CONTROL;
     uint32_t PA_ATTRIBUTE_ELEMENT_COUNT;
+    uint32_t PA_CONFIG;
     uint32_t PA_SHADER_ATTRIBUTES[VIVS_PA_SHADER_ATTRIBUTES__LEN];
     uint32_t VS_END_PC;
-    uint32_t VS_OUTPUT_COUNT;
+    uint32_t VS_OUTPUT_COUNT; /* number of outputs if point size per vertex disabled */
+    uint32_t VS_OUTPUT_COUNT_PSIZE; /* number of outputs of point size per vertex enabled */
     uint32_t VS_INPUT_COUNT;
     uint32_t VS_TEMP_REGISTER_CONTROL;
     uint32_t VS_OUTPUT[4];

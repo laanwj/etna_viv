@@ -62,7 +62,7 @@ static void *etna_pipe_create_rasterizer_state(struct pipe_context *pipe,
     /* rs->scissor overrides the scissor, defaulting to the whole framebuffer, with the scissor state */
     cs->scissor = rs->scissor;
     /* point size per vertex adds a vertex shader output */
-    cs->VS_OUTPUT_COUNT = rs->point_size_per_vertex;
+    cs->point_size_per_vertex = rs->point_size_per_vertex;
 
     assert(!rs->clip_halfz); /* could be supported with shader magic, actually D3D z is default on older gc */
     return cs;
