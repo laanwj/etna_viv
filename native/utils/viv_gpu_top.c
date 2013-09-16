@@ -17,6 +17,7 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <getopt.h>
 #ifdef HAVE_CLOCK
 #include <time.h>
 #else
@@ -42,6 +43,7 @@ static const char clear_screen[] = {0x1b, '[', 'H',
                                     0x1b, '[', 'J',
                                     0x0};
 
+static const char color_num_max[] = "\x1b[1;37m";
 static const char color_num_zero[] = "\x1b[1;30m";
 static const char color_num[] = "\x1b[1;33m";
 static const char color_reset[] = "\x1b[0m";
@@ -145,10 +147,11 @@ static int counter_rec_compar(const void *a, const void *b)
 enum display_mode
 {
     MODE_ALL = 0,
-    MODE_SORTED = 1
+    MODE_MAX = 1,
+    MODE_SORTED = 2
 };
 
-int main()
+int main(int argc, char **argv)
 {
     struct viv_conn *conn = 0;
     int rv;
@@ -164,12 +167,31 @@ int main()
     int samples_per_second = 100;
     bool interactive = true;
     int mode = MODE_ALL;
-    //int mode = MODE_SORTED;
     bool color = true;
+    int opt;
+
+    while ((opt = getopt(argc, argv, "m:s:n")) != -1) {
+        switch(opt)
+        {
+        case 'm':
+            switch(optarg[0])
+            {
+            case 'm': mode = MODE_MAX; break;
+            case 'a': mode = MODE_ALL; break;
+            case 's': mode = MODE_SORTED; break;
+            default:
+                printf("Unknown mode %s\n", optarg);
+            }
+            break;
+        case 'n': color = false; break;
+        case 's': samples_per_second = atoi(optarg); break;
+        }
+    }
 
     uint32_t *counter_data = calloc(num_profile_counters, 4);
     uint32_t *counter_data_last = calloc(num_profile_counters, 4);
     uint64_t *events_per_s = calloc(num_profile_counters, 8);
+    uint64_t *events_per_s_max = calloc(num_profile_counters, 8);
     struct counter_rec *sorted = calloc(num_profile_counters, sizeof(struct counter_rec));
     /* reset counters and initial values */
     if(viv_read_profile_counters_3d(conn, counter_data_last) != 0)
@@ -225,6 +247,13 @@ int main()
             events_per_s[c] = events_per_s[c] * 1000000LL / (uint64_t)diff_time;
         }
 
+        /* Compute maxima */
+        for(int c=0; c<num_profile_counters; ++c)
+        {
+            if(events_per_s[c] > events_per_s_max[c])
+                events_per_s_max[c] = events_per_s[c];
+        }
+
         /* Sort counters descending */
         for(int c=0; c<num_profile_counters; ++c)
         {
@@ -267,7 +296,30 @@ int main()
                         struct viv_profile_counter_info *info = viv_get_profile_counter_info(c);
                         format_number(num, sizeof(num), events_per_s[c]);
                         if(color)
-                            printf("%s", events_per_s[c] == 0 ? color_num_zero : color_num);
+                            printf("%s", events_per_s_max[c] == 0 ? color_num_zero : color_num);
+                        printf("%15.15s", num);
+                        if(color)
+                            printf("%s", color_reset);
+                        printf(" ");
+                        printf("%-30.30s", info->description);
+                        printf("  ");
+                        c += max_lines;
+                    }
+                    printf("\n");
+                }
+            } else if(mode == MODE_MAX)
+            {
+                /* XXX check that width doesn't exceed screen width */
+                for(int l=0; l<max_lines; ++l)
+                {
+                    int c = VIV_PROF_GPU_CYCLES_COUNTER + l;
+                    while(c < num_profile_counters)
+                    {
+                        char num[100];
+                        struct viv_profile_counter_info *info = viv_get_profile_counter_info(c);
+                        format_number(num, sizeof(num), events_per_s_max[c]);
+                        if(color)
+                            printf("%s", events_per_s[c] == events_per_s_max[c] ? color_num_max : color_num);
                         printf("%15.15s", num);
                         if(color)
                             printf("%s", color_reset);
