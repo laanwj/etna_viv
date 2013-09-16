@@ -296,6 +296,7 @@ static void sync_context(struct pipe_context *restrict pipe)
         /* re-link vs and fs if needed */
         etna_link_shaders(pipe, &e->shader_state, e->vs, e->fs);
     }
+    assert(!e->vs || e->vertex_elements.num_elements == e->vs->num_inputs);
 
     /* Pre-processing: see what caches we need to flush before making state
      * changes.
