@@ -182,7 +182,7 @@ int main(int argc, char **argv)
     /* compile gallium3d states */
     void *blend = pipe->create_blend_state(pipe, &(struct pipe_blend_state) {
                 .rt[0] = {
-                    .blend_enable = 1,
+                    .blend_enable = 0,
                     .rgb_func = PIPE_BLEND_ADD,
                     .rgb_src_factor = PIPE_BLENDFACTOR_SRC_ALPHA,
                     .rgb_dst_factor = PIPE_BLENDFACTOR_INV_SRC_ALPHA,

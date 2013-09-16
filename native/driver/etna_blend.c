@@ -69,6 +69,14 @@ static void *etna_pipe_create_blend_state(struct pipe_context *pipe,
     /* independent_blend_enable not needed: only one rt supported */
     /* XXX alpha_to_coverage / alpha_to_one? */
     /* XXX dither? VIVS_PE_DITHER(...) and/or VIVS_RS_DITHER(...) on resolve */
+    if(bs->dither)
+    {
+        cs->PE_DITHER[0] = 0x6e4ca280;
+        cs->PE_DITHER[1] = 0x5d7f91b3;
+    } else {
+        cs->PE_DITHER[0] = 0xffffffff;
+        cs->PE_DITHER[1] = 0xffffffff;
+    }
     return cs;
 }
 
