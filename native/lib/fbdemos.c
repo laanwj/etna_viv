@@ -205,7 +205,7 @@ int fb_open(int num, struct fb_info *out)
     printf("    blue.length %i\n", (unsigned)out->fb_var.blue.length);
     printf("    transp.offset %i\n", (unsigned)out->fb_var.transp.offset);
     printf("    transp.length %i\n", (unsigned)out->fb_var.transp.length);
-    
+
     out->fd = fd;
     out->stride = out->fb_fix.line_length;
     out->buffer_stride = out->stride * out->fb_var.yres;
@@ -215,6 +215,13 @@ int fb_open(int num, struct fb_info *out)
 
     if(out->num_buffers > ETNA_FB_MAX_BUFFERS)
         out->num_buffers = ETNA_FB_MAX_BUFFERS;
+    char *num_buffers_str = getenv("EGL_FBDEV_BUFFERS");
+    if(num_buffers_str != NULL)
+    {
+        int num_buffers_env = atoi(num_buffers_str);
+        if(num_buffers_env >= 1 && out->num_buffers > num_buffers_env)
+            out->num_buffers = num_buffers_env;
+    }
 
     for(int idx=0; idx<out->num_buffers; ++idx)
     {
