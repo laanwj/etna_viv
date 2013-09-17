@@ -1001,13 +1001,20 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         .src[2] = convert_src(cd, &inst->Src[0], INST_SWIZ_IDENTITY),
                         });
                 break;
-            case TGSI_OPCODE_KILL_IF: /* XXX INST_OPCODE_TEXKILL */
+            case TGSI_OPCODE_KILL_IF:
                 /* discard if (src.x < 0 || src.y < 0 || src.z < 0 || src.w < 0) */
-                assert(0);
+                emit_inst(cd, &(struct etna_inst) {
+                        .opcode = INST_OPCODE_TEXKILL,
+                        .cond = INST_CONDITION_LZ,
+                        .src[0] = convert_src(cd, &inst->Src[0], INST_SWIZ_IDENTITY)
+                        });
                 break;
-            case TGSI_OPCODE_KILL: /* XXX INST_OPCODE_TEXKILL */
+            case TGSI_OPCODE_KILL:
                 /* discard always */
-                assert(0);
+                emit_inst(cd, &(struct etna_inst) {
+                        .opcode = INST_OPCODE_TEXKILL,
+                        .cond = INST_CONDITION_TRUE
+                        });
                 break;
             case TGSI_OPCODE_PK2H: assert(0); break;
             case TGSI_OPCODE_PK2US: assert(0); break;

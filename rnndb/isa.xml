@@ -202,10 +202,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <doc>
             Discards (kills) the current fragment. Can only be used in PS.
 
-            No input or output arguments.
-
-            XXX figure out if the COND bits are used. It appears not, as the blob generates BRANCH.XX based flow
-            control around it.
+            Kill fragment if src0 *COND* src1.
         </doc>
     </value>
     <value value="0x18" name="TEXLD" brief="Texture load">
