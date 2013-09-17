@@ -312,6 +312,8 @@ static void sync_context(struct pipe_context *restrict pipe)
     }
     if(unlikely(dirty & (ETNA_STATE_TEXTURE_CACHES)))
         to_flush |= VIVS_GL_FLUSH_CACHE_TEXTURE;
+    if(unlikely(dirty & (ETNA_STATE_FRAMEBUFFER))) /* Framebuffer config changed? */
+        to_flush |= VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH;
     if(DBG_ENABLED(ETNA_DBG_CFLUSH_ALL))
         to_flush |= VIVS_GL_FLUSH_CACHE_TEXTURE | VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH;
     if(to_flush)
@@ -748,12 +750,6 @@ static void sync_context(struct pipe_context *restrict pipe)
     /**** End of state update ****/
 #undef EMIT_STATE
 #undef EMIT_STATE_FIXP
-    /**** Post processing ****/
-    if(unlikely(dirty & (ETNA_STATE_FRAMEBUFFER | ETNA_STATE_TS)))
-    {
-        /* Wait rasterizer until RS (PE) finished configuration. */
-        etna_stall(ctx, SYNC_RECIPIENT_RA, SYNC_RECIPIENT_PE);
-    }
 
     e->dirty_bits = 0;
 }

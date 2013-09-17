@@ -755,8 +755,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x01664" name="DEPTH_STATUS_BASE" brief="Depth tile status base address" value="0x00000000" type="VIVM"/>
         <reg32 offset="0x01668" name="DEPTH_SURFACE_BASE" brief="Depth surface base address" value="0x00000000" type="VIVM"/>
         <reg32 offset="0x0166C" name="DEPTH_CLEAR_VALUE" brief="Depth clear value" value="0x00000000"/>
-        <reg32 offset="0x01670" name="COLOR_AUTO_DISABLE_COUNT" brief="Auto disable depth counter" value="0x00000000"/>
-        <reg32 offset="0x01674" name="DEPTH_AUTO_DISABLE_COUNT" brief="Auto disable color counter" value="0x00000000"/>
+        <reg32 offset="0x01670" name="DEPTH_AUTO_DISABLE_COUNT" brief="Auto disable depth counter" value="0x00000000"/>
+        <reg32 offset="0x01674" name="COLOR_AUTO_DISABLE_COUNT" brief="Auto disable color counter" value="0x00000000"/>
         <reg32 offset="0x016A4" name="HDEPTH_STATUS_BASE" value="0x00000000" type="VIVM">
             <doc>Hierarchical Z allocates multiple depth buffers for one surface, which have their own TS.</doc>
         </reg32>

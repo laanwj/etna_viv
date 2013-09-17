@@ -58,6 +58,7 @@ static void etna_set_debug_flags(const char *str)
       { "linker_msgs", ETNA_DBG_LINKER_MSGS },
       { "dump_shaders", ETNA_DBG_DUMP_SHADERS },
       { "no_ts", ETNA_DBG_NO_TS },
+      { "no_autodisable", ETNA_DBG_NO_AUTODISABLE },
       { "cflush_all", ETNA_DBG_CFLUSH_ALL },
       { "msaa2x", ETNA_DBG_MSAA_2X },
       { "msaa4x", ETNA_DBG_MSAA_4X },
