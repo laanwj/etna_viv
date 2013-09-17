@@ -22432,6 +22432,136 @@ util_format_r32a32_sint_pack_unsigned(uint8_t *dst_row, unsigned dst_stride, con
    }
 }
 
+union util_format_r10g10b10a2_uint {
+   uint32_t value;
+   struct {
+      unsigned r:10;
+      unsigned g:10;
+      unsigned b:10;
+      unsigned a:2;
+   } chan;
+};
+
+static INLINE void
+util_format_r10g10b10a2_uint_unpack_unsigned(unsigned *dst_row, unsigned dst_stride, const uint8_t *src_row, unsigned src_stride, unsigned width, unsigned height)
+{
+   unsigned x, y;
+   for(y = 0; y < height; y += 1) {
+      unsigned *dst = dst_row;
+      const uint8_t *src = src_row;
+      for(x = 0; x < width; x += 1) {
+         uint32_t value = *(const uint32_t *)src;
+         uint32_t r;
+         uint32_t g;
+         uint32_t b;
+         uint32_t a;
+         r = (value) & 0x3ff;
+         g = (value >> 10) & 0x3ff;
+         b = (value >> 20) & 0x3ff;
+         a = value >> 30;
+         dst[0] = (unsigned)r; /* r */
+         dst[1] = (unsigned)g; /* g */
+         dst[2] = (unsigned)b; /* b */
+         dst[3] = (unsigned)a; /* a */
+         src += 4;
+         dst += 4;
+      }
+      src_row += src_stride;
+      dst_row += dst_stride/sizeof(*dst_row);
+   }
+}
+
+static INLINE void
+util_format_r10g10b10a2_uint_pack_unsigned(uint8_t *dst_row, unsigned dst_stride, const unsigned *src_row, unsigned src_stride, unsigned width, unsigned height)
+{
+   unsigned x, y;
+   for(y = 0; y < height; y += 1) {
+      const unsigned *src = src_row;
+      uint8_t *dst = dst_row;
+      for(x = 0; x < width; x += 1) {
+         uint32_t value = 0;
+         value |= ((uint32_t)MIN2(src[0], 1023)) & 0x3ff;
+         value |= (((uint32_t)MIN2(src[1], 1023)) & 0x3ff) << 10;
+         value |= (((uint32_t)MIN2(src[2], 1023)) & 0x3ff) << 20;
+         value |= ((uint32_t)MIN2(src[3], 3)) << 30;
+         *(uint32_t *)dst = value;
+         src += 4;
+         dst += 4;
+      }
+      dst_row += dst_stride;
+      src_row += src_stride/sizeof(*src_row);
+   }
+}
+
+static INLINE void
+util_format_r10g10b10a2_uint_fetch_unsigned(unsigned *dst, const uint8_t *src, unsigned i, unsigned j)
+{
+         uint32_t value = *(const uint32_t *)src;
+         uint32_t r;
+         uint32_t g;
+         uint32_t b;
+         uint32_t a;
+         r = (value) & 0x3ff;
+         g = (value >> 10) & 0x3ff;
+         b = (value >> 20) & 0x3ff;
+         a = value >> 30;
+         dst[0] = (unsigned)r; /* r */
+         dst[1] = (unsigned)g; /* g */
+         dst[2] = (unsigned)b; /* b */
+         dst[3] = (unsigned)a; /* a */
+}
+
+static INLINE void
+util_format_r10g10b10a2_uint_unpack_signed(int *dst_row, unsigned dst_stride, const uint8_t *src_row, unsigned src_stride, unsigned width, unsigned height)
+{
+   unsigned x, y;
+   for(y = 0; y < height; y += 1) {
+      int *dst = dst_row;
+      const uint8_t *src = src_row;
+      for(x = 0; x < width; x += 1) {
+         uint32_t value = *(const uint32_t *)src;
+         uint32_t r;
+         uint32_t g;
+         uint32_t b;
+         uint32_t a;
+         r = (value) & 0x3ff;
+         g = (value >> 10) & 0x3ff;
+         b = (value >> 20) & 0x3ff;
+         a = value >> 30;
+         dst[0] = (int)r; /* r */
+         dst[1] = (int)g; /* g */
+         dst[2] = (int)b; /* b */
+         dst[3] = (int)a; /* a */
+         src += 4;
+         dst += 4;
+      }
+      src_row += src_stride;
+      dst_row += dst_stride/sizeof(*dst_row);
+   }
+}
+
+static INLINE void
+util_format_r10g10b10a2_uint_pack_signed(uint8_t *dst_row, unsigned dst_stride, const int *src_row, unsigned src_stride, unsigned width, unsigned height)
+{
+   unsigned x, y;
+   for(y = 0; y < height; y += 1) {
+      const int *src = src_row;
+      uint8_t *dst = dst_row;
+      for(x = 0; x < width; x += 1) {
+         uint32_t value = 0;
+         value |= ((uint32_t)CLAMP(src[0], 0, 1023)) & 0x3ff;
+         value |= (((uint32_t)CLAMP(src[1], 0, 1023)) & 0x3ff) << 10;
+         value |= (((uint32_t)CLAMP(src[2], 0, 1023)) & 0x3ff) << 20;
+         value |= ((uint32_t)CLAMP(src[3], 0, 3)) << 30;
+         *(uint32_t *)dst = value;
+         src += 4;
+         dst += 4;
+      }
+      dst_row += dst_stride;
+      src_row += src_stride/sizeof(*src_row);
+   }
+}
+
 const struct util_format_description
 util_format_none_description = {
    PIPE_FORMAT_NONE,
@@ -33300,6 +33430,50 @@ util_format_r32a32_sint_description = {
    &util_format_r32a32_sint_fetch_signed  /* fetch_rgba_sint */
 };
 
+const struct util_format_description
+util_format_r10g10b10a2_uint_description = {
+   PIPE_FORMAT_R10G10B10A2_UINT,
+   "PIPE_FORMAT_R10G10B10A2_UINT",
+   "r10g10b10a2_uint",
+   {1, 1, 32},	/* block */
+   UTIL_FORMAT_LAYOUT_PLAIN,
+   4,	/* nr_channels */
+   FALSE,	/* is_array */
+   TRUE,	/* is_bitmask */
+   FALSE,	/* is_mixed */
+   {
+      {UTIL_FORMAT_TYPE_UNSIGNED, FALSE, TRUE, 10, 0},	/* x = r */
+      {UTIL_FORMAT_TYPE_UNSIGNED, FALSE, TRUE, 10, 10},	/* y = g */
+      {UTIL_FORMAT_TYPE_UNSIGNED, FALSE, TRUE, 10, 20},	/* z = b */
+      {UTIL_FORMAT_TYPE_UNSIGNED, FALSE, TRUE, 2, 30}	/* w = a */
+   },
+   {
+      UTIL_FORMAT_SWIZZLE_X,	/* r */
+      UTIL_FORMAT_SWIZZLE_Y,	/* g */
+      UTIL_FORMAT_SWIZZLE_Z,	/* b */
+      UTIL_FORMAT_SWIZZLE_W	/* a */
+   },
+   UTIL_FORMAT_COLORSPACE_RGB,
+   NULL, /* unpack_rgba_8unorm */
+   NULL, /* pack_rgba_8unorm */
+   NULL, /* fetch_rgba_8unorm */
+   NULL, /* unpack_rgba_float */
+   NULL, /* pack_rgba_float */
+   NULL, /* fetch_rgba_float */
+   NULL, /* unpack_z_32unorm */
+   NULL, /* pack_z_32unorm */
+   NULL, /* unpack_z_float */
+   NULL, /* pack_z_float */
+   NULL, /* unpack_s_8uint */
+   NULL, /* pack_s_8uint */
+   &util_format_r10g10b10a2_uint_unpack_unsigned, /* unpack_rgba_uint */
+   &util_format_r10g10b10a2_uint_pack_unsigned, /* pack_rgba_uint */
+   &util_format_r10g10b10a2_uint_unpack_signed, /* unpack_rgba_sint */
+   &util_format_r10g10b10a2_uint_pack_signed,  /* pack_rgba_sint */
+   &util_format_r10g10b10a2_uint_fetch_unsigned,  /* fetch_rgba_uint */
+   NULL  /* fetch_rgba_sint */
+};
+
 const struct util_format_description *
 util_format_description(enum pipe_format format)
 {
@@ -33802,6 +33976,8 @@ util_format_description(enum pipe_format format)
       return &util_format_r32a32_uint_description;
    case PIPE_FORMAT_R32A32_SINT:
       return &util_format_r32a32_sint_description;
+   case PIPE_FORMAT_R10G10B10A2_UINT:
+      return &util_format_r10g10b10a2_uint_description;
    default:
       return NULL;
    }

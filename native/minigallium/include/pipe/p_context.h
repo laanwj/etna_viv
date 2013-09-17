@@ -65,7 +65,7 @@ struct pipe_transfer;
 struct pipe_vertex_buffer;
 struct pipe_vertex_element;
 struct pipe_video_buffer;
-struct pipe_video_decoder;
+struct pipe_video_codec;
 struct pipe_viewport_state;
 struct pipe_compute_state;
 union pipe_color_union;
@@ -430,14 +430,10 @@ struct pipe_context {
    void (*texture_barrier)(struct pipe_context *);
    
    /**
-    * Creates a video decoder for a specific video codec/profile
+    * Creates a video codec for a specific video format/profile
     */
-   struct pipe_video_decoder *(*create_video_decoder)( struct pipe_context *context,
-                                                       enum pipe_video_profile profile,
-                                                       enum pipe_video_entrypoint entrypoint,
-                                                       enum pipe_video_chroma_format chroma_format,
-                                                       unsigned width, unsigned height, unsigned max_references,
-                                                       bool expect_chunked_decode);
+   struct pipe_video_codec *(*create_video_codec)( struct pipe_context *context,
+                                                   const struct pipe_video_codec *templat );
 
    /**
     * Creates a video buffer as decoding target

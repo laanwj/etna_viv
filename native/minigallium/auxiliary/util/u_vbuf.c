@@ -186,7 +186,7 @@ struct u_vbuf {
    uint32_t nonzero_stride_vb_mask; /* each bit describes a corresp. buffer */
    /* Which buffers are allowed (supported by hardware). */
    uint32_t allowed_vb_mask;
-   /* Incompatible index buffer */ 
+   /* Incompatible index buffer */
    uint32_t incompatible_ib_mask;
 };
 
@@ -241,7 +241,7 @@ void u_vbuf_get_caps(struct pipe_screen *screen, struct u_vbuf_caps *caps)
    caps->user_vertex_buffers =
       screen->get_param(screen, PIPE_CAP_USER_VERTEX_BUFFERS);
 
-   caps->max_vertex_buffers = 
+   caps->max_vertex_buffers =
       screen->get_param(screen, PIPE_CAP_MAX_VERTEX_BUFFERS);
 }
 
@@ -560,7 +560,7 @@ u_vbuf_translate_begin(struct u_vbuf *mgr,
       }
    }
    assert(mask[VB_VERTEX] || mask[VB_INSTANCE] || mask[VB_CONST]);
-   
+
    /* In the case of unroll_indices, we can regard all non-constant
     * vertex buffers with only non-instance vertex elements as incompatible
     * and thus free.
@@ -788,9 +788,9 @@ u_vbuf_create_vertex_elements(struct u_vbuf *mgr, unsigned count,
 
    if(used_buffers & ~mgr->allowed_vb_mask)
    {
-       /* More vertex buffers are used than the hardware supports.
-        * In principle, we only need to make sure that less vertex are used,
-        * and mark some of the latter vertex buffers as incompatible.
+       /* More vertex buffers are used than the hardware supports.  In
+        * principle, we only need to make sure that less vertex buffers are
+        * used, and mark some of the latter vertex buffers as incompatible.
         * For now, mark all vertex buffers as incompatible.
         */
        ve->incompatible_vb_mask_any = used_buffers;
@@ -809,8 +809,12 @@ u_vbuf_create_vertex_elements(struct u_vbuf *mgr, unsigned count,
       }
    }
 
-   ve->driver_cso =
-      pipe->create_vertex_elements_state(pipe, count, driver_attribs);
+   /* Only create driver CSO if no incompatible elements */
+   if(!ve->incompatible_elem_mask)
+   {
+      ve->driver_cso =
+         pipe->create_vertex_elements_state(pipe, count, driver_attribs);
+   }
    return ve;
 }
 
@@ -1202,12 +1206,12 @@ void u_vbuf_draw_vbo(struct u_vbuf *mgr, const struct pipe_draw_info *info)
          /* Primitive restart doesn't work when unrolling indices.
           * We would have to break this drawing operation into several ones. */
          /* Use some heuristic to see if unrolling indices improves
-          * performance. Force unroll indices always if the index format is 
+          * performance. Force unroll indices always if the index format is
           * incompatible (don't support primitive restart in this case...). */
          if ((!info->primitive_restart &&
              num_vertices > info->count*2 &&
              num_vertices-info->count > 32 &&
-             !u_vbuf_mapping_vertex_buffer_blocks(mgr)) 
+             !u_vbuf_mapping_vertex_buffer_blocks(mgr))
              || mgr->incompatible_ib_mask) {
             /*printf("num_vertices=%i count=%i\n", num_vertices, info->count);*/
             unroll_indices = TRUE;

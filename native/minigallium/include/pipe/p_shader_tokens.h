@@ -153,7 +153,7 @@ struct tgsi_declaration_interp
 #define TGSI_SEMANTIC_FACE       7
 #define TGSI_SEMANTIC_EDGEFLAG   8
 #define TGSI_SEMANTIC_PRIMID     9
-#define TGSI_SEMANTIC_INSTANCEID 10
+#define TGSI_SEMANTIC_INSTANCEID 10 /**< doesn't include start_instance */
 #define TGSI_SEMANTIC_VERTEXID   11
 #define TGSI_SEMANTIC_STENCIL    12
 #define TGSI_SEMANTIC_CLIPDIST   13
@@ -367,7 +367,12 @@ struct tgsi_property_data {
 #define TGSI_OPCODE_TXQ_LZ              103 /* TXQ for mipmap level 0 */
                                 /* gap */
 #define TGSI_OPCODE_NOP                 107
-                                /* gap */
+
+#define TGSI_OPCODE_FSEQ                108
+#define TGSI_OPCODE_FSGE                109
+#define TGSI_OPCODE_FSLT                110
+#define TGSI_OPCODE_FSNE                111
+
 #define TGSI_OPCODE_NRM4                112
 #define TGSI_OPCODE_CALLNZ              113
                                 /* gap */
