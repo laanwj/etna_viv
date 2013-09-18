@@ -428,8 +428,8 @@ int main(int argc, char **argv)
     printf("  Pixels rendered: %i\n", counter_data[VIV_PROF_RENDERED_PIXEL_COUNTER]);
     printf("  VS instructions: %i\n", counter_data[VIV_PROF_VS_INST_COUNTER]);
     printf("  PS instructions: %i\n", counter_data[VIV_PROF_PS_INST_COUNTER]);
-    printf("  Read: %.1f MB/frame\n", (double)counter_data[VIV_PROF_GPU_TOTAL_READ_64_BYTES_PER_FRAME] * 8 / 1e6 / num_frames);
-    printf("  Written: %.1f MB/frame\n", (double)counter_data[VIV_PROF_GPU_TOTAL_WRITE_64_BYTES_PER_FRAME] * 8 / 1e6 / num_frames);
+    printf("  Read: %.1f MB/frame\n", (double)counter_data[VIV_PROF_GPU_TOTAL_READ_64_BIT] * 8 / 1e6 / num_frames);
+    printf("  Written: %.1f MB/frame\n", (double)counter_data[VIV_PROF_GPU_TOTAL_WRITE_64_BIT] * 8 / 1e6 / num_frames);
     printf("  Stalls on read: %.1fM/frame\n", counter_data[VIV_PROF_HI_AXI_CYCLES_READ_REQUEST_STALLED] / 1e6 / num_frames);
     printf("  Stalls on write request: %.1fM/frame\n", counter_data[VIV_PROF_HI_AXI_CYCLES_WRITE_REQUEST_STALLED] / 1e6 / num_frames);
     printf("  Stalls on write data: %.1fM/frame\n", counter_data[VIV_PROF_HI_AXI_CYCLES_WRITE_DATA_STALLED] / 1e6 / num_frames);

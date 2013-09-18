@@ -15,8 +15,8 @@ enum viv_profile_counter
     VIV_PROF_GPU_CLOCK_START                        = 3,  /* never set in kernel */
     VIV_PROF_GPU_CLOCK_END                          = 4,  /* never set in kernel */
     VIV_PROF_GPU_CYCLES_COUNTER                     = 5,  /* reg 00438 */
-    VIV_PROF_GPU_TOTAL_READ_64_BYTES_PER_FRAME      = 6,  /* reg 00040 */
-    VIV_PROF_GPU_TOTAL_WRITE_64_BYTES_PER_FRAME     = 7,  /* reg 00044 */
+    VIV_PROF_GPU_TOTAL_READ_64_BIT                  = 6,  /* reg 00040 */
+    VIV_PROF_GPU_TOTAL_WRITE_64_BIT                 = 7,  /* reg 00044 */
     VIV_PROF_PE_PIXEL_COUNT_KILLED_BY_COLOR_PIPE    = 8,  /* PE debug reg 0 */
     VIV_PROF_PE_PIXEL_COUNT_KILLED_BY_DEPTH_PIPE    = 9,  /* PE debug reg 1 */
     VIV_PROF_PE_PIXEL_COUNT_DRAWN_BY_COLOR_PIPE     = 10, /* PE debug reg 2 */
