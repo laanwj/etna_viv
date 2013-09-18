@@ -67,12 +67,12 @@ bool etna_screen_resource_alloc_ts(struct pipe_screen *screen, struct etna_resou
     resource->ts = rt_ts;
     resource->levels[0].ts_address = resource->ts->address;
     resource->levels[0].ts_size = resource->ts->size;
-    /* It is important to initialize the TS to zero, as random pattern
+    /* It is important to initialize the TS, as random pattern
      * can result in crashes. Do this on the CPU as this only happens once
      * per surface anyway and it's a small area, so it may not be worth
      * queuing this to the GPU.
      */
-    memset(rt_ts->logical, 0, rt_ts_size);
+    memset(rt_ts->logical, priv->specs.ts_clear_value, rt_ts_size);
     return true;
 }
 
