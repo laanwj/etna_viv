@@ -142,7 +142,8 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     unsigned layout = ETNA_LAYOUT_LINEAR;
     if(templat->target != PIPE_BUFFER)
     {
-        if(!(templat->bind & PIPE_BIND_SAMPLER_VIEW) && priv->specs.can_supertile)
+        if(!(templat->bind & PIPE_BIND_SAMPLER_VIEW) && priv->specs.can_supertile &&
+                !DBG_ENABLED(ETNA_DBG_NO_SUPERTILE))
             layout = ETNA_LAYOUT_SUPER_TILED;
         else
             layout = ETNA_LAYOUT_TILED;

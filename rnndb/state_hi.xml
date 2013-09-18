@@ -214,7 +214,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00408" name="MMU_PE_PAGE_TABLE" brief="Page table for PE color"/>
         <reg32 offset="0x0040C" name="MMU_PEZ_PAGE_TABLE" brief="Page table for PE depth"/>
         <reg32 offset="0x00410" name="MMU_RA_PAGE_TABLE" brief="Page table for rasterize"/>
-        <reg32 offset="0x00414" name="DEBUG_MEMORY"/>
+        <reg32 offset="0x00414" name="DEBUG_MEMORY">
+            <bitfield pos="3" name="SPECIAL_PATCH_GC320"/ brief="Special patch for 0x320 0x5220">
+            <bitfield pos="20" name="FAST_CLEAR_BYPASS" brief="Fast clear bypass"/>
+            <bitfield pos="21" name="COMPRESSION_BYPASS" brief="Compression bypass"/>
+        </reg32>
         <reg32 offset="0x00418" name="MEMORY_BASE_ADDR_RA" brief="Base address for RA"/>
         <reg32 offset="0x0041C" name="MEMORY_BASE_ADDR_FE" brief="Base address for FE"/>
         <reg32 offset="0x00420" name="MEMORY_BASE_ADDR_TX" brief="Base address for TX"/>

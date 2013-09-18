@@ -182,13 +182,10 @@ int main(int argc, char **argv)
     derived_counters_base = orig_num_profile_counters;
     uint32_t num_profile_counters = derived_counters_base + NUM_DERIVED_COUNTERS;
 
-    /* XXX parameter parsing */
     int samples_per_second = 100;
     bool interactive = true;
     int mode = MODE_ALL;
     bool color = true;
-    /* Dove driver amongst others doesn't reset perf counters properly */
-    bool olddriver = conn->kernel_driver.major < 4;
     int opt;
 
     while ((opt = getopt(argc, argv, "m:s:n")) != -1) {
@@ -209,6 +206,7 @@ int main(int argc, char **argv)
         }
     }
 
+    bool *reset_after_read = calloc(num_profile_counters, sizeof(bool));
     uint32_t *counter_data = calloc(num_profile_counters, 4);
     uint32_t *counter_data_last = calloc(num_profile_counters, 4);
     uint64_t *events_per_s = calloc(num_profile_counters, 8);
@@ -220,6 +218,8 @@ int main(int argc, char **argv)
         fprintf(stderr, "Error querying counters (probably unsupported with this kernel, or not built into libetnaviv)\n");
         exit(1);
     }
+    viv_get_counters_reset_after_read(conn, reset_after_read);
+
     uint32_t begin_time = gettime();
     useconds_t interval = 1000000 / samples_per_second;
     while(true)
@@ -239,17 +239,7 @@ int main(int argc, char **argv)
             }
             for(int c=0; c<num_profile_counters; ++c)
             {
-                if(c == VIV_PROF_SE_CULLED_TRIANGLE_COUNT ||
-                   c == VIV_PROF_SE_CULLED_LINES_COUNT || 
-                   (olddriver && (
-                   c == VIV_PROF_PS_INST_COUNTER ||
-                   c == VIV_PROF_VS_INST_COUNTER ||
-                   c == VIV_PROF_RENDERED_PIXEL_COUNTER ||
-                   c == VIV_PROF_RENDERED_VERTICE_COUNTER ||
-                   c == VIV_PROF_PXL_TEXLD_INST_COUNTER ||
-                   c == VIV_PROF_PXL_BRANCH_INST_COUNTER ||
-                   c == VIV_PROF_VTX_TEXLD_INST_COUNTER ||
-                   c == VIV_PROF_VTX_BRANCH_INST_COUNTER)))
+                if(!reset_after_read[c])
                 {
                     if(counter_data_last[c] > counter_data[c])
                     {

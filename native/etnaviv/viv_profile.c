@@ -13,15 +13,6 @@
 #endif
 #include "gc_hal_types.h"
 
-#ifdef ETNAVIV_HOOK
-/* If set, command stream will be logged to environment variable ETNAVIV_FDR */
-#include "viv_hook.h"
-#define open my_open
-#define mmap my_mmap
-#define munmap my_munmap
-#define ioctl my_ioctl
-#endif
-
 static struct viv_profile_counter_info viv_profile_counters[] = {
     [VIV_PROF_GPU_CLOCK] = {"GPU_CLOCK", "GPU clock"},
     [VIV_PROF_AXI_CLOCK] = {"AXI_CLOCK", "AXI clock"},
@@ -176,5 +167,29 @@ int viv_read_profile_counters_2d(struct viv_conn *conn, uint32_t *out)
 #else
     return VIV_STATUS_NOT_SUPPORTED;
 #endif
+}
+
+void viv_get_counters_reset_after_read(struct viv_conn *conn, bool *counters)
+{
+    /* Either dove driver doesn't reset perf counters properly, or
+     * is it the hw, I'm not sure */
+    for(int c=0; c<VIV_PROF_NUM_COUNTERS; ++c)
+        counters[c] = true;
+    if(conn->kernel_driver.major < 4)
+    {
+        counters[VIV_PROF_SE_CULLED_TRIANGLE_COUNT] = false;
+        counters[VIV_PROF_SE_CULLED_LINES_COUNT] = false;
+    } else {
+        counters[VIV_PROF_SE_CULLED_TRIANGLE_COUNT] = false;
+        counters[VIV_PROF_SE_CULLED_LINES_COUNT] = false;
+        counters[VIV_PROF_PS_INST_COUNTER] = false;
+        counters[VIV_PROF_VS_INST_COUNTER] = false;
+        counters[VIV_PROF_RENDERED_PIXEL_COUNTER] = false;
+        counters[VIV_PROF_RENDERED_VERTICE_COUNTER] = false;
+        counters[VIV_PROF_PXL_TEXLD_INST_COUNTER] = false;
+        counters[VIV_PROF_PXL_BRANCH_INST_COUNTER] = false;
+        counters[VIV_PROF_VTX_TEXLD_INST_COUNTER] = false;
+        counters[VIV_PROF_VTX_BRANCH_INST_COUNTER] = false;
+    }
 }
 

@@ -2,10 +2,10 @@ TOP=..
 
 include $(TOP)/Makefile.inc
 
-COMMON_FLAGS +=
+COMMON_FLAGS += -I$(TOP)/driver
 CFLAGS +=
-CXXFLAGS += 
-LDFLAGS +=  
+CXXFLAGS +=
+LDFLAGS +=
 
 ifeq ($(ETNAVIV_PROFILER), 1)
 # Define ETNAVIV_PROFILER=1 if the kernel was built with VIVANTE_PROFILER
@@ -13,9 +13,10 @@ ifeq ($(ETNAVIV_PROFILER), 1)
 COMMON_FLAGS += -DVIVANTE_PROFILER=1
 endif
 
-TARGETS = viv_gpu_top viv_info viv_registers viv_reset viv_watch
+TARGETS = viv_gpu_top viv_info viv_registers viv_reset viv_watch viv_throughput
 
 ETNA_OBJS = ../etnaviv/libetnaviv.a
+DRIVER_OBJS = ../lib/fbdemos.o ../lib/etna_bswap.o ../driver/libetnadriver.a ../minigallium/libminigallium.a ../etnaviv/libetnaviv.a
 
 all: $(TARGETS)
 
@@ -36,5 +37,9 @@ viv_reset: viv_reset.o $(ETNA_OBJS)
 	$(CXX) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 
 viv_watch: viv_watch.o $(ETNA_OBJS)
+	$(CXX) $(CFLAGS) -o $@ $^  $(LDFLAGS)
+
+# viv_throughput is the only utility that needs the gallium pipe driver
+viv_throughput: viv_throughput.o $(DRIVER_OBJS)
 	$(CXX) $(CFLAGS) -o $@ $^  $(LDFLAGS)
 

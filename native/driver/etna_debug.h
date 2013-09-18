@@ -38,13 +38,15 @@
 #define ETNA_DBG_DUMP_SHADERS  0x20
 
 /* Bypasses */
-#define ETNA_DBG_NO_TS         0x1000 /* Disable TS */
+#define ETNA_DBG_NO_TS           0x1000 /* Disable TS */
 #define ETNA_DBG_NO_AUTODISABLE  0x2000 /* Disable autodisable */
-#define ETNA_DBG_CFLUSH_ALL    0x4000 /* Flush before every state update + draw call */
-#define ETNA_DBG_MSAA_2X       0x8000 /* Force 2X MSAA for screen */
-#define ETNA_DBG_MSAA_4X       0x10000 /* Force 4X MSAA for screen */
-#define ETNA_DBG_FINISH_ALL    0x20000 /* Finish on every flush */
-#define ETNA_DBG_FLUSH_ALL     0x40000 /* Flush after every rendered primitive */
+#define ETNA_DBG_NO_SUPERTILE    0x4000 /* Disable supertile */
+#define ETNA_DBG_NO_EARLY_Z      0x8000 /* Disable early z */
+#define ETNA_DBG_CFLUSH_ALL      0x10000 /* Flush before every state update + draw call */
+#define ETNA_DBG_MSAA_2X         0x20000 /* Force 2X MSAA for screen */
+#define ETNA_DBG_MSAA_4X         0x40000 /* Force 4X MSAA for screen */
+#define ETNA_DBG_FINISH_ALL      0x80000 /* Finish on every flush */
+#define ETNA_DBG_FLUSH_ALL       0x100000 /* Flush after every rendered primitive */
 
 extern uint32_t etna_mesa_debug; /* set in etna_screen.c from ETNA_DEBUG */
 

@@ -2,6 +2,7 @@
 #define H_VIV_PROFILE
 
 #include <stdint.h>
+#include <stdbool.h>
 
 struct viv_conn;
 
@@ -75,6 +76,11 @@ uint32_t viv_get_num_profile_counters(void);
 /** Get information about specific profile counter.
  */
 struct viv_profile_counter_info *viv_get_profile_counter_info(enum viv_profile_counter id);
+
+/** Return a vector of booleans, one for each counter, depending on whether it
+ * (reliably) resets after a read.
+ */
+void viv_get_counters_reset_after_read(struct viv_conn *conn, bool *counters);
 
 /** Read and reset 2D profile counters.
  *  This will return VIV_STATUS_NOT_SUPPORTED if built without profiling support.
