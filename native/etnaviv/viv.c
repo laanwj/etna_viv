@@ -542,3 +542,23 @@ int viv_unmap_user_memory(struct viv_conn *conn, void *memory, size_t size, viv_
     return viv_invoke(conn, &id);
 }
 
+int viv_read_register(struct viv_conn *conn, uint32_t address, uint32_t *data)
+{
+    gcsHAL_INTERFACE id;
+    int rv;
+    id.command = gcvHAL_READ_REGISTER;
+    id.u.ReadRegisterData.address = address;
+    rv = viv_invoke(conn, &id);
+    *data = id.u.ReadRegisterData.data;
+    return rv;
+}
+
+int viv_write_register(struct viv_conn *conn, uint32_t address, uint32_t data)
+{
+    gcsHAL_INTERFACE id;
+    id.command = gcvHAL_WRITE_REGISTER;
+    id.u.WriteRegisterData.address = address;
+    id.u.WriteRegisterData.data = data;
+    return viv_invoke(conn, &id);
+}
+

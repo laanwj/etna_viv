@@ -277,6 +277,18 @@ void viv_show_chip_info(struct viv_conn *conn);
  */
 int viv_reset(struct viv_conn *conn);
 
+/** Read register from GPU.
+ * @note Needs kernel module compiled with user space register access
+ * (gcdREGISTER_ACCESS_FROM_USER=1)
+ */
+int viv_read_register(struct viv_conn *conn, uint32_t address, uint32_t *data);
+
+/** Write register to GPU.
+ * @note Needs kernel module compiled with user space register access
+ * (gcdREGISTER_ACCESS_FROM_USER=1)
+ */
+int viv_write_register(struct viv_conn *conn, uint32_t address, uint32_t data);
+
 /** Convenience macro to probe features from state.xml.h:
  * VIV_FEATURE(chipFeatures, FAST_CLEAR)
  * VIV_FEATURE(chipMinorFeatures1, AUTO_DISABLE)
