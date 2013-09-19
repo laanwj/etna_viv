@@ -131,20 +131,12 @@ static void format_number(char *out, int outsz, uint64_t num)
 
 /****************************************************************************/
 
-/* Counter sorting record */
-struct counter_rec
-{
-    uint32_t id;
-    uint64_t events_per_s;
-};
-
 enum display_mode
 {
-    MODE_ALL = 0,
-    MODE_MAX = 1,
-    MODE_SORTED = 2,
-    MODE_OCCUPANCY = 3,
-    MODE_DMA = 4
+    MODE_PERF,
+    MODE_MAX,
+    MODE_OCCUPANCY,
+    MODE_DMA
 };
 
 /* derived counters (derived information computed from existing counters) */
@@ -209,18 +201,6 @@ static const char* ve_req_state_names[]={
 };
 #define NUM_VE_REQ_STATE_NAMES (sizeof(ve_req_state_names)/sizeof(ve_req_state_names[0]))
 
-/* Sort counters descending */
-static int counter_rec_compar(const void *a, const void *b)
-{
-    uint64_t ca = ((const struct counter_rec*)a)->events_per_s;
-    uint64_t cb = ((const struct counter_rec*)b)->events_per_s;
-    if(ca < cb)
-        return 1;
-    else if(cb > ca)
-        return -1;
-    else return 0;
-}
-
 static struct viv_profile_counter_info *get_counter_info(uint32_t idx)
 {
     if(idx < derived_counters_base)
@@ -265,7 +245,7 @@ int main(int argc, char **argv)
 
     int samples_per_second = 100;
     bool interactive = true;
-    int mode = MODE_ALL;
+    int mode = MODE_PERF;
     bool color = true;
     int opt;
 
@@ -276,8 +256,7 @@ int main(int argc, char **argv)
             switch(optarg[0])
             {
             case 'm': mode = MODE_MAX; break;
-            case 'a': mode = MODE_ALL; break;
-            case 's': mode = MODE_SORTED; break;
+            case 'p': mode = MODE_PERF; break;
             case 'o': mode = MODE_OCCUPANCY; break;
             case 'd': mode = MODE_DMA; break;
             default:
@@ -294,7 +273,6 @@ int main(int argc, char **argv)
     uint32_t *counter_data_last = calloc(num_profile_counters, 4);
     uint64_t *events_per_s = calloc(num_profile_counters, 8);
     uint64_t *events_per_s_max = calloc(num_profile_counters, 8);
-    struct counter_rec *sorted = calloc(num_profile_counters, sizeof(struct counter_rec));
     /* reset counters and initial values */
     if(viv_read_profile_counters_3d(conn, counter_data_last) != 0)
     {
@@ -387,37 +365,12 @@ int main(int argc, char **argv)
                 events_per_s_max[c] = events_per_s[c];
         }
 
-        /* Sort counters descending */
-        for(int c=0; c<num_profile_counters; ++c)
-        {
-            sorted[c].id = c;
-            sorted[c].events_per_s = events_per_s[c];
-        }
-        qsort(sorted, num_profile_counters, sizeof(struct counter_rec), &counter_rec_compar);
-
         if(interactive)
         {
             int line = 0; /* current screen line */
             printf("%s", clear_screen);
             int max_lines = get_screen_lines() - line - 1;
-            if(mode == MODE_SORTED)
-            {
-                int count = (num_profile_counters > max_lines) ? max_lines : num_profile_counters;
-                for(int c=0; c<count; ++c)
-                {
-                    char num[100];
-                    struct viv_profile_counter_info *info = get_counter_info(sorted[c].id);
-                    format_number(num, sizeof(num), sorted[c].events_per_s);
-                    if(color)
-                        printf("%s", sorted[c].events_per_s == 0 ? color_num_zero : color_num);
-                    printf("%15.15s", num);
-                    if(color)
-                        printf("%s", color_reset);
-                    printf(" ");
-                    printf("%-30.30s", info->description);
-                    printf("\n");
-                }
-            } else if(mode == MODE_ALL)
+            if(mode == MODE_PERF)
             {
                 /* XXX check that width doesn't exceed screen width */
                 for(int l=0; l<max_lines; ++l)
