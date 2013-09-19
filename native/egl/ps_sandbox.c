@@ -32,6 +32,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <stdarg.h>
+#include <stdlib.h>
 
 #include "esTransform.h"
 #include "eglutil.h"

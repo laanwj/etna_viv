@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <stdarg.h>
+#include <string.h>
 
 #include "write_bmp.h"
 #include "viv_raw.h"
