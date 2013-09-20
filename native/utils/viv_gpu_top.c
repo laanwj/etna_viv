@@ -91,14 +91,18 @@ static unsigned long gettime(void)
 #endif
 }
 
-/* Return number of lines in the terminal */
-static int get_screen_lines(void)
+/* Return number of lines and columns in the terminal */
+static void get_screen_size(int *lines, int *cols)
 {
     struct winsize ws;
     if (ioctl(0, TIOCGWINSZ, &ws) != -1)
-        return ws.ws_row;
-    else
-        return 25; /* default */
+    {
+        *lines = ws.ws_row;
+        *cols = ws.ws_col;
+    } else {
+        *lines = 25; /* default */
+        *cols = 80;
+    }
 }
 
 /* Format unsigned 64 bit number with thousands separators.
@@ -231,23 +235,12 @@ static void print_percentage_row(int l, double percent, const char *name, int na
 
 int main(int argc, char **argv)
 {
-    struct viv_conn *conn = 0;
-    int rv;
-    rv = viv_open(VIV_HW_3D, &conn);
-    if(rv!=0)
-    {
-        fprintf(stderr, "Error opening device\n");
-        exit(1);
-    }
-    uint32_t orig_num_profile_counters = viv_get_num_profile_counters();
-    derived_counters_base = orig_num_profile_counters;
-    uint32_t num_profile_counters = derived_counters_base + NUM_DERIVED_COUNTERS;
-
     int samples_per_second = 100;
     bool interactive = true;
     int mode = MODE_PERF;
     bool color = true;
     int opt;
+    bool error = false;
 
     while ((opt = getopt(argc, argv, "m:s:n")) != -1) {
         switch(opt)
@@ -265,8 +258,38 @@ int main(int argc, char **argv)
             break;
         case 'n': color = false; break;
         case 's': samples_per_second = atoi(optarg); break;
+        case 'h':
+        default:
+            error = true;
         }
     }
+    if(error)
+    {
+        printf("Usage:\n");
+        printf("  %s [-m <m|p|o|d>] [-n] [-s <samples_per_second>] \n", argv[0]);
+        printf("\n");
+        printf("  -m <mode>     Set mode:\n");
+        printf("                  p   Show performance counters (default)\n");
+        printf("                  m   Show performance counter maximum\n");
+        printf("                  o   Show occupancy (non-idle) states of modules\n");
+        printf("                  d   Show DMA engine states\n");
+        printf("  -n            Disable color\n");
+        printf("  -h            Show this help message\n");
+        printf("  -s <samples>  Number of samples per second (default 100)\n");
+        exit(1);
+    }
+    struct viv_conn *conn = 0;
+    int rv;
+    rv = viv_open(VIV_HW_3D, &conn);
+    if(rv!=0)
+    {
+        fprintf(stderr, "Error opening device\n");
+        exit(1);
+    }
+    uint32_t orig_num_profile_counters = viv_get_num_profile_counters();
+    derived_counters_base = orig_num_profile_counters;
+    uint32_t num_profile_counters = derived_counters_base + NUM_DERIVED_COUNTERS;
+
 
     bool *reset_after_read = calloc(num_profile_counters, sizeof(bool));
     uint32_t *counter_data = calloc(num_profile_counters, 4);
@@ -367,9 +390,10 @@ int main(int argc, char **argv)
 
         if(interactive)
         {
-            int line = 0; /* current screen line */
+            int max_lines, max_cols;
             printf("%s", clear_screen);
-            int max_lines = get_screen_lines() - line - 1;
+            get_screen_size(&max_lines, &max_cols);
+            max_lines -= 1;
             if(mode == MODE_PERF)
             {
                 /* XXX check that width doesn't exceed screen width */
@@ -453,6 +477,8 @@ int main(int argc, char **argv)
                     {1, 25, "VE req state", NUM_VE_REQ_STATE_NAMES, ve_req_state_names, ve_req_state}
                 };
 #define NUM_DMA_TABLES (sizeof(dma_tables) / sizeof(dma_tables[0]))
+                int bar_width = (max_cols/2) - 20;
+                int fill_width = bar_width + 19;
                 for(int l=0; l<max_lines; ++l)
                 {
                     for(int column=0; column<2; ++column)
@@ -467,7 +493,7 @@ int main(int argc, char **argv)
                                 {
                                     if(color)
                                         printf("%s", color_title);
-                                    printf("%-59s", table->title);
+                                    printf("%-*s", fill_width, table->title);
                                     if(color)
                                         printf("%s", color_reset);
                                     match = true;
@@ -476,7 +502,7 @@ int main(int argc, char **argv)
                                 {
                                     int y = l - table->base_y;
                                     double percent = 100.0 * (double)table->data[y] / (double)samples_per_second;
-                                    print_percentage_row(y, percent, table->data_names[y], 10, color, 40);
+                                    print_percentage_row(y, percent, table->data_names[y], 10, color, bar_width);
                                     match = true;
                                     break;
                                 }
@@ -484,7 +510,7 @@ int main(int argc, char **argv)
                         }
                         if(!match) /* empty slot */
                         {
-                            printf("%-59s", "");
+                            printf("%-*s", fill_width, "");
                         }
                         printf(" ");
                     }
