@@ -150,7 +150,7 @@ char is_padding[0x8000 / 4];
  * group consecutive states 
  * make LOAD_STATE commands, add to current command buffer
  */
-inline void etna_set_state(gcoCMDBUF commandBuffer, uint32_t address, uint32_t value)
+static inline void etna_set_state(gcoCMDBUF commandBuffer, uint32_t address, uint32_t value)
 {
 #ifdef CMD_DEBUG
     printf("%05x := %08x\n", address, value);
@@ -165,7 +165,7 @@ inline void etna_set_state(gcoCMDBUF commandBuffer, uint32_t address, uint32_t v
 
 /* this can be inlined, though would likely be even faster to return a pointer and let the client write to
  * the buffer directly */
-inline void etna_set_state_multi(gcoCMDBUF commandBuffer, uint32_t base, uint32_t num, uint32_t *values)
+static inline void etna_set_state_multi(gcoCMDBUF commandBuffer, uint32_t base, uint32_t num, uint32_t *values)
 {
     uint32_t *tgt = (uint32_t*)((size_t)commandBuffer->logical + commandBuffer->offset);
     tgt[0] = VIV_FE_LOAD_STATE_HEADER_OP_LOAD_STATE |
@@ -188,7 +188,7 @@ inline void etna_set_state_multi(gcoCMDBUF commandBuffer, uint32_t base, uint32_
         commandBuffer->offset += 4;
     }
 }
-inline void etna_set_state_f32(gcoCMDBUF commandBuffer, uint32_t address, float value)
+static inline void etna_set_state_f32(gcoCMDBUF commandBuffer, uint32_t address, float value)
 {
     union {
         uint32_t i32;
@@ -196,7 +196,7 @@ inline void etna_set_state_f32(gcoCMDBUF commandBuffer, uint32_t address, float 
     } x = { .f32 = value };
     etna_set_state(commandBuffer, address, x.i32);
 }
-inline void etna_set_state_fixp(gcoCMDBUF commandBuffer, uint32_t address, uint32_t value)
+static inline void etna_set_state_fixp(gcoCMDBUF commandBuffer, uint32_t address, uint32_t value)
 {
 #ifdef CMD_DEBUG
     printf("%05x := %08x (fixp)\n", address, value);
@@ -209,7 +209,7 @@ inline void etna_set_state_fixp(gcoCMDBUF commandBuffer, uint32_t address, uint3
     tgt[1] = value;
     commandBuffer->offset += 8;
 }
-inline void etna_draw_primitives(gcoCMDBUF cmdPtr, uint32_t primitive_type, uint32_t start, uint32_t count)
+static inline void etna_draw_primitives(gcoCMDBUF cmdPtr, uint32_t primitive_type, uint32_t start, uint32_t count)
 {
 #ifdef CMD_DEBUG
     printf("draw_primitives %08x %08x %08x %08x\n", 
@@ -225,7 +225,7 @@ inline void etna_draw_primitives(gcoCMDBUF cmdPtr, uint32_t primitive_type, uint
 }
 
 /* warm up RS on aux render target */
-void etna_warm_up_rs(gcoCMDBUF cmdPtr, viv_addr_t aux_rt_physical, viv_addr_t aux_rt_ts_physical)
+static void etna_warm_up_rs(gcoCMDBUF cmdPtr, viv_addr_t aux_rt_physical, viv_addr_t aux_rt_ts_physical)
 {
     etna_set_state(cmdPtr, VIVS_TS_COLOR_STATUS_BASE, aux_rt_ts_physical); /* ADDR_G */
     etna_set_state(cmdPtr, VIVS_TS_COLOR_SURFACE_BASE, aux_rt_physical); /* ADDR_F */
@@ -274,7 +274,7 @@ int cmdbuffer_compare(gcoCMDBUF cmdPtr, uint32_t *cmdbuf, uint32_t cmdbuf_size)
 }
 #endif
 
-inline uint32_t align_up(uint32_t value, uint32_t granularity)
+static inline uint32_t align_up(uint32_t value, uint32_t granularity)
 {
     return (value + (granularity-1)) & (~(granularity-1));
 }
