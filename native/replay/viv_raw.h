@@ -138,11 +138,11 @@ int viv_free_vidmem(struct viv_conn *conn, gcuVIDMEM_NODE_PTR node);
 
 /**  Map user memory to GPU memory.
  */
-int viv_map_user_memory(struct viv_conn *conn, void *memory, size_t size, gctPOINTER *info, viv_addr_t *address);
+int viv_map_user_memory(struct viv_conn *conn, void *memory, size_t size, void **info, viv_addr_t *address);
 
 /**  Unmap user memory from GPU memory.
  */
-int viv_unmap_user_memory(struct viv_conn *conn, void *memory, size_t size, gctPOINTER info, viv_addr_t address);
+int viv_unmap_user_memory(struct viv_conn *conn, void *memory, size_t size, void *info, viv_addr_t address);
 
 /** Commit event queue.
  */

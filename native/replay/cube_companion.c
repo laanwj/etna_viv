@@ -246,7 +246,7 @@ int main(int argc, char **argv)
     contextBuffer.physical = (void*)cbuf0_physical;
     contextBuffer.logical = cbuf0_logical;
     contextBuffer.link = ((uint32_t*)cbuf0_logical) + contextBuffer.linkIndex;
-    contextBuffer.inUse = (gctBOOL*)(((uint32_t*)cbuf0_logical) + contextBuffer.inUseIndex);
+    contextBuffer.inUse = (int*)(((uint32_t*)cbuf0_logical) + contextBuffer.inUseIndex);
 
     /* Create signal */
     int sig_id = 0;

@@ -257,7 +257,7 @@ static int gpu_context_finish_up(struct etna_ctx *ctx)
     logical[ptr++] = VIV_FE_NOP_HEADER_OP_NOP;
     logical[ptr++] = VIV_FE_NOP_HEADER_OP_NOP;
     /* Append inUse (4 bytes) */
-    GCCTX(ctx)->inUse = (gctBOOL*)&logical[ptr];
+    GCCTX(ctx)->inUse = (int*)&logical[ptr];
     logical[ptr++] = 0;
     /* Update buffer size to final value */
     GCCTX(ctx)->bufferSize = ptr*4;

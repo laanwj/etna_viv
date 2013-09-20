@@ -433,7 +433,7 @@ int viv_free_vidmem(struct viv_conn *conn, gcuVIDMEM_NODE_PTR node)
     return viv_invoke(conn, &id);
 }
 
-int viv_map_user_memory(struct viv_conn *conn, void *memory, size_t size, gctPOINTER *info, viv_addr_t *address)
+int viv_map_user_memory(struct viv_conn *conn, void *memory, size_t size, void **info, viv_addr_t *address)
 {
     gcsHAL_INTERFACE id = {
         .command = gcvHAL_MAP_USER_MEMORY,
@@ -450,7 +450,7 @@ int viv_map_user_memory(struct viv_conn *conn, void *memory, size_t size, gctPOI
     return status;
 }
 
-int viv_unmap_user_memory(struct viv_conn *conn, void *memory, size_t size, gctPOINTER info, viv_addr_t address)
+int viv_unmap_user_memory(struct viv_conn *conn, void *memory, size_t size, void *info, viv_addr_t address)
 {
     gcsHAL_INTERFACE id = {
         .command = gcvHAL_UNMAP_USER_MEMORY,
