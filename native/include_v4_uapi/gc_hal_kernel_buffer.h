@@ -36,13 +36,13 @@ typedef struct _gcsSTATE_DELTA_RECORD * gcsSTATE_DELTA_RECORD_PTR;
 typedef struct _gcsSTATE_DELTA_RECORD
 {
     /* State address. */
-    gctUINT                     address;
+    unsigned int                address;
 
     /* State mask. */
-    gctUINT32                   mask;
+    __u32                       mask;
 
     /* State data. */
-    gctUINT32                   data;
+    __u32                       data;
 }
 gcsSTATE_DELTA_RECORD;
 
@@ -53,16 +53,16 @@ typedef struct _gcsSTATE_DELTA
        main ID is incremented. If main state ID overflows, all map entry IDs get
        reinitialized to make sure there is no potential erroneous match after
        the overflow.*/
-    gctUINT                     id;
+    unsigned int                id;
 
     /* The number of contexts pending modification by the delta. */
-    gctINT                      refCount;
+    int                         refCount;
 
     /* Vertex element count for the delta buffer. */
-    gctUINT                     elementCount;
+    unsigned int                elementCount;
 
     /* Number of states currently stored in the record array. */
-    gctUINT                     recordCount;
+    unsigned int                recordCount;
 
     /* Record array; holds all modified states. */
     gcsSTATE_DELTA_RECORD_PTR   recordArray;
@@ -70,12 +70,12 @@ typedef struct _gcsSTATE_DELTA
     /* Map entry ID is used for map entry validation. If map entry ID does not
        match the main state delta ID, the entry and the corresponding state are
        considered not in use. */
-    gctUINT_PTR                 mapEntryID;
-    gctUINT                     mapEntryIDSize;
+    unsigned int *              mapEntryID;
+    unsigned int                mapEntryIDSize;
 
     /* If the map entry ID matches the main state delta ID, index points to
        the state record in the record array. */
-    gctUINT_PTR                 mapEntryIndex;
+    unsigned int *              mapEntryIndex;
 
     /* Previous and next state deltas. */
     gcsSTATE_DELTA_PTR          prev;
@@ -94,38 +94,38 @@ struct _gcoCMDBUF
     gcePIPE_SELECT              exitPipe;
 
     /* Feature usage flags. */
-    gctBOOL                     using2D;
-    gctBOOL                     using3D;
-    gctBOOL                     usingFilterBlit;
-    gctBOOL                     usingPalette;
+    int                         using2D;
+    int                         using3D;
+    int                         usingFilterBlit;
+    int                         usingPalette;
 
     /* Physical address of command buffer. */
     gctPHYS_ADDR                physical;
 
     /* Logical address of command buffer. */
-    gctPOINTER                  logical;
+    void *                      logical;
 
     /* Number of bytes in command buffer. */
-    gctSIZE_T                   bytes;
+    size_t                      bytes;
 
     /* Start offset into the command buffer. */
-    gctUINT32                   startOffset;
+    __u32                       startOffset;
 
     /* Current offset into the command buffer. */
-    gctUINT32                   offset;
+    __u32                       offset;
 
     /* Number of free bytes in command buffer. */
-    gctSIZE_T                   free;
+    size_t                      free;
 
     /* Location of the last reserved area. */
-    gctPOINTER                  lastReserve;
-    gctUINT                     lastOffset;
+    void *                      lastReserve;
+    unsigned int                lastOffset;
 
 #if gcdSECURE_USER
     /* Hint array for the current command buffer. */
-    gctUINT                     hintArraySize;
-    gctUINT32_PTR               hintArray;
-    gctUINT32_PTR               hintArrayTail;
+    unsigned int                hintArraySize;
+    __u32 *                     hintArray;
+    __u32 *                     hintArrayTail;
 #endif
 };
 
@@ -153,7 +153,7 @@ struct _gcoQUEUE
     gcsQUEUE_PTR                freeList;
     #define gcdIN_QUEUE_RECORD_LIMIT 16
     /* Number of records currently in queue */
-    gctUINT32                   recordCount;
+    __u32                       recordCount;
 };
 
 #endif /* __gc_hal_kernel_buffer_h_ */
