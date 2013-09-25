@@ -29,15 +29,6 @@
 #include <stdio.h>
 
 #include "gc_abi.h"
-#include "gc_hal_base.h"
-#include "gc_hal.h"
-#include "gc_hal_driver.h"
-#ifdef GCABI_HAS_CONTEXT
-#include "gc_hal_user_context.h"
-#else
-#include "gc_hal_kernel_buffer.h"
-#endif
-#include "gc_hal_types.h"
 
 //#define DEBUG
 #define ETNA_VIDMEM_ALIGNMENT (0x40)

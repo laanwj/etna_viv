@@ -21,6 +21,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 /** Kernel ABI definition file for Etna **/
+#ifndef H_GCABI
+#define H_GCABI
+
 //#define GCABI_USER_SIGNAL_HAS_TYPE
 #define GCABI_CONTEXT_HAS_PHYSICAL
 #define GCABI_HAS_MINOR_FEATURES_2
@@ -40,3 +43,16 @@ typedef struct
 } vivante_ioctl_data_t;
 
 #define _gcs2D_PROFILE gcs2D_PROFILE
+
+#include "gc_hal_base.h"
+#include "gc_hal.h"
+#include "gc_hal_driver.h"
+#ifdef GCABI_HAS_CONTEXT
+#include "gc_hal_user_context.h"
+#else
+#include "gc_hal_kernel_buffer.h"
+#endif
+#include "gc_hal_types.h"
+
+#endif
+
