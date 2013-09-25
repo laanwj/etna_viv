@@ -326,11 +326,8 @@ int etna_create(struct viv_conn *conn, struct etna_ctx **ctx_out)
      */
     for(int x=0; x<NUM_COMMAND_BUFFERS; ++x)
     {
-        viv_addr_t buf0_physical = 0;
-        void *buf0_logical = 0;
-        size_t buf0_bytes = 0;
         ctx->cmdbuf[x] = ETNA_CALLOC_STRUCT(_gcoCMDBUF);
-        if(viv_alloc_contiguous(conn, COMMAND_BUFFER_SIZE, &buf0_physical, &buf0_logical, &buf0_bytes)!=0)
+        if(viv_alloc_contiguous(conn, COMMAND_BUFFER_SIZE, &ctx->cmdbufi[x].physical, &ctx->cmdbufi[x].logical, &ctx->cmdbufi[x].bytes)!=0)
         {
 #ifdef DEBUG
             fprintf(stderr, "Error allocating host memory for command buffer\n");
@@ -338,12 +335,14 @@ int etna_create(struct viv_conn *conn, struct etna_ctx **ctx_out)
             return ETNA_OUT_OF_MEMORY;
         }
         ctx->cmdbuf[x]->object.type = gcvOBJ_COMMANDBUFFER;
-        ctx->cmdbuf[x]->physical = PTR_TO_VIV((void*)buf0_physical);
-        ctx->cmdbuf[x]->logical = PTR_TO_VIV((void*)buf0_logical);
-        ctx->cmdbuf[x]->bytes = buf0_bytes;
+#ifdef GCABI_CMDBUF_HAS_PHYSICAL
+        ctx->cmdbuf[x]->physical = PTR_TO_VIV((void*)ctx->cmdbufi[x].physical);
+        ctx->cmdbuf[x]->bytes = ctx->cmdbufi[x].bytes;
+#endif
+        ctx->cmdbuf[x]->logical = PTR_TO_VIV((void*)ctx->cmdbufi[x].logical);
 
-        if(viv_user_signal_create(conn, 0, &ctx->cmdbuf_sig[x]) != 0 ||
-           viv_user_signal_signal(conn, ctx->cmdbuf_sig[x], 1) != 0)
+        if(viv_user_signal_create(conn, 0, &ctx->cmdbufi[x].sig_id) != 0 ||
+           viv_user_signal_signal(conn, ctx->cmdbufi[x].sig_id, 1) != 0)
         {
 #ifdef DEBUG
             fprintf(stderr, "Cannot create user signal\n");
@@ -352,7 +351,7 @@ int etna_create(struct viv_conn *conn, struct etna_ctx **ctx_out)
         }
 #ifdef DEBUG
         printf("Allocated buffer %i: phys=%08x log=%08x bytes=%08x [signal %i]\n", x,
-                (uint32_t)buf0_physical, (uint32_t)buf0_logical, buf0_bytes, ctx->cmdbuf_sig[x]);
+                (uint32_t)buf0_physical, (uint32_t)buf0_logical, buf0_bytes, ctx->cmdbufi[x].sig);
 #endif
     }
 
@@ -380,7 +379,6 @@ static void clear_buffer(gcoCMDBUF cmdbuf)
     /* Prepare command buffer for use */
     cmdbuf->startOffset = 0x0;
     cmdbuf->offset = BEGIN_COMMIT_CLEARANCE;
-    cmdbuf->free = cmdbuf->bytes - END_COMMIT_CLEARANCE; /* keep space for end-of-commit XXX we don't use this field at all */
 }
 
 /* Switch to next buffer, optionally wait for it to be available */
@@ -390,7 +388,7 @@ static int switch_next_buffer(struct etna_ctx *ctx)
 #if 0
     printf("Switching to new buffer %i\n", next_buf_id);
 #endif
-    if(viv_user_signal_wait(ctx->conn, ctx->cmdbuf_sig[next_buf_id], VIV_WAIT_INDEFINITE) != 0)
+    if(viv_user_signal_wait(ctx->conn, ctx->cmdbufi[next_buf_id].sig_id, VIV_WAIT_INDEFINITE) != 0)
     {
 #ifdef DEBUG
         printf("Error waiting for command buffer sync signal\n");
@@ -420,7 +418,7 @@ int etna_free(struct etna_ctx *ctx)
     /* Free command buffers */
     for(int x=0; x<NUM_COMMAND_BUFFERS; ++x)
     {
-        viv_free_contiguous(ctx->conn, ctx->cmdbuf[x]->bytes, (viv_addr_t)ctx->cmdbuf[x]->physical, VIV_TO_PTR(ctx->cmdbuf[x]->logical));
+        viv_free_contiguous(ctx->conn, ctx->cmdbufi[x].bytes, (viv_addr_t)ctx->cmdbufi[x].physical, VIV_TO_PTR(ctx->cmdbufi[x].logical));
         ETNA_FREE(ctx->cmdbuf[x]);
     }
     ETNA_FREE(ctx);
@@ -456,7 +454,7 @@ int _etna_reserve_internal(struct etna_ctx *ctx, size_t n)
         printf("Submitting old buffer %i\n", ctx->cur_buf);
 #endif
         /* Queue signal to signify when buffer is available again */
-        if((status = etna_queue_signal(ctx->queue, ctx->cmdbuf_sig[ctx->cur_buf], VIV_WHERE_COMMAND)) != ETNA_OK)
+        if((status = etna_queue_signal(ctx->queue, ctx->cmdbufi[ctx->cur_buf].sig_id, VIV_WHERE_COMMAND)) != ETNA_OK)
         {
             printf("%s: queue signal for old buffer failed: %i\n", __func__, status);
             abort(); /* buffer is in invalid state XXX need some kind of recovery */

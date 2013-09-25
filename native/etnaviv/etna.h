@@ -99,6 +99,15 @@ struct etna_context_info {
 typedef int (*etna_context_snapshot_cb_t)(void *data, struct etna_ctx *ctx,
         enum etna_pipe *initial_pipe, enum etna_pipe *final_pipe);
 
+struct etna_cmdbuf {
+    /* sync signals for command buffer */
+    int sig_id;
+    /* memory info */
+    size_t bytes;
+    viv_addr_t physical;
+    void *logical;
+};
+
 struct etna_ctx {
     /* Driver connection */
     struct viv_conn *conn;
@@ -119,8 +128,8 @@ struct etna_ctx {
     int sig_id;
     /* Structures for kernel */
     struct _gcoCMDBUF *cmdbuf[NUM_COMMAND_BUFFERS];
-    /* sync signals for command buffers */
-    int cmdbuf_sig[NUM_COMMAND_BUFFERS];
+    /* Extra information per command buffer */
+    struct etna_cmdbuf cmdbufi[NUM_COMMAND_BUFFERS];
     /* number of unsignalled flushes (used to work around kernel bug) */
     int flushes;
     /* context */
