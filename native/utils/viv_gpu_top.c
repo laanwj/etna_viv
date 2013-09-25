@@ -399,7 +399,7 @@ int main(int argc, char **argv)
                 /* XXX check that width doesn't exceed screen width */
                 for(int l=0; l<max_lines; ++l)
                 {
-                    int c = VIV_PROF_GPU_CYCLES_COUNTER + l;
+                    int c = l;
                     while(c < num_profile_counters)
                     {
                         char num[100];
@@ -422,7 +422,7 @@ int main(int argc, char **argv)
                 /* XXX check that width doesn't exceed screen width */
                 for(int l=0; l<max_lines; ++l)
                 {
-                    int c = VIV_PROF_GPU_CYCLES_COUNTER + l;
+                    int c = l;
                     while(c < num_profile_counters)
                     {
                         char num[100];

@@ -14,11 +14,6 @@
 #include "gc_hal_types.h"
 
 static struct viv_profile_counter_info viv_profile_counters[] = {
-    [VIV_PROF_GPU_CLOCK] = {"GPU_CLOCK", "GPU clock"},
-    [VIV_PROF_AXI_CLOCK] = {"AXI_CLOCK", "AXI clock"},
-    [VIV_PROF_SHADER_CLOCK] = {"SHADER_CLOCK", "Shader clock"},
-    [VIV_PROF_GPU_CLOCK_START] = {"GPU_CLOCK_START", "GPU clock start"},
-    [VIV_PROF_GPU_CLOCK_END] = {"GPU_CLOCK_END", "GPU clock end"},
     [VIV_PROF_GPU_CYCLES_COUNTER] = {"GPU_CYCLES_COUNTER", "GPU cycles counter"},
     [VIV_PROF_GPU_TOTAL_READ_64_BIT] = {"GPU_TOTAL_READ_64_BIT", "GPU total read 64 bit"},
     [VIV_PROF_GPU_TOTAL_WRITE_64_BIT] = {"GPU_TOTAL_WRITE_64_BIT", "GPU total write 64 bit"},
@@ -92,11 +87,6 @@ int viv_read_profile_counters_3d(struct viv_conn *conn, uint32_t *out)
         return rv;
     gcsPROFILER_COUNTERS *counters = &id.u.RegisterProfileData.counters;
 
-    out[VIV_PROF_GPU_CLOCK] = counters->gpuClock;
-    out[VIV_PROF_AXI_CLOCK] = counters->axiClock;
-    out[VIV_PROF_SHADER_CLOCK] = counters->shaderClock;
-    out[VIV_PROF_GPU_CLOCK_START] = counters->gpuClockStart;
-    out[VIV_PROF_GPU_CLOCK_END] = counters->gpuClockEnd;
     out[VIV_PROF_GPU_CYCLES_COUNTER] = counters->gpuCyclesCounter;
     out[VIV_PROF_GPU_TOTAL_READ_64_BIT] = counters->gpuTotalRead64BytesPerFrame;
     out[VIV_PROF_GPU_TOTAL_WRITE_64_BIT] = counters->gpuTotalWrite64BytesPerFrame;
