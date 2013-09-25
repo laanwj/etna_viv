@@ -38,3 +38,5 @@ typedef struct
     void *out_buf;
     unsigned int out_buf_size;
 } vivante_ioctl_data_t;
+
+#define _gcs2D_PROFILE gcs2D_PROFILE
