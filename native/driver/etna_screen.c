@@ -315,6 +315,7 @@ static int etna_screen_get_shader_param( struct pipe_screen *screen, unsigned sh
 
 static int etna_screen_get_video_param( struct pipe_screen *screen,
                        enum pipe_video_profile profile,
+                       enum pipe_video_entrypoint entrypoint,
                        enum pipe_video_cap param )
 {
     DBG("unimplemented etna_screen_get_video_param");
@@ -419,7 +420,8 @@ static boolean etna_screen_is_format_supported( struct pipe_screen *screen,
 
 static boolean etna_screen_is_video_format_supported( struct pipe_screen *screen,
                                      enum pipe_format format,
-                                     enum pipe_video_profile profile )
+                                     enum pipe_video_profile profile,
+                                     enum pipe_video_entrypoint entrypoint )
 {
     DBG("unimplemented etna_screen_is_video_format_supported");
     return false;
