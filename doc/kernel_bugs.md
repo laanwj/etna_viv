@@ -53,3 +53,23 @@ Command buffer memory management on cubox
     <_rmk_> I wonder what that a command word with a bit pattern of 10101 in the top 5 bits tells the GPU to do...
     <_rmk_> the only thing I can say is... if people would damn well listen to me when I say "don't do this" then you wouldn't get these bugs.
     <_rmk_> this is one of the reasons why my check in ioremap.c exists to prevent system memory being ioremap'd and therefore this kind of issue cropping up
+
+More races...
+
+    <wumpus> IIRC the blob does a similar thing
+    <_rmk_> if you ever see the kernel galcore complain about a lost event or an event not pending, that's because the kernel driver raced
+    <wumpus> yes, I've had those races, especially on cubox
+    <_rmk_> and its caused by three races
+    <wumpus> even when using it only from one process :D
+    <_rmk_> one in _GetEvent, where it finds an event slot under a lock but has no way to mark it as having been allocated
+    <_rmk_> one in gckEVENT_Submit, where you can end up with two events being allocated and then inserted in the reverse order to allocation
+    <wumpus> ugh
+    <_rmk_> and one in gckEVENT_Notify, where the processing of pending events can screw it up (I need to write that one up properly in the commit)
+    <wumpus> I guess some more correct and linuxy synchronization should be used, not some leaky abstractions
+    <_rmk_> the final one - _IsEmpty - can work both ways.  This function can report that the event queues are empty when they aren't, and they aren't empty when they are.
+
+    <_rmk_> oh yes, that's the gckEVENT_Notify race - it scans the event queues/lists without holding any locks - it was coded with the assumption that the only thing you need to protect against is writes to queue->head and apparantly reads are fine.
+    <_rmk_> the problem that leads to is that you can end up with queue->head non-NULL, queue->stamp being old, and then gckEVENT_Notify() identifies it as a missed event when in actual fact the event queue is in the middle of being setup
+    <_rmk_> ... and NULLs out queue->head and runs all the queued events
+    <_rmk_> since I've fixed all these, I'm seriously considering getting rid of my fencing in my Xorg driver... it's just not needed anymore
+

@@ -60,7 +60,7 @@
         }]
     },
     {
-        "platform": "Marvell Armada XXX (OLPC XO-1.75, model: 1C2)",
+        "platform": "Marvell Armada 610",
         "chips": [{
             "type": "GC860",
             "chipModel": "0x860",
