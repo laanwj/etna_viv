@@ -11,9 +11,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "gc_hal_base.h"
-#include "gc_hal.h"
-#include "gc_hal_driver.h"
 #include "gc_abi.h"
 
 const char *galcore_device[] = {"/dev/gal3d", "/dev/galcore", "/dev/graphics/galcore", NULL};
