@@ -47,6 +47,7 @@
 #define ETNA_DBG_MSAA_4X         0x40000 /* Force 4X MSAA for screen */
 #define ETNA_DBG_FINISH_ALL      0x80000 /* Finish on every flush */
 #define ETNA_DBG_FLUSH_ALL       0x100000 /* Flush after every rendered primitive */
+#define ETNA_DBG_ZERO            0x200000 /* Zero all resources after allocation */
 
 extern uint32_t etna_mesa_debug; /* set in etna_screen.c from ETNA_DEBUG */
 

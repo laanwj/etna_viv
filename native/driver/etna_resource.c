@@ -249,6 +249,11 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     resource->ts = 0; /* TS is only created when first bound to surface */
     pipe_reference_init(&resource->base.reference, 1);
 
+    if(DBG_ENABLED(ETNA_DBG_ZERO))
+    {
+        memset(resource->surface->logical, 0, rt_size);
+    }
+
     for(unsigned ix=0; ix<=resource->base.last_level; ++ix)
     {
         struct etna_resource_level *mip = &resource->levels[ix];
