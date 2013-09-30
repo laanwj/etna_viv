@@ -954,7 +954,9 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
                 /* merged with depth_stencil_alpha */
         if((cbuf->surf.address & 63) || (((cbuf->surf.stride*4) & 63) && cbuf->surf.height > 4))
         {
-            /* XXX Must get temporary surface here.
+            /* XXX Must make temporary surface here.
+             * Need the same mechanism on gc2000 when we want to do mipmap generation by
+             * rendering to levels > 1 due to multitiled / tiled conversion.
              */
             printf("%s: Alignment error, trying to render to %08x with tile stride %i\n", __func__,
                     cbuf->surf.address, cbuf->surf.stride*4);
