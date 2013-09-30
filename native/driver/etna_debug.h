@@ -27,6 +27,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "util/u_debug.h"
 
 /* Logging */
@@ -63,6 +64,10 @@ extern uint32_t etna_mesa_debug; /* set in etna_screen.c from ETNA_DEBUG */
 			debug_printf("%s:%d: "fmt "\n", \
 				__FUNCTION__, __LINE__, ##__VA_ARGS__); } while (0)
 
+/* A serious bug, show this even in non-debug mode */
+#define BUG(fmt, ...) \
+                do { printf("%s:%d: "fmt "\n", \
+                        __FUNCTION__, __LINE__, ##__VA_ARGS__); } while (0)
 
 #endif
 

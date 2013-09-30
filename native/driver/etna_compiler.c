@@ -153,6 +153,7 @@ struct etna_compile_data
     /* Temporary register for use within translated TGSI instruction,
      * only allocated when needed.
      */
+    int inner_temps; /* number of inner temps used; only up to one available at this point */
     struct etna_native_reg inner_temp;
 
     /* Fields for handling nested conditionals */
@@ -572,10 +573,70 @@ static void etna_compile_pass_optimize_outputs(struct etna_compile_data *cd, con
     tgsi_parse_free(&ctx);
 }
 
+/* Get temporary to be used within one TGSI instruction.
+ * The first time that this function is called the temporary will be allocated.
+ * Each call to this function will return the same temporary.
+ */
+static struct etna_native_reg etna_compile_get_inner_temp(struct etna_compile_data *cd)
+{
+    if(cd->inner_temps)
+        BUG("Multiple inner temporaries (%i) requested in one instruction", cd->inner_temps + 1);
+    if(!cd->inner_temp.valid)
+        cd->inner_temp = alloc_new_native_reg(cd);
+    cd->inner_temps += 1;
+    return cd->inner_temp;
+}
+
 /* emit instruction and append to program */
-static void emit_inst(struct etna_compile_data *cd, const struct etna_inst *inst)
+static void emit_inst(struct etna_compile_data *cd, struct etna_inst *inst)
 {
     assert(cd->inst_ptr <= ETNA_MAX_INSTRUCTIONS);
+
+    /* Check for uniform conflicts (each instruction can only access one uniform),
+     * if detected, use an intermediate temporary */
+    unsigned uni_rgroup = -1;
+    unsigned uni_reg = -1;
+
+    for(int src=0; src<ETNA_NUM_SRC; ++src)
+    {
+        if(etna_rgroup_is_uniform(inst->src[src].rgroup))
+        {
+            if(uni_reg == -1) /* first unique uniform used */
+            {
+                uni_rgroup = inst->src[src].rgroup;
+                uni_reg = inst->src[src].reg;
+            } else { /* second or later; check that it is a re-use */
+                if(uni_rgroup != inst->src[src].rgroup ||
+                   uni_reg != inst->src[src].reg)
+                {
+                    DBG_F(ETNA_DBG_COMPILER_MSGS,
+                            "perf warning: instruction that accesses different uniforms, need to generate extra MOV");
+                    struct etna_native_reg inner_temp = etna_compile_get_inner_temp(cd);
+
+                    /* Generate move instruction to temporary */
+                    etna_assemble(&cd->code[cd->inst_ptr*4], &(struct etna_inst) {
+                        .opcode = INST_OPCODE_MOV,
+                        .dst.use = 1,
+                        .dst.comps = INST_COMPS_X | INST_COMPS_Y | INST_COMPS_Z | INST_COMPS_W,
+                        .dst.reg = inner_temp.id,
+                        .src[2] = inst->src[src]
+                        });
+                    cd->inst_ptr ++;
+
+                    /* Modify instruction to use temp register instead of uniform */
+                    inst->src[src].use = 1;
+                    inst->src[src].rgroup = INST_RGROUP_TEMP;
+                    inst->src[src].reg = inner_temp.id;
+                    inst->src[src].swiz = INST_SWIZ_IDENTITY; /* swizzling happens on MOV */
+                    inst->src[src].neg = 0; /* negation happens on MOV */
+                    inst->src[src].abs = 0; /* abs happens on MOV */
+                    inst->src[src].amode = 0; /* amode effects happen on MOV */
+                }
+            }
+        }
+    }
+
+    /* Finally assemble the actual instruction */
     etna_assemble(&cd->code[cd->inst_ptr*4], inst);
     cd->inst_ptr ++;
 }
@@ -672,17 +733,6 @@ static void label_mark_use(struct etna_compile_data *cd, struct etna_compile_lab
     cd->lbl_usage[cd->inst_ptr] = label;
 }
 
-/* Get temporary to be used within one TGSI instruction.
- * The first time that this function is called the temporary will be allocated.
- * Each call to this function will return the same temporary.
- */
-static struct etna_native_reg etna_compile_get_inner_temp(struct etna_compile_data *cd)
-{
-    if(!cd->inner_temp.valid)
-        cd->inner_temp = alloc_new_native_reg(cd);
-    return cd->inner_temp;
-}
-
 /* Pass -- compile instructions */
 static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const struct tgsi_token *tokens)
 {
@@ -696,6 +746,9 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
     {
         tgsi_parse_token(&ctx);
         const struct tgsi_full_instruction *inst = 0;
+        /* No inner temps used yet for this instruction, clear counter */
+        cd->inner_temps = 0;
+
         switch(ctx.FullToken.Token.Type)
         {
         case TGSI_TOKEN_TYPE_INSTRUCTION:

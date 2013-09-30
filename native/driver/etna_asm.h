@@ -91,5 +91,8 @@ int etna_assemble(uint32_t *out, const struct etna_inst *inst);
  */
 int etna_assemble_set_imm(uint32_t *out, uint32_t imm);
 
+/* Return whether the rgroup is one of the uniforms */
+int etna_rgroup_is_uniform(unsigned rgroup);
+
 #endif
 

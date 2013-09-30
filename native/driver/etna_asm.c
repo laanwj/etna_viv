@@ -26,7 +26,7 @@
 #include <etnaviv/isa.xml.h>
 
 /* Return whether the rgroup is one of the uniforms */
-static inline int rgroup_is_uniform(unsigned rgroup)
+int etna_rgroup_is_uniform(unsigned rgroup)
 {
     return rgroup == INST_RGROUP_UNIFORM_0 ||
            rgroup == INST_RGROUP_UNIFORM_1;
@@ -41,9 +41,9 @@ static bool check_uniforms(const struct etna_inst *inst)
     unsigned uni_rgroup = -1;
     unsigned uni_reg = -1;
     bool conflict = false;
-    for(int src=0; src<3; ++src)
+    for(int src=0; src<ETNA_NUM_SRC; ++src)
     {
-        if(rgroup_is_uniform(inst->src[src].rgroup))
+        if(etna_rgroup_is_uniform(inst->src[src].rgroup))
         {
             if(uni_reg == -1) /* first uniform used */
             {
@@ -68,7 +68,7 @@ int etna_assemble(uint32_t *out, const struct etna_inst *inst)
 
     if(!check_uniforms(inst))
     {
-        DBG("warning: generating instruction that accesses two different uniforms");
+        BUG("error: generating instruction that accesses two different uniforms");
     }
 
     out[0] = VIV_ISA_WORD_0_OPCODE(inst->opcode) |
