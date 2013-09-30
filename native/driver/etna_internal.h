@@ -39,6 +39,8 @@
 #define ETNA_RS_WIDTH_MASK (16-1)
 /* RS tiled operations must have height%4 = 0 */
 #define ETNA_RS_HEIGHT_MASK (3)
+/* PE render targets must be aligned to 64 bytes */
+#define ETNA_PE_ALIGNMENT (64)
 
 /* GPU chip 3D specs */
 struct etna_pipe_specs

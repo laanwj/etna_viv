@@ -939,7 +939,6 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
     int nr_samples_color = -1;
     int nr_samples_depth = -1;
 
-
     /* Set up TS as well. Warning: this state is used by both the RS and PE */
     uint32_t ts_mem_config = 0;
     if(sv->nr_cbufs > 0) /* at least one color buffer? */
@@ -953,6 +952,7 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
                 (color_supertiled ? VIVS_PE_COLOR_FORMAT_SUPER_TILED : 0);
                 /* XXX VIVS_PE_COLOR_FORMAT_OVERWRITE and the rest comes from blend_state / depth_stencil_alpha */
                 /* merged with depth_stencil_alpha */
+
         if (priv->ctx->conn->chip.pixel_pipes == 1)
         {
             cs->PE_COLOR_ADDR = cbuf->surf.address;

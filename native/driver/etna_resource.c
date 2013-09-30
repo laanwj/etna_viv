@@ -203,7 +203,7 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
         mip->layer_stride = align(mip->padded_width, divSizeX)/divSizeX *
                       align(mip->padded_height, divSizeY)/divSizeY * element_size;
         mip->size = templat->array_size * mip->layer_stride;
-        offset += mip->size;
+        offset += align(mip->size, ETNA_PE_ALIGNMENT); /* align mipmaps to 64 bytes to be able to render to them */
         if(ix == max_mip_level || (x == 1 && y == 1))
             break; // stop at last level
         x = (x+1)>>1;

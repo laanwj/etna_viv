@@ -38,6 +38,7 @@
 
 #include "etna_pipe.h"
 #include "util/u_inlines.h"
+#include "util/u_format.h"
 #include "util/u_gen_mipmap.h"
 #include "cso_cache/cso_context.h"
 #include "write_bmp.h"
@@ -53,15 +54,28 @@ int main(int argc, char **argv)
     struct fbdemos_scaffold *fbs = 0;
     fbdemo_init(&fbs);
     struct pipe_context *pipe = fbs->pipe;
+    unsigned format = PIPE_FORMAT_B5G6R5_UNORM; /* texture format */
+    //unsigned format = PIPE_FORMAT_B8G8R8X8_UNORM;
+    const struct util_format_description *format_desc = util_format_description(format);
+    unsigned bs = util_format_get_blocksize(format);
 
     /* Convert and upload embedded texture */
-    struct pipe_resource *tex_resource = fbdemo_create_2d(fbs->screen, 
-            PIPE_BIND_SAMPLER_VIEW | PIPE_BIND_RENDER_TARGET, PIPE_FORMAT_B8G8R8X8_UNORM, 
+    struct pipe_resource *tex_resource = fbdemo_create_2d(fbs->screen,
+            PIPE_BIND_SAMPLER_VIEW | PIPE_BIND_RENDER_TARGET, format,
             COMPANION_TEXTURE_WIDTH, COMPANION_TEXTURE_HEIGHT, 1000);
-    void *temp = malloc(COMPANION_TEXTURE_WIDTH * COMPANION_TEXTURE_HEIGHT * 4); 
-    etna_convert_r8g8b8_to_b8g8r8x8(temp, (const uint8_t*)companion_texture, COMPANION_TEXTURE_WIDTH * COMPANION_TEXTURE_HEIGHT);
-    etna_pipe_inline_write(pipe, tex_resource, 0, 0, temp, COMPANION_TEXTURE_WIDTH * COMPANION_TEXTURE_HEIGHT * 4);
-    free(temp);
+
+    /* First convert from cumbersome RGB to RGBX */
+    void *temp_rgbx8888 = malloc(COMPANION_TEXTURE_WIDTH * COMPANION_TEXTURE_HEIGHT * 4);
+    etna_convert_r8g8b8_to_b8g8r8x8(temp_rgbx8888, (const uint8_t*)companion_texture, COMPANION_TEXTURE_WIDTH * COMPANION_TEXTURE_HEIGHT);
+
+    /* Then convert to destination format */
+    void *temp_fmt = malloc(COMPANION_TEXTURE_WIDTH * COMPANION_TEXTURE_HEIGHT * bs);
+    format_desc->pack_rgba_8unorm(temp_fmt, COMPANION_TEXTURE_WIDTH*bs, temp_rgbx8888, COMPANION_TEXTURE_WIDTH*4,
+            COMPANION_TEXTURE_WIDTH, COMPANION_TEXTURE_HEIGHT);
+    etna_pipe_inline_write(pipe, tex_resource, 0, 0, temp_fmt, COMPANION_TEXTURE_WIDTH * COMPANION_TEXTURE_HEIGHT * bs);
+
+    free(temp_rgbx8888);
+    free(temp_fmt);
     /* 0 512x512
      * 1 256x256
      * 2 128x128
@@ -87,7 +101,6 @@ int main(int argc, char **argv)
     assert(cso);
     struct gen_mipmap_state *gen_mipmap = util_create_gen_mipmap(pipe, cso);
     assert(gen_mipmap);
-
     for(int frame=0; frame<1; ++frame)
     {
         if(frame%50 == 0)
@@ -119,8 +132,12 @@ int main(int argc, char **argv)
         void *data = pipe->transfer_map(pipe, tex_resource, level, PIPE_TRANSFER_READ, 
                 &box, &transfer);
 
+        void *temp = malloc(lwidth * lheight * 4);
+        printf("%i: Transfer stride is %i\n", level, transfer->stride);
+        format_desc->unpack_rgba_8unorm(temp, lwidth*4, data, transfer->stride, lwidth, lheight);
         snprintf(filename, sizeof(filename), "mip%i.bmp", level);
-        bmp_dump32_ex(data, lwidth, lheight, /*flip*/ false, /*bgra*/true, /*alpha*/false, filename);
+        bmp_dump32_ex(temp, lwidth, lheight, /*flip*/ false, /*bgra*/true, /*alpha*/false, filename);
+        free(temp);
 
         pipe->transfer_unmap(pipe, transfer);
 
