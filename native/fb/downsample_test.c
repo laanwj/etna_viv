@@ -55,24 +55,26 @@ int main(int argc, char **argv)
     fbdemo_init(&fbs);
     struct pipe_context *pipe = fbs->pipe;
     unsigned format = PIPE_FORMAT_B5G6R5_UNORM; /* texture format */
-    //unsigned format = PIPE_FORMAT_B8G8R8X8_UNORM;
+    //unsigned format = PIPE_FORMAT_B8G8R8X8_UNORM; /* texture format */
     const struct util_format_description *format_desc = util_format_description(format);
     unsigned bs = util_format_get_blocksize(format);
+    int twidth = COMPANION_TEXTURE_WIDTH/4;
+    int theight = COMPANION_TEXTURE_HEIGHT;
 
     /* Convert and upload embedded texture */
     struct pipe_resource *tex_resource = fbdemo_create_2d(fbs->screen,
             PIPE_BIND_SAMPLER_VIEW | PIPE_BIND_RENDER_TARGET, format,
-            COMPANION_TEXTURE_WIDTH, COMPANION_TEXTURE_HEIGHT, 1000);
+            twidth, theight, 1000);
 
     /* First convert from cumbersome RGB to RGBX */
     void *temp_rgbx8888 = malloc(COMPANION_TEXTURE_WIDTH * COMPANION_TEXTURE_HEIGHT * 4);
     etna_convert_r8g8b8_to_b8g8r8x8(temp_rgbx8888, (const uint8_t*)companion_texture, COMPANION_TEXTURE_WIDTH * COMPANION_TEXTURE_HEIGHT);
 
     /* Then convert to destination format */
-    void *temp_fmt = malloc(COMPANION_TEXTURE_WIDTH * COMPANION_TEXTURE_HEIGHT * bs);
-    format_desc->pack_rgba_8unorm(temp_fmt, COMPANION_TEXTURE_WIDTH*bs, temp_rgbx8888, COMPANION_TEXTURE_WIDTH*4,
-            COMPANION_TEXTURE_WIDTH, COMPANION_TEXTURE_HEIGHT);
-    etna_pipe_inline_write(pipe, tex_resource, 0, 0, temp_fmt, COMPANION_TEXTURE_WIDTH * COMPANION_TEXTURE_HEIGHT * bs);
+    void *temp_fmt = malloc(twidth * theight * bs);
+    format_desc->pack_rgba_8unorm(temp_fmt, twidth*bs, temp_rgbx8888, COMPANION_TEXTURE_WIDTH*4,
+            twidth, theight);
+    etna_pipe_inline_write(pipe, tex_resource, 0, 0, temp_fmt, twidth * theight * bs);
 
     free(temp_rgbx8888);
     free(temp_fmt);
@@ -116,8 +118,8 @@ int main(int argc, char **argv)
     pipe->screen->fence_finish(pipe->screen, fence, PIPE_TIMEOUT_INFINITE);
 
     /* OK, now read back the textures */
-    int lwidth = 512;
-    int lheight = 512;
+    int lwidth = twidth;
+    int lheight = theight;
     for(int level=0; level<=sampler_view->u.tex.last_level; ++level)
     {
         struct pipe_transfer *transfer = 0;
