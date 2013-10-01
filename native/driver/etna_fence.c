@@ -44,7 +44,7 @@ int etna_fence_new(struct pipe_screen *screen_h, struct etna_ctx *ctx, struct pi
     {
         if((rv = viv_user_signal_signal(ctx->conn, fence->signal, 0)) != VIV_STATUS_OK)
         {
-            printf("Error: could not reset signal %i\n", fence->signal);
+            BUG("Error: could not reset signal %i", fence->signal);
             etna_screen_destroy_fence(screen_h, fence);
             return rv;
         }
@@ -62,7 +62,7 @@ int etna_fence_new(struct pipe_screen *screen_h, struct etna_ctx *ctx, struct pi
     }
     if((rv = etna_queue_signal(ctx->queue, fence->signal, VIV_WHERE_PIXEL)) != ETNA_OK)
     {
-        printf("%s: error queueing signal %i\n", __func__, fence->signal);
+        BUG("error queueing signal %i", fence->signal);
         viv_user_signal_destroy(ctx->conn, fence->signal);
         FREE(fence);
         return rv;
@@ -136,7 +136,7 @@ static boolean etna_screen_fence_finish(struct pipe_screen *screen_h,
             timeout == PIPE_TIMEOUT_INFINITE ? VIV_WAIT_INDEFINITE : (timeout / 1000000ULL));
     if(rv != VIV_STATUS_OK && rv != VIV_STATUS_TIMEOUT)
     {
-        printf("%s: error waiting for signal %i", __func__, fence->signal);
+        BUG("error waiting for signal %i", fence->signal);
     }
     fence->signalled = (rv != VIV_STATUS_TIMEOUT);
     return fence->signalled;
@@ -147,7 +147,7 @@ void etna_screen_destroy_fence(struct pipe_screen *screen_h, struct etna_fence *
     struct etna_screen *screen = etna_screen(screen_h);
     if(viv_user_signal_destroy(screen->dev, fence->signal) != VIV_STATUS_OK)
     {
-        printf("%s: cannot destroy signal %i\n", __func__, fence->signal);
+        BUG("cannot destroy signal %i", fence->signal);
     }
     FREE(fence);
 }

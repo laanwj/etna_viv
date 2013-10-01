@@ -61,7 +61,7 @@ bool etna_screen_resource_alloc_ts(struct pipe_screen *screen, struct etna_resou
     struct etna_vidmem *rt_ts = 0;
     if(unlikely(etna_vidmem_alloc_linear(priv->dev, &rt_ts, rt_ts_size, VIV_SURF_TILE_STATUS, VIV_POOL_DEFAULT, true)!=ETNA_OK))
     {
-        printf("Problem allocating tile status for resource\n");
+        BUG("Problem allocating tile status for resource");
         return false;
     }
     resource->ts = rt_ts;
@@ -235,7 +235,7 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     struct etna_vidmem *rt = 0;
     if(unlikely(etna_vidmem_alloc_linear(priv->dev, &rt, rt_size, memtype, VIV_POOL_DEFAULT, true) != ETNA_OK))
     {
-        printf("Problem allocating video memory for resource\n");
+        BUG("Problem allocating video memory for resource");
         return NULL;
     }
 

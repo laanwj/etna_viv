@@ -57,7 +57,7 @@ static void etna_fetch_uniforms(struct pipe_context *pipe, uint shader)
             priv->dirty_bits |= ETNA_STATE_PS_UNIFORMS;
         }
         break;
-    default: printf("Unhandled shader type %i\n", shader);
+    default: DBG("Unhandled shader type %i", shader);
     }
 }
 
@@ -225,10 +225,10 @@ static void etna_set_constant_buffer(struct pipe_context *pipe,
             {
             case PIPE_SHADER_VERTEX: priv->vs_cbuf_s.user_buffer = 0; break;
             case PIPE_SHADER_FRAGMENT: priv->fs_cbuf_s.user_buffer = 0; break;
-            default: printf("Unhandled shader type %i\n", shader);
+            default: DBG("Unhandled shader type %i", shader);
             }
         } else {
-            printf("Unhandled buffer index %i\n", index);
+            DBG("Unhandled buffer index %i", index);
         }
     } else {
         assert(buf->buffer == NULL && buf->user_buffer != NULL);
@@ -241,11 +241,11 @@ static void etna_set_constant_buffer(struct pipe_context *pipe,
             {
             case PIPE_SHADER_VERTEX: priv->vs_cbuf_s = *buf; break;
             case PIPE_SHADER_FRAGMENT: priv->fs_cbuf_s = *buf; break;
-            default: printf("Unhandled shader type %i\n", shader);
+            default: DBG("Unhandled shader type %i", shader);
             }
             etna_fetch_uniforms(pipe, shader);
         } else {
-            printf("Unhandled buffer index %i\n", index);
+            DBG("Unhandled buffer index %i", index);
         }
     }
 }

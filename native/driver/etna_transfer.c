@@ -24,6 +24,7 @@
  */
 #include "etna_transfer.h"
 #include "etna_pipe.h"
+#include "etna_debug.h"
 
 #include "pipe/p_defines.h"
 #include "pipe/p_format.h"
@@ -153,7 +154,7 @@ static void *etna_pipe_transfer_map(struct pipe_context *pipe,
                 }
             } else /* TODO supertiling */
             {
-                printf("etna_pipe_transfer_map: unsupported tiling %i for reading\n", resource_priv->layout);
+                BUG("unsupported tiling %i for reading", resource_priv->layout);
             }
         }
     }
@@ -209,7 +210,7 @@ static void etna_pipe_transfer_unmap(struct pipe_context *pipe,
                 }
             } else
             {
-                printf("etna_pipe_transfer_unmap: unsupported tiling %i\n", resource->layout);
+                BUG("unsupported tiling %i", resource->layout);
             }
             FREE(ptrans->buffer);
         }

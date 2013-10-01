@@ -51,6 +51,7 @@
 #include "tgsi/tgsi_iterate.h"
 #include "tgsi/tgsi_strings.h"
 #include "tgsi/tgsi_util.h"
+#include "tgsi/tgsi_info.h"
 #include "pipe/p_shader_tokens.h"
 #include "util/u_memory.h"
 #include "util/u_math.h"
@@ -435,8 +436,6 @@ static void etna_compile_pass_check_usage(struct etna_compile_data *cd, const st
         case TGSI_TOKEN_TYPE_INSTRUCTION: {
             /* Instruction: iterate over operands of instruction */
             const struct tgsi_full_instruction *inst = &ctx.FullToken.FullInstruction;
-            //printf("instruction: opcode=%i num_src=%i num_dest=%i\n", inst->Instruction.Opcode,
-            //        inst->Instruction.NumSrcRegs, inst->Instruction.NumDstRegs);
             /* iterate over destination registers */
             for(int idx=0; idx<inst->Instruction.NumDstRegs; ++idx)
             {
@@ -833,8 +832,6 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         .src[2] = convert_src(cd, &inst->Src[0], INST_SWIZ_IDENTITY),
                         });
                 break;
-            case TGSI_OPCODE_EXP: assert(0); break;
-            case TGSI_OPCODE_LOG: assert(0); break;
             case TGSI_OPCODE_MUL:
                 emit_inst(cd, &(struct etna_inst) {
                         .opcode = INST_OPCODE_MUL,
@@ -853,7 +850,6 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         .src[2] = convert_src(cd, &inst->Src[1], INST_SWIZ_IDENTITY),
                         });
                 break;
-            case TGSI_OPCODE_DP2: assert(0); break; /* Either MUL+MAD or DP3 with a zeroed channel, but we don't have a 'zero' swizzle */
             case TGSI_OPCODE_DP3:
                 emit_inst(cd, &(struct etna_inst) {
                         .opcode = INST_OPCODE_DP3,
@@ -872,7 +868,6 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         .src[1] = convert_src(cd, &inst->Src[1], INST_SWIZ_IDENTITY),
                         });
                 break;
-            case TGSI_OPCODE_DST: assert(0); break; /* XXX INST_OPCODE_DST */
             case TGSI_OPCODE_MIN:
                 emit_inst(cd, &(struct etna_inst) {
                         .opcode = INST_OPCODE_SELECT,
@@ -932,7 +927,6 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         .src[2] = convert_src(cd, &inst->Src[2], INST_SWIZ_IDENTITY),
                         });
                 break;
-            case TGSI_OPCODE_SFL: assert(0); break; /* SET to 0 */
             case TGSI_OPCODE_SUB: { /* ADD with negated SRC1 */
                 struct etna_inst inst_out = {
                     .opcode = INST_OPCODE_ADD,
@@ -944,8 +938,6 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                 inst_out.src[2].neg = !inst_out.src[2].neg;
                 emit_inst(cd, &inst_out);
                 } break;
-            case TGSI_OPCODE_LRP: assert(0); break; /* lowered by mesa to (op2 * (1.0f - op0)) + (op1 * op0) */
-            case TGSI_OPCODE_CND: assert(0); break;
             case TGSI_OPCODE_SQRT: /* only generated if HAS_SQRT_TRIG */
                 emit_inst(cd, &(struct etna_inst) {
                         .opcode = INST_OPCODE_SQRT,
@@ -954,7 +946,6 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         .src[2] = convert_src(cd, &inst->Src[0], INST_SWIZ_IDENTITY),
                         });
                 break;
-            case TGSI_OPCODE_DP2A: assert(0); break;
             case TGSI_OPCODE_FRC:
                 emit_inst(cd, &(struct etna_inst) {
                         .opcode = INST_OPCODE_FRC,
@@ -963,7 +954,6 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         .src[2] = convert_src(cd, &inst->Src[0], INST_SWIZ_IDENTITY),
                         });
                 break;
-            case TGSI_OPCODE_CLAMP: assert(0); break; /* XXX MIN(MAX(...)) */
             case TGSI_OPCODE_FLR: /* XXX HAS_SIGN_FLOOR_CEIL */
                 emit_inst(cd, &(struct etna_inst) {
                         .opcode = INST_OPCODE_FLOOR,
@@ -988,7 +978,6 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         .src[2] = convert_src(cd, &inst->Src[0], INST_SWIZ_IDENTITY),
                         });
                 break;
-            case TGSI_OPCODE_ROUND: assert(0); break;
             case TGSI_OPCODE_EX2:
                 emit_inst(cd, &(struct etna_inst) {
                         .opcode = INST_OPCODE_EXP,
@@ -1005,8 +994,6 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         .src[2] = convert_src(cd, &inst->Src[0], INST_SWIZ_IDENTITY),
                         });
                 break;
-            case TGSI_OPCODE_POW: assert(0); break; /* lowered by mesa to ex2(y*lg2(x)) */
-            case TGSI_OPCODE_XPD: assert(0); break;
             case TGSI_OPCODE_ABS: /* XXX can be propagated into uses of destination operand */
                 emit_inst(cd, &(struct etna_inst) {
                         .opcode = INST_OPCODE_MOV,
@@ -1016,8 +1003,6 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         .src[2].abs = 1
                         });
                 break;
-            case TGSI_OPCODE_RCC: assert(0); break;
-            case TGSI_OPCODE_DPH: assert(0); break; /* src0.x * src1.x + src0.y * src1.y + src0.z * src1.z + src1.w */
             case TGSI_OPCODE_COS: /* fall through */
             case TGSI_OPCODE_SIN:
                 if(cd->specs->has_sin_cos_sqrt)
@@ -1069,11 +1054,6 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         .cond = INST_CONDITION_TRUE
                         });
                 break;
-            case TGSI_OPCODE_PK2H: assert(0); break;
-            case TGSI_OPCODE_PK2US: assert(0); break;
-            case TGSI_OPCODE_PK4B: assert(0); break;
-            case TGSI_OPCODE_PK4UB: assert(0); break;
-            case TGSI_OPCODE_RFL: assert(0); break;
             case TGSI_OPCODE_TEX:
                 emit_inst(cd, &(struct etna_inst) {
                         .opcode = INST_OPCODE_TEXLD,
@@ -1120,19 +1100,6 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         .src[0].reg = temp.id,
                         });
                 } break;
-            case TGSI_OPCODE_TXB: assert(0); break; /* TEXLDB */
-            case TGSI_OPCODE_TXL: assert(0); break; /* TEXLDL */
-            case TGSI_OPCODE_UP2H: assert(0); break;
-            case TGSI_OPCODE_UP2US: assert(0); break;
-            case TGSI_OPCODE_UP4B: assert(0); break;
-            case TGSI_OPCODE_UP4UB: assert(0); break;
-            case TGSI_OPCODE_X2D: assert(0); break;
-            case TGSI_OPCODE_ARL: assert(0); break; /* floor */
-            case TGSI_OPCODE_ARR: assert(0); break; /* round */
-            case TGSI_OPCODE_ARA: assert(0); break; /* to be removed according to doc */
-            case TGSI_OPCODE_BRA: assert(0); break; /* to be removed according to doc */
-            case TGSI_OPCODE_CAL: assert(0); break; /* CALL */
-            case TGSI_OPCODE_RET: assert(0); break;
             case TGSI_OPCODE_CMP: /* componentwise dst = (src0 < 0) ? src1 : src2 */
                 emit_inst(cd, &(struct etna_inst) {
                         .opcode = INST_OPCODE_SELECT,
@@ -1144,10 +1111,6 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         .src[2] = convert_src(cd, &inst->Src[2], INST_SWIZ_IDENTITY),
                         });
                 break;
-            case TGSI_OPCODE_SCS: assert(0); break;
-            case TGSI_OPCODE_NRM: assert(0); break;
-            case TGSI_OPCODE_DIV: assert(0); break;
-            case TGSI_OPCODE_BRK: assert(0); break; /* break from loop */
             case TGSI_OPCODE_IF:  {
                 struct etna_compile_frame *f = &cd->frame_stack[cd->frame_sp++];
                 /* push IF to stack */
@@ -1191,95 +1154,49 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                 else
                     label_place(cd, f->lbl_else);
                 } break;
-            case TGSI_OPCODE_PUSHA: assert(0); break;
-            case TGSI_OPCODE_POPA: assert(0); break;
-            case TGSI_OPCODE_I2F: assert(0); break;
-            case TGSI_OPCODE_NOT: assert(0); break;
-            case TGSI_OPCODE_TRUNC: assert(0); break;
-            case TGSI_OPCODE_SHL: assert(0); break;
-            case TGSI_OPCODE_AND: assert(0); break;
-            case TGSI_OPCODE_OR: assert(0); break;
-            case TGSI_OPCODE_MOD: assert(0); break;
-            case TGSI_OPCODE_XOR: assert(0); break;
-            case TGSI_OPCODE_SAD: assert(0); break;
-            case TGSI_OPCODE_TXF: assert(0); break;
-            case TGSI_OPCODE_TXQ: assert(0); break;
-            case TGSI_OPCODE_CONT: assert(0); break;
-            case TGSI_OPCODE_EMIT: assert(0); break;
-            case TGSI_OPCODE_ENDPRIM: assert(0); break;
-            case TGSI_OPCODE_BGNLOOP: assert(0); break;
-            case TGSI_OPCODE_BGNSUB: assert(0); break;
-            case TGSI_OPCODE_ENDLOOP: assert(0); break;
-            case TGSI_OPCODE_ENDSUB: assert(0); break;
-            case TGSI_OPCODE_TXQ_LZ: assert(0); break;
             case TGSI_OPCODE_NOP: break;
-            case TGSI_OPCODE_NRM4: assert(0); break;
-            case TGSI_OPCODE_CALLNZ: assert(0); break;
-            case TGSI_OPCODE_BREAKC: assert(0); break;
             case TGSI_OPCODE_END: /* Nothing to do */ break;
-            case TGSI_OPCODE_F2I: assert(0); break;
-            case TGSI_OPCODE_IDIV: assert(0); break;
-            case TGSI_OPCODE_IMAX: assert(0); break;
-            case TGSI_OPCODE_IMIN: assert(0); break;
-            case TGSI_OPCODE_INEG: assert(0); break;
-            case TGSI_OPCODE_ISGE: assert(0); break;
-            case TGSI_OPCODE_ISHR: assert(0); break;
-            case TGSI_OPCODE_ISLT: assert(0); break;
-            case TGSI_OPCODE_F2U: assert(0); break;
-            case TGSI_OPCODE_U2F: assert(0); break;
-            case TGSI_OPCODE_UADD: assert(0); break;
-            case TGSI_OPCODE_UDIV: assert(0); break;
-            case TGSI_OPCODE_UMAD: assert(0); break;
-            case TGSI_OPCODE_UMAX: assert(0); break;
-            case TGSI_OPCODE_UMIN: assert(0); break;
-            case TGSI_OPCODE_UMOD: assert(0); break;
-            case TGSI_OPCODE_UMUL: assert(0); break;
-            case TGSI_OPCODE_USEQ: assert(0); break;
-            case TGSI_OPCODE_USGE: assert(0); break;
-            case TGSI_OPCODE_USHR: assert(0); break;
-            case TGSI_OPCODE_USLT: assert(0); break;
-            case TGSI_OPCODE_USNE: assert(0); break;
-            case TGSI_OPCODE_SWITCH: assert(0); break;
-            case TGSI_OPCODE_CASE: assert(0); break;
-            case TGSI_OPCODE_DEFAULT: assert(0); break;
-            case TGSI_OPCODE_ENDSWITCH: assert(0); break;
-            case TGSI_OPCODE_SAMPLE: assert(0); break;
-            case TGSI_OPCODE_SAMPLE_I: assert(0); break;
-            case TGSI_OPCODE_SAMPLE_I_MS: assert(0); break;
-            case TGSI_OPCODE_SAMPLE_B: assert(0); break;
-            case TGSI_OPCODE_SAMPLE_C: assert(0); break;
-            case TGSI_OPCODE_SAMPLE_C_LZ: assert(0); break;
-            case TGSI_OPCODE_SAMPLE_D: assert(0); break;
-            case TGSI_OPCODE_SAMPLE_L: assert(0); break;
-            case TGSI_OPCODE_GATHER4: assert(0); break;
-            case TGSI_OPCODE_SVIEWINFO: assert(0); break;
-            case TGSI_OPCODE_SAMPLE_POS: assert(0); break;
-            case TGSI_OPCODE_SAMPLE_INFO: assert(0); break;
-            case TGSI_OPCODE_UARL: assert(0); break;
-            case TGSI_OPCODE_UCMP: assert(0); break;
-            case TGSI_OPCODE_IABS: assert(0); break;
-            case TGSI_OPCODE_ISSG: assert(0); break;
-            case TGSI_OPCODE_LOAD: assert(0); break;
-            case TGSI_OPCODE_STORE: assert(0); break;
-            case TGSI_OPCODE_MFENCE: assert(0); break;
-            case TGSI_OPCODE_LFENCE: assert(0); break;
-            case TGSI_OPCODE_SFENCE: assert(0); break;
-            case TGSI_OPCODE_BARRIER: assert(0); break;
-            case TGSI_OPCODE_ATOMUADD: assert(0); break;
-            case TGSI_OPCODE_ATOMXCHG: assert(0); break;
-            case TGSI_OPCODE_ATOMCAS: assert(0); break;
-            case TGSI_OPCODE_ATOMAND: assert(0); break;
-            case TGSI_OPCODE_ATOMOR: assert(0); break;
-            case TGSI_OPCODE_ATOMXOR: assert(0); break;
-            case TGSI_OPCODE_ATOMUMIN: assert(0); break;
-            case TGSI_OPCODE_ATOMUMAX: assert(0); break;
-            case TGSI_OPCODE_ATOMIMIN: assert(0); break;
-            case TGSI_OPCODE_ATOMIMAX: assert(0); break;
-            case TGSI_OPCODE_TEX2: assert(0); break;
-            case TGSI_OPCODE_TXB2: assert(0); break;
-            case TGSI_OPCODE_TXL2: assert(0); break;
+
+            case TGSI_OPCODE_PK2H:
+            case TGSI_OPCODE_PK2US:
+            case TGSI_OPCODE_PK4B:
+            case TGSI_OPCODE_PK4UB:
+            case TGSI_OPCODE_RFL:
+            case TGSI_OPCODE_RCC:
+            case TGSI_OPCODE_DPH: /* src0.x * src1.x + src0.y * src1.y + src0.z * src1.z + src1.w */
+            case TGSI_OPCODE_POW: /* lowered by mesa to ex2(y*lg2(x)) */
+            case TGSI_OPCODE_XPD:
+            case TGSI_OPCODE_ROUND:
+            case TGSI_OPCODE_CLAMP:
+            case TGSI_OPCODE_DP2A:
+            case TGSI_OPCODE_LRP: /* lowered by mesa to (op2 * (1.0f - op0)) + (op1 * op0) */
+            case TGSI_OPCODE_CND:
+            case TGSI_OPCODE_SFL: /* SET to 0 */
+            case TGSI_OPCODE_DST: /* XXX INST_OPCODE_DST */
+            case TGSI_OPCODE_DP2: /* Either MUL+MAD or DP3 with a zeroed channel, but we don't have a 'zero' swizzle */
+            case TGSI_OPCODE_EXP:
+            case TGSI_OPCODE_LOG:
+            case TGSI_OPCODE_TXB: /* XXX INST_OPCODE_TEXLDB */
+            case TGSI_OPCODE_TXL: /* XXX INST_OPCODE_TEXLDL */
+            case TGSI_OPCODE_UP2H:
+            case TGSI_OPCODE_UP2US:
+            case TGSI_OPCODE_UP4B:
+            case TGSI_OPCODE_UP4UB:
+            case TGSI_OPCODE_X2D:
+            case TGSI_OPCODE_ARL: /* floor */
+            case TGSI_OPCODE_ARR: /* round */
+            case TGSI_OPCODE_ARA: /* to be removed according to doc */
+            case TGSI_OPCODE_BRA: /* to be removed according to doc */
+            case TGSI_OPCODE_CAL: /* XXX INST_OPCODE_CALL */
+            case TGSI_OPCODE_RET: /* XXX INST_OPCODE_RET */
+            case TGSI_OPCODE_BRK: /* break from loop */
+            case TGSI_OPCODE_BGNLOOP:
+            case TGSI_OPCODE_ENDLOOP:
+            case TGSI_OPCODE_BGNSUB:
+            case TGSI_OPCODE_ENDSUB:
             default:
-                printf("Unhandled instruction %i\n", inst->Instruction.Opcode);
+                BUG("Unhandled instruction %s", tgsi_get_opcode_name(inst->Instruction.Opcode));
+                assert(0);
             }
             inst_idx += 1;
             break;

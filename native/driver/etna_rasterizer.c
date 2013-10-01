@@ -41,7 +41,7 @@ static void *etna_pipe_create_rasterizer_state(struct pipe_context *pipe,
     struct compiled_rasterizer_state *cs = CALLOC_STRUCT(compiled_rasterizer_state);
     if(rs->fill_front != rs->fill_back)
     {
-        printf("Different front and back fill mode not supported\n");
+        DBG("Different front and back fill mode not supported");
     }
     cs->PA_CONFIG =
             (rs->flatshade ? VIVS_PA_CONFIG_SHADE_MODEL_FLAT : VIVS_PA_CONFIG_SHADE_MODEL_SMOOTH) |

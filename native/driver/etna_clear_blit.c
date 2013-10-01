@@ -70,7 +70,7 @@ void etna_rs_gen_clear_surface(struct compiled_rs_state *rs_state, struct etna_s
     {
     case 2: format = RS_FORMAT_A1R5G5B5; break;
     case 4: format = RS_FORMAT_A8R8G8B8; break;
-    default: printf("etna_rs_gen_clear_surface: Unhandled clear blocksize: %i (fmt %i)\n", bs, surf->base.format);
+    default: BUG("etna_rs_gen_clear_surface: Unhandled clear blocksize: %i (fmt %i)", bs, surf->base.format);
              format = RS_FORMAT_A8R8G8B8;
              assert(0);
     }

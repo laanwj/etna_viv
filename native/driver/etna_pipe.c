@@ -958,7 +958,7 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
              * Need the same mechanism on gc2000 when we want to do mipmap generation by
              * rendering to levels > 1 due to multitiled / tiled conversion.
              */
-            printf("%s: Alignment error, trying to render to %08x with tile stride %i\n", __func__,
+            BUG("Alignment error, trying to render to %08x with tile stride %i",
                     cbuf->surf.address, cbuf->surf.stride*4);
         }
 
@@ -1037,7 +1037,7 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
     if(nr_samples_depth != -1 && nr_samples_color != -1 &&
         nr_samples_depth != nr_samples_color)
     {
-        printf("%s: Number of samples in color and depth texture must match (%i and %i respectively)\n", __func__,
+        BUG("Number of samples in color and depth texture must match (%i and %i respectively)",
                 nr_samples_color, nr_samples_depth);
     }
     switch(MAX2(nr_samples_depth, nr_samples_color))
@@ -1232,18 +1232,18 @@ static void etna_pipe_flush(struct pipe_context *pipe,
     {
         if(etna_fence_new(pipe->screen, priv->ctx, fence) != ETNA_OK)
         {
-            printf("Error: %s: could not create fence\n", __func__);
+            BUG("Error: could not create fence");
         }
     }
     if(etna_flush(priv->ctx) != ETNA_OK)
     {
-        printf("Error: %s: etna_flush failed, GPU may be in unpredictable state\n", __func__);
+        BUG("Error: etna_flush failed, GPU may be in unpredictable state");
     }
     if(DBG_ENABLED(ETNA_DBG_FINISH_ALL))
     {
         if(etna_finish(priv->ctx) != ETNA_OK)
         {
-            printf("Error: %s: etna_finish failed, GPU may be in unpredictable state\n", __func__);
+            BUG("Error: etna_finish failed, GPU may be in unpredictable state");
             abort();
         }
     }
