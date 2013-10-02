@@ -78,15 +78,15 @@ static inline gceKERNEL_WHERE convert_where(enum viv_where where)
 #ifdef GCABI_UINT64_POINTERS
 /* imx6 BSP 4.x Vivante driver casts all pointers to 64 bit integers
  * provide macros to cast back and forth. */
-#define PTR_TO_VIV(x) ((uint64_t)((size_t)(x)))
-#define VIV_TO_PTR(x) ((void*)((size_t)(x)))
+#define PTR_TO_VIV(x) ((uint64_t)((intptr_t)(x)))
+#define VIV_TO_PTR(x) ((void*)((intptr_t)(x)))
 #define HANDLE_TO_VIV(x) (x)
 #define VIV_TO_HANDLE(x) (x)
 #else
 #define PTR_TO_VIV(x) (x)
 #define VIV_TO_PTR(x) (x)
-#define HANDLE_TO_VIV(x) ((void*)((size_t)(x)))
-#define VIV_TO_HANDLE(x) ((uint64_t)(size_t)(x))
+#define HANDLE_TO_VIV(x) ((void*)((intptr_t)(x)))
+#define VIV_TO_HANDLE(x) ((uint64_t)(intptr_t)(x))
 #endif
 
 #endif

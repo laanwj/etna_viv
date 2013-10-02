@@ -56,10 +56,17 @@ const char *galcore_device[] = {"/dev/gal3d", "/dev/galcore", "/dev/graphics/gal
 int viv_invoke(struct viv_conn *conn, struct _gcsHAL_INTERFACE *cmd)
 {
     vivante_ioctl_data_t ic = {
+#ifdef GCABI_UINT64_IOCTL_DATA
+        .in_buf = PTR_TO_VIV(cmd),
+        .in_buf_size = INTERFACE_SIZE,
+        .out_buf = PTR_TO_VIV(cmd),
+        .out_buf_size = INTERFACE_SIZE
+#else
         .in_buf = (void*)cmd,
         .in_buf_size = INTERFACE_SIZE,
         .out_buf = (void*)cmd,
         .out_buf_size = INTERFACE_SIZE
+#endif
     };
 #ifdef GCABI_HAS_HARDWARE_TYPE
     cmd->hardwareType = (gceHARDWARE_TYPE)conn->hw_type;
@@ -310,7 +317,7 @@ int viv_unlock_vidmem(struct viv_conn *conn, viv_node_t node, enum viv_surf_type
     if(submit_as_event) /* submit as event immediately */
     {
         struct _gcsQUEUE queue = {
-            .next = NULL,
+            .next = PTR_TO_VIV(NULL),
             .iface = id
         };
         rv = viv_event_commit(conn, &queue);
