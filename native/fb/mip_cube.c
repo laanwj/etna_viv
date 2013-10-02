@@ -222,6 +222,7 @@ int main(int argc, char **argv)
     {
     case FMT_A8R8G8B8: tex_format = PIPE_FORMAT_B8G8R8A8_UNORM; break;
     case FMT_X8R8G8B8: tex_format = PIPE_FORMAT_B8G8R8X8_UNORM; break;
+    case FMT_R5G6B5: tex_format = PIPE_FORMAT_B5G6R5_UNORM; break;
     case FMT_DXT1: tex_format = PIPE_FORMAT_DXT1_RGB; break;
     case FMT_DXT3: tex_format = PIPE_FORMAT_DXT3_RGBA; break;
     case FMT_DXT5: tex_format = PIPE_FORMAT_DXT5_RGBA; break;
@@ -242,7 +243,28 @@ int main(int argc, char **argv)
     for(int ix=0; ix<dds->num_mipmaps; ++ix)
     {
         printf("%08x: Uploading mipmap %i (%ix%i)\n", dds->slices[0][ix].offset, ix, dds->slices[0][ix].width, dds->slices[0][ix].height);
-        etna_pipe_inline_write(pipe, tex_resource, 0, ix, dds->slices[0][ix].data, dds->slices[0][ix].size);
+#if 0
+        for(int y=0; y<dds->slices[0][ix].height; ++y)
+        {
+            for(int x=0; x<dds->slices[0][ix].width; ++x)
+            {
+                uint32_t val = ((uint32_t*)dds->slices[0][ix].data)[y * dds->slices[0][ix].width + x];
+                printf("%c",val != 0xffffffff ? ' ' : '1');
+            }
+            printf("\n");
+        }
+#endif
+        struct pipe_box box;
+        box.x = 0;
+        box.y = 0;
+        box.z = 0;
+        box.width = dds->slices[0][ix].width;
+        box.height = dds->slices[0][ix].height;
+        box.depth = 1;
+
+        pipe->transfer_inline_write(pipe, tex_resource, ix,
+               (PIPE_TRANSFER_WRITE | PIPE_TRANSFER_UNSYNCHRONIZED), &box,
+               dds->slices[0][ix].data, dds->slices[0][ix].stride, dds->slices[0][ix].stride);
     }
 
     /* resources */

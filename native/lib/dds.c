@@ -36,7 +36,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-//#define DEBUG
+#define DEBUG
 
 //  little-endian, of course
 #define DDS_MAGIC 0x20534444
@@ -224,8 +224,6 @@ bool dds_load_file(FILE *f, dds_texture **out)
 
     unsigned int xSize = hdr.dwWidth;
     unsigned int ySize = hdr.dwHeight;
-    assert( !(xSize & (xSize-1)) );
-    assert( !(ySize & (ySize-1)) );
     int fmt = find_fmt(&hdr.sPixelFormat);
     if(fmt == -1) {
 #ifdef DEBUG
@@ -286,8 +284,10 @@ bool dds_load_file(FILE *f, dds_texture **out)
                 (int)mip->stride);
 #endif
         offset += size;
-        x = (x+1)>>1;
-        y = (y+1)>>1;
+        if(x != 1)
+            x = x >> 1;
+        if(y != 1)
+            y = y >> 1;
         size = max( li->divSize, x )/li->divSize * max( li->divSize, y )/li->divSize * li->blockBytes;
     }
     rv->data = malloc(offset);
