@@ -41,13 +41,11 @@ static void *etna_pipe_create_sampler_state(struct pipe_context *pipe,
     //struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct compiled_sampler_state *cs = CALLOC_STRUCT(compiled_sampler_state);
     cs->TE_SAMPLER_CONFIG0 =
-                /* XXX get from sampler view: VIVS_TE_SAMPLER_CONFIG0_TYPE(TEXTURE_TYPE_2D)| */
                 VIVS_TE_SAMPLER_CONFIG0_UWRAP(translate_texture_wrapmode(ss->wrap_s))|
                 VIVS_TE_SAMPLER_CONFIG0_VWRAP(translate_texture_wrapmode(ss->wrap_t))|
                 VIVS_TE_SAMPLER_CONFIG0_MIN(translate_texture_filter(ss->min_img_filter))|
                 VIVS_TE_SAMPLER_CONFIG0_MIP(translate_texture_mipfilter(ss->min_mip_filter))|
                 VIVS_TE_SAMPLER_CONFIG0_MAG(translate_texture_filter(ss->mag_img_filter));
-                /* XXX get from sampler view: VIVS_TE_SAMPLER_CONFIG0_FORMAT(tex_format) */
     cs->TE_SAMPLER_CONFIG1 = 0; /* VIVS_TE_SAMPLER_CONFIG1 (swizzle, extended format) fully determined by sampler view */
     cs->TE_SAMPLER_LOD_CONFIG =
             (ss->lod_bias != 0.0 ? VIVS_TE_SAMPLER_LOD_CONFIG_BIAS_ENABLE : 0) |
@@ -119,6 +117,7 @@ static struct pipe_sampler_view *etna_pipe_create_sampler_view(struct pipe_conte
                 VIVS_TE_SAMPLER_CONFIG0_TYPE(translate_texture_target(res->base.target, false)) |
                 VIVS_TE_SAMPLER_CONFIG0_FORMAT(translate_texture_format(sv->base.format, false));
                 /* merged with sampler state */
+
     cs->TE_SAMPLER_CONFIG1 =
                 VIVS_TE_SAMPLER_CONFIG1_SWIZZLE_R(templat->swizzle_r) |
                 VIVS_TE_SAMPLER_CONFIG1_SWIZZLE_G(templat->swizzle_g) |

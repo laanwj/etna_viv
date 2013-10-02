@@ -206,8 +206,8 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
         offset += align(mip->size, ETNA_PE_ALIGNMENT); /* align mipmaps to 64 bytes to be able to render to them */
         if(ix == max_mip_level || (x == 1 && y == 1))
             break; // stop at last level
-        x = (x+1)>>1;
-        y = (y+1)>>1;
+        x = MAX2(x >> 1, 1);
+        y = MAX2(y >> 1, 1);
         ix += 1;
     }
 
