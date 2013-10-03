@@ -745,8 +745,8 @@ def main():
             help='RNG file')
     args = parser.parse_args()
 
-    r = parse_rng(args.input)
-    d = r.lookup_domain('VIVANTE_STATE')
+    r = parse_rng_file(args.input)
+    d = r.lookup_domain('VIVS')
 
     path = d.lookup_address(0x100)
     print(format_path(path))
