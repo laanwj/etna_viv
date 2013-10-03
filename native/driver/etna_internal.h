@@ -369,16 +369,6 @@ struct etna_3d_state
     uint32_t /*01460*/ PE_PIPE_COLOR_ADDR[VIVS_PE_PIPE__LEN];
     uint32_t /*01480*/ PE_PIPE_DEPTH_ADDR[VIVS_PE_PIPE__LEN];
 
-    uint32_t /*01604*/ RS_CONFIG;
-    uint32_t /*01608*/ RS_SOURCE_ADDR;
-    uint32_t /*0160C*/ RS_SOURCE_STRIDE;
-    uint32_t /*01610*/ RS_DEST_ADDR;
-    uint32_t /*01614*/ RS_DEST_STRIDE;
-    uint32_t /*01620*/ RS_WINDOW_SIZE;
-    uint32_t /*01630*/ RS_DITHER[2];
-    uint32_t /*0163C*/ RS_CLEAR_CONTROL;
-    uint32_t /*01640*/ RS_FILL_VALUE[4];
-
     uint32_t /*01654*/ TS_MEM_CONFIG;
     uint32_t /*01658*/ TS_COLOR_STATUS_BASE;
     uint32_t /*0165C*/ TS_COLOR_SURFACE_BASE;
@@ -386,8 +376,6 @@ struct etna_3d_state
     uint32_t /*01664*/ TS_DEPTH_STATUS_BASE;
     uint32_t /*01668*/ TS_DEPTH_SURFACE_BASE;
     uint32_t /*0166C*/ TS_DEPTH_CLEAR_VALUE;
-
-    uint32_t /*016A0*/ RS_EXTRA_CONFIG;
 
     uint32_t /*02000*/ TE_SAMPLER_CONFIG0[VIVS_TE_SAMPLER__LEN];
     uint32_t /*02040*/ TE_SAMPLER_SIZE[VIVS_TE_SAMPLER__LEN];
