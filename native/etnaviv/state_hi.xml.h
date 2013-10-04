@@ -10,8 +10,8 @@ git clone git://0x04.net/rules-ng-ng
 The rules-ng-ng source files this header was generated from are:
 - /home/orion/projects/etna_viv/rnndb/state.xml    (  18526 bytes, from 2013-09-11 16:52:32)
 - /home/orion/projects/etna_viv/rnndb/common.xml   (  16543 bytes, from 2013-09-01 10:53:22)
-- /home/orion/projects/etna_viv/rnndb/state_hi.xml (  21834 bytes, from 2013-09-11 15:58:37)
-- /home/orion/projects/etna_viv/rnndb/state_2d.xml (  51058 bytes, from 2013-09-01 10:53:22)
+- /home/orion/projects/etna_viv/rnndb/state_hi.xml (  22118 bytes, from 2013-10-03 14:57:04)
+- /home/orion/projects/etna_viv/rnndb/state_2d.xml (  51191 bytes, from 2013-10-02 12:49:04)
 - /home/orion/projects/etna_viv/rnndb/state_3d.xml (  54270 bytes, from 2013-09-17 15:37:52)
 - /home/orion/projects/etna_viv/rnndb/state_vg.xml (   5942 bytes, from 2013-09-01 10:53:22)
 
@@ -225,6 +225,9 @@ Copyright (C) 2013
 #define VIVS_MC_MMU_RA_PAGE_TABLE				0x00000410
 
 #define VIVS_MC_DEBUG_MEMORY					0x00000414
+#define VIVS_MC_DEBUG_MEMORY_SPECIAL_PATCH_GC320		0x00000008
+#define VIVS_MC_DEBUG_MEMORY_FAST_CLEAR_BYPASS			0x00100000
+#define VIVS_MC_DEBUG_MEMORY_COMPRESSION_BYPASS			0x00200000
 
 #define VIVS_MC_MEMORY_BASE_ADDR_RA				0x00000418
 

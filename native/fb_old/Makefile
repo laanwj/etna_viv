@@ -5,7 +5,7 @@ include $(TOP)/Makefile.inc
 COMMON_FLAGS += -I$(TOP)/resources -I$(TOP)/driver
 CFLAGS += $(COMMON_FLAGS)
 CXXFLAGS += $(COMMON_FLAGS) 
-LDFLAGS += -lm ../driver/libetnadriver.a ../gallium/libminigallium.a ../etnaviv/libetnaviv.a
+LDFLAGS += -lm ../driver/libetnadriver.a ../minigallium/libminigallium.a ../etnaviv/libetnaviv.a
 
 TARGETS = fbtest etna_test rotate_cube cube_companion rstests mip_cube_raw
 COMPANION_OBJS = ../resources/companion_array.o ../resources/companion_mesh.o ../resources/companion_texture.o

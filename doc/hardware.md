@@ -221,6 +221,14 @@ They do however have separate caches, so before using RS to copy from a surface 
 
 Tiled or supertiled resolve operation sizes need to be aligned to 16 horizontally and 4 vertically.
 
+Non-tiled to non-tiled:
+    - need a width of at least 17 (I suppose the safe value is 32)
+    - height must be multiple of 4
+
+Tiled to non-tiled:
+    - width must be at least 13 (I suppose the safe value is 16)
+    - height must be at least 1
+
 Tile status (Fast clear)
 -------------------------
 A render target is divided in tiles, and every tile has a couple of status flags.

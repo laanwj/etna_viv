@@ -36,20 +36,21 @@
 
 #include <errno.h>
 
-#include "common.xml.h"
-#include "state.xml.h"
-#include "state_3d.xml.h"
-#include "cmdstream.xml.h"
+#include "etnaviv/common.xml.h"
+#include "etnaviv/state.xml.h"
+#include "etnaviv/state_3d.xml.h"
+#include "etnaviv/cmdstream.xml.h"
 
 #include "write_bmp.h"
-#include "viv.h"
-#include "etna.h"
-#include "etna_state.h"
-#include "etna_rs.h"
-#include "etna_fb.h"
-#include "etna_mem.h"
-#include "etna_util.h"
+#include "fbdemos.h"
+#include "etnaviv/viv.h"
+#include "etnaviv/etna.h"
+#include "etnaviv/etna_fb.h"
+#include "etnaviv/etna_util.h"
+#include "etnaviv/etna_rs.h"
+#include "etnaviv/etna_mem.h"
 
+#include "etna_pipe.h"
 #include "esTransform.h"
 
 int main(int argc, char **argv)
@@ -58,47 +59,32 @@ int main(int argc, char **argv)
     int width = 256;
     int height = 256;
     int padded_width, padded_height;
-    int backbuffer = 0;
-    
-    struct fb_info fb;
-    rv = fb_open(0, &fb);
-    if(rv!=0)
-    {
-        exit(1);
-    }
-    width = fb.fb_var.xres;
-    height = fb.fb_var.yres;
+
+    struct fbdemos_scaffold *fbs = 0;
+    fbdemo_init(&fbs);
+    struct viv_conn *conn = fbs->conn;
+
     padded_width = etna_align_up(width, 64);
     padded_height = etna_align_up(height, 64);
 
     printf("padded_width %i padded_height %i\n", padded_width, padded_height);
-    struct viv_conn *conn = 0;
-    rv = viv_open(VIV_HW_3D, &conn);
-    if(rv!=0)
-    {
-        fprintf(stderr, "Error opening device\n");
-        exit(1);
-    }
-    printf("Succesfully opened device\n");
 
-    struct etna_vidmem *rt = 0; /* main render target */
+    struct etna_vidmem *rt1 = 0; /* main render target */
+    struct etna_vidmem *rt2 = 0; /* main render target */
     struct etna_vidmem *rt_ts = 0; /* tile status for main render target */
     struct etna_vidmem *z = 0; /* depth for main render target */
     struct etna_vidmem *z_ts = 0; /* depth ts for main render target */
-    struct etna_vidmem *aux_rt = 0; /* auxilary render target */
-    struct etna_vidmem *aux_rt_ts = 0; /* tile status for auxilary render target */
 
     size_t rt_size = padded_width * padded_height * 4;
     size_t rt_ts_size = etna_align_up((padded_width * padded_height * 4)/0x100, 0x100);
     size_t z_size = padded_width * padded_height * 2;
     size_t z_ts_size = etna_align_up((padded_width * padded_height * 2)/0x100, 0x100);
 
-    if(etna_vidmem_alloc_linear(conn, &rt, rt_size, gcvSURF_RENDER_TARGET, gcvPOOL_DEFAULT, true)!=ETNA_OK ||
-       etna_vidmem_alloc_linear(conn, &rt_ts, rt_ts_size, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, true)!=ETNA_OK ||
-       etna_vidmem_alloc_linear(conn, &z, z_size, gcvSURF_DEPTH, gcvPOOL_DEFAULT, true)!=ETNA_OK ||
-       etna_vidmem_alloc_linear(conn, &z_ts, z_ts_size, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, true)!=ETNA_OK ||
-       etna_vidmem_alloc_linear(conn, &aux_rt, 0x4000, gcvSURF_RENDER_TARGET, gcvPOOL_SYSTEM, true)!=ETNA_OK ||
-       etna_vidmem_alloc_linear(conn, &aux_rt_ts, 0x100, gcvSURF_TILE_STATUS, gcvPOOL_DEFAULT, true)!=ETNA_OK
+    if(etna_vidmem_alloc_linear(conn, &rt1, rt_size, VIV_SURF_RENDER_TARGET, VIV_POOL_DEFAULT, true)!=ETNA_OK ||
+       etna_vidmem_alloc_linear(conn, &rt2, rt_size, VIV_SURF_RENDER_TARGET, VIV_POOL_DEFAULT, true)!=ETNA_OK ||
+       etna_vidmem_alloc_linear(conn, &rt_ts, rt_ts_size, VIV_SURF_TILE_STATUS, VIV_POOL_DEFAULT, true)!=ETNA_OK ||
+       etna_vidmem_alloc_linear(conn, &z, z_size, VIV_SURF_DEPTH, VIV_POOL_DEFAULT, true)!=ETNA_OK ||
+       etna_vidmem_alloc_linear(conn, &z_ts, z_ts_size, VIV_SURF_TILE_STATUS, VIV_POOL_DEFAULT, true)!=ETNA_OK
        )
     {
         fprintf(stderr, "Error allocating video memory\n");
@@ -116,7 +102,106 @@ int main(int argc, char **argv)
     //memset(rt_ts->logical, 0xAA, rt_ts->size);  // Pattern: weird pattern fill
     //memset(rt_ts->logical, 0x00, rt_ts->size);  // Pattern: filled in (nothing to do)
     //memset(rt_ts->logical, 0xFF, rt_ts->size);  // Pattern: weird pattern fill
-    
+    //
+    /* pattern in:
+     * <32b> [<32b>] <32b> [<32b>] ...  delete odd groups of 32 bytes
+     *  ->
+     * <32b> <32b> ...
+     */
+    {
+        int src_height = 16;
+        for(int x=0; x<(src_height/4)*64; ++x)
+        {
+            *(uint16_t*)(rt1->logical + 2*x) = x;
+        }
+        printf("In:\n");
+        for(int x=0; x<(src_height/4); ++x) /* print values, per tile */
+        {
+            printf(" ");
+            for(int y=0; y<16; ++y)
+                printf("%i ", *(uint16_t*)(rt1->logical + 64*x + 2*y));
+            printf("\n");
+        }
+        printf("\n");
+        memset(rt2->logical, 0, rt_size);
+        //int format = RS_FORMAT_R5G6B5;
+        //int format = 0x9;
+        int format = 0x6;
+        bool tiled1 = true;
+        bool tiled2 = false;
+        etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR);
+        etna_set_state(ctx, VIVS_TS_MEM_CONFIG, 0);
+        etna_set_state(ctx, VIVS_RS_CONFIG,
+                VIVS_RS_CONFIG_SOURCE_FORMAT(format) |
+                (tiled1?VIVS_RS_CONFIG_SOURCE_TILED:0) |
+                VIVS_RS_CONFIG_DEST_FORMAT(format) |
+                (tiled2?VIVS_RS_CONFIG_DEST_TILED:0));
+        etna_set_state(ctx, VIVS_RS_SOURCE_STRIDE, 64);
+        etna_set_state(ctx, VIVS_RS_DEST_STRIDE, 64);
+        etna_set_state(ctx, VIVS_RS_DITHER(0), 0xffffffff);
+        etna_set_state(ctx, VIVS_RS_DITHER(1), 0xffffffff);
+        etna_set_state(ctx, VIVS_RS_CLEAR_CONTROL, VIVS_RS_CLEAR_CONTROL_MODE_DISABLED);
+        etna_set_state(ctx, VIVS_RS_EXTRA_CONFIG, 0); /* no AA, no endian switch */
+        etna_set_state(ctx, VIVS_RS_SOURCE_ADDR, rt1->address);
+        etna_set_state(ctx, VIVS_RS_DEST_ADDR, rt2->address);
+        etna_set_state(ctx, VIVS_RS_WINDOW_SIZE,
+                VIVS_RS_WINDOW_SIZE_HEIGHT(2) | /* height in 4x4 tiles */
+                VIVS_RS_WINDOW_SIZE_WIDTH(16)); /* width spans one 16bpp 4x4 tile = 32 bytes */
+        etna_set_state(ctx, VIVS_RS_KICKER, 0xbeebbeeb);
+
+        etna_finish(ctx);
+
+        printf("Out:\n");
+        for(int x=0; x<(src_height/4); ++x) /* print values, per tile */
+        {
+            printf(" ");
+            for(int y=0; y<16; ++y)
+                printf("%i ", *(uint16_t*)(rt2->logical + 32*x + 2*y));
+            printf("\n");
+        }
+        printf("\n");
+    }
+    /* tile->nontiled swizzle ("rotation")
+     * (width 16)
+     * <8b_0> <8b_1> <8b_2> <8b_3> <8b_4> <8b_5> <8b_6> <8b_7> <8b_8> <8b_9> <8b_10> <8b_11> <8b_12> <8b_13> <8b_14> <8b_15>
+     *  ->
+     * row0 <8b_0> <8b_4> <8b_8> <8b_12>
+     * row1 <8b_1> <8b_5> <8b_9> <8b_13>
+     * row2 <8b_2> <8b_6> <8b_10> <8b_14>
+     * row3 <8b_3> <8b_7> <8b_11> <8b_15>
+     *
+     * Swizzle other way around
+     *
+     * row0 <8b_0> <8b_1> <8b_2> <8b_3> <8b_4> <8b_5> <8b_6> <8b_7> <8b_8> <8b_9> <8b_10> <8b_11> <8b_12> <8b_13> <8b_14> <8b_15>
+     * row1 <8b_16> <...> <...> <...> <...> <...> <...> <...> <...> <...> <...> <...> <...> <...> <...> <...>
+     * row2 <8b_32> <...> <...> <...> <...> <...> <...> <...> <...> <...> <...> <...> <...> <...> <...> <...>
+     * row3 <8b_48> <...> <...> <...> <...> <...> <...> <...> <...> <...> <...> <...> <...> <...> <...> <...>
+     * ->
+     * tile0 <8b_0> <8b_16> <8b_32> <8b_48>
+     * tile1 <8b_1> <8b_17> <8b_33> <8b_49>
+     * tile2 <8b_2> <8b_18> <8b_34> <8b_50>
+     * tile3 <8b_3> <8b_19> <8b_35> <8b_51>
+     * ...
+     */
+    /* Pass 1
+     *
+     * <16b_0> <16b_1> [<16b_2> <16b_3>] <16b_4> <16b_5> [<16b_6> <16b_7>] <16b_8> <16b_9> [<16b_10> <16b_11>] <16b_12> <16b_13> [<16b_14> <16b_15>]
+     *  ->
+     * row0  <16b_0> <16b_4> <16b_8> <16b_12>
+     * row1  <16b_1> <16b_5> <16b_9> <16b_13>
+     * row2 [<16b_2> <16b_6> <16b_10> <16b_14>]
+     * row3 [<16b_3> <16b_7> <16b_11> <16b_15>]
+     *
+     * drop row2 and row3
+     * how to put it back?
+     *
+     *     <16b_0> <16b_2> <16b_4> <16b_6> <16b_1> <16b_3> <16b_5> <16b_7>
+     *     ->
+     *     <16b_0> <16b_1> <16b_2> <16b_3> <16b_4> <16b_5> <16b_6> <16b_7>
+     *
+     */
+
+#if 0
     uint32_t pixelfmt = RS_FORMAT_X8R8G8B8;
     bool supertiled = true;
     bool tiled = true;
@@ -127,14 +212,7 @@ int main(int argc, char **argv)
     } else {
         stride = (padded_width * 4) | (supertiled?VIVS_RS_DEST_STRIDE_TILING:0);
     }
-
-    for(int frame=0; frame<1; ++frame)
     {
-        if(frame%50 == 0)
-            printf("*** FRAME %i ****\n", frame);
-        /* XXX part of this can be put outside the loop, but until we have usable context management
-         * this is safest.
-         */
         etna_set_state(ctx, VIVS_GL_VERTEX_ELEMENT_CONFIG, 0x1);
         etna_set_state(ctx, VIVS_RA_CONTROL, 0x1);
 
@@ -144,17 +222,7 @@ int main(int argc, char **argv)
 
         etna_set_state(ctx, VIVS_SE_CONFIG, 0x0);
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR);
-       
-        /* Does this affect the RS? It appears not. */
-        etna_set_state(ctx, VIVS_GL_MULTI_SAMPLE_CONFIG, 
-                ETNA_MASKED_INL(VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_SAMPLES, 4X) &
-                ETNA_MASKED(VIVS_GL_MULTI_SAMPLE_CONFIG_MSAA_ENABLES, 0xf) &
-                ETNA_MASKED(VIVS_GL_MULTI_SAMPLE_CONFIG_UNK12, 0x0) &
-                ETNA_MASKED(VIVS_GL_MULTI_SAMPLE_CONFIG_UNK16, 0x0)
-                ); 
 
-        etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
-        
         /* Set up resolve to self */
         etna_set_state(ctx, VIVS_TS_COLOR_CLEAR_VALUE, 0xff7f7f7f);
         etna_set_state(ctx, VIVS_TS_COLOR_STATUS_BASE, rt_ts->address); /* ADDR_B */
@@ -165,10 +233,10 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_TS_DEPTH_SURFACE_BASE, z->address); /* ADDR_C */
 #endif
 
-        etna_set_state(ctx, VIVS_TS_MEM_CONFIG, 
+        etna_set_state(ctx, VIVS_TS_MEM_CONFIG,
                 VIVS_TS_MEM_CONFIG_COLOR_FAST_CLEAR
                 /*VIVS_TS_MEM_CONFIG_DEPTH_FAST_CLEAR |
-                VIVS_TS_MEM_CONFIG_DEPTH_16BPP | 
+                VIVS_TS_MEM_CONFIG_DEPTH_16BPP |
                 VIVS_TS_MEM_CONFIG_DEPTH_COMPRESSION*/);
         etna_set_state(ctx, VIVS_RS_CONFIG,
                 VIVS_RS_CONFIG_SOURCE_FORMAT(pixelfmt) |
@@ -183,7 +251,7 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_RS_EXTRA_CONFIG, 0); /* no AA, no endian switch */
         etna_set_state(ctx, VIVS_RS_SOURCE_ADDR, rt->address); /* ADDR_A */
         etna_set_state(ctx, VIVS_RS_DEST_ADDR, rt->address); /* ADDR_A */
-        etna_set_state(ctx, VIVS_RS_WINDOW_SIZE, 
+        etna_set_state(ctx, VIVS_RS_WINDOW_SIZE,
                 VIVS_RS_WINDOW_SIZE_HEIGHT(padded_height) |
                 VIVS_RS_WINDOW_SIZE_WIDTH(padded_width));
         etna_set_state(ctx, VIVS_RS_KICKER, 0xbeebbeeb);
@@ -193,7 +261,7 @@ int main(int argc, char **argv)
         /* Clear part using normal (not fast) clear */
         etna_set_state(ctx, VIVS_TS_MEM_CONFIG, 0);
         etna_set_state_multi(ctx, VIVS_RS_DITHER(0), 2, (uint32_t[]){0xffffffff, 0xffffffff});
-        etna_set_state(ctx, VIVS_RS_WINDOW_SIZE, 
+        etna_set_state(ctx, VIVS_RS_WINDOW_SIZE,
                 VIVS_RS_WINDOW_SIZE_HEIGHT(0x100) |
                 VIVS_RS_WINDOW_SIZE_WIDTH(0x100));
         etna_set_state(ctx, VIVS_RS_FILL_VALUE(0), 0xffff0000);
@@ -210,9 +278,9 @@ int main(int argc, char **argv)
         //etna_set_state(ctx, VIVS_RS_CLEAR_CONTROL, VIVS_RS_CLEAR_CONTROL_MODE_ENABLED4_2 | VIVS_RS_CLEAR_CONTROL_BITS(0xffff));
 
         etna_set_state(ctx, VIVS_RS_EXTRA_CONFIG, 0);
-        etna_set_state(ctx, VIVS_RS_KICKER, 
+        etna_set_state(ctx, VIVS_RS_KICKER,
                 0xbeebbeeb);
-      
+
         etna_finish(ctx);
 
 #if 0
@@ -236,15 +304,15 @@ int main(int argc, char **argv)
                 VIVS_RS_CONFIG_DEST_FORMAT(RS_FORMAT_X8R8G8B8) |
                 VIVS_RS_CONFIG_SWAP_RB);
         etna_set_state(ctx, VIVS_RS_SOURCE_STRIDE, stride);
-        etna_set_state(ctx, VIVS_RS_DEST_STRIDE, fb.fb_fix.line_length);
+        etna_set_state(ctx, VIVS_RS_DEST_STRIDE, stride);
         etna_set_state(ctx, VIVS_RS_DITHER(0), 0xffffffff);
         etna_set_state(ctx, VIVS_RS_DITHER(1), 0xffffffff);
         etna_set_state(ctx, VIVS_RS_CLEAR_CONTROL, VIVS_RS_CLEAR_CONTROL_MODE_DISABLED);
-        etna_set_state(ctx, VIVS_RS_EXTRA_CONFIG, 
+        etna_set_state(ctx, VIVS_RS_EXTRA_CONFIG,
                 0); /* no AA, no endian switch */
         etna_set_state(ctx, VIVS_RS_SOURCE_ADDR, rt->address); /* ADDR_A */
         etna_set_state(ctx, VIVS_RS_DEST_ADDR, fb.physical[backbuffer]); /* ADDR_J */
-        etna_set_state(ctx, VIVS_RS_WINDOW_SIZE, 
+        etna_set_state(ctx, VIVS_RS_WINDOW_SIZE,
                 VIVS_RS_WINDOW_SIZE_HEIGHT(height) |
                 VIVS_RS_WINDOW_SIZE_WIDTH(width));
         etna_set_state(ctx, VIVS_RS_KICKER, 0xbeebbeeb);
@@ -254,11 +322,8 @@ int main(int argc, char **argv)
         fb_set_buffer(&fb, backbuffer);
         backbuffer = 1-backbuffer;
     }
-#ifdef DUMP
-    bmp_dump32(fb.logical[1-backbuffer], width, height, false, "/mnt/sdcard/fb.bmp");
-    printf("Dump complete\n");
 #endif
-    
+
     etna_free(ctx);
     viv_close(conn);
     return 0;

@@ -579,7 +579,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x012BC" name="ROT_ANGLE" type="2D_ROT_ANGLE"/>
         <reg32 offset="0x012C0" name="CLEAR_PIXEL_VALUE32" type="DE_COLOR" brief="Clear color value in A8R8G8B8 format"/> <!--PE20-->
         <reg32 offset="0x012C4" name="DEST_COLOR_KEY" type="DE_COLOR" brief="Destination transparency color in destination format"/>
-        <reg32 offset="0x012C8" name="GLOBAL_SRC_COLOR" type="DE_COLOR" brief="Global source color and alpha values"/>
+        <reg32 offset="0x012C8" name="GLOBAL_SRC_COLOR" type="DE_COLOR" brief="Global source color and alpha values"> <!--PE20-->
+            <doc>
+                Used as source color when blitting from A8 sources.
+            </doc>
+        </reg32>
         <reg32 offset="0x012CC" name="GLOBAL_DEST_COLOR" type="DE_COLOR" brief="Global destination color and alpha values"/>
         <reg32 offset="0x012D0" name="COLOR_MULTIPLY_MODES" type="2D_COLOR_MULTIPLY_MODES"/> <!--PE20-->
         <reg32 offset="0x012D4" name="PE_TRANSPARENCY" type="2D_PE_TRANSPARENCY"/>
