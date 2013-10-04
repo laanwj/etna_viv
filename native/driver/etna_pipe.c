@@ -636,7 +636,9 @@ static void sync_context(struct pipe_context *restrict pipe)
             /* set active samplers to their configuration value (determined by both the sampler state and sampler view),
              * set inactive sampler config to 0 */
             /*02000*/ EMIT_STATE(TE_SAMPLER_CONFIG0(x), TE_SAMPLER_CONFIG0[x],
-                    ((1<<x) & active_samplers)?(e->sampler[x].TE_SAMPLER_CONFIG0 | e->sampler_view[x].TE_SAMPLER_CONFIG0):0);
+                    ((1<<x) & active_samplers)?(
+                        (e->sampler[x].TE_SAMPLER_CONFIG0 & e->sampler_view[x].TE_SAMPLER_CONFIG0_MASK) |
+                        e->sampler_view[x].TE_SAMPLER_CONFIG0):0);
         }
     }
     if(unlikely(dirty & (ETNA_STATE_SAMPLER_VIEWS)))

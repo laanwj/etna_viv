@@ -117,6 +117,7 @@ static struct pipe_sampler_view *etna_pipe_create_sampler_view(struct pipe_conte
                 VIVS_TE_SAMPLER_CONFIG0_TYPE(translate_texture_target(res->base.target, false)) |
                 VIVS_TE_SAMPLER_CONFIG0_FORMAT(translate_texture_format(sv->base.format, false));
                 /* merged with sampler state */
+    cs->TE_SAMPLER_CONFIG0_MASK = 0xffffffff;
 
     cs->TE_SAMPLER_CONFIG1 =
                 VIVS_TE_SAMPLER_CONFIG1_SWIZZLE_R(templat->swizzle_r) |
@@ -130,6 +131,8 @@ static struct pipe_sampler_view *etna_pipe_create_sampler_view(struct pipe_conte
     cs->TE_SAMPLER_LOG_SIZE =
             VIVS_TE_SAMPLER_LOG_SIZE_WIDTH(etna_log2_fixp55(res->base.width0)) |
             VIVS_TE_SAMPLER_LOG_SIZE_HEIGHT(etna_log2_fixp55(res->base.height0));
+
+    /* Set up levels-of-detail */
     /* XXX in principle we only have to define lods sv->first_level .. sv->last_level */
     for(int lod=0; lod<=res->base.last_level; ++lod)
     {
@@ -137,6 +140,15 @@ static struct pipe_sampler_view *etna_pipe_create_sampler_view(struct pipe_conte
     }
     cs->min_lod = sv->base.u.tex.first_level << 5;
     cs->max_lod = MIN2(sv->base.u.tex.last_level, res->base.last_level) << 5;
+
+    /* Workaround for npot textures -- it appears that only CLAMP_TO_EDGE is supported */
+    if(!util_is_power_of_two(res->base.width0) || !util_is_power_of_two(res->base.height0))
+    {
+        cs->TE_SAMPLER_CONFIG0_MASK = ~(VIVS_TE_SAMPLER_CONFIG0_UWRAP__MASK |
+                                        VIVS_TE_SAMPLER_CONFIG0_VWRAP__MASK);
+        cs->TE_SAMPLER_CONFIG0 |= VIVS_TE_SAMPLER_CONFIG0_UWRAP(TEXTURE_WRAPMODE_CLAMP_TO_EDGE) |
+                                  VIVS_TE_SAMPLER_CONFIG0_VWRAP(TEXTURE_WRAPMODE_CLAMP_TO_EDGE);
+    }
 
     sv->internal = cs;
     pipe_reference_init(&sv->base.reference, 1);

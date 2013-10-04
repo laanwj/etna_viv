@@ -186,6 +186,7 @@ struct compiled_sampler_view
 {
     /* sampler offset +4*sampler, interleave when committing state */
     uint32_t TE_SAMPLER_CONFIG0;
+    uint32_t TE_SAMPLER_CONFIG0_MASK;
     uint32_t TE_SAMPLER_CONFIG1;
     uint32_t TE_SAMPLER_SIZE;
     uint32_t TE_SAMPLER_LOG_SIZE;
