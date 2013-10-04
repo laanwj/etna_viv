@@ -296,7 +296,6 @@ static void sync_context(struct pipe_context *restrict pipe)
         /* re-link vs and fs if needed */
         etna_link_shaders(pipe, &e->shader_state, e->vs, e->fs);
     }
-    assert(!e->vs || e->vertex_elements.num_elements == e->vs->num_inputs);
 
     /* Pre-processing: see what caches we need to flush before making state
      * changes.
@@ -800,6 +799,12 @@ static void etna_pipe_draw_vbo(struct pipe_context *pipe,
     }
     /* First, sync state, then emit DRAW_PRIMITIVES or DRAW_INDEXED_PRIMITIVES */
     sync_context(pipe);
+    if(priv->vs && priv->vertex_elements.num_elements != priv->vs->num_inputs)
+    {
+        BUG("Number of elements %i does not match the number of VS inputs %i",
+                priv->vertex_elements.num_elements, priv->vs->num_inputs);
+        return;
+    }
     if(info->indexed)
     {
         etna_draw_indexed_primitives(priv->ctx, translate_draw_mode(info->mode),
