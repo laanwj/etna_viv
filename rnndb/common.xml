@@ -186,7 +186,14 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield pos="18" name="NEW_2D" brief="Mirror extension available"/>
         <bitfield pos="19" name="NEW_FP" brief="New floating point arithmetic"/>
         <bitfield pos="20" name="TEXTURE_HALIGN" brief="Textures can specify horizontal alignment"/>
-        <bitfield pos="21" name="NON_POWER_OF_TWO" brief="Non power-of-two texture support"/>
+        <bitfield pos="21" name="NON_POWER_OF_TWO" brief="Improved non power-of-two texture support">
+            <doc>
+                Vivante GPUs all support non power-of-two textures. This capability marks the
+                presence of additional support for them. This probably means that wrapping modes
+                other than clamp-to-edge are supported (analogous to the GL_OES_texture_npot GLES extension)
+                but this is to be tested.
+            </doc>
+        </bitfield>
         <bitfield pos="22" name="LINEAR_TEXTURE_SUPPORT"/>
         <bitfield pos="23" name="HALTI0" brief="Various features related to texturing and vertex processing">
             <doc>
