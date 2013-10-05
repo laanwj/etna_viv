@@ -529,6 +529,7 @@ etna_screen_create(struct viv_conn *dev)
     screen->specs.stream_count = dev->chip.stream_count;
     screen->specs.has_sin_cos_sqrt = VIV_FEATURE(dev, chipMinorFeatures0, HAS_SQRT_TRIG);
     screen->specs.has_shader_range_registers = dev->chip.chip_model >= 0x1000 || dev->chip.chip_model == 0x880;
+    screen->specs.npot_tex_any_wrap = VIV_FEATURE(dev, chipMinorFeatures1, NON_POWER_OF_TWO);
     if (dev->chip.instruction_count > 256) /* unified instruction memory? */
     {
         screen->specs.vs_offset = 0xC000;

@@ -46,7 +46,15 @@
 struct etna_pipe_specs
 {
     /* supports SUPERTILE (64x64) tiling? */
-    bool can_supertile;
+    unsigned can_supertile:1;
+    /* needs z=(z+w)/2, for older GCxxx */
+    unsigned vs_need_z_div:1;
+    /* supports trigonometric instructions */
+    unsigned has_sin_cos_sqrt:1;
+    /* can use VS_RANGE, PS_RANGE registers*/
+    unsigned has_shader_range_registers:1;
+    /* can use any kind of wrapping mode on npot textures */
+    unsigned npot_tex_any_wrap;
     /* number of bits per TS tile */
     unsigned bits_per_tile;
     /* clear value for TS (dependent on bits_per_tile) */
@@ -57,8 +65,6 @@ struct etna_pipe_specs
     unsigned fragment_sampler_count;
     /* number of vertex sampler units */
     unsigned vertex_sampler_count;
-    /* needs z=(z+w)/2, for older GCxxx */
-    bool vs_need_z_div;
     /* size of vertex shader output buffer */
     unsigned vertex_output_buffer_size;
     /* size of a cached vertex (?) */
@@ -67,10 +73,6 @@ struct etna_pipe_specs
     unsigned shader_core_count;
     /* number of vertex streams */
     unsigned stream_count;
-    /* supports trigonometric instructions */
-    bool has_sin_cos_sqrt;
-    /* can use VS_RANGE, PS_RANGE registers*/
-    bool has_shader_range_registers;
     /* vertex shader memory address*/
     uint32_t vs_offset;
     /* pixel shader memory address*/

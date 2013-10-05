@@ -100,7 +100,7 @@ static struct pipe_sampler_view *etna_pipe_create_sampler_view(struct pipe_conte
                                                  struct pipe_resource *texture,
                                                  const struct pipe_sampler_view *templat)
 {
-    //struct etna_pipe_context *priv = etna_pipe_context(pipe);
+    struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct etna_sampler_view *sv = CALLOC_STRUCT(etna_sampler_view);
     sv->base = *templat;
     sv->base.context = pipe;
@@ -133,7 +133,6 @@ static struct pipe_sampler_view *etna_pipe_create_sampler_view(struct pipe_conte
             VIVS_TE_SAMPLER_LOG_SIZE_HEIGHT(etna_log2_fixp55(res->base.height0));
 
     /* Set up levels-of-detail */
-    /* XXX in principle we only have to define lods sv->first_level .. sv->last_level */
     for(int lod=0; lod<=res->base.last_level; ++lod)
     {
         cs->TE_SAMPLER_LOD_ADDR[lod] = res->levels[lod].address;
@@ -141,8 +140,10 @@ static struct pipe_sampler_view *etna_pipe_create_sampler_view(struct pipe_conte
     cs->min_lod = sv->base.u.tex.first_level << 5;
     cs->max_lod = MIN2(sv->base.u.tex.last_level, res->base.last_level) << 5;
 
-    /* Workaround for npot textures -- it appears that only CLAMP_TO_EDGE is supported */
-    if(!util_is_power_of_two(res->base.width0) || !util_is_power_of_two(res->base.height0))
+    /* Workaround for npot textures -- it appears that only CLAMP_TO_EDGE is supported when the
+     * appropriate capability is not set. */
+    if(!priv->specs.npot_tex_any_wrap &&
+        (!util_is_power_of_two(res->base.width0) || !util_is_power_of_two(res->base.height0)))
     {
         cs->TE_SAMPLER_CONFIG0_MASK = ~(VIVS_TE_SAMPLER_CONFIG0_UWRAP__MASK |
                                         VIVS_TE_SAMPLER_CONFIG0_VWRAP__MASK);
