@@ -5,8 +5,9 @@ Project Etnaviv is an open source user-space driver for the Vivante GCxxx series
 
 A Mesa fork with the etnaviv driver can be found in the [laanwj/mesa](https://github.com/laanwj/mesa) repository.
 At the moment, this driver provides OpenGL ES 1.0 and 2.0 accelerated rendering direct to framebuffer (fbdev).
-This driver has been used to run glquake and d2x and other GLES games so it should be fairly stable.
-There may still be quite a few rendering bugs, specific bug reports are very welcome.
+This driver has been used to run Dark Places, glquake, d2x and other GLES games so it should be fairly stable.
+There may still be a few rendering bugs, specific bug reports are very welcome. Be sure to attach apitrace
+logs if possible.
 
 SoCs with Vivante GPU
 =========================
@@ -22,8 +23,8 @@ ARM-based:
 - Actions Semiconductor ATM7029 has a GC1000
 
 MIPS-based:
-- Ingenic JZ4770 has a GC860: [GCW Zero](http://www.gcw-zero.com)
 - Ingenic JZ4760 has a GC200 (2D only)
+- Ingenic JZ4770 has a GC860: [GCW Zero](http://www.gcw-zero.com)
 
 See also [wikipedia](https://en.wikipedia.org/wiki/Vivante_Corporation).
 
@@ -39,6 +40,7 @@ Compatibility
 - GC800 (Rockchip, GCABI `arnova`)
 - GC860 (GCW Zero, GCABI `v2`)
 - GC880 (i.MX6, GCABI imx6 or `imx6_v4_0_0` depending on BSP)
+- GC1000
 
 Support for GC2000 (i.MX6) and others with multiple pixel pipes (GC4000?) requires a few changes.
 The 2D demos do work for GC2000 and should work on all other known Vivante chips.
@@ -46,20 +48,26 @@ The 2D demos do work for GC2000 and should work on all other known Vivante chips
 Building
 =========
 
-The build process is made more complicated by the existence of many different kernel drivers, with their subtly
-different interface (different headers, different offsets for fields, different management of context, and so on).
-These values for environment variable `GCABI` are supported out of the box:
+As we currently use whatever Vivante kernel driver is available, the build process is complicated by
+the existence of many different kernel drivers, with their subtly different interface (different
+headers, different offsets for fields, different management of context, and so on).  These values
+for environment variable `GCABI` are supported out of the box:
 
 - `dove`: Marvell Dove, newer drivers (0.8.0.3184)
 - `dove_old`: Marvell Dove, older drivers (0.8.0.1998, 0.8.0.1123)
 - `arnova`: Android, Arnova 10B G3 tablet (RK2918)
 - `v2`: Various
 - `v4`: Various, newer API than v2
-- `imx6`: v4 API, specialized for i.MX6
+- `v4_uapi`: Like `v4` but condensed into one header without all the unnecessary crap and renamed
+   fields not used by the kernel
+   (user space interface of the https://github.com/gcwnow/linux/tree/jz-3.11/drivers/gpu/vivante/v4 
+   condensed kernel version)
+- `imx6`: v4 API, specialized for i.MX6, pre-4.0.0 release
 - `imx6_v4_0_0`: v4 API, but i.MX6 specific, release 4.0.0
+- `imx6_v4_1_0`: v4 API, but i.MX6 specific, release 4.1.0
 
-If possible get the `gc_*.h` headers for your specific kernel version. If that's not possible, try to find which of the above sets
-of headers is most similar, and use or adapt that.
+If possible get the `gc_*.h` headers for your specific kernel version. If that's not possible, try
+to find which of the above sets of headers is most similar, and use or adapt that.
 
 General
 --------
@@ -80,11 +88,6 @@ setting of the environment variable `GCABI`:
 - `GCABI_HAS_CONTEXT`: `struct _gcsHAL_COMMIT` has `contextBuffer` field
 - `GCABI_HAS_STATE_DELTAS`: `struct _gcsHAL_COMMIT` has `delta` field
 
-It would be very useful to have an auto-detection of the Vivante kernel version, to prevent crashes and such from wrong
-interfaces. However, I don't currently know any way to do this. The kernel does check the size of the passed ioctl structure, however
-this guarantees nothing about the field offsets. There is `/proc/driver/gc` that in some cases contains a version number. In
-very new drivers there is an ioctl call `gcvHAL_VERSION` that returns the major, minor and build version.
-
 Linux cross compile
 --------------------
 
@@ -98,6 +101,7 @@ where the script is installed, and get the `libEGL.so` and `libGLESv2.so` from t
     export PLATFORM_CFLAGS="-I${DIR}/include"
     export PLATFORM_CXXFLAGS="-I${DIR}/include"
     export PLATFORM_LDFLAGS="-ldl -L${DIR}/lib"
+    # These point to the vivante libs that are only used for reverse engineering
     export PLATFORM_GL_LIBS="-lEGL -lGLESv2 -L${TOP}/lib/egl -Xlinker --allow-shlib-undefined"
     # Set GC kernel ABI to dove (important!)
     #export GCABI="dove"      # 0.8.0.3184
@@ -134,7 +138,6 @@ To build the egl samples (for command stream interception), you need to copy `li
 the device `/system/lib/egl` to `native/lib/egl`. This is not needed if you just want to build the `replay`, `etna` or `fb`
 tests, which do not rely in any way on the userspace blob.
 
-
 Contents
 ==========
 
@@ -150,7 +153,7 @@ Framebuffer tests
 ![mip_cube output](doc/images/mipmap.png)
 ![displacement output](doc/images/displacement.png)
 
-To exercise the initial-stage driver there are a few framebuffer tests in:
+To exercise the gallium driver there are a few framebuffer tests in:
 
     native/fb/
 
@@ -374,8 +377,7 @@ Four GPL kernel driver versions, `gc600_driver_dove`, `v2` and `v4` and `imx6`, 
 interface, and the hardware at a basic level.
 
 As open source drivers for the kernel are available, there are currently no plans to write a DRM/DRI kernel driver for Vivante.
-(There may be other reasons to do this anyway, such as allowing the driver to work without losing a fixed 128MB amount of memory
-to the GPU)
+(There may be other reasons to do this anyway, you're welcome to contribute one)
 
 Envytools fork
 ---------------
@@ -401,17 +403,16 @@ Contact
 There is currently no mailing list for this project, and looking at other GPU reverse engineering projects the mailing lists
 usually see very little traffic, so I won't bother (but you're free to create one and let me know so I can join).
 
-We usually hang out in `#etnaviv` on `irc.freenode.net`. A related community, focused
-on Freescale i.MX6 sw/hw is in `#imx6-dongle`. Many SoC GPU developers also hang in `#lima`.
+We usually hang out in `#etnaviv` on `irc.freenode.net`. 
 
 Authors
 ========
 
 - Wladimir J. van der Laan
 - Steven J. Hill (kernel driver help)
-- Christian Gmeiner (beginnings of GC2000)
-- Michał Ściubidło (GC880)
-- Maarten ter Huurne (GCW kernel driver)
+- Christian Gmeiner (beginnings of GC2000 support)
+- Michał Ściubidło (GC880 support)
+- Maarten ter Huurne (GCW kernel driver, `v4_uapi` interface)
 
 Thanks
 =======
