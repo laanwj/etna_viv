@@ -537,7 +537,8 @@ static void etna_compile_pass_optimize_outputs(struct etna_compile_data *cd, con
                 if(inst->Dst[0].Register.File == TGSI_FILE_OUTPUT &&
                    inst->Src[0].Register.File == TGSI_FILE_TEMPORARY &&
                    !cd->file[TGSI_FILE_OUTPUT][out_idx].native.valid &&
-                   cd->file[TGSI_FILE_TEMPORARY][in_idx].last_use == inst_idx)
+                   cd->file[TGSI_FILE_TEMPORARY][in_idx].last_use == inst_idx &&
+                   etna_mov_check_no_swizzle(inst->Dst[0].Register, inst->Src[0].Register))
                 {
                     cd->file[TGSI_FILE_OUTPUT][out_idx].native = cd->file[TGSI_FILE_TEMPORARY][in_idx].native;
                     /* prevent temp from being re-used for the rest of the shader */
