@@ -268,6 +268,8 @@ static void etna_pipe_bind_fs_state(struct pipe_context *pipe, void *fss_)
 {
     struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct etna_shader_object *fss = (struct etna_shader_object*)fss_;
+    if(priv->fs == fss) /* skip if already bound */
+        return;
     priv->dirty_bits |= ETNA_STATE_SHADER | ETNA_STATE_PS_UNIFORMS;
     assert(fss == NULL || fss->processor == TGSI_PROCESSOR_FRAGMENT);
     priv->fs = fss;
@@ -277,6 +279,8 @@ static void etna_pipe_bind_vs_state(struct pipe_context *pipe, void *vss_)
 {
     struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct etna_shader_object *vss = (struct etna_shader_object*)vss_;
+    if(priv->vs == vss) /* skip if already bound */
+        return;
     priv->dirty_bits |= ETNA_STATE_SHADER | ETNA_STATE_VS_UNIFORMS;
     assert(vss == NULL || vss->processor == TGSI_PROCESSOR_VERTEX);
     priv->vs = vss;
