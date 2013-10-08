@@ -43,7 +43,7 @@ static void etna_fetch_uniforms(struct pipe_context *pipe, uint shader)
     {
     case PIPE_SHADER_VERTEX:
         buf = &priv->vs_cbuf_s;
-        if(buf->user_buffer)
+        if(buf->user_buffer && priv->vs)
         {
             memcpy(priv->shader_state.VS_UNIFORMS, buf->user_buffer, MIN2(buf->buffer_size, priv->vs->const_size * 4));
             priv->dirty_bits |= ETNA_STATE_VS_UNIFORMS;
@@ -51,7 +51,7 @@ static void etna_fetch_uniforms(struct pipe_context *pipe, uint shader)
         break;
     case PIPE_SHADER_FRAGMENT:
         buf = &priv->fs_cbuf_s;
-        if(buf->user_buffer)
+        if(buf->user_buffer && priv->fs)
         {
             memcpy(priv->shader_state.PS_UNIFORMS, buf->user_buffer, MIN2(buf->buffer_size, priv->fs->const_size * 4));
             priv->dirty_bits |= ETNA_STATE_PS_UNIFORMS;
@@ -232,7 +232,6 @@ static void etna_set_constant_buffer(struct pipe_context *pipe,
         }
     } else {
         assert(buf->buffer == NULL && buf->user_buffer != NULL);
-        assert(priv->vs && priv->fs);
         /* support only user buffer for now */
         if(likely(index == 0))
         {
