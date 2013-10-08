@@ -72,9 +72,9 @@ to find which of the above sets of headers is most similar, and use or adapt tha
 General
 --------
 If the goal is to build Mesa and you are not planning to do reverse engineering, only `libetnaviv.a` needs to be built.
-In this case it is sufficient to run make in `native/etnaviv`.
+In this case it is sufficient to run make in `src/etnaviv`.
 
-Otherwise, run `make` and `make rev` in `native/` (see the README.md in `native` for a description of all the directories contained within).
+Otherwise, run `make` and `make rev` in `src/` (see the README.md in `src` for a description of all the directories contained within).
 
 `gc_abi.h`
 -----------
@@ -135,7 +135,7 @@ environment variables, for example like this:
     export GCABI="arnova"
 
 To build the egl samples (for command stream interception), you need to copy `libEGL_VIVANTE.so` `libGLESv2_VIVANTE.so` from
-the device `/system/lib/egl` to `native/lib/egl`. This is not needed if you just want to build the `replay`, `etna` or `fb`
+the device `/system/lib/egl` to `src/lib/egl`. This is not needed if you just want to build the `replay`, `etna` or `fb`
 tests, which do not rely in any way on the userspace blob.
 
 Contents
@@ -147,15 +147,13 @@ program Vivante GCxxx GPU cores.
 Framebuffer tests
 ------------------
 
-![cube_rotate output](native/replay/cube_replay.png)
-![cube_companion output](native/replay/cube_companion_replay.png)
+![cube_rotate output](src/replay/cube_replay.png)
+![cube_companion output](src/replay/cube_companion_replay.png)
 
 ![mip_cube output](doc/images/mipmap.png)
 ![displacement output](doc/images/displacement.png)
 
-To exercise the gallium driver there are a few framebuffer tests in:
-
-    native/fb/
+To exercise the gallium driver there are a few framebuffer tests in `src/fb`.
 
 These demos do double-buffered animated rendering of 1000 frames to the framebuffer using
 the proof-of-concept `etna` rendering and command stream building API. The goal of this API is to provide a Gallium-like
@@ -213,7 +211,7 @@ from the madness of kernel-specific headers and defines.
 - register description headers
 - converting surfaces and textures from and to Vivante specific tiling formats
 
-Currently used only by the 3D driver in `native/driver`. A future 2D, SVG or OpenCL driver can share this code.
+Currently used only by the 3D driver in `src/driver`. A future 2D, SVG or OpenCL driver can share this code.
 
 Debugging support
 ------------------
@@ -348,23 +346,10 @@ Replay tests
 
 The replay tests replay the command stream and ioctl commands of the EGL demos, to get the same output.
 
-They can be found in:
-
-    native/replay/
+They can be found in `src/replay`.
 
 Currently this is available for the `cube` example that renders a smoothed cube, and the `cube_companion`
 example that renders a textured cube.
-
-Command stream builder
------------------------
-
-A beginning has been made of a simple driver that builds the command stream from scratch and submits
-it to the kernel driver:
-
-    native/lib/viv.(c|h)
-    native/replay/etna.(c|h)
-    native/replay/etna_test.c (to experiment with shaders)
-    native/replay/cube_etna.c (renders the GLES2 smoothed cube)
 
 Vivante GPL kernel drivers
 ---------------------------

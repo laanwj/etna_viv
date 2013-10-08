@@ -61,7 +61,7 @@ static void etna_pipe_blit_save_state(struct pipe_context *pipe)
                     priv->num_fragment_sampler_views, priv->sampler_view_s);
 }
 
-/* Generate clear command for a surface (non-TS case) */
+/* Generate clear command for a surface (non-fast clear case) */
 void etna_rs_gen_clear_surface(struct compiled_rs_state *rs_state, struct etna_surface *surf, uint32_t clear_value)
 {
     uint bs = util_format_get_blocksize(surf->base.format);
@@ -105,8 +105,8 @@ static void etna_pipe_clear(struct pipe_context *pipe,
      */
     etna_set_state(priv->ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
     etna_stall(priv->ctx, SYNC_RECIPIENT_RA, SYNC_RECIPIENT_PE);
-    /* Preparation: Flush the TS. This must be done after flushing color and depth, otherwise it can
-     * result in crashes */
+    /* Preparation: Flush the TS if needed. This must be done after flushing
+     * color and depth, otherwise it can result in crashes */
     bool need_ts_flush = false;
     if((buffers & PIPE_CLEAR_COLOR) && priv->framebuffer_s.nr_cbufs)
     {
@@ -124,11 +124,8 @@ static void etna_pipe_clear(struct pipe_context *pipe,
     {
         etna_set_state(priv->ctx, VIVS_TS_FLUSH_CACHE, VIVS_TS_FLUSH_CACHE_FLUSH);
     }
-    /* No need to set up the TS here with sync_context.
-     * RS clear operations (in contrast to resolve and copy) do not require the TS state.
-     */
-    /* Need to update clear command in non-TS (fast clear) case *if*
-     * clear value is different from previous time.
+    /* No need to set up the TS here as RS clear operations (in contrast to
+     * resolve and copy) do not require the TS state.
      */
     if(buffers & PIPE_CLEAR_COLOR)
     {
@@ -150,6 +147,7 @@ static void etna_pipe_clear(struct pipe_context *pipe,
             }
             else if(unlikely(new_clear_value != surf->level->clear_value)) /* Queue normal RS clear for non-TS surfaces */
             {
+                /* If clear color changed, re-generate stored command */
                 etna_rs_gen_clear_surface(&surf->clear_command, surf, new_clear_value);
             }
             etna_submit_rs_state(priv->ctx, &surf->clear_command);
@@ -162,7 +160,7 @@ static void etna_pipe_clear(struct pipe_context *pipe,
         uint32_t new_clear_value = translate_clear_depth_stencil(surf->base.format, depth, stencil);
         if(surf->surf.ts_address) /* TS: use precompiled clear command */
         {
-            /* Set new clear color */
+            /* Set new clear depth value */
             priv->framebuffer.TS_DEPTH_CLEAR_VALUE = new_clear_value;
             if(!DBG_ENABLED(ETNA_DBG_NO_AUTODISABLE))
             {
@@ -173,6 +171,7 @@ static void etna_pipe_clear(struct pipe_context *pipe,
             priv->dirty_bits |= ETNA_STATE_TS;
         } else if(unlikely(new_clear_value != surf->level->clear_value)) /* Queue normal RS clear for non-TS surfaces */
         {
+            /* If clear depth value changed, re-generate stored command */
             etna_rs_gen_clear_surface(&surf->clear_command, surf, new_clear_value);
         }
         etna_submit_rs_state(priv->ctx, &surf->clear_command);
@@ -237,7 +236,7 @@ static void etna_pipe_resource_copy_region(struct pipe_context *pipe,
 static void etna_pipe_blit(struct pipe_context *pipe, const struct pipe_blit_info *blit_info)
 {
     /* This is a more extended version of resource_copy_region */
-    /* TODO Some cases can be handled by RS; if not, fall back to rendering */
+    /* TODO Some cases can be handled by RS; if not, fall back to rendering or even CPU */
     /* copy block of pixels from info->src to info->dst (resource, level, box, format);
      * function is used for scaling, flipping in x and y direction (negative width/height), format conversion, mask and filter
      * and even a scissor rectangle

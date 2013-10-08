@@ -40,11 +40,27 @@ static void *etna_pipe_create_blend_state(struct pipe_context *pipe,
     //struct etna_pipe_context *priv = etna_pipe_context(pipe);
     struct compiled_blend_state *cs = CALLOC_STRUCT(compiled_blend_state);
     const struct pipe_rt_blend_state *rt0 = &bs->rt[0];
-    bool enable = rt0->blend_enable && !(rt0->rgb_src_factor == PIPE_BLENDFACTOR_ONE && rt0->rgb_dst_factor == PIPE_BLENDFACTOR_ZERO &&
-                                         rt0->alpha_src_factor == PIPE_BLENDFACTOR_ONE && rt0->alpha_dst_factor == PIPE_BLENDFACTOR_ZERO);
+    /* Enable blending if
+     * - blend enabled in blend state
+     * - NOT source factor is ONE and destination factor ZERO for both rgb and
+     *   alpha (which would mean that blending is effectively disabled)
+     */
+    bool enable = rt0->blend_enable &&
+            !(rt0->rgb_src_factor == PIPE_BLENDFACTOR_ONE && rt0->rgb_dst_factor == PIPE_BLENDFACTOR_ZERO &&
+              rt0->alpha_src_factor == PIPE_BLENDFACTOR_ONE && rt0->alpha_dst_factor == PIPE_BLENDFACTOR_ZERO);
+    /* Enable separate alpha if
+     * - Blending enabled (see above)
+     * - NOT source factor is equal to destination factor for both rgb abd
+     *   alpha (which would effectively that mean alpha is not separate)
+     */
     bool separate_alpha = enable && !(rt0->rgb_src_factor == rt0->alpha_src_factor &&
                                       rt0->rgb_dst_factor == rt0->alpha_dst_factor);
+    /* If the complete render target is written, set full_overwrite:
+     * - The color mask is 1111
+     * - No blending is used
+     */
     bool full_overwrite = (rt0->colormask == 15) && !enable;
+
     if(enable)
     {
         cs->PE_ALPHA_CONFIG =
@@ -59,7 +75,6 @@ static void *etna_pipe_create_blend_state(struct pipe_context *pipe,
     } else {
         cs->PE_ALPHA_CONFIG = 0;
     }
-    /* XXX should colormask be used if enable==false? */
     cs->PE_COLOR_FORMAT =
             VIVS_PE_COLOR_FORMAT_COMPONENTS(rt0->colormask) |
             (full_overwrite ? VIVS_PE_COLOR_FORMAT_OVERWRITE : 0);
@@ -68,7 +83,9 @@ static void *etna_pipe_create_blend_state(struct pipe_context *pipe,
             0x000E4000 /* ??? */;
     /* independent_blend_enable not needed: only one rt supported */
     /* XXX alpha_to_coverage / alpha_to_one? */
-    /* XXX dither? VIVS_PE_DITHER(...) and/or VIVS_RS_DITHER(...) on resolve */
+    /* Set dither registers based on dither status. These registers set the dither pattern,
+     * for now, set the same values as the blob.
+     */
     if(bs->dither)
     {
         cs->PE_DITHER[0] = 0x6e4ca280;

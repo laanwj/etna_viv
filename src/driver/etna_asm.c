@@ -23,15 +23,6 @@
 #include "etna_asm.h"
 #include "etna_debug.h"
 
-#include <etnaviv/isa.xml.h>
-
-/* Return whether the rgroup is one of the uniforms */
-int etna_rgroup_is_uniform(unsigned rgroup)
-{
-    return rgroup == INST_RGROUP_UNIFORM_0 ||
-           rgroup == INST_RGROUP_UNIFORM_1;
-}
-
 /** An instruction can only read from one distinct uniform.
  * This function verifies this property and returns true if the instruction
  * is deemed correct and false otherwise.

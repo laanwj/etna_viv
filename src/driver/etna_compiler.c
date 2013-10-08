@@ -41,7 +41,7 @@
  * TODO
  * * Allow loops
  * * Use an instruction scheduler
- * * Avoid using more than one uniform in one instruction (can be used in multiple arguments)
+ * * Indirect access to uniforms / temporaries using amode
  */
 #include "etna_compiler.h"
 #include "etna_asm.h"
@@ -66,22 +66,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-/* Broadcast swizzle to all four components */
-#define INST_SWIZ_BROADCAST(x) \
-        (INST_SWIZ_X(x) | INST_SWIZ_Y(x) | INST_SWIZ_Z(x) | INST_SWIZ_W(x))
-/* Identity (NOP) swizzle */
-#define INST_SWIZ_IDENTITY \
-        (INST_SWIZ_X(0) | INST_SWIZ_Y(1) | INST_SWIZ_Z(2) | INST_SWIZ_W(3))
-
-/* Compose two swizzles (computes swz1.swz2) */
-static inline uint32_t inst_swiz_compose(uint32_t swz1, uint32_t swz2)
-{
-    return INST_SWIZ_X((swz1 >> (((swz2 >> 0)&3)*2))&3) |
-           INST_SWIZ_Y((swz1 >> (((swz2 >> 2)&3)*2))&3) |
-           INST_SWIZ_Z((swz1 >> (((swz2 >> 4)&3)*2))&3) |
-           INST_SWIZ_W((swz1 >> (((swz2 >> 6)&3)*2))&3);
-}
-
 /* Native register description structure */
 struct etna_native_reg
 {
@@ -91,6 +75,7 @@ struct etna_native_reg
     unsigned id:9;
 };
 
+/* Register description */
 struct etna_reg_desc
 {
     enum tgsi_file_type file; /* IN, OUT, TEMP, ... */
@@ -141,7 +126,7 @@ struct etna_compile_data
     uint total_decls;
 
     /* Bitmap of dead instructions which are removed in a separate pass */
-    bool dead_inst[ETNA_MAX_TOKENS]; /* mark dead input instructions */
+    bool dead_inst[ETNA_MAX_TOKENS];
 
     /* Immediate data */
     uint32_t imm_data[ETNA_MAX_IMM];
@@ -166,7 +151,7 @@ struct etna_compile_data
 
     /* Code generation */
     int inst_ptr; /* current instruction pointer */
-    uint32_t code[ETNA_MAX_INSTRUCTIONS*4];
+    uint32_t code[ETNA_MAX_INSTRUCTIONS*ETNA_INST_SIZE];
 
     /* I/O */
 
@@ -354,6 +339,7 @@ static void etna_compile_parse_declarations(struct etna_compile_data *cd, const 
         {
         case TGSI_TOKEN_TYPE_DECLARATION: {
             const struct tgsi_full_declaration *decl = &ctx.FullToken.FullDeclaration;
+            /* Extend size of register file to encompass entire declaration */
             cd->file_size[decl->Declaration.File] = MAX2(cd->file_size[decl->Declaration.File], decl->Range.Last+1);
             } break;
         case TGSI_TOKEN_TYPE_IMMEDIATE: { /* immediates are handled differently from other files; they are not declared
@@ -371,7 +357,8 @@ static void etna_compile_parse_declarations(struct etna_compile_data *cd, const 
     tgsi_parse_free(&ctx);
 }
 
-static void etna_assign_decls(struct etna_compile_data *cd)
+/* Allocate register declarations for the registers in all register files */
+static void etna_allocate_decls(struct etna_compile_data *cd)
 {
     uint idx=0;
     for(int x=0; x<TGSI_FILE_COUNT; ++x)
@@ -387,7 +374,7 @@ static void etna_assign_decls(struct etna_compile_data *cd)
     cd->total_decls = idx;
 }
 
-/* Pass -- check usage of temporaries, inputs, outputs */
+/* Pass -- check and record usage of temporaries, inputs, outputs */
 static void etna_compile_pass_check_usage(struct etna_compile_data *cd, const struct tgsi_token *tokens)
 {
     struct tgsi_parse_context ctx = {};
@@ -410,9 +397,10 @@ static void etna_compile_pass_check_usage(struct etna_compile_data *cd, const st
          * used this allows finding ranges where the temporary can be borrowed
          * as input and/or output register
          *
-         * XXX in the case of loops this needs special care, as the last usage of a register
-         * inside a loop means it can still be used on next loop iteration (execution is no longer
-         * chronological). The register can only be declared "free" after the loop finishes.
+         * XXX in the case of loops this needs special care, or even be completely disabled, as
+         * the last usage of a register inside a loop means it can still be used on next loop
+         * iteration (execution is no longer * chronological). The register can only be
+         * declared "free" after the loop finishes.
          *
          * Same for inputs: the first usage of a register inside a loop doesn't mean that the register
          * won't have been overwritten in previous iteration. The register can only be declared free before the loop
@@ -471,7 +459,7 @@ static void assign_special_inputs(struct etna_compile_data *cd)
 {
     if(cd->processor == TGSI_PROCESSOR_FRAGMENT)
     {
-        /* never assign t0; writing to it causes fragment to be discarded? */
+        /* never assign t0 as it is the position output, start assigning at t1 */
         cd->next_free_native = 1;
         /* hardwire TGSI_SEMANTIC_POSITION (input and output) to t0 */
         for(int idx=0; idx<cd->total_decls; ++idx)
@@ -533,6 +521,7 @@ static void etna_compile_pass_optimize_outputs(struct etna_compile_data *cd, con
                 /* assignment of temporary to output --
                  * and the output doesn't yet have a native register assigned
                  * and the last use of the temporary is this instruction
+                 * and the MOV does not do a swizzle
                  */
                 if(inst->Dst[0].Register.File == TGSI_FILE_OUTPUT &&
                    inst->Src[0].Register.File == TGSI_FILE_TEMPORARY &&
@@ -549,7 +538,9 @@ static void etna_compile_pass_optimize_outputs(struct etna_compile_data *cd, con
                 /* direct assignment of input to output --
                  * and the input or output doesn't yet have a native register assigned
                  * and the output is only used in this instruction,
-                 * allocate a new register, and associate both input and output to it */
+                 * allocate a new register, and associate both input and output to it
+                 * and the MOV does not do a swizzle
+                 */
                 if(inst->Dst[0].Register.File == TGSI_FILE_OUTPUT &&
                    inst->Src[0].Register.File == TGSI_FILE_INPUT &&
                    !cd->file[TGSI_FILE_INPUT][in_idx].native.valid &&
@@ -558,8 +549,9 @@ static void etna_compile_pass_optimize_outputs(struct etna_compile_data *cd, con
                    cd->file[TGSI_FILE_OUTPUT][out_idx].first_use == inst_idx &&
                    etna_mov_check_no_swizzle(inst->Dst[0].Register, inst->Src[0].Register))
                 {
-                    cd->file[TGSI_FILE_OUTPUT][out_idx].native = cd->file[TGSI_FILE_INPUT][in_idx].native =
-                        alloc_new_native_reg(cd);
+                    cd->file[TGSI_FILE_OUTPUT][out_idx].native =
+                        cd->file[TGSI_FILE_INPUT][in_idx].native =
+                            alloc_new_native_reg(cd);
                     /* mark this MOV instruction as a no-op */
                     cd->dead_inst[inst_idx] = true;
                 }
@@ -573,7 +565,7 @@ static void etna_compile_pass_optimize_outputs(struct etna_compile_data *cd, con
     tgsi_parse_free(&ctx);
 }
 
-/* Get temporary to be used within one TGSI instruction.
+/* Get a temporary to be used within one TGSI instruction.
  * The first time that this function is called the temporary will be allocated.
  * Each call to this function will return the same temporary.
  */
@@ -587,7 +579,7 @@ static struct etna_native_reg etna_compile_get_inner_temp(struct etna_compile_da
     return cd->inner_temp;
 }
 
-/* emit instruction and append to program */
+/* Emit instruction and append it to program */
 static void emit_inst(struct etna_compile_data *cd, struct etna_inst *inst)
 {
     assert(cd->inst_ptr <= ETNA_MAX_INSTRUCTIONS);
@@ -674,8 +666,7 @@ static struct etna_inst_src convert_src(struct etna_compile_data *cd, const stru
     struct etna_inst_src rv = {
         .use = 1,
         .swiz = inst_swiz_compose(
-                    INST_SWIZ_X(in->Register.SwizzleX) | INST_SWIZ_Y(in->Register.SwizzleY) |
-                    INST_SWIZ_Z(in->Register.SwizzleZ) | INST_SWIZ_W(in->Register.SwizzleW),
+                    INST_SWIZ(in->Register.SwizzleX, in->Register.SwizzleY, in->Register.SwizzleZ, in->Register.SwizzleW),
                     swizzle),
         .neg = in->Register.Negate,
         .abs = in->Register.Absolute,
@@ -806,8 +797,7 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         .opcode = INST_OPCODE_LITP,
                         .sat = 0,
                         .dst = convert_dst(cd, &inst->Dst[0]),
-                        .src[0] = convert_src(cd, &inst->Src[0],
-                            (INST_SWIZ_X(0) | INST_SWIZ_Y(0) | INST_SWIZ_Z(1) | INST_SWIZ_W(1))), /* src.xxyy */
+                        .src[0] = convert_src(cd, &inst->Src[0], INST_SWIZ(0,0,1,1)), /* src.xxyy */
                         .src[1] = convert_src(cd, &inst->Src[0], INST_SWIZ_BROADCAST(0)), /* src.xxxx */
                         .src[2].use = 1,
                         .src[2].swiz = INST_SWIZ_BROADCAST(0), /* tmp.xxxx */
@@ -1265,7 +1255,7 @@ static void etna_compile_add_z_div_if_needed(struct etna_compile_data *cd)
 /** add a NOP to the shader if
  * a) the shader is empty
  * or
- * b) there is a label at the end if the shader
+ * b) there is a label at the end of the shader
  */
 static void etna_compile_add_nop_if_needed(struct etna_compile_data *cd)
 {
@@ -1325,7 +1315,10 @@ static void assign_texture_units(struct etna_compile_data *cd)
     }
 }
 
-/* additional pass to fill in branch targets */
+/* Additional pass to fill in branch targets. This pass should be last
+ * as no instruction reordering or removing/addition can be done anymore
+ * once the branch targets are computed.
+ */
 static void etna_compile_fill_in_labels(struct etna_compile_data *cd)
 {
     for(int idx=0; idx<cd->inst_ptr ; ++idx)
@@ -1572,7 +1565,7 @@ int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct
     /* Pass one -- check register file declarations and immediates */
     etna_compile_parse_declarations(cd, tokens);
 
-    etna_assign_decls(cd);
+    etna_allocate_decls(cd);
 
     /* Pass two -- check usage of temporaries, inputs, outputs */
     etna_compile_pass_check_usage(cd, tokens);

@@ -25,10 +25,22 @@
 #define H_ETNA_ASM
 #include <stdint.h>
 
+#include <etnaviv/isa.xml.h>
+
 /* Size of an instruction in 32-bit words */
 #define ETNA_INST_SIZE (4)
 /* Number of source operands per instruction */
 #define ETNA_NUM_SRC (3)
+
+/* Broadcast swizzle to all four components */
+#define INST_SWIZ_BROADCAST(x) \
+        (INST_SWIZ_X(x) | INST_SWIZ_Y(x) | INST_SWIZ_Z(x) | INST_SWIZ_W(x))
+/* Identity (NOP) swizzle */
+#define INST_SWIZ_IDENTITY \
+        (INST_SWIZ_X(0) | INST_SWIZ_Y(1) | INST_SWIZ_Z(2) | INST_SWIZ_W(3))
+/* Fully specified swizzle */
+#define INST_SWIZ(x,y,z,w) \
+        (INST_SWIZ_X(x) | INST_SWIZ_Y(y) | INST_SWIZ_Z(z) | INST_SWIZ_W(w))
 
 /*** operands ***/
 
@@ -72,6 +84,22 @@ struct etna_inst
     struct etna_inst_src src[ETNA_NUM_SRC]; /* source operand */
     unsigned imm;  /* takes place of src[2] for BRANCH/CALL */
 };
+
+/* Compose two swizzles (computes swz1.swz2) */
+static inline uint32_t inst_swiz_compose(uint32_t swz1, uint32_t swz2)
+{
+    return INST_SWIZ_X((swz1 >> (((swz2 >> 0)&3)*2))&3) |
+           INST_SWIZ_Y((swz1 >> (((swz2 >> 2)&3)*2))&3) |
+           INST_SWIZ_Z((swz1 >> (((swz2 >> 4)&3)*2))&3) |
+           INST_SWIZ_W((swz1 >> (((swz2 >> 6)&3)*2))&3);
+}
+
+/* Return whether the rgroup is one of the uniforms */
+static inline int etna_rgroup_is_uniform(unsigned rgroup)
+{
+    return rgroup == INST_RGROUP_UNIFORM_0 ||
+           rgroup == INST_RGROUP_UNIFORM_1;
+}
 
 /**
  * Build vivante instruction from structure with
