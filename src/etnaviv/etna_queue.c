@@ -27,25 +27,28 @@ int etna_queue_create(struct etna_ctx *ctx, struct etna_queue **queue_out)
     return ETNA_OK;
 }
 
-int etna_queue_clear(struct etna_queue *queue)
+struct _gcsQUEUE *_etna_queue_first(struct etna_queue *queue)
 {
+    struct _gcsQUEUE *rv = (queue->count == 0) ? NULL : queue->queue;
     queue->last = NULL;
     queue->count = 0;
-    return ETNA_OK;
+    return rv;
 }
 
 int etna_queue_alloc(struct etna_queue *queue, struct _gcsHAL_INTERFACE **cmd_out)
 {
-    int rv;
     if(queue == NULL)
         return ETNA_INVALID_ADDR;
     if(queue->count == queue->max_count)
     {
+        int rv;
         /* Queue is full, flush context. Assert that there is a one-to-one relationship
          * between queue and etna context so that flushing the context flushes this queue.
+         *
+         * Don't request a fence to prevent an infinite loop.
          */
         assert(queue->ctx->queue == queue);
-        if((rv = etna_flush(queue->ctx)) != ETNA_OK)
+        if((rv = etna_flush(queue->ctx, NULL)) != ETNA_OK)
             return rv;
         assert(queue->count == 0);
     }

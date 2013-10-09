@@ -27,42 +27,9 @@
 #include "pipe/p_state.h"
 
 struct pipe_screen;
-struct pipe_fence_handle;
-struct etna_ctx;
 
-struct etna_fence
-{
-    struct pipe_reference reference;
-    int signal; /* signal id from kernel */
-    bool signalled; /* cached value of signalled */
-    struct etna_fence *next_free; /* if in free list, reference to next free fence */
-};
-
-/** Convert generic pipe_fence_handle pointer to etna_fence */
-static INLINE struct etna_fence *
-etna_fence(struct pipe_fence_handle *pfence)
-{
-    return (struct etna_fence *)pfence;
-}
-
-/**
- * Create a new fence that will be signalled after GPU completes rendering
- * after the next flush.
- */
-int etna_fence_new(struct pipe_screen *screen,
-                   struct etna_ctx *ctx,
-                   struct pipe_fence_handle **fence);
-
-/**
- * Destroy a fence. In general, you should call etna_screen_fence_reference instead,
- * if there may be other references.
- */
-void etna_screen_destroy_fence(struct pipe_screen *screen_h, struct etna_fence *fence);
-
-/**
- * Destroy all fences kept around for re-use in the free list.
- */
-void etna_screen_destroy_fences(struct pipe_screen *screen_h);
+#define ETNA_FENCE_TO_PIPE_HANDLE(fence) ((struct pipe_fence_handle *)(fence))
+#define PIPE_HANDLE_TO_ETNA_FENCE(fence) ((uint32_t)(fence))
 
 void etna_screen_fence_init(struct pipe_screen *screen);
 

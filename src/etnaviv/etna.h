@@ -229,7 +229,7 @@ int etna_set_pipe(struct etna_ctx *ctx, enum etna_pipe pipe);
 /* Send currently queued commands to kernel.
  * @return OK on success, error code otherwise
  */
-int etna_flush(struct etna_ctx *ctx);
+int etna_flush(struct etna_ctx *ctx, uint32_t *fence_out);
 
 /* Send currently queued commands to kernel, then block for them to finish.
  * @return OK on success, error code otherwise

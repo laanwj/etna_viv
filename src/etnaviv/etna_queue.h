@@ -48,25 +48,12 @@ struct etna_queue {
  */
 int etna_queue_create(struct etna_ctx *ctx, struct etna_queue **queue_out);
 
-/* Clear the queue, removing all commands.
- */
-int etna_queue_clear(struct etna_queue *queue);
-
-/* Return pointer to first element in queue, or NULL if queue is empty.
+/* Return pointer to first element in queue, or NULL if queue is empty, and
+ * empty the queue so that it can be used for the next flush.
  * As the queue is submitted to the kernel as a linked list, a pointer to the first element is enough
  * to represent it.
- *
- * Submitting the queue is currently a two-step process:
- *
- * - Request first pointer using etna_queue_first
- * - Submit queue to kernel
- * - Clear queue using etna_queue_clear
- *
  */
-static inline struct _gcsQUEUE *etna_queue_first(struct etna_queue *queue)
-{
-    return (queue->count == 0) ? NULL : queue->queue;
-}
+struct _gcsQUEUE *_etna_queue_first(struct etna_queue *queue);
 
 /* Allocate a new kernel command structure, add it to the queue,
  * and return a pointer to it.

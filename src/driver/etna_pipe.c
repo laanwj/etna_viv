@@ -1231,21 +1231,19 @@ static void etna_pipe_set_index_buffer( struct pipe_context *pipe,
 }
 
 static void etna_pipe_flush(struct pipe_context *pipe,
-             struct pipe_fence_handle **fence,
+             struct pipe_fence_handle **fence_out,
              enum pipe_flush_flags flags)
 {
     struct etna_pipe_context *priv = etna_pipe_context(pipe);
-    if(fence)
-    {
-        if(etna_fence_new(pipe->screen, priv->ctx, fence) != ETNA_OK)
-        {
-            BUG("Error: could not create fence");
-        }
-    }
-    if(etna_flush(priv->ctx) != ETNA_OK)
+    uint32_t _fence_tmp; /* just pass through fence, though we have to convert the type... */
+    uint32_t *fence_in = (fence_out == NULL) ? NULL : (&_fence_tmp);
+    if(etna_flush(priv->ctx, fence_in) != ETNA_OK)
     {
         BUG("Error: etna_flush failed, GPU may be in unpredictable state");
     }
+    if(fence_out)
+        *fence_out = ETNA_FENCE_TO_PIPE_HANDLE(*fence_in);
+
     if(DBG_ENABLED(ETNA_DBG_FINISH_ALL))
     {
         if(etna_finish(priv->ctx) != ETNA_OK)

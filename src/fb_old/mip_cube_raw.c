@@ -637,7 +637,7 @@ int main(int argc, char **argv)
                 VIVS_RS_WINDOW_SIZE_WIDTH(width));
         etna_set_state(ctx, VIVS_RS_KICKER, 0xbeebbeeb);
 
-        etna_flush(ctx);
+        etna_flush(ctx, NULL);
         etna_bswap_queue_swap(buffers);
     }
 #ifdef DUMP

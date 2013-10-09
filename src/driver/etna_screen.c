@@ -81,9 +81,7 @@ static void etna_set_debug_flags(const char *str)
 
 static void etna_screen_destroy( struct pipe_screen *screen )
 {
-    struct etna_screen *priv = etna_screen(screen);
-    etna_screen_destroy_fences(screen);
-    pipe_mutex_destroy(priv->fence_mutex);
+    //struct etna_screen *priv = etna_screen(screen);
     FREE(screen);
 }
 
@@ -571,8 +569,6 @@ etna_screen_create(struct viv_conn *dev)
 
     etna_screen_fence_init(pscreen);
     etna_screen_resource_init(pscreen);
-
-    pipe_mutex_init(screen->fence_mutex);
 
     return pscreen;
 }

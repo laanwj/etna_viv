@@ -144,7 +144,7 @@ int etna_bswap_wait_available(struct etna_bswap_buffers *bufs)
     pthread_mutex_lock(&buf->available_mutex);
     if(!buf->is_available) /* if we're going to wait anyway, flush so that GPU is not idle */
     {
-        etna_flush(bufs->ctx);
+        etna_flush(bufs->ctx, NULL);
     }
     while(!buf->is_available)
     {
@@ -166,7 +166,7 @@ int etna_bswap_queue_swap(struct etna_bswap_buffers *bufs)
 #endif
         return ETNA_INTERNAL_ERROR;
     }
-    if((rv=etna_flush(bufs->ctx)) != ETNA_OK)
+    if((rv=etna_flush(bufs->ctx, NULL)) != ETNA_OK)
         return rv;
     bufs->backbuffer = (bufs->backbuffer + 1) % bufs->num_buffers;
     return ETNA_OK;

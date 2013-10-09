@@ -27,8 +27,17 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <pthread.h>
 
 #define VIV_WAIT_INDEFINITE (0xffffffff)
+
+/* Number of signals to keep for fences, max is 32 */
+#define VIV_NUM_FENCE_SIGNALS 32
+
+/* Return true if fence a was before b */
+#define VIV_FENCE_BEFORE(a,b) ((int32_t)((b)-(a))>0)
+/* Return true if fence a was before or equal to b */
+#define VIV_FENCE_BEFORE_EQ(a,b) ((int32_t)((b)-(a))>=0)
 
 /* Enum with indices for each of the feature words */
 enum viv_features_word
@@ -184,6 +193,16 @@ struct viv_conn {
     viv_handle_t process;
     struct viv_specs chip;
     struct viv_kernel_driver_version kernel_driver;
+    /* signals for fences */
+    int fence_signals[VIV_NUM_FENCE_SIGNALS];
+    /* guard these with a mutex, so
+     * that no races happen and command buffers are submitted
+     * in the same order as the fence ids.
+     */
+    pthread_mutex_t fence_mutex;
+    uint32_t next_fence_id; /* Next fence number to be dealt */
+    uint32_t fences_pending; /* Bitmask of fences signalled but not yet waited for */
+    uint32_t last_fence_id; /* Most recent signalled fence */
 };
 
 /* Predefines for some kernel structures */
@@ -288,6 +307,27 @@ int viv_read_register(struct viv_conn *conn, uint32_t address, uint32_t *data);
  * (gcdREGISTER_ACCESS_FROM_USER=1)
  */
 int viv_write_register(struct viv_conn *conn, uint32_t address, uint32_t data);
+
+/** Internal: Request a new fence handle and return it. Also return signal id
+ * associated with the fence, to add to queue.
+ * @note must be called with fence_mutex held.
+ */
+int _viv_fence_new(struct viv_conn *conn, uint32_t *fence_out, int *signal_out);
+
+/** Internal: Mark a fence as pending.
+ * Call this only after submitting the signal to the kernel.
+ * @note must be called with fence_mutex held.
+ */
+void _viv_fence_mark_pending(struct viv_conn *conn, uint32_t fence);
+
+/** Wait for fence or poll status.
+ * Timeout is in milliseconds.
+ * Pass a timeout of 0 to poll fence status, or VIV_WAIT_INDEFINITE to wait forever.
+ * @return VIV_STATUS_OK if fence finished
+ *         VIV_STATUS_TIMEOUT if timeout expired first
+ *         other if an error occured
+ */
+int viv_fence_finish(struct viv_conn *conn, uint32_t fence, uint32_t timeout);
 
 /** Convenience macro to probe features from state.xml.h:
  * VIV_FEATURE(chipFeatures, FAST_CLEAR)

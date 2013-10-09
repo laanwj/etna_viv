@@ -566,7 +566,7 @@ int main(int argc, char **argv)
         //exit(1);
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
 
-        etna_flush(ctx);
+        etna_flush(ctx, NULL);
 
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
         etna_set_state(ctx, VIVS_RS_CONFIG,
@@ -588,7 +588,7 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_RS_KICKER, 0xbeebbeeb);
 
         /* Submit second command buffer */
-        etna_flush(ctx);
+        etna_flush(ctx, NULL);
 
         etna_warm_up_rs(ctx, aux_rt->address, aux_rt_ts->address);
 

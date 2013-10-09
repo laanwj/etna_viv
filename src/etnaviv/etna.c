@@ -451,7 +451,7 @@ int _etna_reserve_internal(struct etna_ctx *ctx, size_t n)
             abort(); /* buffer is in invalid state XXX need some kind of recovery */
         }
         /* Otherwise, if there is something to be committed left in the current command buffer, commit it */
-        if((status = etna_flush(ctx)) != ETNA_OK)
+        if((status = etna_flush(ctx, NULL)) != ETNA_OK)
         {
             printf("%s: reserve failed: %i\n", __func__, status);
             abort(); /* buffer is in invalid state XXX need some kind of recovery */
@@ -468,27 +468,72 @@ int _etna_reserve_internal(struct etna_ctx *ctx, size_t n)
     return status;
 }
 
-int etna_flush(struct etna_ctx *ctx)
+int etna_flush(struct etna_ctx *ctx, uint32_t *fence_out)
 {
-    int status;
+    int status = ETNA_OK;
     if(ctx == NULL)
         return ETNA_INVALID_ADDR;
     if(ctx->cur_buf == ETNA_CTX_BUFFER)
         /* Can never flush while building context buffer */
         return ETNA_INTERNAL_ERROR;
-    struct _gcsQUEUE *queue_first = etna_queue_first(ctx->queue);
-    if(ctx->cur_buf == ETNA_NO_BUFFER)
-        goto nothing_to_do;
-    gcoCMDBUF cur_buf = ctx->cmdbuf[ctx->cur_buf];
 
-    ETNA_ALIGN(ctx); /* make sure end of submitted command buffer end is aligned */
+    if(fence_out) /* is a fence handle requested? */
+    {
+        uint32_t fence;
+        int signal;
+        /* Need to lock the fence mutex to make sure submits are ordered by
+         * fence number.
+         */
+        pthread_mutex_lock(&ctx->conn->fence_mutex);
+        do {
+            /*   Get next fence ID */
+            if((status = _viv_fence_new(ctx->conn, &fence, &signal)) != VIV_STATUS_OK)
+            {
+                printf("%s: could not request fence\n", __func__);
+                goto unlock_and_return_status;
+            }
+        } while(fence == 0); /* don't return fence handle 0 as it is interpreted as error value downstream */
+        /*   Queue the signal. This can call in turn call this function (but
+         * without fence) if the queue was full, so we should be able to handle
+         * that. In that case, we will exit from this function with only
+         * this fence in the queue and an empty command buffer.
+         */
+        if((status = etna_queue_signal(ctx->queue, signal, VIV_WHERE_PIXEL)) != ETNA_OK)
+        {
+            printf("%s: error %i queueing fence signal %i\n", __func__, status, signal);
+            goto unlock_and_return_status;
+        }
+        *fence_out = fence;
+    }
+    /***** Start fence mutex locked */
+    /* Make sure to unlock the mutex before returning */
+    struct _gcsQUEUE *queue_first = _etna_queue_first(ctx->queue);
+    gcoCMDBUF cur_buf = (ctx->cur_buf != ETNA_NO_BUFFER) ? ctx->cmdbuf[ctx->cur_buf] : NULL;
+
+    if(cur_buf == NULL || (ctx->offset*4 <= (cur_buf->startOffset + BEGIN_COMMIT_CLEARANCE)))
+    {
+        /* Nothing in command buffer; but if we end up here there may be kernel commands to submit. Do this seperately. */
+        if(queue_first != NULL)
+        {
+            ctx->flushes = 0;
+            if((status = viv_event_commit(ctx->conn, queue_first)) != 0)
+            {
+#ifdef DEBUG
+                fprintf(stderr, "Error committing kernel commands\n");
+#endif
+                goto unlock_and_return_status;
+            }
+            if(fence_out) /* mark fence as submitted to kernel */
+                _viv_fence_mark_pending(ctx->conn, *fence_out);
+        }
+        goto unlock_and_return_status;
+    }
+
+    cur_buf->offset = ctx->offset*4; /* Copy over current end offset into CMDBUF, for kernel */
 #ifdef DEBUG
     printf("Committing command buffer %i startOffset=%x offset=%x\n", ctx->cur_buf,
             cur_buf->startOffset, ctx->offset*4);
 #endif
-    if(ctx->offset*4 <= (cur_buf->startOffset + BEGIN_COMMIT_CLEARANCE))
-        goto nothing_to_do;
-    cur_buf->offset = ctx->offset*4; /* Copy over current ending offset into CMDBUF, for kernel */
 #ifdef DEBUG_CMDBUF
     etna_dump_cmd_buffer(ctx);
 #endif
@@ -504,10 +549,14 @@ int etna_flush(struct etna_ctx *ctx)
 #ifdef DEBUG
         fprintf(stderr, "Error committing command buffer\n");
 #endif
-        return status;
+        goto unlock_and_return_status;
     }
-    if((status = etna_queue_clear(ctx->queue)) != ETNA_OK)
-        return status;
+    if(fence_out)
+    {
+        _viv_fence_mark_pending(ctx->conn, *fence_out);
+        pthread_mutex_unlock(&ctx->conn->fence_mutex);
+    }
+    /***** End fence mutex locked */
 #ifdef GCABI_HAS_CONTEXT
     /* set context entryPipe to currentPipe (next commit will start with current pipe) */
     GCCTX(ctx)->entryPipe = GCCTX(ctx)->currentPipe;
@@ -559,22 +608,11 @@ int etna_flush(struct etna_ctx *ctx)
 #endif
 #endif
     return ETNA_OK;
-nothing_to_do:
-    /* Nothing in command buffer; but there may be kernel commands to submit. Do this seperately. */
-    if(queue_first != NULL)
-    {
-        ctx->flushes = 0;
-        if((status = viv_event_commit(ctx->conn, queue_first)) != 0)
-        {
-#ifdef DEBUG
-            fprintf(stderr, "Error committing kernel commands\n");
-#endif
-            return status;
-        }
-        if((status = etna_queue_clear(ctx->queue)) != ETNA_OK)
-            return status;
-    }
-    return ETNA_OK;
+
+unlock_and_return_status: /* Unlock fence mutex (if necessary) and return status */
+    if(fence_out)
+        pthread_mutex_unlock(&ctx->conn->fence_mutex);
+    return status;
 }
 
 int etna_finish(struct etna_ctx *ctx)
@@ -587,7 +625,7 @@ int etna_finish(struct etna_ctx *ctx)
     {
         return ETNA_INTERNAL_ERROR;
     }
-    if((status = etna_flush(ctx)) != ETNA_OK)
+    if((status = etna_flush(ctx, NULL)) != ETNA_OK)
         return status;
 #ifdef DEBUG
     printf("finish: Waiting for signal...\n");

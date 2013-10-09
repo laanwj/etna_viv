@@ -38,9 +38,6 @@ struct etna_screen {
     char name[ETNA_SCREEN_NAME_LEN];
     struct viv_conn *dev;
     struct etna_pipe_specs specs;
-
-    pipe_mutex fence_mutex;
-    struct etna_fence *fence_freelist;
 };
 
 /* Resolve target.

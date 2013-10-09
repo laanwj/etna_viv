@@ -50,6 +50,49 @@
 const char *galcore_device[] = {"/dev/gal3d", "/dev/galcore", "/dev/graphics/galcore", NULL};
 #define INTERFACE_SIZE (sizeof(gcsHAL_INTERFACE))
 
+/* Allocate signals for fences */
+static int viv_allocate_signals(struct viv_conn *conn)
+{
+    int rv;
+    if(pthread_mutex_init(&conn->fence_mutex, NULL))
+        return VIV_STATUS_OUT_OF_MEMORY;
+    for(int x=0; x<VIV_NUM_FENCE_SIGNALS; ++x)
+    {
+        /* Create signal with manual reset; we want to be able to probe it
+         * or wait for it without resetting it.
+         */
+        if((rv = viv_user_signal_create(conn, /* manualReset */ false, &conn->fence_signals[x])) != VIV_STATUS_OK)
+        {
+            return rv;
+        }
+    }
+    conn->next_fence_id = 0;
+    conn->last_fence_id = -1; /* far enough into the past */
+    return VIV_STATUS_OK;
+}
+
+/* Free signals for fences */
+static int viv_deallocate_signals(struct viv_conn *conn)
+{
+    int rv;
+    for(int x=0; x<VIV_NUM_FENCE_SIGNALS; ++x)
+    {
+        if((rv = viv_user_signal_destroy(conn, conn->fence_signals[x])) != VIV_STATUS_OK)
+            return rv;
+    }
+    if(pthread_mutex_destroy(&conn->fence_mutex))
+        return VIV_STATUS_OUT_OF_MEMORY;
+    return VIV_STATUS_OK;
+}
+
+/* Get signal id # for a fence */
+static int signal_for_fence(struct viv_conn *conn, uint32_t fence)
+{
+    if((conn->next_fence_id - fence) >= VIV_NUM_FENCE_SIGNALS)
+        return -1; /* too old */
+    return conn->fence_signals[fence % VIV_NUM_FENCE_SIGNALS];
+}
+
 /* Call ioctl interface with structure cmd as input and output.
  * @returns status (VIV_STATUS_xxx)
  */
@@ -86,6 +129,9 @@ int viv_close(struct viv_conn *conn)
 {
     if(conn->fd < 0)
         return -1;
+
+    (void) viv_deallocate_signals(conn);
+
     close(conn->fd);
     free(conn);
 #ifdef ETNAVIV_HOOK
@@ -216,6 +262,9 @@ int viv_open(enum viv_hw_type hw_type, struct viv_conn **out)
     }
 
     conn->process = getpid(); /* value passed as .process to commands */
+
+    if((err=viv_allocate_signals(conn)) != VIV_STATUS_OK)
+        goto error;
 
     *out = conn;
     return gcvSTATUS_OK;
@@ -558,5 +607,100 @@ int viv_write_register(struct viv_conn *conn, uint32_t address, uint32_t data)
     id.u.WriteRegisterData.address = address;
     id.u.WriteRegisterData.data = data;
     return viv_invoke(conn, &id);
+}
+
+int _viv_fence_new(struct viv_conn *conn, uint32_t *fence_out, int *signal_out)
+{
+    /* Request fence and queue signal */
+    uint32_t fence = conn->next_fence_id++;
+    int signal = signal_for_fence(conn, fence);
+    int status;
+    /*   First, wait for old signal before reusing it if needed */
+    uint32_t oldfence = fence - VIV_NUM_FENCE_SIGNALS;
+    uint32_t fence_mod_signals = (fence % VIV_NUM_FENCE_SIGNALS);
+    if(conn->fences_pending & (1<<fence_mod_signals)) /* fence still pending? */
+    {
+#ifdef FENCE_DEBUG
+        printf("Waiting for old fence %08x (which is after %08x)\n", oldfence,
+                conn->last_fence_id);
+#endif
+        if((status = viv_user_signal_wait(conn, signal, VIV_WAIT_INDEFINITE)) != VIV_STATUS_OK)
+        {
+            return status;
+        }
+        /* update last signalled fence if necessary */
+        if(VIV_FENCE_BEFORE(conn->last_fence_id, oldfence))
+            conn->last_fence_id = oldfence;
+        conn->fences_pending &= ~(1<<fence_mod_signals);
+    }
+    *fence_out = fence;
+    *signal_out = signal;
+#ifdef FENCE_DEBUG
+    printf("New fence: %08x [signal %08x], pending %08x\n", fence, signal, conn->fences_pending);
+#endif
+    return VIV_STATUS_OK;
+}
+
+void _viv_fence_mark_pending(struct viv_conn *conn, uint32_t fence)
+{
+    if((conn->next_fence_id - fence) >= VIV_NUM_FENCE_SIGNALS)
+        return; /* too old */
+    conn->fences_pending |= (1<<(fence % VIV_NUM_FENCE_SIGNALS));
+}
+
+int viv_fence_finish(struct viv_conn *conn, uint32_t fence, uint32_t timeout)
+{
+    int signal;
+    int rv;
+    pthread_mutex_lock(&conn->fence_mutex);
+    signal = signal_for_fence(conn, fence);
+    if(signal == -1)
+    {
+#ifdef FENCE_DEBUG
+        printf("Fence already expired: %08x\n", fence);
+#endif
+        goto unlock_and_ok; /* fence too old, it must have been signalled already */
+    }
+    /* If fence is older than last_fence_id which is the last signalled fence,
+     * it must already have been signalled. We can make use of the fact that there is only
+     * one ringbuffer inside the kernel, so commands submitted prior to this
+     * fence will be executed before this fence.
+     * Also check whether fence is really pending, if not simply return.
+     */
+    uint32_t fence_mod_signals = (fence % VIV_NUM_FENCE_SIGNALS);
+    if(!(conn->fences_pending & (1<<fence_mod_signals)) ||
+        VIV_FENCE_BEFORE_EQ(fence, conn->last_fence_id))
+    {
+#ifdef FENCE_DEBUG
+        printf("Fence already signaled: %08x, pending %i, newer than %08x; next fence id is %08x\n",
+                fence,
+                (conn->fences_pending >> fence_mod_signals)&1,
+                conn->last_fence_id, conn->next_fence_id);
+#endif
+        goto unlock_and_ok;
+    }
+    pthread_mutex_unlock(&conn->fence_mutex); /* don't keep mutex while waiting */
+
+    rv = viv_user_signal_wait(conn, signal, timeout);
+    if(rv == VIV_STATUS_OK)
+    {
+        pthread_mutex_lock(&conn->fence_mutex);
+        /* mark fence as non-pending */
+        conn->fences_pending &= ~(1<<fence_mod_signals);
+        /* if fence is later than last_fence_id, update last_fence_id */
+        if(VIV_FENCE_BEFORE(conn->last_fence_id, fence))
+        {
+            conn->last_fence_id = fence;
+#ifdef FENCE_DEBUG
+            printf("Last fence id updated to %i\n", conn->last_fence_id);
+#endif
+        }
+        pthread_mutex_unlock(&conn->fence_mutex);
+    }
+    return rv;
+
+unlock_and_ok: /* unlock mutex and return OK */
+    pthread_mutex_unlock(&conn->fence_mutex);
+    return VIV_STATUS_OK;
 }
 
