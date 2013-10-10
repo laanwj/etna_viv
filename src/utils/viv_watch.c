@@ -36,7 +36,7 @@
 #include <unistd.h>
 
 #include <etnaviv/viv.h>
-#include "gc_hal.h"
+#include "gc_abi.h"
 
 struct viv_conn *conn = 0;
 

@@ -48,7 +48,7 @@
 #include <unistd.h>
 
 #include <etnaviv/viv.h>
-#include "gc_hal.h"
+#include "gc_abi.h"
 
 int main()
 {
