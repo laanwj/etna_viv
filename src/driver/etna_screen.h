@@ -50,7 +50,6 @@ struct etna_rs_target
    unsigned width, height;
    size_t addr; /* GPU address */
    size_t stride;
-   bool want_fence; /* should flush_frontbuffer return a fence? */
    struct pipe_fence_handle *fence;
 };
 

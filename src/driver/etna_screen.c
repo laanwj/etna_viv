@@ -437,15 +437,12 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
     struct etna_rs_target *drawable = (struct etna_rs_target *)winsys_drawable_handle;
     struct etna_resource *rt_resource = etna_resource(resource);
     struct etna_pipe_context *ectx = rt_resource->last_ctx;
-    struct pipe_fence_handle **fence = 0;
     assert(level <= resource->last_level && layer < resource->array_size);
     assert(ectx);
     struct etna_ctx *ctx = ectx->ctx;
 
     /* release previous fence, make reference to fence if we need one */
     screen->fence_reference(screen, &drawable->fence, NULL);
-    if(drawable->want_fence)
-        fence = &drawable->fence;
 
     etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR);
     etna_stall(ctx, SYNC_RECIPIENT_RA, SYNC_RECIPIENT_PE);
@@ -497,7 +494,7 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
             rt_resource->levels[0].address,
             drawable->addr, drawable->stride,
             drawable->width, drawable->height, ctx);
-    ectx->base.flush(&ectx->base, fence, 0);
+    ectx->base.flush(&ectx->base, &drawable->fence, 0);
 }
 
 struct pipe_screen *
