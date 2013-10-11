@@ -21,6 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 #include <etnaviv/etna.h>
+#include <etnaviv/etna_bo.h>
 #include <etnaviv/viv.h>
 #include <etnaviv/etna_queue.h>
 #include <etnaviv/state.xml.h>
@@ -55,54 +56,6 @@ static int gpu_context_clear(struct etna_ctx *ctx);
 
 #define GCCTX(x) ((gcoCONTEXT)(size_t)((x)->ctx))
 
-/* Allocate new command buffer for context */
-static int gpu_context_allocate_buffer(struct etna_ctx *ctx, struct etna_context_info *ctx_info)
-{
-    if(viv_alloc_contiguous(ctx->conn, COMMAND_BUFFER_SIZE,
-                &ctx_info->physical,
-                &ctx_info->logical,
-                &ctx_info->bytes)!=0)
-    {
-#ifdef DEBUG
-        fprintf(stderr, "Error allocating contiguous host memory for context\n");
-#endif
-        return ETNA_OUT_OF_MEMORY;
-    }
-#ifdef DEBUG
-    printf("Allocated buffer (size 0x%x) for context: phys=%08x log=%08x\n", (int)ctx_info->bytes, (int)ctx_info->physical, (int)ctx_info->logical);
-#endif
-    return ETNA_OK;
-}
-
-/* Free command buffer for context, either immediately or queued for when the
- * GPU is finished with it. */
-static int gpu_context_free_buffer(struct etna_ctx *ctx, struct etna_context_info *ctx_info, bool queued)
-{
-    int rv;
-    if(queued)
-    {
-        rv = etna_queue_free_contiguous(ctx->queue,
-                    ctx_info->bytes,
-                    ctx_info->physical,
-                    ctx_info->logical);
-    } else {
-        rv = viv_free_contiguous(ctx->conn,
-                    ctx_info->bytes,
-                    ctx_info->physical,
-                    ctx_info->logical);
-    }
-    if(rv != ETNA_OK)
-    {
-#ifdef DEBUG
-        fprintf(stderr, "Error releasing contiguous host memory for context (%i)\n", rv);
-#endif
-        return rv;
-    }
-    ctx_info->bytes = ctx_info->physical = 0;
-    ctx_info->logical = NULL;
-    return ETNA_OK;
-}
-
 static int gpu_context_initialize(struct etna_ctx *ctx)
 {
     int rv;
@@ -133,10 +86,11 @@ static int gpu_context_initialize(struct etna_ctx *ctx)
 
     ctx->ctx = VIV_TO_HANDLE(vctx);
     /* Allocate initial context buffer */
-    if((rv = gpu_context_allocate_buffer(ctx, &ctx->ctx_info)) != ETNA_OK)
+    /*   XXX DRM_ETNA_GEM_CACHE_xxx */
+    if((ctx->ctx_info = etna_bo_new(ctx->conn, COMMAND_BUFFER_SIZE, DRM_ETNA_GEM_TYPE_CMD)) == NULL)
     {
         ETNA_FREE(vctx);
-        return rv;
+        return ETNA_OUT_OF_MEMORY;
     }
     /* Set context to initial sane values */
     gpu_context_clear(ctx);
@@ -160,13 +114,13 @@ static int gpu_context_clear(struct etna_ctx *ctx)
 #ifdef DEBUG
         printf("gpu_context_clear: context was in use, deferred freeing and reallocating it\n");
 #endif
-        if((rv = gpu_context_free_buffer(ctx, &ctx->ctx_info, true)) != ETNA_OK)
+        if((rv = etna_bo_del(ctx->conn, ctx->ctx_info, ctx->queue)) != ETNA_OK)
         {
             return rv;
         }
-        if((rv = gpu_context_allocate_buffer(ctx, &ctx->ctx_info)) != ETNA_OK)
+        if((ctx->ctx_info = etna_bo_new(ctx->conn, COMMAND_BUFFER_SIZE, DRM_ETNA_GEM_TYPE_CMD)) == NULL)
         {
-            return rv;
+            return ETNA_OUT_OF_MEMORY;
         }
     }
     /* Leave space at beginning of buffer for PIPE switch */
@@ -318,7 +272,7 @@ int etna_create(struct viv_conn *conn, struct etna_ctx **ctx_out)
     for(int x=0; x<NUM_COMMAND_BUFFERS; ++x)
     {
         ctx->cmdbuf[x] = ETNA_CALLOC_STRUCT(_gcoCMDBUF);
-        if(viv_alloc_contiguous(conn, COMMAND_BUFFER_SIZE, &ctx->cmdbufi[x].physical, &ctx->cmdbufi[x].logical, &ctx->cmdbufi[x].bytes)!=0)
+        if((ctx->cmdbufi[x].bo = etna_bo_new(conn, COMMAND_BUFFER_SIZE, DRM_ETNA_GEM_TYPE_CMD))==NULL)
         {
 #ifdef DEBUG
             fprintf(stderr, "Error allocating host memory for command buffer\n");
@@ -327,10 +281,10 @@ int etna_create(struct viv_conn *conn, struct etna_ctx **ctx_out)
         }
         ctx->cmdbuf[x]->object.type = gcvOBJ_COMMANDBUFFER;
 #ifdef GCABI_CMDBUF_HAS_PHYSICAL
-        ctx->cmdbuf[x]->physical = PTR_TO_VIV((void*)ctx->cmdbufi[x].physical);
+        ctx->cmdbuf[x]->physical = PTR_TO_VIV((void*)etna_bo_gpu_address(ctx->cmdbufi[x].bo));
         ctx->cmdbuf[x]->bytes = ctx->cmdbufi[x].bytes;
 #endif
-        ctx->cmdbuf[x]->logical = PTR_TO_VIV((void*)ctx->cmdbufi[x].logical);
+        ctx->cmdbuf[x]->logical = PTR_TO_VIV((void*)etna_bo_map(ctx->cmdbufi[x].bo));
 
         if(viv_user_signal_create(conn, 0, &ctx->cmdbufi[x].sig_id) != 0 ||
            viv_user_signal_signal(conn, ctx->cmdbufi[x].sig_id, 1) != 0)
@@ -404,12 +358,12 @@ int etna_free(struct etna_ctx *ctx)
     etna_queue_free(ctx->queue);
 #ifdef GCABI_HAVE_CONTEXT
     /* Free context buffer */
-    gpu_context_free_buffer(ctx, &ctx->ctx_info, false);
+    etna_bo_del(ctx->conn, ctx->ctx_info, NULL);
 #endif
     /* Free command buffers */
     for(int x=0; x<NUM_COMMAND_BUFFERS; ++x)
     {
-        viv_free_contiguous(ctx->conn, ctx->cmdbufi[x].bytes, (viv_addr_t)ctx->cmdbufi[x].physical, VIV_TO_PTR(ctx->cmdbufi[x].logical));
+        etna_bo_del(ctx->conn, ctx->cmdbufi[x].bo, NULL);
         ETNA_FREE(ctx->cmdbuf[x]);
     }
     ETNA_FREE(ctx);

@@ -89,6 +89,7 @@ enum etna_pipe {
 struct _gcoCMDBUF;
 struct etna_queue;
 struct etna_ctx;
+struct etna_bo;
 
 struct etna_context_info {
     size_t bytes;
@@ -100,12 +101,9 @@ typedef int (*etna_context_snapshot_cb_t)(void *data, struct etna_ctx *ctx,
         enum etna_pipe *initial_pipe, enum etna_pipe *final_pipe);
 
 struct etna_cmdbuf {
-    /* sync signals for command buffer */
+    /* sync signal for command buffer */
     int sig_id;
-    /* memory info */
-    size_t bytes;
-    viv_addr_t physical;
-    void *logical;
+    struct etna_bo *bo;
 };
 
 struct etna_ctx {
@@ -134,7 +132,7 @@ struct etna_ctx {
     int flushes;
     /* context */
     viv_context_t ctx;
-    struct etna_context_info ctx_info;
+    struct etna_bo *ctx_bo;
     etna_context_snapshot_cb_t ctx_cb;
     void *ctx_cb_data;
     /* command queue */

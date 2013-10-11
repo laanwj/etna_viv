@@ -45,7 +45,7 @@
 #include <etnaviv/cmdstream.xml.h>
 #include <etnaviv/viv.h>
 #include <etnaviv/etna.h>
-#include <etnaviv/etna_mem.h>
+#include <etnaviv/etna_bo.h>
 #include <etnaviv/etna_util.h>
 #include <etnaviv/etna_rs.h>
 
@@ -92,16 +92,16 @@ int main(int argc, char **argv)
     printf("Succesfully opened device\n");
 
     /* Allocate target bitmap */
-    struct etna_vidmem *bmp = 0;
+    struct etna_bo *bmp = 0;
     size_t bmp_size = dest_stride * height;
-    if(etna_vidmem_alloc_linear(conn, &bmp, bmp_size, VIV_SURF_BITMAP, VIV_POOL_DEFAULT, true) != ETNA_OK)
+    if((bmp=etna_bo_new(conn, bmp_size, DRM_ETNA_GEM_TYPE_BMP))==NULL)
     {
         fprintf(stderr, "Error allocating video memory\n");
         exit(1);
     }
 
     /* Allocate and read test YV12 image */
-    struct etna_vidmem *src[3] = {0}; /* source */
+    struct etna_bo *src[3] = {0}; /* source */
     int src_width[3], src_height[3], src_stride[3];
     size_t src_size[3];
     src_width[0] = 284;
@@ -117,7 +117,7 @@ int main(int argc, char **argv)
     for(int plane=0; plane<3; ++plane)
     {
         src_size[plane] = src_stride[plane] * src_height[plane];
-        if(etna_vidmem_alloc_linear(conn, &src[plane], src_size[plane], VIV_SURF_BITMAP, VIV_POOL_DEFAULT, true) != ETNA_OK)
+        if((src[plane]=etna_bo_new(conn, src_size[plane], DRM_ETNA_GEM_TYPE_BMP))==NULL)
         {
             fprintf(stderr, "Error allocating video memory\n");
             exit(1);
@@ -133,22 +133,22 @@ int main(int argc, char **argv)
     for(int plane=0; plane<3; ++plane)
     {
         for(int line=0; line<src_height[plane]; ++line)
-            fread(src[plane]->logical + src_stride[plane]*line, etna_align_up(src_width[plane], 4), 1, f);
+            fread(etna_bo_map(src[plane]) + src_stride[plane]*line, etna_align_up(src_width[plane], 4), 1, f);
     }
     fclose(f);
     printf("Succesfully loaded test image\n");
     // Debug: uncomment to disable planes
-    //memset(src[0]->logical, 0, src_stride[0]*src_height[0]);
-    //memset(src[1]->logical, 0, src_stride[1]*src_height[1]);
-    //memset(src[2]->logical, 0, src_stride[2]*src_height[2]);
+    //memset(etna_bo_map(src[0]), 0, src_stride[0]*src_height[0]);
+    //memset(etna_bo_map(src[1]), 0, src_stride[1]*src_height[1]);
+    //memset(etna_bo_map(src[2]), 0, src_stride[2]*src_height[2]);
 
     /* Allocate temporary surface for scaling */
-    struct etna_vidmem *temp = 0;
+    struct etna_bo *temp = 0;
     size_t temp_width = width; // horizontal pass first
     size_t temp_height = src_height[0];
     size_t temp_stride = etna_align_up(temp_width, 8) * 4; // always align to 8 pixels
     size_t temp_size = temp_stride * temp_height;
-    if(etna_vidmem_alloc_linear(conn, &temp, temp_size, VIV_SURF_BITMAP, VIV_POOL_DEFAULT, true) != ETNA_OK)
+    if((temp=etna_bo_new(conn, temp_size, DRM_ETNA_GEM_TYPE_BMP))==NULL)
     {
         fprintf(stderr, "Error allocating video memory\n");
         exit(1);
@@ -168,7 +168,7 @@ int main(int argc, char **argv)
      * but we're lazy.
      */
     for(int i=0; i<bmp_size/4; ++i)
-        ((uint32_t*)bmp->logical)[i] = 0xff404040;
+        ((uint32_t*)etna_bo_map(bmp))[i] = 0xff404040;
 
     /* Compute lanczos filter kernel */
     uint32_t filter_kernel[FB_DWORD_COUNT] = {0};
@@ -237,11 +237,11 @@ int main(int argc, char **argv)
         /*((( Horizontal pass )))*/
 
         /* Source configuration */
-        etna_set_state(ctx, VIVS_DE_SRC_ADDRESS, src[0]->address);
+        etna_set_state(ctx, VIVS_DE_SRC_ADDRESS, etna_bo_gpu_address(src[0]));
         etna_set_state(ctx, VIVS_DE_SRC_STRIDE, src_stride[0]);
-        etna_set_state(ctx, VIVS_DE_UPLANE_ADDRESS, src[1]->address);
+        etna_set_state(ctx, VIVS_DE_UPLANE_ADDRESS, etna_bo_gpu_address(src[1]));
         etna_set_state(ctx, VIVS_DE_UPLANE_STRIDE, src_stride[1]);
-        etna_set_state(ctx, VIVS_DE_VPLANE_ADDRESS, src[2]->address);
+        etna_set_state(ctx, VIVS_DE_VPLANE_ADDRESS, etna_bo_gpu_address(src[2]));
         etna_set_state(ctx, VIVS_DE_VPLANE_STRIDE, src_stride[2]);
 
         /* Are these used in VR blit?
@@ -260,7 +260,7 @@ int main(int argc, char **argv)
                 VIVS_DE_STRETCH_FACTOR_HIGH_Y(((src_height[0] - 1) << 16) / (height - 1)));
 
         /* Destination setup */
-        etna_set_state(ctx, VIVS_DE_DEST_ADDRESS, temp->address);
+        etna_set_state(ctx, VIVS_DE_DEST_ADDRESS, etna_bo_gpu_address(temp));
         etna_set_state(ctx, VIVS_DE_DEST_STRIDE, temp_stride);
         etna_set_state(ctx, VIVS_DE_DEST_ROTATION_CONFIG, 0);
         etna_set_state(ctx, VIVS_DE_DEST_CONFIG,
@@ -326,7 +326,7 @@ int main(int argc, char **argv)
                 VIVS_DE_VR_CONFIG_START_HORIZONTAL_BLIT);
 
         /* (((Vertical pass))) */
-        etna_set_state(ctx, VIVS_DE_SRC_ADDRESS, temp->address);
+        etna_set_state(ctx, VIVS_DE_SRC_ADDRESS, etna_bo_gpu_address(temp));
         etna_set_state(ctx, VIVS_DE_SRC_STRIDE, temp_stride);
         etna_set_state(ctx, VIVS_DE_UPLANE_ADDRESS, 0);
         etna_set_state(ctx, VIVS_DE_UPLANE_STRIDE, 0);
@@ -343,7 +343,7 @@ int main(int argc, char **argv)
                 VIVS_DE_VR_SOURCE_IMAGE_HIGH_RIGHT(temp_width) |
                 VIVS_DE_VR_SOURCE_IMAGE_HIGH_BOTTOM(temp_height));
 
-        etna_set_state(ctx, VIVS_DE_DEST_ADDRESS, bmp->address);
+        etna_set_state(ctx, VIVS_DE_DEST_ADDRESS, etna_bo_gpu_address(bmp));
         etna_set_state(ctx, VIVS_DE_DEST_STRIDE, dest_stride);
 
         etna_set_state(ctx, VIVS_DE_VR_TARGET_WINDOW_LOW,
@@ -360,7 +360,7 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_PE2D);
         etna_finish(ctx);
     }
-    bmp_dump32_noflip(bmp->logical, width, height, true, "/tmp/fb.bmp");
+    bmp_dump32_noflip(etna_bo_map(bmp), width, height, true, "/tmp/fb.bmp");
     printf("Dump complete\n");
 
     etna_free(ctx);

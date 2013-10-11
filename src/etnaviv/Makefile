@@ -5,7 +5,7 @@ include $(TOP)/Makefile.inc
 COMMON_FLAGS +=
 #-DDEBUG
 LDFLAGS +=
-ETNAVIV_OBJS = etna.o viv.o viv_profile.o etna_mem.o etna_queue.o etna_tex.o etna_fb.o etna_rs.o
+ETNAVIV_OBJS = etna.o viv.o viv_profile.o etna_bo.o etna_queue.o etna_tex.o etna_fb.o etna_rs.o
 
 ifeq ($(ETNAVIV_HOOK), 1)
 # Define ETNAVIV_HOOK=1 to enable hook mechanism

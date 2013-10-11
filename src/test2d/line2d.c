@@ -40,7 +40,7 @@
 #include <etnaviv/cmdstream.xml.h>
 #include <etnaviv/viv.h>
 #include <etnaviv/etna.h>
-#include <etnaviv/etna_mem.h>
+#include <etnaviv/etna_bo.h>
 #include <etnaviv/etna_util.h>
 #include <etnaviv/etna_rs.h>
 
@@ -65,14 +65,14 @@ int main(int argc, char **argv)
     }
     printf("Succesfully opened device\n");
     
-    struct etna_vidmem *bmp = 0; /* bitmap */
-    struct etna_vidmem *src = 0; /* source */
+    struct etna_bo *bmp = 0; /* bitmap */
+    struct etna_bo *src = 0; /* source */
 
     size_t bmp_size = width * height * 4;
     size_t src_size = width * height * 4;
 
-    if(etna_vidmem_alloc_linear(conn, &bmp, bmp_size, VIV_SURF_BITMAP, VIV_POOL_DEFAULT, true)!=ETNA_OK ||
-       etna_vidmem_alloc_linear(conn, &src, src_size, VIV_SURF_BITMAP, VIV_POOL_DEFAULT, true)!=ETNA_OK)
+    if((bmp=etna_bo_new(conn, bmp_size, DRM_ETNA_GEM_TYPE_BMP))==NULL ||
+       (src=etna_bo_new(conn, src_size, DRM_ETNA_GEM_TYPE_BMP))==NULL)
     {
         fprintf(stderr, "Error allocating video memory\n");
         exit(1);
@@ -90,8 +90,8 @@ int main(int argc, char **argv)
     /* pre-clear surface. Could use the 2D engine for this,
      * but we're lazy.
      */
-    memset(src->logical, 255, src_size);
-    memset(bmp->logical, 0, bmp_size);
+    memset(etna_bo_map(src), 255, src_size);
+    memset(etna_bo_map(bmp), 0, bmp_size);
     for(int frame=0; frame<1; ++frame)
     {
         printf("*** FRAME %i ****\n", frame);
@@ -111,7 +111,7 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_DE_SRC_COLOR_FG, 0xff44ff44);
         etna_set_state(ctx, VIVS_DE_STRETCH_FACTOR_LOW, 0);
         etna_set_state(ctx, VIVS_DE_STRETCH_FACTOR_HIGH, 0);
-        etna_set_state(ctx, VIVS_DE_DEST_ADDRESS, bmp->address);
+        etna_set_state(ctx, VIVS_DE_DEST_ADDRESS, etna_bo_gpu_address(bmp));
         etna_set_state(ctx, VIVS_DE_DEST_STRIDE, width*4);
         etna_set_state(ctx, VIVS_DE_DEST_ROTATION_CONFIG, 0);
         etna_set_state(ctx, VIVS_DE_DEST_CONFIG, 
@@ -186,7 +186,7 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_PE2D);
         etna_finish(ctx);
     }
-    bmp_dump32(bmp->logical, width, height, false, "/tmp/fb.bmp");
+    bmp_dump32(etna_bo_map(bmp), width, height, false, "/tmp/fb.bmp");
     printf("Dump complete\n");
 
     etna_free(ctx);

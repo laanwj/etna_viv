@@ -27,7 +27,7 @@
 
 #include <stdint.h>
 #include <etnaviv/etna.h>
-#include <etnaviv/etna_mem.h>
+#include <etnaviv/etna_bo.h>
 #include <etnaviv/etna_rs.h>
 #include <etnaviv/etna_tex.h>
 
@@ -84,8 +84,8 @@ struct etna_resource
     enum etna_surface_layout layout;
     /* Horizontal alignment for texture unit (TEXTURE_HALIGN_*) */
     unsigned halign;
-    struct etna_vidmem *surface; /* Surface video memory */
-    struct etna_vidmem *ts; /* Tile status video memory */
+    struct etna_bo *bo; /* Surface video memory */
+    struct etna_bo *ts_bo; /* Tile status video memory */
 
     struct etna_resource_level levels[ETNA_NUM_LOD];
     struct etna_pipe_context *last_ctx; /* Last bound context */

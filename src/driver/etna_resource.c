@@ -51,28 +51,29 @@ bool etna_screen_resource_alloc_ts(struct pipe_screen *screen, struct etna_resou
 {
     struct etna_screen *priv = etna_screen(screen);
     size_t rt_ts_size;
-    assert(!resource->ts);
+    assert(!resource->ts_bo);
     /* TS only for level 0 -- XXX is this formula correct? */
     rt_ts_size = align(resource->levels[0].size*priv->specs.bits_per_tile/0x80, 0x100);
     if(rt_ts_size == 0)
         return true;
 
     DBG_F(ETNA_DBG_RESOURCE_MSGS, "%p: Allocating tile status of size %i", resource, rt_ts_size);
-    struct etna_vidmem *rt_ts = 0;
-    if(unlikely(etna_vidmem_alloc_linear(priv->dev, &rt_ts, rt_ts_size, VIV_SURF_TILE_STATUS, VIV_POOL_DEFAULT, true)!=ETNA_OK))
+    struct etna_bo *rt_ts = 0;
+    if(unlikely((rt_ts = etna_bo_new(priv->dev, rt_ts_size, DRM_ETNA_GEM_TYPE_TS)) == NULL))
     {
         BUG("Problem allocating tile status for resource");
         return false;
     }
-    resource->ts = rt_ts;
-    resource->levels[0].ts_address = resource->ts->address;
-    resource->levels[0].ts_size = resource->ts->size;
+    resource->ts_bo = rt_ts;
+    resource->levels[0].ts_address = etna_bo_gpu_address(resource->ts_bo);
+    resource->levels[0].ts_size = etna_bo_size(resource->ts_bo);
     /* It is important to initialize the TS, as random pattern
      * can result in crashes. Do this on the CPU as this only happens once
      * per surface anyway and it's a small area, so it may not be worth
      * queuing this to the GPU.
      */
-    memset(rt_ts->logical, priv->specs.ts_clear_value, rt_ts_size);
+    void *ts_map = etna_bo_map(rt_ts);
+    memset(ts_map, priv->specs.ts_clear_value, rt_ts_size);
     return true;
 }
 
@@ -215,25 +216,26 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     size_t rt_size = offset;
 
     /* determine memory type */
+    uint32_t flags = 0; /* XXX DRM_ETNA_GEM_CACHE_xxx */
     enum viv_surf_type memtype = VIV_SURF_UNKNOWN;
     if(templat->bind & PIPE_BIND_SAMPLER_VIEW)
-        memtype = VIV_SURF_TEXTURE;
+        flags |= DRM_ETNA_GEM_TYPE_TEX;
     else if(templat->bind & PIPE_BIND_RENDER_TARGET)
-        memtype = VIV_SURF_RENDER_TARGET;
+        flags |= DRM_ETNA_GEM_TYPE_RT;
     else if(templat->bind & PIPE_BIND_DEPTH_STENCIL)
-        memtype = VIV_SURF_DEPTH;
+        flags |= DRM_ETNA_GEM_TYPE_ZS;
     else if(templat->bind & PIPE_BIND_INDEX_BUFFER)
-        memtype = VIV_SURF_INDEX;
+        flags |= DRM_ETNA_GEM_TYPE_IDX;
     else if(templat->bind & PIPE_BIND_VERTEX_BUFFER)
-        memtype = VIV_SURF_VERTEX;
+        flags |= DRM_ETNA_GEM_TYPE_VTX;
 
     DBG_F(ETNA_DBG_RESOURCE_MSGS, "%p: Allocate surface of %ix%i (padded to %ix%i) of format %s (%i bpe %ix%i), size %08x flags %08x, memtype %i",
             resource,
             templat->width0, templat->height0, resource->levels[0].padded_width, resource->levels[0].padded_height, util_format_name(templat->format),
             element_size, divSizeX, divSizeY, rt_size, templat->bind, memtype);
 
-    struct etna_vidmem *rt = 0;
-    if(unlikely(etna_vidmem_alloc_linear(priv->dev, &rt, rt_size, memtype, VIV_POOL_DEFAULT, true) != ETNA_OK))
+    struct etna_bo *rt = 0;
+    if(unlikely((rt = etna_bo_new(priv->dev, rt_size, flags)) == NULL))
     {
         BUG("Problem allocating video memory for resource");
         return NULL;
@@ -245,20 +247,26 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     resource->base.nr_samples = nr_samples;
     resource->layout = layout;
     resource->halign = halign;
-    resource->surface = rt;
-    resource->ts = 0; /* TS is only created when first bound to surface */
+    resource->bo = rt;
+    resource->ts_bo = 0; /* TS is only created when first bound to surface */
     pipe_reference_init(&resource->base.reference, 1);
 
     if(DBG_ENABLED(ETNA_DBG_ZERO))
     {
-        memset(resource->surface->logical, 0, rt_size);
+        void *map = etna_bo_map(resource->bo);
+        memset(map, 0, rt_size);
     }
 
+    /* Set up cached mipmap level addresses
+     * (this is pretty pointless, XXX remove it)
+     */
+    uint32_t gpu_address = etna_bo_gpu_address(resource->bo);
+    void *map = etna_bo_map(resource->bo);
     for(unsigned ix=0; ix<=resource->base.last_level; ++ix)
     {
         struct etna_resource_level *mip = &resource->levels[ix];
-        mip->address = resource->surface->address + mip->offset;
-        mip->logical = resource->surface->logical + mip->offset;
+        mip->address = gpu_address + mip->offset;
+        mip->logical = map + mip->offset;
         DBG_F(ETNA_DBG_RESOURCE_MSGS, "  %08x level %i: %ix%i (%i) stride=%i layer_stride=%i",
                 (int)mip->address, ix, (int)mip->width, (int)mip->height, (int)mip->size,
                 (int)mip->stride, (int)mip->layer_stride);
@@ -274,21 +282,21 @@ static void etna_screen_resource_destroy(struct pipe_screen *screen,
     struct etna_resource *resource = etna_resource(resource_);
     if(resource == NULL)
         return;
+    struct etna_queue *queue = NULL;
     if(resource->last_ctx != NULL)
     {
         /* XXX This could fail when multiple contexts share this resource,
          * (the last one to bind it will "own" it) or fail miserably if
          * the context was since destroyed.
+         * Integrate this into etna_bo_del...
          */
-        struct etna_pipe_context *ectx = resource->last_ctx;
         DBG_F(ETNA_DBG_RESOURCE_MSGS, "%p: resource queued destroyed (%ix%ix%i)", resource, resource_->width0, resource_->height0, resource_->depth0);
-        etna_vidmem_queue_free(ectx->ctx->queue, resource->surface);
-        etna_vidmem_queue_free(ectx->ctx->queue, resource->ts);
+        queue = resource->last_ctx->ctx->queue;
     } else {
         DBG_F(ETNA_DBG_RESOURCE_MSGS, "%p: resource destroyed (%ix%ix%i)", resource, resource_->width0, resource_->height0, resource_->depth0);
-        etna_vidmem_free(priv->dev, resource->surface);
-        etna_vidmem_free(priv->dev, resource->ts);
     }
+    etna_bo_del(priv->dev, resource->bo, queue);
+    etna_bo_del(priv->dev, resource->ts_bo, queue);
     FREE(resource);
 }
 
