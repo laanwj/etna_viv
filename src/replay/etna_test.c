@@ -471,12 +471,6 @@ int main(int argc, char **argv)
         printf("Dumping image to %s\n", argv[2]);
         bmp_dump32(bmp->logical, width, height, true, argv[2]);
     }
-    /* Unlock video memory */
-    if(etna_vidmem_unlock(conn, bmp) != 0)
-    {
-        fprintf(stderr, "Cannot unlock vidmem\n");
-        exit(1);
-    }
 
     etna_free(ctx);
     viv_close(conn);

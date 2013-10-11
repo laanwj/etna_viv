@@ -499,13 +499,6 @@ int main(int argc, char **argv)
         fb_set_buffer(&fb, backbuffer);
         backbuffer = 1-backbuffer;
     }
-    
-    /* Unlock video memory */
-    if(etna_vidmem_unlock(conn, bmp) != 0)
-    {
-        fprintf(stderr, "Cannot unlock vidmem\n");
-        exit(1);
-    }
 
     etna_free(ctx);
     viv_close(conn);

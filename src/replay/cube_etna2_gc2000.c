@@ -638,13 +638,6 @@ int main(int argc, char **argv)
     bmp_dump32(bmp->logical, width, height, false, "/home/linaro/fb.bmp");
     printf("Dump complete\n");
     
-    /* Unlock video memory */
-    if(etna_vidmem_unlock(conn, NULL, bmp) != 0)
-    {
-        fprintf(stderr, "Cannot unlock vidmem\n");
-        exit(1);
-    }
-
     etna_free(ctx);
     viv_close(conn);
     return 0;
