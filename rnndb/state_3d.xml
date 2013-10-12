@@ -623,17 +623,21 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 
             The following render target tilings are possible:
 
-                A   B
-                0   0   Linear
-                1   0   Tiled (4x4, like textures)
-                0   1   (same as tiled=0, supertiled=0)
-                1   1   Supertiled (64x64)
+                A   B   C
+                0   x   x   Linear
+                1   0   0   Tiled (4x4, like textures)
+                1   1   0   Supertiled (64x64)
+                1   0   1   Multi-tiled (4x4, like textures)
+                1   1   1   Multi-supertiled (64x64)
 
              A) tiled: SOURCE_TILED, DEST_TILED in CONFIG word
              B) supertiled: TILING bit in SOURCE_STRIDE / DEST_STRIDE
+             C) multi: MULTI bit in SOURCE_STRIDE / DEST_STRIDE
 
              GC2000 and other GPUs with multiple pixel pipes have additional multi-pipe tiling formats,
-             which are used by the PE when rendering.
+             which are used by the PE when rendering as an extra form of paralelism.
+             When multitiling the image is divided up vertically into separate units with their own
+             starting address.
         </doc>
         <reg32 offset="0x01600" name="KICKER" brief="Resolve start" value="0x00000000">
             <doc>Write some value to this register to kick off resolver</doc>
