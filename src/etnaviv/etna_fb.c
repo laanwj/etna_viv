@@ -39,6 +39,8 @@
 #include <errno.h>
 #include <assert.h>
 
+#include <linux/videodev2.h>
+
 /* Structure to convert framebuffer format to RS destination conf */
 struct etna_fb_format_desc
 {
@@ -51,28 +53,28 @@ struct etna_fb_format_desc
     unsigned blue_length;
     unsigned alpha_offset;
     unsigned alpha_length;
+    unsigned grayscale;
     unsigned rs_format;
     bool swap_rb;
 };
 
 static const struct etna_fb_format_desc etna_fb_formats[] = {
- /* bpp  ro  rl go gl bo  bl ao  al rs_format           swap_rb */
-    {32, 16, 8, 8, 8, 0 , 8, 0,  0, RS_FORMAT_X8R8G8B8, false},
-    {32, 0 , 8, 8, 8, 16, 8, 0,  0, RS_FORMAT_X8R8G8B8, true},
-    {32, 16, 8, 8, 8, 0 , 8, 24, 8, RS_FORMAT_A8R8G8B8, false},
-    {32, 0 , 8, 8, 8, 16, 8, 24, 8, RS_FORMAT_A8R8G8B8, true},
-    {16, 8 , 4, 4, 4, 0,  4, 0,  0, RS_FORMAT_X4R4G4B4, false},
-    {16, 0 , 4, 4, 4, 8,  4, 0,  0, RS_FORMAT_X4R4G4B4, true},
-    {16, 8 , 4, 4, 4, 0,  4, 12, 4, RS_FORMAT_A4R4G4B4, false},
-    {16, 0 , 4, 4, 4, 8,  4, 12, 4, RS_FORMAT_A4R4G4B4, true},
-    {16, 10, 5, 5, 5, 0,  5, 0,  0, RS_FORMAT_X1R5G5B5, false},
-    {16, 0,  5, 5, 5, 10, 5, 0,  0, RS_FORMAT_X1R5G5B5, true},
-    {16, 10, 5, 5, 5, 0,  5, 15, 1, RS_FORMAT_A1R5G5B5, false},
-    {16, 0,  5, 5, 5, 10, 5, 15, 1, RS_FORMAT_A1R5G5B5, true},
-    {16, 11, 5, 5, 6, 0,  5, 0,  0, RS_FORMAT_R5G6B5, false},
-    {16, 0,  5, 5, 6, 11, 5, 0,  0, RS_FORMAT_R5G6B5, true},
-    /* I guess we could support YUV outputs as well, for overlays,
-     * at least on GPUs that support YUV resolve target... */
+ /* bpp  ro  rl go gl bo  bl ao  al gs rs_format           swap_rb */
+    {32, 16, 8, 8, 8, 0 , 8, 0,  0, 0, RS_FORMAT_X8R8G8B8, false},
+    {32, 0 , 8, 8, 8, 16, 8, 0,  0, 0, RS_FORMAT_X8R8G8B8, true},
+    {32, 16, 8, 8, 8, 0 , 8, 24, 8, 0, RS_FORMAT_A8R8G8B8, false},
+    {32, 0 , 8, 8, 8, 16, 8, 24, 8, 0, RS_FORMAT_A8R8G8B8, true},
+    {16, 8 , 4, 4, 4, 0,  4, 0,  0, 0, RS_FORMAT_X4R4G4B4, false},
+    {16, 0 , 4, 4, 4, 8,  4, 0,  0, 0, RS_FORMAT_X4R4G4B4, true},
+    {16, 8 , 4, 4, 4, 0,  4, 12, 4, 0, RS_FORMAT_A4R4G4B4, false},
+    {16, 0 , 4, 4, 4, 8,  4, 12, 4, 0, RS_FORMAT_A4R4G4B4, true},
+    {16, 10, 5, 5, 5, 0,  5, 0,  0, 0, RS_FORMAT_X1R5G5B5, false},
+    {16, 0,  5, 5, 5, 10, 5, 0,  0, 0, RS_FORMAT_X1R5G5B5, true},
+    {16, 10, 5, 5, 5, 0,  5, 15, 1, 0, RS_FORMAT_A1R5G5B5, false},
+    {16, 0,  5, 5, 5, 10, 5, 15, 1, 0, RS_FORMAT_A1R5G5B5, true},
+    {16, 11, 5, 5, 6, 0,  5, 0,  0, 0, RS_FORMAT_R5G6B5, false},
+    {16, 0,  5, 5, 6, 11, 5, 0,  0, 0, RS_FORMAT_R5G6B5, true},
+    {16, 0,  0, 0, 0, 0 , 0, 0,  0, V4L2_PIX_FMT_YUYV, RS_FORMAT_YUY2, false},
 };
 
 #define NUM_FB_FORMATS (sizeof(etna_fb_formats) / sizeof(etna_fb_formats[0]))
@@ -94,18 +96,20 @@ bool etna_fb_get_format(const struct fb_var_screeninfo *fb_var, unsigned *rs_for
             desc->blue_offset == fb_var->blue.offset &&
             desc->blue_length == fb_var->blue.length &&
             (desc->alpha_offset == fb_var->transp.offset || desc->alpha_length == 0) &&
-            desc->alpha_length == fb_var->transp.length)
+            desc->alpha_length == fb_var->transp.length &&
+            desc->grayscale == fb_var->grayscale)
         {
             break;
         }
     }
     if(fmt_idx == NUM_FB_FORMATS)
     {
-        printf("Unsupported framebuffer format: red_offset=%i red_length=%i green_offset=%i green_length=%i blue_offset=%i blue_length=%i trans_offset=%i transp_length=%i\n",
+        printf("Unsupported framebuffer format: red_offset=%i red_length=%i green_offset=%i green_length=%i blue_offset=%i blue_length=%i trans_offset=%i transp_length=%i grayscale=%i\n",
                 (int)fb_var->red.offset, (int)fb_var->red.length,
                 (int)fb_var->green.offset, (int)fb_var->green.length,
                 (int)fb_var->blue.offset, (int)fb_var->blue.length,
-                (int)fb_var->transp.offset, (int)fb_var->transp.length);
+                (int)fb_var->transp.offset, (int)fb_var->transp.length,
+                (int)fb_var->grayscale);
         return false;
     } else {
         printf("Framebuffer format: %i, flip_rb=%i\n",
