@@ -21,6 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 #include <etnaviv/viv.h>
+#include <etnaviv/etna_util.h>
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -184,7 +185,7 @@ static void convert_chip_specs(struct viv_specs *out, const struct _gcsHAL_QUERY
 
 int viv_open(enum viv_hw_type hw_type, struct viv_conn **out)
 {
-    struct viv_conn *conn = malloc(sizeof(struct viv_conn));
+    struct viv_conn *conn = ETNA_CALLOC_STRUCT(viv_conn);
     int err = 0;
     if(conn == NULL)
         return -1;
@@ -609,6 +610,7 @@ int viv_write_register(struct viv_conn *conn, uint32_t address, uint32_t data)
     return viv_invoke(conn, &id);
 }
 
+/* Fence emulation */
 int _viv_fence_new(struct viv_conn *conn, uint32_t *fence_out, int *signal_out)
 {
     /* Request fence and queue signal */
