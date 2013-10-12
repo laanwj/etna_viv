@@ -205,6 +205,7 @@ int fb_open(int num, struct fb_info *out)
     printf("    blue.length %i\n", (unsigned)out->fb_var.blue.length);
     printf("    transp.offset %i\n", (unsigned)out->fb_var.transp.offset);
     printf("    transp.length %i\n", (unsigned)out->fb_var.transp.length);
+    printf("    grayscale %i\n", (unsigned)out->fb_var.grayscale);
 
     out->fd = fd;
     out->stride = out->fb_fix.line_length;
