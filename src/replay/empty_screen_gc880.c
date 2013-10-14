@@ -13,7 +13,6 @@
 #include "viv_raw.h"
 
 #include "empty_screen_cmd.h"
-#include "etnaviv/etna.h"
 /* TODO: should actually update context as we go,
    a context switch would currently revert state and likely result in corrupted rendering.
  */
@@ -162,7 +161,7 @@ int main(int argc, char **argv)
         #ifdef DEBUG
         fprintf(stderr, "Error attaching to GPU\n");
         #endif
-        return ETNA_INTERNAL_ERROR;
+        exit(1);
     }
     else
     {
