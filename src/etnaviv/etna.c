@@ -58,7 +58,6 @@ static int gpu_context_clear(struct etna_ctx *ctx);
 
 static int gpu_context_initialize(struct etna_ctx *ctx)
 {
-    int rv;
     gcoCONTEXT vctx = ETNA_CALLOC_STRUCT(_gcoCONTEXT);
     if(vctx == NULL)
     {
@@ -87,7 +86,7 @@ static int gpu_context_initialize(struct etna_ctx *ctx)
     ctx->ctx = VIV_TO_HANDLE(vctx);
     /* Allocate initial context buffer */
     /*   XXX DRM_ETNA_GEM_CACHE_xxx */
-    if((ctx->ctx_info = etna_bo_new(ctx->conn, COMMAND_BUFFER_SIZE, DRM_ETNA_GEM_TYPE_CMD)) == NULL)
+    if((ctx->ctx_bo = etna_bo_new(ctx->conn, COMMAND_BUFFER_SIZE, DRM_ETNA_GEM_TYPE_CMD)) == NULL)
     {
         ETNA_FREE(vctx);
         return ETNA_OUT_OF_MEMORY;
@@ -114,18 +113,18 @@ static int gpu_context_clear(struct etna_ctx *ctx)
 #ifdef DEBUG
         printf("gpu_context_clear: context was in use, deferred freeing and reallocating it\n");
 #endif
-        if((rv = etna_bo_del(ctx->conn, ctx->ctx_info, ctx->queue)) != ETNA_OK)
+        if((rv = etna_bo_del(ctx->conn, ctx->ctx_bo, ctx->queue)) != ETNA_OK)
         {
             return rv;
         }
-        if((ctx->ctx_info = etna_bo_new(ctx->conn, COMMAND_BUFFER_SIZE, DRM_ETNA_GEM_TYPE_CMD)) == NULL)
+        if((ctx->ctx_bo = etna_bo_new(ctx->conn, COMMAND_BUFFER_SIZE, DRM_ETNA_GEM_TYPE_CMD)) == NULL)
         {
             return ETNA_OUT_OF_MEMORY;
         }
     }
     /* Leave space at beginning of buffer for PIPE switch */
     GCCTX(ctx)->bufferSize = BEGIN_COMMIT_CLEARANCE;
-    GCCTX(ctx)->logical = ctx->ctx_info.logical;
+    GCCTX(ctx)->logical = etna_bo_map(ctx->ctx_bo);
 #ifdef GCABI_CONTEXT_HAS_PHYSICAL
     GCCTX(ctx)->bytes = ctx->ctx_info.bytes; /* actual size of buffer */
     GCCTX(ctx)->physical = HANDLE_TO_VIV(ctx->ctx_info.physical);
