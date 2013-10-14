@@ -27,6 +27,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/ioctl.h>
+#include <sys/mman.h>
+#include <linux/fb.h>
 
 #include "gc_abi.h"
 
@@ -37,7 +40,7 @@ enum etna_bo_type {
     ETNA_BO_TYPE_VIDMEM,    /* Main vidmem */
     ETNA_BO_TYPE_USERMEM,   /* Mapped user memory */
     ETNA_BO_TYPE_CONTIGUOUS,/* Contiguous memory */
-    ETNA_BO_TYPE_PHYSICAL   /* Direct physical mapping */
+    ETNA_BO_TYPE_PHYSICAL   /* Mmap-ed physical memory */
 };
 
 /* Structure describing a block of video or user memory */
@@ -183,9 +186,23 @@ struct etna_bo *etna_bo_from_usermem(struct viv_conn *conn, void *memory, size_t
     return mem;
 }
 
-struct etna_bo *etna_bo_from_fbdev(struct viv_conn *conn, size_t offset, size_t size)
+struct etna_bo *etna_bo_from_fbdev(struct viv_conn *conn, int fd, size_t offset, size_t size)
 {
-    /* TODO */
+    struct fb_fix_screeninfo finfo;
+    struct etna_bo *mem = ETNA_CALLOC_STRUCT(etna_bo);
+    if(mem == NULL) return NULL;
+
+    if(ioctl(fd, FBIOGET_FSCREENINFO, &finfo))
+        goto error;
+
+    mem->bo_type = ETNA_BO_TYPE_PHYSICAL;
+    if((mem->logical = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, offset)) == NULL)
+        goto error;
+    mem->address = finfo.smem_start + offset;
+    mem->size = size;
+    return mem;
+error:
+    ETNA_FREE(mem);
     return NULL;
 }
 
@@ -246,7 +263,10 @@ int etna_bo_del(struct viv_conn *conn, struct etna_bo *mem, struct etna_queue *q
         }
         break;
     case ETNA_BO_TYPE_PHYSICAL:
-        /* Nothing to do */
+        if(munmap(mem->logical, mem->size) < 0)
+        {
+            rv = ETNA_OUT_OF_MEMORY;
+        }
         break;
     }
     ETNA_FREE(mem);

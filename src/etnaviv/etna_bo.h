@@ -65,8 +65,8 @@ struct etna_bo *etna_bo_new(struct viv_conn *conn, size_t bytes, uint32_t flags)
 /* Map user memory into GPU memory space */
 struct etna_bo *etna_bo_from_usermem(struct viv_conn *conn, void *memory, size_t size);
 
-/* Buffer object from framebuffer */
-struct etna_bo *etna_bo_from_fbdev(struct viv_conn *conn, size_t offset, size_t size);
+/* Buffer object from framebuffer range */
+struct etna_bo *etna_bo_from_fbdev(struct viv_conn *conn, int fd, size_t offset, size_t size);
 
 /* Buffer object from flink name */
 struct etna_bo *etna_bo_from_name(struct viv_conn *conn, uint32_t name);

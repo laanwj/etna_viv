@@ -478,7 +478,7 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
                 .source_stride = rt_resource->levels[level].stride,
                 .dest_format = drawable->rs_format,
                 .dest_tiling = ETNA_LAYOUT_LINEAR,
-                .dest_addr = drawable->addr,
+                .dest_addr = etna_bo_gpu_address(drawable->bo),
                 .dest_stride = drawable->stride,
                 .downsample_x = msaa_xscale > 1,
                 .downsample_y = msaa_yscale > 1,
@@ -492,7 +492,7 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
     DBG_F(ETNA_DBG_FRAME_MSGS,
             "Queued RS command to flush screen from %08x to %08x stride=%08x width=%i height=%i, ctx %p",
             etna_bo_gpu_address(rt_resource->bo) + rt_resource->levels[level].offset,
-            drawable->addr, drawable->stride,
+            etna_bo_gpu_address(drawable->bo), drawable->stride,
             drawable->width, drawable->height, ctx);
     ectx->base.flush(&ectx->base, &drawable->fence, 0);
 }

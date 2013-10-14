@@ -29,6 +29,7 @@
 #include "os/os_thread.h"
 
 struct viv_conn;
+struct etna_bo;
 
 #define ETNA_SCREEN_NAME_LEN (64)
 /* Gallium screen structure for etna driver.
@@ -48,7 +49,7 @@ struct etna_rs_target
    unsigned rs_format;
    bool swap_rb;
    unsigned width, height;
-   size_t addr; /* GPU address */
+   struct etna_bo *bo;
    size_t stride;
    struct pipe_fence_handle *fence;
 };
