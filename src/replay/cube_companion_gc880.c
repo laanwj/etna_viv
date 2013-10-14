@@ -13,7 +13,7 @@
 #include "viv_raw.h"
 #include "companion.h"
 
-#include "companion_cmd_gc2000.h"
+#include "companion_cmd_gc880.h"
 
 
 /* TODO: should actually update context as we go,

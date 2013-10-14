@@ -12,7 +12,7 @@
 #include "write_bmp.h"
 #include "viv_raw.h"
 
-#include "cube_cmd_gc2000.h"
+#include "cube_cmd_gc880.h"
 /* TODO: should actually update context as we go,
  *   a context switch would currently revert state and likely result in corrupted rendering.
  */
