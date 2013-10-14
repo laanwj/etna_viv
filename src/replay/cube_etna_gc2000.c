@@ -679,7 +679,7 @@ int main(int argc, char **argv)
         VIVS_PE_DEPTH_CONFIG_DEPTH_FUNC(COMPARE_FUNC_ALWAYS) |
         VIVS_PE_DEPTH_CONFIG_EARLY_Z |
         VIVS_PE_DEPTH_CONFIG_SUPER_TILED |
-        VIVS_PE_DEPTH_CONFIG_UNK24,
+        VIVS_PE_DEPTH_CONFIG_DISABLE_ZS,
         0x00000000/*0.0*/, 0x3f800000/*1.0*/, 0x477fff00/*65535.0*/});
     etna_set_state(cmdPtr, VIVS_PE_PIPE_DEPTH_ADDR(0), z_physical);
     etna_set_state(cmdPtr, VIVS_PE_DEPTH_ADDR, z_physical);
