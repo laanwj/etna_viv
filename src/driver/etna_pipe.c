@@ -959,32 +959,34 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
                 (color_supertiled ? VIVS_PE_COLOR_FORMAT_SUPER_TILED : 0);
                 /* XXX VIVS_PE_COLOR_FORMAT_OVERWRITE and the rest comes from blend_state / depth_stencil_alpha */
                 /* merged with depth_stencil_alpha */
-        if((cbuf->surf.address & 63) || (((cbuf->surf.stride*4) & 63) && cbuf->surf.height > 4))
+        if((cbuf->surf.offset & 63) || (((cbuf->surf.stride*4) & 63) && cbuf->surf.height > 4))
         {
             /* XXX Must make temporary surface here.
              * Need the same mechanism on gc2000 when we want to do mipmap generation by
              * rendering to levels > 1 due to multitiled / tiled conversion.
              */
-            BUG("Alignment error, trying to render to %08x with tile stride %i",
-                    cbuf->surf.address, cbuf->surf.stride*4);
+            BUG("Alignment error, trying to render to offset %08x with tile stride %i",
+                    cbuf->surf.offset, cbuf->surf.stride*4);
         }
 
+        struct etna_bo *bo = etna_resource(cbuf->base.texture)->bo;
         if (priv->ctx->conn->chip.pixel_pipes == 1)
         {
-            cs->PE_COLOR_ADDR = cbuf->surf.address;
+            cs->PE_COLOR_ADDR = etna_bo_gpu_address(bo) + cbuf->surf.offset;
         }
         else if (priv->ctx->conn->chip.pixel_pipes == 2)
         {
-            cs->PE_PIPE_COLOR_ADDR[0] = cbuf->surf.address;
-            cs->PE_PIPE_COLOR_ADDR[1] = cbuf->surf.address;  /* TODO */
+            cs->PE_PIPE_COLOR_ADDR[0] = etna_bo_gpu_address(bo) + cbuf->surf.offset;
+            cs->PE_PIPE_COLOR_ADDR[1] = etna_bo_gpu_address(bo) + cbuf->surf.offset; /* TODO */
         }
         cs->PE_COLOR_STRIDE = cbuf->surf.stride;
-        if(cbuf->surf.ts_address)
+        if(cbuf->surf.ts_size)
         {
+            struct etna_bo *ts_bo = etna_resource(cbuf->base.texture)->ts_bo;
             ts_mem_config |= VIVS_TS_MEM_CONFIG_COLOR_FAST_CLEAR;
             cs->TS_COLOR_CLEAR_VALUE = cbuf->level->clear_value;
-            cs->TS_COLOR_STATUS_BASE = cbuf->surf.ts_address;
-            cs->TS_COLOR_SURFACE_BASE = cbuf->surf.address;
+            cs->TS_COLOR_STATUS_BASE = etna_bo_gpu_address(ts_bo) + cbuf->surf.ts_offset;
+            cs->TS_COLOR_SURFACE_BASE = etna_bo_gpu_address(bo) + cbuf->surf.offset;
         }
         /* MSAA */
         if(cbuf->base.texture->nr_samples > 1)
@@ -1009,24 +1011,26 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
                 VIVS_PE_DEPTH_CONFIG_DEPTH_MODE_Z;
                 /* VIVS_PE_DEPTH_CONFIG_ONLY_DEPTH */
                 /* merged with depth_stencil_alpha */
+        struct etna_bo *bo = etna_resource(zsbuf->base.texture)->bo;
         if (priv->ctx->conn->chip.pixel_pipes == 1)
         {
-            cs->PE_DEPTH_ADDR = zsbuf->surf.address;
+            cs->PE_DEPTH_ADDR = etna_bo_gpu_address(bo) + zsbuf->surf.offset;
         }
         else if (priv->ctx->conn->chip.pixel_pipes == 2)
         {
-            cs->PE_PIPE_DEPTH_ADDR[0] = zsbuf->surf.address;
-            cs->PE_PIPE_DEPTH_ADDR[1] = zsbuf->surf.address;  /* TODO */
+            cs->PE_PIPE_DEPTH_ADDR[0] = etna_bo_gpu_address(bo) + zsbuf->surf.offset;
+            cs->PE_PIPE_DEPTH_ADDR[1] = etna_bo_gpu_address(bo) + zsbuf->surf.offset;  /* TODO */
         }
         cs->PE_DEPTH_STRIDE = zsbuf->surf.stride;
         cs->PE_HDEPTH_CONTROL = VIVS_PE_HDEPTH_CONTROL_FORMAT_DISABLED;
         cs->PE_DEPTH_NORMALIZE = etna_f32_to_u32(exp2f(depth_bits) - 1.0f);
-        if(zsbuf->surf.ts_address)
+        if(zsbuf->surf.ts_size)
         {
+            struct etna_bo *ts_bo = etna_resource(zsbuf->base.texture)->ts_bo;
             ts_mem_config |= VIVS_TS_MEM_CONFIG_DEPTH_FAST_CLEAR;
             cs->TS_DEPTH_CLEAR_VALUE = zsbuf->level->clear_value;
-            cs->TS_DEPTH_STATUS_BASE = zsbuf->surf.ts_address;
-            cs->TS_DEPTH_SURFACE_BASE = zsbuf->surf.address;
+            cs->TS_DEPTH_STATUS_BASE = etna_bo_gpu_address(ts_bo) + zsbuf->surf.ts_offset;
+            cs->TS_DEPTH_SURFACE_BASE = etna_bo_gpu_address(bo) + zsbuf->surf.offset;
         }
         ts_mem_config |= (depth_bits == 16 ? VIVS_TS_MEM_CONFIG_DEPTH_16BPP : 0);
         /* MSAA */
@@ -1185,11 +1189,10 @@ static void etna_pipe_set_vertex_buffers( struct pipe_context *pipe,
         priv->vertex_buffer_s[slot].user_buffer = vbi->user_buffer;
         /* determine addresses */
         viv_addr_t gpu_addr = 0;
-        cs->logical = 0;
         if(vbi->buffer) /* GPU buffer */
         {
-            gpu_addr = etna_resource(vbi->buffer)->levels[0].address + vbi->buffer_offset;
-            cs->logical = etna_resource(vbi->buffer)->levels[0].logical + vbi->buffer_offset;
+            struct etna_bo *bo = etna_resource(vbi->buffer)->bo;
+            gpu_addr = etna_bo_gpu_address(bo) + vbi->buffer_offset;
         }
         /* compiled state */
         cs->FE_VERTEX_STREAM_CONTROL = FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE(vbi->stride);
@@ -1209,7 +1212,6 @@ static void etna_pipe_set_index_buffer( struct pipe_context *pipe,
     if(ib == NULL)
     {
         pipe_resource_reference(&priv->index_buffer_s.buffer, NULL); /* update reference to buffer */
-        cs->logical = NULL;
         cs->FE_INDEX_STREAM_CONTROL = 0;
         cs->FE_INDEX_STREAM_BASE_ADDR = 0;
     } else
@@ -1220,10 +1222,10 @@ static void etna_pipe_set_index_buffer( struct pipe_context *pipe,
         priv->index_buffer_s.offset = ib->offset;
         priv->index_buffer_s.user_buffer = ib->user_buffer;
 
+        struct etna_bo *bo = etna_resource(ib->buffer)->bo;
         cs->FE_INDEX_STREAM_CONTROL =
                 translate_index_size(ib->index_size);
-        cs->FE_INDEX_STREAM_BASE_ADDR = etna_resource(ib->buffer)->levels[0].address + ib->offset;
-        cs->logical = etna_resource(ib->buffer)->levels[0].logical + ib->offset;
+        cs->FE_INDEX_STREAM_BASE_ADDR = etna_bo_gpu_address(bo) + ib->offset;
 
         etna_resource_touch(pipe, ib->buffer);
     }

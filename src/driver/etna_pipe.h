@@ -66,9 +66,7 @@ struct etna_resource_level
    unsigned offset; /* offset into memory area */
    unsigned size; /* size of memory area */
 
-   uint32_t address; /* cached GPU pointers to LODs */
-   void *logical; /* cached CPU pointer */
-   uint32_t ts_address;
+   uint32_t ts_offset;
    uint32_t ts_size;
    uint32_t clear_value; /* clear value of resource level (mainly for TS) */
    uint32_t stride; /* VIVS_PE_(COLOR|DEPTH)_STRIDE */

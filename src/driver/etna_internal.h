@@ -238,7 +238,6 @@ struct compiled_vertex_elements_state
 /* Compiled context->set_vertex_buffer result */
 struct compiled_set_vertex_buffer
 {
-    void *logical; /* CPU address of vertex buffer base */
     uint32_t FE_VERTEX_STREAM_CONTROL;
     uint32_t FE_VERTEX_STREAM_BASE_ADDR;
 };
@@ -246,7 +245,6 @@ struct compiled_set_vertex_buffer
 /* Compiled context->set_index_buffer result */
 struct compiled_set_index_buffer
 {
-    void *logical;
     uint32_t FE_INDEX_STREAM_CONTROL;
     uint32_t FE_INDEX_STREAM_BASE_ADDR;
 };

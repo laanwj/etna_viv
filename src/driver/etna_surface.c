@@ -81,18 +81,18 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
                                             /* underlying resource instead of surface */
     surf->surf = resource->levels[level]; /* Make copy of level to narrow down address to layer */
                                         /* XXX we don't really need a copy but it's convenient */
-    surf->surf.address += layer * surf->surf.layer_stride;
-    surf->surf.logical += layer * surf->surf.layer_stride;
+    surf->surf.offset += layer * surf->surf.layer_stride;
 
-    if(surf->surf.ts_address)
+    if(surf->surf.ts_size)
     {
-        /* This abuses the RS as a plain buffer memset().
+        /* This (ab)uses the RS as a plain buffer memset().
            Currently uses a fixed row size of 64 bytes. Some benchmarking with different sizes may be in order.
          */
+        struct etna_bo *ts_bo = etna_resource(surf->base.texture)->ts_bo;
         etna_compile_rs_state(&surf->clear_command, &(struct rs_state){
                 .source_format = RS_FORMAT_A8R8G8B8,
                 .dest_format = RS_FORMAT_A8R8G8B8,
-                .dest_addr = surf->surf.ts_address,
+                .dest_addr = etna_bo_gpu_address(ts_bo) + surf->surf.ts_offset,
                 .dest_stride = 0x40,
                 .dest_tiling = ETNA_LAYOUT_TILED,
                 .dither = {0xffffffff, 0xffffffff},

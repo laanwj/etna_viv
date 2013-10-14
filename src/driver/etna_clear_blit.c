@@ -77,10 +77,11 @@ void etna_rs_gen_clear_surface(struct compiled_rs_state *rs_state, struct etna_s
     /* use tiled clear if width is multiple of 16 */
     bool tiled_clear = (surf->surf.padded_width & ETNA_RS_WIDTH_MASK) == 0 &&
                        (surf->surf.padded_height & ETNA_RS_HEIGHT_MASK) == 0;
+    struct etna_bo *dest_bo = etna_resource(surf->base.texture)->bo;
     etna_compile_rs_state(rs_state, &(struct rs_state){
             .source_format = format,
             .dest_format = format,
-            .dest_addr = surf->surf.address,
+            .dest_addr = etna_bo_gpu_address(dest_bo) + surf->surf.offset,
             .dest_stride = surf->surf.stride,
             .dest_tiling = tiled_clear ? surf->layout : ETNA_LAYOUT_LINEAR,
             .dither = {0xffffffff, 0xffffffff},
@@ -111,13 +112,13 @@ static void etna_pipe_clear(struct pipe_context *pipe,
     if((buffers & PIPE_CLEAR_COLOR) && priv->framebuffer_s.nr_cbufs)
     {
         struct etna_surface *surf = etna_surface(priv->framebuffer_s.cbufs[0]);
-        if(surf->surf.ts_address)
+        if(surf->surf.ts_size)
             need_ts_flush = true;
     }
     if((buffers & PIPE_CLEAR_DEPTHSTENCIL) && priv->framebuffer_s.zsbuf != NULL)
     {
         struct etna_surface *surf = etna_surface(priv->framebuffer_s.zsbuf);
-        if(surf->surf.ts_address)
+        if(surf->surf.ts_size)
             need_ts_flush = true;
     }
     if(need_ts_flush)
@@ -133,7 +134,7 @@ static void etna_pipe_clear(struct pipe_context *pipe,
         {
             struct etna_surface *surf = etna_surface(priv->framebuffer_s.cbufs[idx]);
             uint32_t new_clear_value = translate_clear_color(surf->base.format, &color[idx]);
-            if(surf->surf.ts_address) /* TS: use precompiled clear command */
+            if(surf->surf.ts_size) /* TS: use precompiled clear command */
             {
                 /* Set new clear color */
                 priv->framebuffer.TS_COLOR_CLEAR_VALUE = new_clear_value;
@@ -158,7 +159,7 @@ static void etna_pipe_clear(struct pipe_context *pipe,
     {
         struct etna_surface *surf = etna_surface(priv->framebuffer_s.zsbuf);
         uint32_t new_clear_value = translate_clear_depth_stencil(surf->base.format, depth, stencil);
-        if(surf->surf.ts_address) /* TS: use precompiled clear command */
+        if(surf->surf.ts_size) /* TS: use precompiled clear command */
         {
             /* Set new clear depth value */
             priv->framebuffer.TS_DEPTH_CLEAR_VALUE = new_clear_value;

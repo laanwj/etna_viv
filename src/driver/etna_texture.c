@@ -135,7 +135,7 @@ static struct pipe_sampler_view *etna_pipe_create_sampler_view(struct pipe_conte
     /* Set up levels-of-detail */
     for(int lod=0; lod<=res->base.last_level; ++lod)
     {
-        cs->TE_SAMPLER_LOD_ADDR[lod] = res->levels[lod].address;
+        cs->TE_SAMPLER_LOD_ADDR[lod] = etna_bo_gpu_address(res->bo) + res->levels[lod].offset;
     }
     cs->min_lod = sv->base.u.tex.first_level << 5;
     cs->max_lod = MIN2(sv->base.u.tex.last_level, res->base.last_level) << 5;

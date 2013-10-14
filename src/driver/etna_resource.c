@@ -65,7 +65,7 @@ bool etna_screen_resource_alloc_ts(struct pipe_screen *screen, struct etna_resou
         return false;
     }
     resource->ts_bo = rt_ts;
-    resource->levels[0].ts_address = etna_bo_gpu_address(resource->ts_bo);
+    resource->levels[0].ts_offset = 0;
     resource->levels[0].ts_size = etna_bo_size(resource->ts_bo);
     /* It is important to initialize the TS, as random pattern
      * can result in crashes. Do this on the CPU as this only happens once
@@ -255,21 +255,6 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     {
         void *map = etna_bo_map(resource->bo);
         memset(map, 0, rt_size);
-    }
-
-    /* Set up cached mipmap level addresses
-     * (this is pretty pointless, XXX remove it)
-     */
-    uint32_t gpu_address = etna_bo_gpu_address(resource->bo);
-    void *map = etna_bo_map(resource->bo);
-    for(unsigned ix=0; ix<=resource->base.last_level; ++ix)
-    {
-        struct etna_resource_level *mip = &resource->levels[ix];
-        mip->address = gpu_address + mip->offset;
-        mip->logical = map + mip->offset;
-        DBG_F(ETNA_DBG_RESOURCE_MSGS, "  %08x level %i: %ix%i (%i) stride=%i layer_stride=%i",
-                (int)mip->address, ix, (int)mip->width, (int)mip->height, (int)mip->size,
-                (int)mip->stride, (int)mip->layer_stride);
     }
 
     return &resource->base;
