@@ -29,19 +29,17 @@
 
 #define ETNA_FB_MAX_BUFFERS (2) /* double buffering is enough */
 struct pipe_resource;
+struct etna_bo;
+
 struct fb_info
 {
     int fd;
     int num_buffers;
-    /* GPU addresses of buffers */
-    size_t physical[ETNA_FB_MAX_BUFFERS];
-    /* CPU addresses of buffers */
-    void *logical[ETNA_FB_MAX_BUFFERS];
+    struct etna_bo *buffer[ETNA_FB_MAX_BUFFERS];
     size_t stride;
     size_t buffer_stride;
     struct fb_var_screeninfo fb_var;
     struct fb_fix_screeninfo fb_fix;
-    void *map;
 
     struct etna_resource *resource;
     struct compiled_rs_state copy_to_screen[ETNA_FB_MAX_BUFFERS];
@@ -79,7 +77,7 @@ void etna_pipe_inline_write(struct pipe_context *pipe, struct pipe_resource *res
 void etna_convert_r8g8b8_to_b8g8r8x8(uint32_t *dst, const uint8_t *src, unsigned num_pixels);
 
 /* Open framebuffer and get information */
-int fb_open(int num, struct fb_info *out);
+int fb_open(struct viv_conn *conn, int num, struct fb_info *out);
 
 /* Set currently visible buffer id */
 int fb_set_buffer(struct fb_info *fb, int buffer);

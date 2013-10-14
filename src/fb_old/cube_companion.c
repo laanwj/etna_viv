@@ -672,7 +672,7 @@ int main(int argc, char **argv)
         etna_set_state(ctx, VIVS_RS_CLEAR_CONTROL, VIVS_RS_CLEAR_CONTROL_MODE_DISABLED);
         etna_set_state(ctx, VIVS_RS_EXTRA_CONFIG, 0);
         etna_set_state(ctx, VIVS_RS_SOURCE_ADDR, etna_bo_gpu_address(rt));
-        etna_set_state(ctx, VIVS_RS_DEST_ADDR, fbs->fb.physical[backbuffer]);
+        etna_set_state(ctx, VIVS_RS_DEST_ADDR, etna_bo_gpu_address(fbs->fb.buffer[backbuffer]));
         etna_set_state(ctx, VIVS_RS_WINDOW_SIZE,
                 VIVS_RS_WINDOW_SIZE_HEIGHT(height * supersample_y) |
                 VIVS_RS_WINDOW_SIZE_WIDTH(width * supersample_x));

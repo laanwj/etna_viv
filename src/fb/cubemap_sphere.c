@@ -388,7 +388,7 @@ int main(int argc, char **argv)
         etna_swap_buffers(fbs->buffers);
     }
 #ifdef DUMP
-    bmp_dump32(fbs->fb.logical[1-fbs->buffers->backbuffer], width, height, false, "/mnt/sdcard/fb.bmp");
+    bmp_dump32(etna_bo_map(fbs->fb.buffer[1-fbs->buffers->backbuffer]), width, height, false, "/mnt/sdcard/fb.bmp");
     printf("Dump complete\n");
 #endif
     fbdemo_free(fbs);

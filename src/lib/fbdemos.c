@@ -22,6 +22,7 @@
  */
 #include "fbdemos.h"
 
+#include <etnaviv/etna_bo.h>
 #include "etna_pipe.h"
 #include "etna_translate.h"
 #include "etna_screen.h"
@@ -53,14 +54,6 @@ void fbdemo_init(struct fbdemos_scaffold **out)
 {
     struct fbdemos_scaffold *fbs = CALLOC_STRUCT(fbdemos_scaffold);
     int rv;
-    
-    rv = fb_open(0, &fbs->fb);
-    if(rv!=0)
-    {
-        exit(1);
-    }
-    fbs->width = fbs->fb.fb_var.xres;
-    fbs->height = fbs->fb.fb_var.yres;
 
     if(getenv("ETNA_MSAA_SAMPLES"))
         fbdemos_msaa_samples = atoi(getenv("ETNA_MSAA_SAMPLES"));
@@ -72,6 +65,14 @@ void fbdemo_init(struct fbdemos_scaffold **out)
         exit(1);
     }
     printf("Succesfully opened device\n");
+
+    rv = fb_open(fbs->conn, 0, &fbs->fb);
+    if(rv!=0)
+    {
+        exit(1);
+    }
+    fbs->width = fbs->fb.fb_var.xres;
+    fbs->height = fbs->fb.fb_var.yres;
 
     /* Create screen */
     if((fbs->screen = etna_screen_create(fbs->conn)) == NULL)
@@ -166,7 +167,7 @@ void etna_convert_r8g8b8_to_b8g8r8x8(uint32_t *dst, const uint8_t *src, unsigned
 }
 
 /* Open framebuffer and get information */
-int fb_open(int num, struct fb_info *out)
+int fb_open(struct viv_conn *conn, int num, struct fb_info *out)
 {
     char devname[256];
     memset(out, 0, sizeof(struct fb_info));
@@ -211,8 +212,6 @@ int fb_open(int num, struct fb_info *out)
     out->stride = out->fb_fix.line_length;
     out->buffer_stride = out->stride * out->fb_var.yres;
     out->num_buffers = out->fb_fix.smem_len / out->buffer_stride;
-    out->map = mmap(NULL, out->fb_fix.smem_len, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
-    printf("    mmap: %p\n", out->map);
 
     if(out->num_buffers > ETNA_FB_MAX_BUFFERS)
         out->num_buffers = ETNA_FB_MAX_BUFFERS;
@@ -226,8 +225,9 @@ int fb_open(int num, struct fb_info *out)
 
     for(int idx=0; idx<out->num_buffers; ++idx)
     {
-        out->physical[idx] = out->fb_fix.smem_start + idx * out->buffer_stride;
-        out->logical[idx] = (void*)((size_t)out->map + idx * out->buffer_stride);
+        out->buffer[idx] = etna_bo_from_fbdev(conn, fd,
+                idx * out->buffer_stride,
+                out->buffer_stride);
     }
     printf("number of fb buffers: %i\n", out->num_buffers);
     int req_virth = (out->num_buffers * out->fb_var.yres);
@@ -272,8 +272,6 @@ int fb_set_buffer(struct fb_info *fb, int buffer)
 
 int fb_close(struct fb_info *fb)
 {
-    if(fb->map)
-        munmap(fb->map, fb->fb_fix.smem_len);
     close(fb->fd);
     return 0;
 }
@@ -297,7 +295,7 @@ int etna_fb_bind_resource(struct fb_info *fb, struct pipe_resource *rt_resource_
                     .source_stride = rt_resource->levels[0].stride,
                     .dest_format = fb->rs_format,
                     .dest_tiling = ETNA_LAYOUT_LINEAR,
-                    .dest_addr = fb->physical[bi],
+                    .dest_addr = etna_bo_gpu_address(fb->buffer[bi]),
                     .dest_stride = fb->fb_fix.line_length,
                     .downsample_x = msaa_xscale > 1,
                     .downsample_y = msaa_yscale > 1,
