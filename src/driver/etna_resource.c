@@ -215,10 +215,9 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
         flags |= DRM_ETNA_GEM_TYPE_IDX;
     else if(templat->bind & PIPE_BIND_VERTEX_BUFFER)
         flags |= DRM_ETNA_GEM_TYPE_VTX;
-
-    DBG_F(ETNA_DBG_RESOURCE_MSGS, "%p: Allocate surface of %ix%i (padded to %ix%i) of format %s, size %08x flags %08x, memtype %i",
+    DBG_F(ETNA_DBG_RESOURCE_MSGS, "%p: Allocate surface of %ix%i (padded to %ix%i), %i layers, of format %s, size %08x flags %08x, memtype %i",
             resource,
-            templat->width0, templat->height0, resource->levels[0].padded_width, resource->levels[0].padded_height, util_format_name(templat->format),
+            templat->width0, templat->height0, resource->levels[0].padded_width, resource->levels[0].padded_height, templat->array_size, util_format_name(templat->format),
             offset, templat->bind, memtype);
 
     struct etna_bo *bo = 0;
