@@ -110,9 +110,6 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
 {
     struct etna_screen *priv = etna_screen(screen);
     assert(templat);
-    unsigned element_size = util_format_get_blocksize(templat->format);
-    if(!element_size)
-        return NULL;
 
     /* Check input */
     if(templat->target == PIPE_TEXTURE_CUBE)
@@ -165,7 +162,7 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     if(!translate_samples_to_xyscale(nr_samples, &msaa_xscale, &msaa_yscale, NULL))
     {
         /* Number of samples not supported */
-        assert(0);
+        return NULL;
     }
 
     /* Determine needed padding (alignment of height/width) */
@@ -177,18 +174,12 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
             &paddingX, &paddingY, &halign);
     assert(paddingX && paddingY);
 
-    /* determine mipmap levels */
+    /* compute mipmap level sizes and offsets */
     struct etna_resource *resource = CALLOC_STRUCT(etna_resource);
     int max_mip_level = templat->last_level;
     if(unlikely(max_mip_level >= ETNA_NUM_LOD)) /* max LOD supported by hw */
         max_mip_level = ETNA_NUM_LOD - 1;
 
-    /* take care about DXTx formats, which have a divSize of non-1x1
-     * also: lower mipmaps are still 4x4 due to tiling. In as sense, compressed formats are already tiled.
-     * XXX UYVY formats?
-     */
-    unsigned divSizeX = util_format_get_blockwidth(templat->format);
-    unsigned divSizeY = util_format_get_blockheight(templat->format);
     unsigned ix = 0;
     unsigned x = templat->width0, y = templat->height0;
     unsigned offset = 0;
@@ -199,10 +190,9 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
         mip->height = y;
         mip->padded_width = align(x * msaa_xscale, paddingX);
         mip->padded_height = align(y * msaa_yscale, paddingY);
-        mip->stride = align(mip->padded_width, divSizeX)/divSizeX * element_size;
+        mip->stride = util_format_get_stride(templat->format, mip->padded_width);
         mip->offset = offset;
-        mip->layer_stride = align(mip->padded_width, divSizeX)/divSizeX *
-                      align(mip->padded_height, divSizeY)/divSizeY * element_size;
+        mip->layer_stride = mip->stride * util_format_get_nblocksy(templat->format, mip->padded_height);
         mip->size = templat->array_size * mip->layer_stride;
         offset += align(mip->size, ETNA_PE_ALIGNMENT); /* align mipmaps to 64 bytes to be able to render to them */
         if(ix == max_mip_level || (x == 1 && y == 1))
@@ -211,9 +201,6 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
         y = u_minify(y, 1);
         ix += 1;
     }
-
-    /* Determine memory size, and whether to create a tile status */
-    size_t rt_size = offset;
 
     /* determine memory type */
     uint32_t flags = 0; /* XXX DRM_ETNA_GEM_CACHE_xxx */
@@ -229,13 +216,13 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     else if(templat->bind & PIPE_BIND_VERTEX_BUFFER)
         flags |= DRM_ETNA_GEM_TYPE_VTX;
 
-    DBG_F(ETNA_DBG_RESOURCE_MSGS, "%p: Allocate surface of %ix%i (padded to %ix%i) of format %s (%i bpe %ix%i), size %08x flags %08x, memtype %i",
+    DBG_F(ETNA_DBG_RESOURCE_MSGS, "%p: Allocate surface of %ix%i (padded to %ix%i) of format %s, size %08x flags %08x, memtype %i",
             resource,
             templat->width0, templat->height0, resource->levels[0].padded_width, resource->levels[0].padded_height, util_format_name(templat->format),
-            element_size, divSizeX, divSizeY, rt_size, templat->bind, memtype);
+            offset, templat->bind, memtype);
 
-    struct etna_bo *rt = 0;
-    if(unlikely((rt = etna_bo_new(priv->dev, rt_size, flags)) == NULL))
+    struct etna_bo *bo = 0;
+    if(unlikely((bo = etna_bo_new(priv->dev, offset, flags)) == NULL))
     {
         BUG("Problem allocating video memory for resource");
         return NULL;
@@ -247,14 +234,14 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     resource->base.nr_samples = nr_samples;
     resource->layout = layout;
     resource->halign = halign;
-    resource->bo = rt;
+    resource->bo = bo;
     resource->ts_bo = 0; /* TS is only created when first bound to surface */
     pipe_reference_init(&resource->base.reference, 1);
 
     if(DBG_ENABLED(ETNA_DBG_ZERO))
     {
-        void *map = etna_bo_map(resource->bo);
-        memset(map, 0, rt_size);
+        void *map = etna_bo_map(bo);
+        memset(map, 0, offset);
     }
 
     return &resource->base;

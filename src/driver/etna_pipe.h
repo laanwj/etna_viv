@@ -64,13 +64,13 @@ struct etna_resource_level
    unsigned width, padded_width;
    unsigned height, padded_height;
    unsigned offset; /* offset into memory area */
-   unsigned size; /* size of memory area */
+   uint32_t stride; /* row stride */
+   uint32_t layer_stride; /* layer stride */
+   unsigned size; /* total size of memory area */
 
    uint32_t ts_offset;
    uint32_t ts_size;
    uint32_t clear_value; /* clear value of resource level (mainly for TS) */
-   uint32_t stride; /* VIVS_PE_(COLOR|DEPTH)_STRIDE */
-   uint32_t layer_stride;
 };
 
 struct etna_resource
