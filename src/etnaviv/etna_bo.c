@@ -38,6 +38,7 @@
 
 enum etna_bo_type {
     ETNA_BO_TYPE_VIDMEM,    /* Main vidmem */
+    ETNA_BO_TYPE_VIDMEM_EXTERNAL, /* Main vidmem, external handle */
     ETNA_BO_TYPE_USERMEM,   /* Mapped user memory */
     ETNA_BO_TYPE_CONTIGUOUS,/* Contiguous memory */
     ETNA_BO_TYPE_PHYSICAL   /* Mmap-ed physical memory */
@@ -208,8 +209,20 @@ error:
 
 struct etna_bo *etna_bo_from_name(struct viv_conn *conn, uint32_t name)
 {
-    /* TODO */
-    return NULL;
+    struct etna_bo *mem = ETNA_CALLOC_STRUCT(etna_bo);
+    if(mem == NULL) return NULL;
+
+    mem->bo_type = ETNA_BO_TYPE_VIDMEM_EXTERNAL;
+    mem->node = (viv_node_t)name;
+
+    /* Lock to this address space */
+    int status = etna_bo_lock(conn, mem);
+    if(status != ETNA_OK)
+    {
+        free(mem);
+        return NULL;
+    }
+    return mem;
 }
 
 struct etna_bo *etna_bo_ref(struct etna_bo *bo)
@@ -245,6 +258,12 @@ int etna_bo_del(struct viv_conn *conn, struct etna_bo *mem, struct etna_queue *q
             }
         }
         break;
+    case ETNA_BO_TYPE_VIDMEM_EXTERNAL:
+        if((rv = etna_bo_unlock(conn, mem, queue)) != ETNA_OK)
+        {
+            printf("etna: Warning: could not unlock memory\n");
+        }
+        break;
     case ETNA_BO_TYPE_USERMEM:
         if(queue)
         {
@@ -275,14 +294,13 @@ int etna_bo_del(struct viv_conn *conn, struct etna_bo *mem, struct etna_queue *q
 
 int etna_bo_get_name(struct etna_bo *bo, uint32_t *name)
 {
-    /* TODO */
-    return -1;
+    *name = (uint32_t)bo->node;
+    return 0;
 }
 
 uint32_t etna_bo_handle(struct etna_bo *bo)
 {
-    /* TODO */
-    return 0;
+    return (uint32_t)bo->node;
 }
 
 uint32_t etna_bo_size(struct etna_bo *bo)
