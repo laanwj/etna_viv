@@ -50,6 +50,22 @@ int viv_invoke(struct viv_conn *conn, gcsHAL_INTERFACE *cmd)
     };
 #ifdef GCABI_HAS_HARDWARE_TYPE
     cmd->hardwareType = (gceHARDWARE_TYPE)conn->hw_type;
+
+    cmd->using3D = 0;
+    cmd->using2D = 0;
+
+    switch (conn->hw_type)
+    {
+    case VIV_HW_3D:
+        cmd->using3D = 1;
+        break;
+    case VIV_HW_2D:
+        cmd->using2D = 1;
+        break;
+
+    default:
+        printf("!!! Implement me !!!\n");
+    }
 #endif
     if(ioctl(conn->fd, IOCTL_GCHAL_INTERFACE, &ic) < 0)
         return -1;
