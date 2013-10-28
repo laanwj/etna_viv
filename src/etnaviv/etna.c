@@ -126,8 +126,8 @@ static int gpu_context_clear(struct etna_ctx *ctx)
     GCCTX(ctx)->bufferSize = BEGIN_COMMIT_CLEARANCE;
     GCCTX(ctx)->logical = etna_bo_map(ctx->ctx_bo);
 #ifdef GCABI_CONTEXT_HAS_PHYSICAL
-    GCCTX(ctx)->bytes = ctx->ctx_info.bytes; /* actual size of buffer */
-    GCCTX(ctx)->physical = HANDLE_TO_VIV(ctx->ctx_info.physical);
+    GCCTX(ctx)->bytes = etna_bo_size(ctx->ctx_bo); /* actual size of buffer */
+    GCCTX(ctx)->physical = HANDLE_TO_VIV(etna_bo_gpu_address(ctx->ctx_bo));
 #endif
     /* When context is empty, initial pipe should default to entry pipe so that
      * no pipe switch is needed within the context and the kernel does the
