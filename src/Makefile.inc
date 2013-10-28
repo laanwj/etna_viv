@@ -1,4 +1,7 @@
-GCABI ?= v2
+ifndef GCABI
+$(error GCABI is undefined. Consult the README.md file to set it according to your kernel)
+endif
+
 PLATFORM_GL_LIBS ?= -lEGL -lGLESv2
 
 CC = $(GCCPREFIX)gcc
