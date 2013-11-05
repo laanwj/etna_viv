@@ -119,6 +119,12 @@ void etna_submit_rs_state(struct etna_ctx *restrict ctx, const struct compiled_r
     }
     else if (ctx->conn->chip.pixel_pipes == 2)
     {
+        /* we need to change window size value */
+        uint32_t window_size = cs->RS_WINDOW_SIZE;
+        uint32_t h = (window_size & VIVS_RS_WINDOW_SIZE_HEIGHT__MASK) >> VIVS_RS_WINDOW_SIZE_HEIGHT__SHIFT;
+        uint32_t w = (window_size & VIVS_RS_WINDOW_SIZE_WIDTH__MASK) >> VIVS_RS_WINDOW_SIZE_WIDTH__SHIFT;
+        window_size = VIVS_RS_WINDOW_SIZE_WIDTH(w) | VIVS_RS_WINDOW_SIZE_HEIGHT(h / 2);
+
         etna_reserve(ctx, 32);
         /*0 */ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_CONFIG>>2, 5, 0);
         /*1 */ ETNA_EMIT(ctx, cs->RS_CONFIG);
@@ -137,7 +143,7 @@ void etna_submit_rs_state(struct etna_ctx *restrict ctx, const struct compiled_r
         /*14*/ ETNA_EMIT(ctx, cs->RS_PIPE_OFFSET[1]);
         /*15*/ ETNA_EMIT(ctx, 0x00000000); /* pad */
         /*16*/ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_WINDOW_SIZE>>2, 1, 0);
-        /*17*/ ETNA_EMIT(ctx, cs->RS_WINDOW_SIZE);
+        /*17*/ ETNA_EMIT(ctx, window_size);
         /*18*/ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_DITHER(0)>>2, 2, 0);
         /*19*/ ETNA_EMIT(ctx, cs->RS_DITHER[0]);
         /*20*/ ETNA_EMIT(ctx, cs->RS_DITHER[1]);
