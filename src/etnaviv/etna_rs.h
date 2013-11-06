@@ -72,7 +72,7 @@ struct compiled_rs_state
 void etna_warm_up_rs(struct etna_ctx *cmdbuf, viv_addr_t aux_rt_physical, viv_addr_t aux_rt_ts_physical);
 
 /* compile RS state struct */
-void etna_compile_rs_state(struct compiled_rs_state *cs, const struct rs_state *rs);
+void etna_compile_rs_state(struct etna_ctx *restrict ctx, struct compiled_rs_state *cs, const struct rs_state *rs);
 
 /* submit compiled RS state */
 void etna_submit_rs_state(struct etna_ctx *restrict ctx, const struct compiled_rs_state *cs);
