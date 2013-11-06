@@ -89,7 +89,7 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
            Currently uses a fixed row size of 64 bytes. Some benchmarking with different sizes may be in order.
          */
         struct etna_bo *ts_bo = etna_resource(surf->base.texture)->ts_bo;
-        etna_compile_rs_state(&surf->clear_command, &(struct rs_state){
+        etna_compile_rs_state(priv->ctx, &surf->clear_command, &(struct rs_state){
                 .source_format = RS_FORMAT_A8R8G8B8,
                 .dest_format = RS_FORMAT_A8R8G8B8,
                 .dest_addr = etna_bo_gpu_address(ts_bo) + surf->surf.ts_offset,
@@ -103,7 +103,7 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
                 .clear_bits = 0xffff
             });
     } else {
-        etna_rs_gen_clear_surface(&surf->clear_command, surf, surf->level->clear_value);
+        etna_rs_gen_clear_surface(priv->ctx, &surf->clear_command, surf, surf->level->clear_value);
     }
     etna_resource_touch(pipe, surf->base.texture);
     return &surf->base;

@@ -52,7 +52,7 @@ void etna_warm_up_rs(struct etna_ctx *cmdbuf, viv_addr_t aux_rt_physical, viv_ad
 #define SET_STATE(addr, value) cs->addr = (value)
 #define SET_STATE_FIXP(addr, value) cs->addr = (value)
 #define SET_STATE_F32(addr, value) cs->addr = f32_to_u32(value)
-void etna_compile_rs_state(struct compiled_rs_state *cs, const struct rs_state *rs)
+void etna_compile_rs_state(struct etna_ctx *restrict ctx, struct compiled_rs_state *cs, const struct rs_state *rs)
 {
     /* TILED and SUPERTILED layout have their strides multiplied with 4 in RS */
     unsigned source_stride_shift = (rs->source_tiling != ETNA_LAYOUT_LINEAR) ? 2 : 0;
@@ -74,7 +74,16 @@ void etna_compile_rs_state(struct compiled_rs_state *cs, const struct rs_state *
     SET_STATE(RS_PIPE_DEST_ADDR[0], rs->dest_addr);
     SET_STATE(RS_PIPE_DEST_ADDR[1], rs->dest_addr);  /* TODO */
     SET_STATE(RS_DEST_STRIDE, (rs->dest_stride << dest_stride_shift) | ((rs->dest_tiling&2)?VIVS_RS_DEST_STRIDE_TILING:0));
-    SET_STATE(RS_WINDOW_SIZE, VIVS_RS_WINDOW_SIZE_WIDTH(rs->width) | VIVS_RS_WINDOW_SIZE_HEIGHT(rs->height));
+    if (ctx->conn->chip.pixel_pipes == 1)
+    {
+        SET_STATE(RS_WINDOW_SIZE, VIVS_RS_WINDOW_SIZE_WIDTH(rs->width) | VIVS_RS_WINDOW_SIZE_HEIGHT(rs->height));
+    }
+    else if (ctx->conn->chip.pixel_pipes == 2)
+    {
+        SET_STATE(RS_WINDOW_SIZE, VIVS_RS_WINDOW_SIZE_WIDTH(rs->width) | VIVS_RS_WINDOW_SIZE_HEIGHT(rs->height / 2));
+    }
+    SET_STATE(RS_PIPE_OFFSET[0], VIVS_RS_PIPE_OFFSET_X(0) | VIVS_RS_PIPE_OFFSET_Y(0));
+    SET_STATE(RS_PIPE_OFFSET[1], VIVS_RS_PIPE_OFFSET_X(rs->width) | VIVS_RS_PIPE_OFFSET_Y(rs->height / 2));
     SET_STATE(RS_DITHER[0], rs->dither[0]);
     SET_STATE(RS_DITHER[1], rs->dither[1]);
     SET_STATE(RS_CLEAR_CONTROL, VIVS_RS_CLEAR_CONTROL_BITS(rs->clear_bits) | rs->clear_mode);
