@@ -471,7 +471,7 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
 
     /* Kick off RS here */
     struct compiled_rs_state copy_to_screen;
-    etna_compile_rs_state(&copy_to_screen, &(struct rs_state){
+    etna_compile_rs_state(ctx, &copy_to_screen, &(struct rs_state){
                 .source_format = translate_rt_format(rt_resource->base.format, false),
                 .source_tiling = rt_resource->layout,
                 .source_addr = etna_bo_gpu_address(rt_resource->bo) + rt_resource->levels[level].offset,
