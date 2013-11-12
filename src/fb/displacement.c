@@ -147,7 +147,7 @@ int main(int argc, char **argv)
     struct pipe_resource *idx_resource = pipe_buffer_create(fbs->screen, PIPE_BIND_INDEX_BUFFER, PIPE_USAGE_IMMUTABLE, VERTEX_BUFFER_SIZE);
     
     /* bind render target to framebuffer */
-    etna_fb_bind_resource(&fbs->fb, rt_resource);
+    etna_fb_bind_resource(fbs, rt_resource);
 
     /* Phew, now we got all the memory we need.
      * Write interleaved attribute vertex stream.

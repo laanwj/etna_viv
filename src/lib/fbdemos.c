@@ -279,10 +279,10 @@ int fb_close(struct fb_info *fb)
 }
 
 
-int etna_fb_bind_resource(struct fb_info *fb, struct pipe_resource *rt_resource_)
+int etna_fb_bind_resource(struct fbdemos_scaffold *fbs, struct pipe_resource *rt_resource_)
 {
+    struct fb_info *fb = &fbs->fb;
     struct etna_resource *rt_resource = etna_resource(rt_resource_);
-    struct etna_pipe_context *ectx = rt_resource->last_ctx;
     fb->resource = rt_resource;
     assert(rt_resource->base.width0 <= fb->fb_var.xres && rt_resource->base.height0 <= fb->fb_var.yres);
     int msaa_xscale=1, msaa_yscale=1;
@@ -291,7 +291,7 @@ int etna_fb_bind_resource(struct fb_info *fb, struct pipe_resource *rt_resource_
 
     for(int bi=0; bi<ETNA_FB_MAX_BUFFERS; ++bi)
     {
-        etna_compile_rs_state(ectx->ctx, &fb->copy_to_screen[bi], &(struct rs_state){
+        etna_compile_rs_state(fbs->ctx, &fb->copy_to_screen[bi], &(struct rs_state){
                     .source_format = translate_rt_format(rt_resource->base.format, false),
                     .source_tiling = rt_resource->layout,
                     .source_addr = etna_bo_gpu_address(rt_resource->bo) + rt_resource->levels[0].offset,

@@ -521,7 +521,7 @@ main(int argc, char *argv[])
         });
     
     /* bind render target to framebuffer */
-    etna_fb_bind_resource(&fbs->fb, rt_resource);
+    etna_fb_bind_resource(fbs, rt_resource);
 
     /* compile gallium3d states */
     void *blend = pipe->create_blend_state(pipe, &(struct pipe_blend_state) {
