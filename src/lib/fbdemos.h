@@ -86,7 +86,7 @@ int fb_set_buffer(struct fb_info *fb, int buffer);
 int fb_close(struct fb_info *fb);
 
 /* Bind framebuffer to render target resource */
-int etna_fb_bind_resource(struct fb_info *fb, struct pipe_resource *rt_resource);
+int etna_fb_bind_resource(struct fbdemos_scaffold *fbs, struct pipe_resource *rt_resource);
 
 /* Copy framebuffer from bound render target resource */
 int etna_fb_copy_buffer(struct fb_info *fb, struct etna_ctx *ctx, int buffer);

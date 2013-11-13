@@ -134,7 +134,7 @@ int main(int argc, char **argv)
     struct pipe_resource *z_resource = fbdemo_create_2d(fbs->screen, PIPE_BIND_RENDER_TARGET, PIPE_FORMAT_Z16_UNORM, width, height, 0);
 
     /* bind render target to framebuffer */
-    etna_fb_bind_resource(&fbs->fb, rt_resource);
+    etna_fb_bind_resource(fbs, rt_resource);
 
     /* geometry */
     struct pipe_resource *vtx_resource = pipe_buffer_create(fbs->screen, PIPE_BIND_VERTEX_BUFFER, PIPE_USAGE_IMMUTABLE, VERTEX_BUFFER_SIZE);

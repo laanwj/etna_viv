@@ -126,39 +126,41 @@ void etna_submit_rs_state(struct etna_ctx *restrict ctx, const struct compiled_r
     }
     else if (ctx->conn->chip.pixel_pipes == 2)
     {
-        etna_reserve(ctx, 32);
-        /*0 */ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_CONFIG>>2, 5, 0);
+        etna_reserve(ctx, 34);
+        /*0 */ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_CONFIG>>2, 1, 0);
         /*1 */ ETNA_EMIT(ctx, cs->RS_CONFIG);
-        /*2 */ ETNA_EMIT(ctx, cs->RS_SOURCE_STRIDE);
-        /*3 */ ETNA_EMIT(ctx, cs->RS_DEST_ADDR);
-        /*4 */ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_PIPE_SOURCE_ADDR(0)>>2, 2, 0);
-        /*5 */ ETNA_EMIT(ctx, cs->RS_PIPE_SOURCE_ADDR[0]);
-        /*6 */ ETNA_EMIT(ctx, cs->RS_PIPE_SOURCE_ADDR[1]);
-        /*7 */ ETNA_EMIT(ctx, 0x00000000); /* pad */
-        /*8 */ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_PIPE_DEST_ADDR(0)>>2, 2, 0);
-        /*9 */ ETNA_EMIT(ctx, cs->RS_PIPE_DEST_ADDR[0]);
-        /*10*/ ETNA_EMIT(ctx, cs->RS_PIPE_DEST_ADDR[1]);
-        /*11*/ ETNA_EMIT(ctx, 0x00000000); /* pad */
-        /*12*/ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_PIPE_OFFSET(0)>>2, 2, 0);
-        /*13*/ ETNA_EMIT(ctx, cs->RS_PIPE_OFFSET[0]);
-        /*14*/ ETNA_EMIT(ctx, cs->RS_PIPE_OFFSET[1]);
-        /*15*/ ETNA_EMIT(ctx, 0x00000000); /* pad */
-        /*16*/ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_WINDOW_SIZE>>2, 1, 0);
-        /*17*/ ETNA_EMIT(ctx, cs->RS_WINDOW_SIZE);
-        /*18*/ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_DITHER(0)>>2, 2, 0);
-        /*19*/ ETNA_EMIT(ctx, cs->RS_DITHER[0]);
-        /*20*/ ETNA_EMIT(ctx, cs->RS_DITHER[1]);
-        /*21*/ ETNA_EMIT(ctx, 0xbabb1e); /* pad */
-        /*22*/ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_CLEAR_CONTROL>>2, 5, 0);
-        /*23*/ ETNA_EMIT(ctx, cs->RS_CLEAR_CONTROL);
-        /*24*/ ETNA_EMIT(ctx, cs->RS_FILL_VALUE[0]);
-        /*25*/ ETNA_EMIT(ctx, cs->RS_FILL_VALUE[1]);
-        /*26*/ ETNA_EMIT(ctx, cs->RS_FILL_VALUE[2]);
-        /*27*/ ETNA_EMIT(ctx, cs->RS_FILL_VALUE[3]);
-        /*28*/ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_EXTRA_CONFIG>>2, 1, 0);
-        /*29*/ ETNA_EMIT(ctx, cs->RS_EXTRA_CONFIG);
-        /*30*/ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_KICKER>>2, 1, 0);
-        /*31*/ ETNA_EMIT(ctx, 0xbeebbeeb);
+        /*2 */ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_SOURCE_STRIDE>>2, 1, 0);
+        /*3 */ ETNA_EMIT(ctx, cs->RS_SOURCE_STRIDE);
+        /*4 */ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_DEST_STRIDE>>2, 1, 0);
+        /*5 */ ETNA_EMIT(ctx, cs->RS_DEST_STRIDE);
+        /*6 */ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_PIPE_SOURCE_ADDR(0)>>2, 2, 0);
+        /*7 */ ETNA_EMIT(ctx, cs->RS_PIPE_SOURCE_ADDR[0]);
+        /*8 */ ETNA_EMIT(ctx, cs->RS_PIPE_SOURCE_ADDR[1]);
+        /*9 */ ETNA_EMIT(ctx, 0x00000000); /* pad */
+        /*10*/ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_PIPE_DEST_ADDR(0)>>2, 2, 0);
+        /*11*/ ETNA_EMIT(ctx, cs->RS_PIPE_DEST_ADDR[0]);
+        /*12*/ ETNA_EMIT(ctx, cs->RS_PIPE_DEST_ADDR[1]);
+        /*13*/ ETNA_EMIT(ctx, 0x00000000); /* pad */
+        /*14*/ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_PIPE_OFFSET(0)>>2, 2, 0);
+        /*15*/ ETNA_EMIT(ctx, cs->RS_PIPE_OFFSET[0]);
+        /*16*/ ETNA_EMIT(ctx, cs->RS_PIPE_OFFSET[1]);
+        /*17*/ ETNA_EMIT(ctx, 0x00000000); /* pad */
+        /*18*/ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_WINDOW_SIZE>>2, 1, 0);
+        /*19*/ ETNA_EMIT(ctx, cs->RS_WINDOW_SIZE);
+        /*20*/ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_DITHER(0)>>2, 2, 0);
+        /*21*/ ETNA_EMIT(ctx, cs->RS_DITHER[0]);
+        /*22*/ ETNA_EMIT(ctx, cs->RS_DITHER[1]);
+        /*23*/ ETNA_EMIT(ctx, 0xbabb1e); /* pad */
+        /*24*/ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_CLEAR_CONTROL>>2, 5, 0);
+        /*25*/ ETNA_EMIT(ctx, cs->RS_CLEAR_CONTROL);
+        /*26*/ ETNA_EMIT(ctx, cs->RS_FILL_VALUE[0]);
+        /*27*/ ETNA_EMIT(ctx, cs->RS_FILL_VALUE[1]);
+        /*28*/ ETNA_EMIT(ctx, cs->RS_FILL_VALUE[2]);
+        /*29*/ ETNA_EMIT(ctx, cs->RS_FILL_VALUE[3]);
+        /*30*/ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_EXTRA_CONFIG>>2, 1, 0);
+        /*31*/ ETNA_EMIT(ctx, cs->RS_EXTRA_CONFIG);
+        /*32*/ ETNA_EMIT_LOAD_STATE(ctx, VIVS_RS_KICKER>>2, 1, 0);
+        /*33*/ ETNA_EMIT(ctx, 0xbeebbeeb);
     }
 }
 
