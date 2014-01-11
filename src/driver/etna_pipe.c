@@ -195,7 +195,6 @@ static void reset_context(struct pipe_context *restrict pipe)
     /*01404*/ EMIT_STATE(PE_DEPTH_NEAR, PE_DEPTH_NEAR);
     /*01408*/ EMIT_STATE(PE_DEPTH_FAR, PE_DEPTH_FAR);
     /*0140C*/ EMIT_STATE(PE_DEPTH_NORMALIZE, PE_DEPTH_NORMALIZE);
-    /*01410*/ EMIT_STATE(PE_DEPTH_ADDR, PE_DEPTH_ADDR);
     /*01414*/ EMIT_STATE(PE_DEPTH_STRIDE, PE_DEPTH_STRIDE);
     /*01418*/ EMIT_STATE(PE_STENCIL_OP, PE_STENCIL_OP);
     /*0141C*/ EMIT_STATE(PE_STENCIL_CONFIG, PE_STENCIL_CONFIG);
@@ -203,16 +202,23 @@ static void reset_context(struct pipe_context *restrict pipe)
     /*01424*/ EMIT_STATE(PE_ALPHA_BLEND_COLOR, PE_ALPHA_BLEND_COLOR);
     /*01428*/ EMIT_STATE(PE_ALPHA_CONFIG, PE_ALPHA_CONFIG);
     /*0142C*/ EMIT_STATE(PE_COLOR_FORMAT, PE_COLOR_FORMAT);
-    /*01430*/ EMIT_STATE(PE_COLOR_ADDR, PE_COLOR_ADDR);
     /*01434*/ EMIT_STATE(PE_COLOR_STRIDE, PE_COLOR_STRIDE);
     /*01454*/ EMIT_STATE(PE_HDEPTH_CONTROL, PE_HDEPTH_CONTROL);
-    for(int x=0; x<8; ++x)
+    if (ctx->conn->chip.pixel_pipes == 1)
     {
-        /*01460*/ EMIT_STATE(PE_PIPE_COLOR_ADDR(x), PE_PIPE_COLOR_ADDR[x]);
+        /*01430*/ EMIT_STATE(PE_COLOR_ADDR, PE_COLOR_ADDR);
+        /*01410*/ EMIT_STATE(PE_DEPTH_ADDR, PE_DEPTH_ADDR);
     }
-    for(int x=0; x<8; ++x)
+    else
     {
-        /*01480*/ EMIT_STATE(PE_PIPE_DEPTH_ADDR(x), PE_PIPE_DEPTH_ADDR[x]);
+        for(int x=0; x<ctx->conn->chip.pixel_pipes; ++x)
+        {
+            /*01460*/ EMIT_STATE(PE_PIPE_COLOR_ADDR(x), PE_PIPE_COLOR_ADDR[x]);
+        }
+        for(int x=0; x<ctx->conn->chip.pixel_pipes; ++x)
+        {
+            /*01480*/ EMIT_STATE(PE_PIPE_DEPTH_ADDR(x), PE_PIPE_DEPTH_ADDR[x]);
+        }
     }
     /*014A0*/ EMIT_STATE(PE_STENCIL_CONFIG_EXT, PE_STENCIL_CONFIG_EXT);
     /*014A4*/ EMIT_STATE(PE_LOGIC_OP, PE_LOGIC_OP);
