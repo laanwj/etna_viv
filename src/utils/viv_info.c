@@ -284,7 +284,7 @@ int main()
     printf("Number of varyings: 0x%08x\n", id.u.QueryChipIdentity.varyingsCount);
     printf("Supertile layout style in hardware: 0x%08x\n", id.u.QueryChipIdentity.superTileMode);
 #endif
-    
+
     printf("\n");
 
     memset((void*)&id, 0, sizeof(id));

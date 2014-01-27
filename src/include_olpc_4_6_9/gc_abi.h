@@ -30,6 +30,7 @@
 #define GCABI_HAS_MINOR_FEATURES_4
 
 #define GCABI_CHIPIDENTITY_EXT
+#define GCABI_CHIPIDENTITY_VARYINGS
 
 // One of these must be set:
 //#define GCABI_HAS_CONTEXT
