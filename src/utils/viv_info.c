@@ -265,6 +265,9 @@ int main()
 #ifdef GCABI_HAS_MINOR_FEATURES_3
     printf("Chip minor features 3: 0x%08x\n", id.u.QueryChipIdentity.chipMinorFeatures3);
 #endif
+#ifdef GCABI_HAS_MINOR_FEATURES_4
+    printf("Chip minor features 4: 0x%08x\n", id.u.QueryChipIdentity.chipMinorFeatures4);
+#endif
     printf("Stream count: 0x%08x\n", id.u.QueryChipIdentity.streamCount);
     printf("Register max: 0x%08x\n", id.u.QueryChipIdentity.registerMax);
     printf("Thread count: 0x%08x\n", id.u.QueryChipIdentity.threadCount);
