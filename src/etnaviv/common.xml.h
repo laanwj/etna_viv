@@ -9,13 +9,13 @@ git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
 - /home/orion/projects/etna_viv/rnndb/state.xml    (  18526 bytes, from 2013-09-11 16:52:32)
-- /home/orion/projects/etna_viv/rnndb/common.xml   (  16543 bytes, from 2013-09-01 10:53:22)
-- /home/orion/projects/etna_viv/rnndb/state_hi.xml (  21834 bytes, from 2013-09-11 15:58:37)
-- /home/orion/projects/etna_viv/rnndb/state_2d.xml (  51058 bytes, from 2013-09-01 10:53:22)
-- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  54270 bytes, from 2013-09-17 15:37:52)
+- /home/orion/projects/etna_viv/rnndb/common.xml   (  18379 bytes, from 2014-01-27 15:58:05)
+- /home/orion/projects/etna_viv/rnndb/state_hi.xml (  22236 bytes, from 2014-01-27 15:56:46)
+- /home/orion/projects/etna_viv/rnndb/state_2d.xml (  51191 bytes, from 2013-10-04 06:36:55)
+- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  54570 bytes, from 2013-10-12 15:25:03)
 - /home/orion/projects/etna_viv/rnndb/state_vg.xml (   5942 bytes, from 2013-09-01 10:53:22)
 
-Copyright (C) 2013
+Copyright (C) 2014
 */
 
 
@@ -217,5 +217,37 @@ Copyright (C) 2013
 #define chipMinorFeatures3_UNK29				0x20000000
 #define chipMinorFeatures3_UNK30				0x40000000
 #define chipMinorFeatures3_UNK31				0x80000000
+#define chipMinorFeatures4_UNK0					0x00000001
+#define chipMinorFeatures4_UNK1					0x00000002
+#define chipMinorFeatures4_UNK2					0x00000004
+#define chipMinorFeatures4_UNK3					0x00000008
+#define chipMinorFeatures4_UNK4					0x00000010
+#define chipMinorFeatures4_UNK5					0x00000020
+#define chipMinorFeatures4_UNK6					0x00000040
+#define chipMinorFeatures4_UNK7					0x00000080
+#define chipMinorFeatures4_UNK8					0x00000100
+#define chipMinorFeatures4_UNK9					0x00000200
+#define chipMinorFeatures4_UNK10				0x00000400
+#define chipMinorFeatures4_UNK11				0x00000800
+#define chipMinorFeatures4_UNK12				0x00001000
+#define chipMinorFeatures4_UNK13				0x00002000
+#define chipMinorFeatures4_UNK14				0x00004000
+#define chipMinorFeatures4_UNK15				0x00008000
+#define chipMinorFeatures4_UNK16				0x00010000
+#define chipMinorFeatures4_UNK17				0x00020000
+#define chipMinorFeatures4_UNK18				0x00040000
+#define chipMinorFeatures4_UNK19				0x00080000
+#define chipMinorFeatures4_UNK20				0x00100000
+#define chipMinorFeatures4_UNK21				0x00200000
+#define chipMinorFeatures4_UNK22				0x00400000
+#define chipMinorFeatures4_UNK23				0x00800000
+#define chipMinorFeatures4_UNK24				0x01000000
+#define chipMinorFeatures4_UNK25				0x02000000
+#define chipMinorFeatures4_UNK26				0x04000000
+#define chipMinorFeatures4_UNK27				0x08000000
+#define chipMinorFeatures4_UNK28				0x10000000
+#define chipMinorFeatures4_UNK29				0x20000000
+#define chipMinorFeatures4_UNK30				0x40000000
+#define chipMinorFeatures4_UNK31				0x80000000
 
 #endif /* COMMON_XML */

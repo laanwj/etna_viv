@@ -128,6 +128,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00080" name="CHIP_SPECS_2" brief="Chip specifications 2"/>
         <reg32 offset="0x00084" name="CHIP_MINOR_FEATURE_2" type="chipMinorFeatures2" brief="Chip minor features 2"/>
         <reg32 offset="0x00088" name="CHIP_MINOR_FEATURE_3" type="chipMinorFeatures3" brief="Chip minor features 3"/>
+        <reg32 offset="0x00094" name="CHIP_MINOR_FEATURE_4" type="chipMinorFeatures4" brief="Chip minor features 4"/>
     </stripe>
 
     <!-- This block exists at 0x00200 for GC300 models with chipRevision < 0x2000 -->

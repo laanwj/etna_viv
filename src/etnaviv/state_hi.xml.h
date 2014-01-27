@@ -9,13 +9,13 @@ git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
 - /home/orion/projects/etna_viv/rnndb/state.xml    (  18526 bytes, from 2013-09-11 16:52:32)
-- /home/orion/projects/etna_viv/rnndb/common.xml   (  16543 bytes, from 2013-09-01 10:53:22)
-- /home/orion/projects/etna_viv/rnndb/state_hi.xml (  22118 bytes, from 2013-10-03 14:57:04)
-- /home/orion/projects/etna_viv/rnndb/state_2d.xml (  51191 bytes, from 2013-10-02 12:49:04)
-- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  54270 bytes, from 2013-09-17 15:37:52)
+- /home/orion/projects/etna_viv/rnndb/common.xml   (  18379 bytes, from 2014-01-27 15:58:05)
+- /home/orion/projects/etna_viv/rnndb/state_hi.xml (  22236 bytes, from 2014-01-27 15:56:46)
+- /home/orion/projects/etna_viv/rnndb/state_2d.xml (  51191 bytes, from 2013-10-04 06:36:55)
+- /home/orion/projects/etna_viv/rnndb/state_3d.xml (  54570 bytes, from 2013-10-12 15:25:03)
 - /home/orion/projects/etna_viv/rnndb/state_vg.xml (   5942 bytes, from 2013-09-01 10:53:22)
 
-Copyright (C) 2013
+Copyright (C) 2014
 */
 
 
@@ -146,6 +146,8 @@ Copyright (C) 2013
 #define VIVS_HI_CHIP_MINOR_FEATURE_2				0x00000084
 
 #define VIVS_HI_CHIP_MINOR_FEATURE_3				0x00000088
+
+#define VIVS_HI_CHIP_MINOR_FEATURE_4				0x00000094
 
 #define VIVS_PM							0x00000000
 

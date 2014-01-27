@@ -281,6 +281,40 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield pos="30" name="UNK30"/>
         <bitfield pos="31" name="UNK31"/>
     </bitset>
+    <bitset name="chipMinorFeatures4"> <!-- Only for newer hardware/drivers (gc1000+?) -->
+        <bitfield pos="0" name="UNK0"/>
+        <bitfield pos="1" name="UNK1"/>
+        <bitfield pos="2" name="UNK2"/>
+        <bitfield pos="3" name="UNK3"/>
+        <bitfield pos="4" name="UNK4"/>
+        <bitfield pos="5" name="UNK5"/>
+        <bitfield pos="6" name="UNK6"/>
+        <bitfield pos="7" name="UNK7"/>
+        <bitfield pos="8" name="UNK8"/>
+        <bitfield pos="9" name="UNK9"/>
+        <bitfield pos="10" name="UNK10"/>
+        <bitfield pos="11" name="UNK11"/>
+        <bitfield pos="12" name="UNK12"/>
+        <bitfield pos="13" name="UNK13"/>
+        <bitfield pos="14" name="UNK14"/>
+        <bitfield pos="15" name="UNK15"/>
+        <bitfield pos="16" name="UNK16"/>
+        <bitfield pos="17" name="UNK17"/>
+        <bitfield pos="18" name="UNK18"/>
+        <bitfield pos="19" name="UNK19"/>
+        <bitfield pos="20" name="UNK20"/>
+        <bitfield pos="21" name="UNK21"/>
+        <bitfield pos="22" name="UNK22"/>
+        <bitfield pos="23" name="UNK23"/>
+        <bitfield pos="24" name="UNK24"/>
+        <bitfield pos="25" name="UNK25"/>
+        <bitfield pos="26" name="UNK26"/>
+        <bitfield pos="27" name="UNK27"/>
+        <bitfield pos="28" name="UNK28"/>
+        <bitfield pos="29" name="UNK29"/>
+        <bitfield pos="30" name="UNK30"/>
+        <bitfield pos="31" name="UNK31"/>
+    </bitset>
 
 </database>
 

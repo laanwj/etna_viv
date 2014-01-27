@@ -560,3 +560,14 @@ the appropriate cache so that the rendered cache tiles are properly written back
 
 - before flushing the TS cache (as before a clear) first make sure that DEPTH
   and COLOR are flushed, and a stall from RA to PE is done, otherwise a crash will happen.
+
+Memory alignment
+-----------------
+
+We should take this errata into account moving down the road with GPU drivers.  
+The GPU3D L1 cache assumes that all memory requests are 16 bytes. If a request is 16 bytes, there
+are no issues since the data boundary lines up evenly. If a request is not aligned to 16 bytes, the
+memory controller will split those unaligned requests into two requests, doubling the number of
+requests processed internally in L1 cache.
+(jnettlet)
+
