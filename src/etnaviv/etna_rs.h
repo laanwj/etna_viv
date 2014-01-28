@@ -29,6 +29,8 @@ struct rs_state
 {
     uint8_t downsample_x:1; // Downsample in x direction
     uint8_t downsample_y:1; // Downsample in y direction
+    uint8_t source_multi:1;
+    uint8_t dest_multi:1;
 
     uint8_t source_format; // RS_FORMAT_XXX
     uint8_t source_tiling; // ETNA_LAYOUT_XXX
