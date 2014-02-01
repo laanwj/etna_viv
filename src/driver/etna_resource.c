@@ -146,7 +146,15 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
         else
             layout = ETNA_LAYOUT_TILED;
     }
-    /* XXX multi tiled formats */
+
+    /* multi tiled formats */
+    if (priv->dev->chip.pixel_pipes > 1)
+    {
+        if (layout == ETNA_LAYOUT_TILED)
+            layout = ETNA_LAYOUT_MULTI_TILED;
+        if (layout == ETNA_LAYOUT_SUPER_TILED)
+            layout = ETNA_LAYOUT_MULTI_SUPERTILED;
+    }
 
     /* Determine scaling for antialiasing, allow override using debug flag */
     int nr_samples = templat->nr_samples;
