@@ -57,6 +57,11 @@ void etna_compile_rs_state(struct etna_ctx *restrict ctx, struct compiled_rs_sta
     /* TILED and SUPERTILED layout have their strides multiplied with 4 in RS */
     unsigned source_stride_shift = (rs->source_tiling != ETNA_LAYOUT_LINEAR) ? 2 : 0;
     unsigned dest_stride_shift = (rs->dest_tiling != ETNA_LAYOUT_LINEAR) ? 2 : 0;
+
+    /* tiling == ETNA_LAYOUT_MULTI_TILED or ETNA_LAYOUT_MULTI_SUPERTILED? */
+    bool source_multi = (rs->source_tiling & 0x4)?true:false;
+    bool dest_multi = (rs->dest_tiling & 0x4)?true:false;
+
     /* TODO could just pre-generate command buffer, would simply submit to one memcpy */
     SET_STATE(RS_CONFIG, VIVS_RS_CONFIG_SOURCE_FORMAT(rs->source_format) |
                             (rs->downsample_x?VIVS_RS_CONFIG_DOWNSAMPLE_X:0) |
@@ -70,23 +75,23 @@ void etna_compile_rs_state(struct etna_ctx *restrict ctx, struct compiled_rs_sta
     SET_STATE(RS_PIPE_SOURCE_ADDR[0], rs->source_addr);
     SET_STATE(RS_SOURCE_STRIDE, (rs->source_stride << source_stride_shift) |
                             ((rs->source_tiling&2)?VIVS_RS_SOURCE_STRIDE_TILING:0) |
-                            ((rs->source_multi)?VIVS_RS_SOURCE_STRIDE_MULTI:0));
+                            ((source_multi)?VIVS_RS_SOURCE_STRIDE_MULTI:0));
     SET_STATE(RS_DEST_ADDR, rs->dest_addr);
     SET_STATE(RS_PIPE_DEST_ADDR[0], rs->dest_addr);
     SET_STATE(RS_DEST_STRIDE, (rs->dest_stride << dest_stride_shift) |
                             ((rs->dest_tiling&2)?VIVS_RS_DEST_STRIDE_TILING:0) |
-                            ((rs->dest_multi)?VIVS_RS_DEST_STRIDE_MULTI:0));
+                            ((dest_multi)?VIVS_RS_DEST_STRIDE_MULTI:0));
     if (ctx->conn->chip.pixel_pipes == 1)
     {
         SET_STATE(RS_WINDOW_SIZE, VIVS_RS_WINDOW_SIZE_WIDTH(rs->width) | VIVS_RS_WINDOW_SIZE_HEIGHT(rs->height));
     }
     else if (ctx->conn->chip.pixel_pipes == 2)
     {
-        if (rs->source_multi)
+        if (source_multi)
         {
             SET_STATE(RS_PIPE_SOURCE_ADDR[1], rs->source_addr); /* TODO */
         }
-        if (rs->dest_multi)
+        if (dest_multi)
         {
             SET_STATE(RS_PIPE_DEST_ADDR[1], rs->dest_addr); /* TODO */
         }
