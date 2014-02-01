@@ -26,6 +26,11 @@
 #include <etnaviv/state.xml.h>
 #include <etnaviv/state_3d.xml.h>
 
+//#define DEBUG
+#ifdef DEBUG
+# include <stdio.h>
+#endif
+
 /* Some kind of RS flush, used in the older drivers */
 void etna_warm_up_rs(struct etna_ctx *cmdbuf, viv_addr_t aux_rt_physical, viv_addr_t aux_rt_ts_physical)
 {
@@ -107,6 +112,18 @@ void etna_compile_rs_state(struct etna_ctx *restrict ctx, struct compiled_rs_sta
     SET_STATE(RS_FILL_VALUE[2], rs->clear_value[2]);
     SET_STATE(RS_FILL_VALUE[3], rs->clear_value[3]);
     SET_STATE(RS_EXTRA_CONFIG, VIVS_RS_EXTRA_CONFIG_AA(rs->aa) | VIVS_RS_EXTRA_CONFIG_ENDIAN(rs->endian_mode));
+
+#ifdef DEBUG
+    printf("cs->dest_addr1:    0x%08x\n", cs->RS_PIPE_DEST_ADDR[0]);
+    printf("cs->dest_addr2:    0x%08x\n", cs->RS_PIPE_DEST_ADDR[1]);
+    printf("cs->source_addr1   0x%08x\n", cs->RS_PIPE_SOURCE_ADDR[0]);
+    printf("cs->source_addr2:  0x%08x\n", cs->RS_PIPE_SOURCE_ADDR[1]);
+    printf("rs->dest_tiling:   0x%08x\n", rs->dest_tiling);
+    printf("rs->source_tiling: 0x%08x\n", rs->source_tiling);
+    printf("cs->dest_stride:   0x%08x\n", cs->RS_DEST_STRIDE);
+    printf("cs->source_stride: 0x%08x\n", cs->RS_SOURCE_STRIDE);
+    printf("\n");
+#endif
 }
 
 /* submit RS state, without any processing and no dependence on context
