@@ -978,15 +978,15 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
                     cbuf->surf.offset, cbuf->surf.stride*4);
         }
 
-        struct etna_bo *bo = etna_resource(cbuf->base.texture)->bo;
+        struct etna_resource *res = etna_resource(cbuf->base.texture);
         if (priv->ctx->conn->chip.pixel_pipes == 1)
         {
-            cs->PE_COLOR_ADDR = etna_bo_gpu_address(bo) + cbuf->surf.offset;
+            cs->PE_COLOR_ADDR = res->pipe_addr[0];
         }
         else if (priv->ctx->conn->chip.pixel_pipes == 2)
         {
-            cs->PE_PIPE_COLOR_ADDR[0] = etna_bo_gpu_address(bo) + cbuf->surf.offset;
-            cs->PE_PIPE_COLOR_ADDR[1] = etna_bo_gpu_address(bo) + cbuf->surf.offset + (cbuf->surf.size / 2);
+            cs->PE_PIPE_COLOR_ADDR[0] = res->pipe_addr[0];
+            cs->PE_PIPE_COLOR_ADDR[1] = res->pipe_addr[1];
         }
         cs->PE_COLOR_STRIDE = cbuf->surf.stride;
         if(cbuf->surf.ts_size)
