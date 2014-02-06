@@ -92,7 +92,7 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
         etna_compile_rs_state(priv->ctx, &surf->clear_command, &(struct rs_state){
                 .source_format = RS_FORMAT_A8R8G8B8,
                 .dest_format = RS_FORMAT_A8R8G8B8,
-                .dest_addr = etna_bo_gpu_address(ts_bo) + surf->surf.ts_offset,
+                .dest_addr[0] = etna_bo_gpu_address(ts_bo) + surf->surf.ts_offset,
                 .dest_stride = 0x40,
                 .dest_tiling = ETNA_LAYOUT_TILED,
                 .dither = {0xffffffff, 0xffffffff},

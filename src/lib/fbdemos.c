@@ -292,7 +292,7 @@ int etna_fb_bind_resource(struct fbdemos_scaffold *fbs, struct pipe_resource *rt
         etna_compile_rs_state(fbs->ctx, &fb->copy_to_screen[bi], &(struct rs_state){
                     .source_format = translate_rt_format(rt_resource->base.format, false),
                     .source_tiling = rt_resource->layout,
-                    .source_addr = etna_bo_gpu_address(rt_resource->bo) + rt_resource->levels[0].offset,
+                    .source_addr[0] = etna_bo_gpu_address(rt_resource->bo) + rt_resource->levels[0].offset,
                     .source_stride = rt_resource->levels[0].stride,
                     .dest_format = fb->rs_format,
                     .dest_tiling = ETNA_LAYOUT_LINEAR,
