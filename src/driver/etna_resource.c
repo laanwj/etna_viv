@@ -245,6 +245,10 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     resource->ts_bo = 0; /* TS is only created when first bound to surface */
     pipe_reference_init(&resource->base.reference, 1);
 
+    /* calculate pipe addresses */
+    resource->pipe_addr[0] = etna_bo_gpu_address(resource->bo) + resource->levels[0].offset;
+    resource->pipe_addr[1] = etna_bo_gpu_address(resource->bo) + resource->levels[0].offset + (resource->levels[0].size / 2);
+
     if(DBG_ENABLED(ETNA_DBG_ZERO))
     {
         void *map = etna_bo_map(bo);
