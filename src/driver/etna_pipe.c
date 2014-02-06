@@ -995,7 +995,7 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
             ts_mem_config |= VIVS_TS_MEM_CONFIG_COLOR_FAST_CLEAR;
             cs->TS_COLOR_CLEAR_VALUE = cbuf->level->clear_value;
             cs->TS_COLOR_STATUS_BASE = etna_bo_gpu_address(ts_bo) + cbuf->surf.ts_offset;
-            cs->TS_COLOR_SURFACE_BASE = etna_bo_gpu_address(bo) + cbuf->surf.offset;
+            cs->TS_COLOR_SURFACE_BASE = res->pipe_addr[0];
         }
         /* MSAA */
         if(cbuf->base.texture->nr_samples > 1)
