@@ -1020,15 +1020,15 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
                 VIVS_PE_DEPTH_CONFIG_DEPTH_MODE_Z;
                 /* VIVS_PE_DEPTH_CONFIG_ONLY_DEPTH */
                 /* merged with depth_stencil_alpha */
-        struct etna_bo *bo = etna_resource(zsbuf->base.texture)->bo;
+        struct etna_resource *res = etna_resource(zsbuf->base.texture);
         if (priv->ctx->conn->chip.pixel_pipes == 1)
         {
-            cs->PE_DEPTH_ADDR = etna_bo_gpu_address(bo) + zsbuf->surf.offset;
+            cs->PE_DEPTH_ADDR = res->pipe_addr[0];
         }
         else if (priv->ctx->conn->chip.pixel_pipes == 2)
         {
-            cs->PE_PIPE_DEPTH_ADDR[0] = etna_bo_gpu_address(bo) + zsbuf->surf.offset;
-            cs->PE_PIPE_DEPTH_ADDR[1] = etna_bo_gpu_address(bo) + zsbuf->surf.offset;  /* TODO */
+            cs->PE_PIPE_DEPTH_ADDR[0] = res->pipe_addr[0];
+            cs->PE_PIPE_DEPTH_ADDR[1] = res->pipe_addr[1];
         }
         cs->PE_DEPTH_STRIDE = zsbuf->surf.stride;
         cs->PE_HDEPTH_CONTROL = VIVS_PE_HDEPTH_CONTROL_FORMAT_DISABLED;
@@ -1039,7 +1039,7 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
             ts_mem_config |= VIVS_TS_MEM_CONFIG_DEPTH_FAST_CLEAR;
             cs->TS_DEPTH_CLEAR_VALUE = zsbuf->level->clear_value;
             cs->TS_DEPTH_STATUS_BASE = etna_bo_gpu_address(ts_bo) + zsbuf->surf.ts_offset;
-            cs->TS_DEPTH_SURFACE_BASE = etna_bo_gpu_address(bo) + zsbuf->surf.offset;
+            cs->TS_DEPTH_SURFACE_BASE = res->pipe_addr[0];
         }
         ts_mem_config |= (depth_bits == 16 ? VIVS_TS_MEM_CONFIG_DEPTH_16BPP : 0);
         /* MSAA */
