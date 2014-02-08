@@ -195,7 +195,10 @@ static void reset_context(struct pipe_context *restrict pipe)
     /*01404*/ EMIT_STATE(PE_DEPTH_NEAR, PE_DEPTH_NEAR);
     /*01408*/ EMIT_STATE(PE_DEPTH_FAR, PE_DEPTH_FAR);
     /*0140C*/ EMIT_STATE(PE_DEPTH_NORMALIZE, PE_DEPTH_NORMALIZE);
-    /*01410*/ EMIT_STATE(PE_DEPTH_ADDR, PE_DEPTH_ADDR);
+    if (ctx->conn->chip.pixel_pipes == 1)
+    {
+        /*01410*/ EMIT_STATE(PE_DEPTH_ADDR, PE_DEPTH_ADDR);
+    }
     /*01414*/ EMIT_STATE(PE_DEPTH_STRIDE, PE_DEPTH_STRIDE);
     /*01418*/ EMIT_STATE(PE_STENCIL_OP, PE_STENCIL_OP);
     /*0141C*/ EMIT_STATE(PE_STENCIL_CONFIG, PE_STENCIL_CONFIG);
@@ -203,16 +206,22 @@ static void reset_context(struct pipe_context *restrict pipe)
     /*01424*/ EMIT_STATE(PE_ALPHA_BLEND_COLOR, PE_ALPHA_BLEND_COLOR);
     /*01428*/ EMIT_STATE(PE_ALPHA_CONFIG, PE_ALPHA_CONFIG);
     /*0142C*/ EMIT_STATE(PE_COLOR_FORMAT, PE_COLOR_FORMAT);
-    /*01430*/ EMIT_STATE(PE_COLOR_ADDR, PE_COLOR_ADDR);
+    if (ctx->conn->chip.pixel_pipes == 1)
+    {
+        /*01430*/ EMIT_STATE(PE_COLOR_ADDR, PE_COLOR_ADDR);
+    }
     /*01434*/ EMIT_STATE(PE_COLOR_STRIDE, PE_COLOR_STRIDE);
     /*01454*/ EMIT_STATE(PE_HDEPTH_CONTROL, PE_HDEPTH_CONTROL);
-    for(int x=0; x<8; ++x)
+    if (ctx->conn->chip.pixel_pipes != 1)
     {
-        /*01460*/ EMIT_STATE(PE_PIPE_COLOR_ADDR(x), PE_PIPE_COLOR_ADDR[x]);
-    }
-    for(int x=0; x<8; ++x)
-    {
-        /*01480*/ EMIT_STATE(PE_PIPE_DEPTH_ADDR(x), PE_PIPE_DEPTH_ADDR[x]);
+        for(int x=0; x<ctx->conn->chip.pixel_pipes; ++x)
+        {
+            /*01460*/ EMIT_STATE(PE_PIPE_COLOR_ADDR(x), PE_PIPE_COLOR_ADDR[x]);
+        }
+        for(int x=0; x<ctx->conn->chip.pixel_pipes; ++x)
+        {
+            /*01480*/ EMIT_STATE(PE_PIPE_DEPTH_ADDR(x), PE_PIPE_DEPTH_ADDR[x]);
+        }
     }
     /*014A0*/ EMIT_STATE(PE_STENCIL_CONFIG_EXT, PE_STENCIL_CONFIG_EXT);
     /*014A4*/ EMIT_STATE(PE_LOGIC_OP, PE_LOGIC_OP);
@@ -969,15 +978,15 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
                     cbuf->surf.offset, cbuf->surf.stride*4);
         }
 
-        struct etna_bo *bo = etna_resource(cbuf->base.texture)->bo;
+        struct etna_resource *res = etna_resource(cbuf->base.texture);
         if (priv->ctx->conn->chip.pixel_pipes == 1)
         {
-            cs->PE_COLOR_ADDR = etna_bo_gpu_address(bo) + cbuf->surf.offset;
+            cs->PE_COLOR_ADDR = res->pipe_addr[0];
         }
         else if (priv->ctx->conn->chip.pixel_pipes == 2)
         {
-            cs->PE_PIPE_COLOR_ADDR[0] = etna_bo_gpu_address(bo) + cbuf->surf.offset;
-            cs->PE_PIPE_COLOR_ADDR[1] = etna_bo_gpu_address(bo) + cbuf->surf.offset; /* TODO */
+            cs->PE_PIPE_COLOR_ADDR[0] = res->pipe_addr[0];
+            cs->PE_PIPE_COLOR_ADDR[1] = res->pipe_addr[1];
         }
         cs->PE_COLOR_STRIDE = cbuf->surf.stride;
         if(cbuf->surf.ts_size)
@@ -986,7 +995,7 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
             ts_mem_config |= VIVS_TS_MEM_CONFIG_COLOR_FAST_CLEAR;
             cs->TS_COLOR_CLEAR_VALUE = cbuf->level->clear_value;
             cs->TS_COLOR_STATUS_BASE = etna_bo_gpu_address(ts_bo) + cbuf->surf.ts_offset;
-            cs->TS_COLOR_SURFACE_BASE = etna_bo_gpu_address(bo) + cbuf->surf.offset;
+            cs->TS_COLOR_SURFACE_BASE = res->pipe_addr[0];
         }
         /* MSAA */
         if(cbuf->base.texture->nr_samples > 1)
@@ -1011,15 +1020,15 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
                 VIVS_PE_DEPTH_CONFIG_DEPTH_MODE_Z;
                 /* VIVS_PE_DEPTH_CONFIG_ONLY_DEPTH */
                 /* merged with depth_stencil_alpha */
-        struct etna_bo *bo = etna_resource(zsbuf->base.texture)->bo;
+        struct etna_resource *res = etna_resource(zsbuf->base.texture);
         if (priv->ctx->conn->chip.pixel_pipes == 1)
         {
-            cs->PE_DEPTH_ADDR = etna_bo_gpu_address(bo) + zsbuf->surf.offset;
+            cs->PE_DEPTH_ADDR = res->pipe_addr[0];
         }
         else if (priv->ctx->conn->chip.pixel_pipes == 2)
         {
-            cs->PE_PIPE_DEPTH_ADDR[0] = etna_bo_gpu_address(bo) + zsbuf->surf.offset;
-            cs->PE_PIPE_DEPTH_ADDR[1] = etna_bo_gpu_address(bo) + zsbuf->surf.offset;  /* TODO */
+            cs->PE_PIPE_DEPTH_ADDR[0] = res->pipe_addr[0];
+            cs->PE_PIPE_DEPTH_ADDR[1] = res->pipe_addr[1];
         }
         cs->PE_DEPTH_STRIDE = zsbuf->surf.stride;
         cs->PE_HDEPTH_CONTROL = VIVS_PE_HDEPTH_CONTROL_FORMAT_DISABLED;
@@ -1030,7 +1039,7 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
             ts_mem_config |= VIVS_TS_MEM_CONFIG_DEPTH_FAST_CLEAR;
             cs->TS_DEPTH_CLEAR_VALUE = zsbuf->level->clear_value;
             cs->TS_DEPTH_STATUS_BASE = etna_bo_gpu_address(ts_bo) + zsbuf->surf.ts_offset;
-            cs->TS_DEPTH_SURFACE_BASE = etna_bo_gpu_address(bo) + zsbuf->surf.offset;
+            cs->TS_DEPTH_SURFACE_BASE = res->pipe_addr[0];
         }
         ts_mem_config |= (depth_bits == 16 ? VIVS_TS_MEM_CONFIG_DEPTH_16BPP : 0);
         /* MSAA */

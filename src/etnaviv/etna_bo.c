@@ -55,6 +55,68 @@ struct etna_bo {
     viv_usermem_t usermem_info;
 };
 
+#ifdef DEBUG
+static const char *etna_bo_surf_type(struct etna_bo *mem)
+{
+    const char *ret = NULL;
+
+    switch (mem->type) {
+        case VIV_SURF_UNKNOWN:
+            ret = "VIV_SURF_UNKNOWN";
+        break;
+
+        case VIV_SURF_INDEX:
+            ret = "VIV_SURF_INDEX";
+        break;
+
+        case VIV_SURF_VERTEX:
+            ret = "VIV_SURF_VERTEX";
+        break;
+
+        case VIV_SURF_TEXTURE:
+            ret = "VIV_SURF_TEXTURE";
+        break;
+
+        case VIV_SURF_RENDER_TARGET:
+            ret = "VIV_SURF_RENDER_TARGET";
+        break;
+
+        case VIV_SURF_DEPTH:
+            ret = "VIV_SURF_DEPTH";
+        break;
+
+        case VIV_SURF_BITMAP:
+            ret = "VIV_SURF_BITMAP";
+        break;
+
+        case VIV_SURF_TILE_STATUS:
+            ret = "VIV_SURF_TILE_STATUS";
+        break;
+
+        case VIV_SURF_IMAGE:
+            ret = "VIV_SURF_IMAGE";
+        break;
+
+        case VIV_SURF_MASK:
+            ret = "VIV_SURF_MASK";
+        break;
+
+        case VIV_SURF_SCISSOR:
+            ret = "VIV_SURF_SCISSOR";
+        break;
+
+        case VIV_SURF_HIERARCHICAL_DEPTH:
+            ret = "VIV_SURF_HIERARCHICAL_DEPTH";
+        break;
+
+        default:
+           ret = "hmmmm?";
+        break;
+    }
+    return ret;
+}
+#endif
+
 /* Lock (map) memory into both CPU and GPU memory space. */
 static int etna_bo_lock(struct viv_conn *conn, struct etna_bo *mem)
 {
@@ -157,7 +219,7 @@ struct etna_bo* etna_bo_new(struct viv_conn *conn, size_t bytes, uint32_t flags)
             return NULL;
         }
 #ifdef DEBUG
-        printf("Allocated: mem=%p node=%08x size=%08x\n", mem, (uint32_t)mem->node, mem->size);
+        printf("Allocated: type:%s mem=%p node=%08x size=%08x\n", etna_bo_surf_type(mem), mem, (uint32_t)mem->node, mem->size);
 #endif
         int status = etna_bo_lock(conn, mem);
         if(status != ETNA_OK)

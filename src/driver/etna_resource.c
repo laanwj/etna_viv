@@ -146,7 +146,15 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
         else
             layout = ETNA_LAYOUT_TILED;
     }
-    /* XXX multi tiled formats */
+
+    /* multi tiled formats */
+    if (priv->dev->chip.pixel_pipes > 1)
+    {
+        if (layout == ETNA_LAYOUT_TILED)
+            layout = ETNA_LAYOUT_MULTI_TILED;
+        if (layout == ETNA_LAYOUT_SUPER_TILED)
+            layout = ETNA_LAYOUT_MULTI_SUPERTILED;
+    }
 
     /* Determine scaling for antialiasing, allow override using debug flag */
     int nr_samples = templat->nr_samples;
@@ -236,6 +244,10 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     resource->bo = bo;
     resource->ts_bo = 0; /* TS is only created when first bound to surface */
     pipe_reference_init(&resource->base.reference, 1);
+
+    /* calculate pipe addresses */
+    resource->pipe_addr[0] = etna_bo_gpu_address(resource->bo) + resource->levels[0].offset;
+    resource->pipe_addr[1] = etna_bo_gpu_address(resource->bo) + resource->levels[0].offset + (resource->levels[0].size / 2);
 
     if(DBG_ENABLED(ETNA_DBG_ZERO))
     {

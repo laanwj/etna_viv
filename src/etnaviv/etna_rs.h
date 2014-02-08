@@ -36,9 +36,9 @@ struct rs_state
     uint8_t dest_format;  // RS_FORMAT_XXX
     uint8_t swap_rb;
     uint8_t flip;
-    uint32_t source_addr;
+    uint32_t source_addr[2];
     uint32_t source_stride;
-    uint32_t dest_addr;
+    uint32_t dest_addr[2];
     uint32_t dest_stride;
     uint16_t width; // source width
     uint16_t height; // source height

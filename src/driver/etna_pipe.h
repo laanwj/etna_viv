@@ -87,6 +87,8 @@ struct etna_resource
 
     struct etna_resource_level levels[ETNA_NUM_LOD];
     struct etna_pipe_context *last_ctx; /* Last bound context */
+
+    uint32_t pipe_addr[2];
 };
 
 struct etna_surface
