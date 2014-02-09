@@ -26,7 +26,7 @@
 #include <etnaviv/state.xml.h>
 #include <etnaviv/state_3d.xml.h>
 
-#define DEBUG
+//#define DEBUG
 #ifdef DEBUG
 # include <stdio.h>
 #endif
