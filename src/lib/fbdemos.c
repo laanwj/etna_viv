@@ -297,7 +297,7 @@ int etna_fb_bind_resource(struct fbdemos_scaffold *fbs, struct pipe_resource *rt
                     .source_stride = rt_resource->levels[0].stride,
                     .dest_format = fb->rs_format,
                     .dest_tiling = ETNA_LAYOUT_LINEAR,
-                    .dest_addr = etna_bo_gpu_address(fb->buffer[bi]),
+                    .dest_addr[0] = etna_bo_gpu_address(fb->buffer[bi]),
                     .dest_stride = fb->fb_fix.line_length,
                     .downsample_x = msaa_xscale > 1,
                     .downsample_y = msaa_yscale > 1,

@@ -81,7 +81,7 @@ void etna_rs_gen_clear_surface(struct etna_ctx *ctx, struct compiled_rs_state *r
     etna_compile_rs_state(ctx, rs_state, &(struct rs_state){
             .source_format = format,
             .dest_format = format,
-            .dest_addr = etna_bo_gpu_address(dest_bo) + surf->surf.offset,
+            .dest_addr[0] = etna_bo_gpu_address(dest_bo) + surf->surf.offset,
             .dest_stride = surf->surf.stride,
             .dest_tiling = tiled_clear ? surf->layout : ETNA_LAYOUT_LINEAR,
             .dither = {0xffffffff, 0xffffffff},
