@@ -148,7 +148,7 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     }
 
     /* multi tiled formats */
-    if (priv->dev->chip.pixel_pipes > 1)
+    if ((priv->dev->chip.pixel_pipes > 1) && !(templat->bind & PIPE_BIND_SAMPLER_VIEW))
     {
         if (layout == ETNA_LAYOUT_TILED)
             layout = ETNA_LAYOUT_MULTI_TILED;
