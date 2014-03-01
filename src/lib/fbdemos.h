@@ -36,6 +36,7 @@ struct fb_info
     int fd;
     int num_buffers;
     struct etna_bo *buffer[ETNA_FB_MAX_BUFFERS];
+    int padded_height;
     size_t stride;
     size_t buffer_stride;
     struct fb_var_screeninfo fb_var;
