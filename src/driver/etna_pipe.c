@@ -979,9 +979,10 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
         }
 
         struct etna_resource *res = etna_resource(cbuf->base.texture);
+        struct etna_bo *bo = res->bo;
         if (priv->ctx->conn->chip.pixel_pipes == 1)
         {
-            cs->PE_COLOR_ADDR = res->pipe_addr[0];
+            cs->PE_COLOR_ADDR = etna_bo_gpu_address(bo) + cbuf->surf.offset;
         }
         else if (priv->ctx->conn->chip.pixel_pipes == 2)
         {
@@ -995,7 +996,7 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
             ts_mem_config |= VIVS_TS_MEM_CONFIG_COLOR_FAST_CLEAR;
             cs->TS_COLOR_CLEAR_VALUE = cbuf->level->clear_value;
             cs->TS_COLOR_STATUS_BASE = etna_bo_gpu_address(ts_bo) + cbuf->surf.ts_offset;
-            cs->TS_COLOR_SURFACE_BASE = res->pipe_addr[0];
+            cs->TS_COLOR_SURFACE_BASE = etna_bo_gpu_address(bo) + cbuf->surf.offset;
         }
         /* MSAA */
         if(cbuf->base.texture->nr_samples > 1)
@@ -1021,9 +1022,10 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
                 /* VIVS_PE_DEPTH_CONFIG_ONLY_DEPTH */
                 /* merged with depth_stencil_alpha */
         struct etna_resource *res = etna_resource(zsbuf->base.texture);
+        struct etna_bo *bo = res->bo;
         if (priv->ctx->conn->chip.pixel_pipes == 1)
         {
-            cs->PE_DEPTH_ADDR = res->pipe_addr[0];
+            cs->PE_DEPTH_ADDR = etna_bo_gpu_address(bo) + zsbuf->surf.offset;
         }
         else if (priv->ctx->conn->chip.pixel_pipes == 2)
         {
@@ -1039,7 +1041,7 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
             ts_mem_config |= VIVS_TS_MEM_CONFIG_DEPTH_FAST_CLEAR;
             cs->TS_DEPTH_CLEAR_VALUE = zsbuf->level->clear_value;
             cs->TS_DEPTH_STATUS_BASE = etna_bo_gpu_address(ts_bo) + zsbuf->surf.ts_offset;
-            cs->TS_DEPTH_SURFACE_BASE = res->pipe_addr[0];
+            cs->TS_DEPTH_SURFACE_BASE = etna_bo_gpu_address(bo) + zsbuf->surf.offset;
         }
         ts_mem_config |= (depth_bits == 16 ? VIVS_TS_MEM_CONFIG_DEPTH_16BPP : 0);
         /* MSAA */
