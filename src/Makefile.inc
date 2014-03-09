@@ -19,6 +19,6 @@ COMMON_FLAGS = -O2 -g3 -ggdb3 -Wall -Wmissing-prototypes \
           -Werror=return-type
 
 CFLAGS += $(PLATFORM_CFLAGS) $(COMMON_FLAGS) -std=gnu99
-CXXFLAGS += $(PLATFORM_CXXFLAGS) $(COMMON_FLAGS)
-LDFLAGS += $(PLATFORM_LDFLAGS) $(COMMON_FLAGS) -lm
+CXXFLAGS += $(PLATFORM_CXXFLAGS) $(COMMON_FLAGS) -pthread
+LDFLAGS += $(PLATFORM_LDFLAGS) $(COMMON_FLAGS) -pthread -lm
 
