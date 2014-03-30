@@ -26,6 +26,7 @@
 #include <etnaviv/state.xml.h>
 #include <etnaviv/state_3d.xml.h>
 
+#include <assert.h>
 //#define DEBUG
 #ifdef DEBUG
 # include <stdio.h>
@@ -92,6 +93,7 @@ void etna_compile_rs_state(struct etna_ctx *restrict ctx, struct compiled_rs_sta
     }
     else if (ctx->conn->chip.pixel_pipes == 2)
     {
+        assert((rs->height&7) == 0); /* GPU hangs happen if height not 8-aligned */
         if (source_multi)
         {
             SET_STATE(RS_PIPE_SOURCE_ADDR[1], rs->source_addr[1]);

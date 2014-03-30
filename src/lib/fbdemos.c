@@ -50,6 +50,10 @@
 struct fbdemos_scaffold *_fbs; /* for gdb */
 int fbdemos_msaa_samples = 0;
 
+// Align height to 8 to make sure we can use the buffer as target
+// for resolve even on GPUs with two pixel pipes
+#define ETNA_FB_HEIGHT_ALIGN (8)
+
 void fbdemo_init(struct fbdemos_scaffold **out)
 {
     struct fbdemos_scaffold *fbs = CALLOC_STRUCT(fbdemos_scaffold);
@@ -210,7 +214,10 @@ int fb_open(struct viv_conn *conn, int num, struct fb_info *out)
 
     out->fd = fd;
     out->stride = out->fb_fix.line_length;
-    out->buffer_stride = out->stride * out->fb_var.yres;
+    // Align height to make sure we can use the buffer as target
+    // for resolve even on GPUs with two pixel pipes
+    out->padded_height = etna_align_up(out->fb_var.yres, ETNA_FB_HEIGHT_ALIGN);
+    out->buffer_stride = out->stride * out->padded_height;
     out->num_buffers = out->fb_fix.smem_len / out->buffer_stride;
 
     if(out->num_buffers > ETNA_FB_MAX_BUFFERS)
@@ -230,7 +237,7 @@ int fb_open(struct viv_conn *conn, int num, struct fb_info *out)
                 out->buffer_stride);
     }
     printf("number of fb buffers: %i\n", out->num_buffers);
-    int req_virth = (out->num_buffers * out->fb_var.yres);
+    int req_virth = (out->num_buffers * out->padded_height);
     if(out->fb_var.yres_virtual < req_virth)
     {
         printf("required virtual h is %i, current virtual h is %i: requesting change",
@@ -305,7 +312,7 @@ int etna_fb_bind_resource(struct fbdemos_scaffold *fbs, struct pipe_resource *rt
                     .dither = {0xffffffff, 0xffffffff}, // XXX dither when going from 24 to 16 bit?
                     .clear_mode = VIVS_RS_CLEAR_CONTROL_MODE_DISABLED,
                     .width = fb->fb_var.xres * msaa_xscale,
-                    .height = fb->fb_var.yres * msaa_yscale
+                    .height = fb->padded_height * msaa_yscale
                 });
     }
     return 0;
