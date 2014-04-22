@@ -89,7 +89,14 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <doc>Each bit enabled a corresponding event.</doc>
            <bitfield high="31" low="0" name="INTR_ENBL_VEC"/>
         </reg32>
-        <reg32 offset="0x00018" name="CHIP_IDENTITY"/>
+        <reg32 offset="0x00018" name="CHIP_IDENTITY">
+           <doc>
+               Obsolete since GC500.
+           </doc>
+           <bitfield high="31" low="24" name="FAMILY"/>
+           <bitfield high="23" low="16" name="PRODUCT"/>
+           <bitfield high="15" low="12" name="REVISION"/>
+        </reg32>
         <reg32 offset="0x0001C" name="CHIP_FEATURE" type="chipFeatures" brief="Chip features"/>
         <reg32 offset="0x00020" name="CHIP_MODEL" type="chipModel" brief="Chip model"/>
         <reg32 offset="0x00024" name="CHIP_REV" brief="Chip revision"/>
