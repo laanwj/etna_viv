@@ -294,7 +294,7 @@ int etna_fb_bind_resource(struct fbdemos_scaffold *fbs, struct pipe_resource *rt
     if(!translate_samples_to_xyscale(rt_resource_->nr_samples, &msaa_xscale, &msaa_yscale, NULL))
         abort();
 
-    for(int bi=0; bi<ETNA_FB_MAX_BUFFERS; ++bi)
+    for(int bi=0; bi<fb->num_buffers; ++bi)
     {
         etna_compile_rs_state(fbs->ctx, &fb->copy_to_screen[bi], &(struct rs_state){
                     .source_format = translate_rt_format(rt_resource->base.format, false),
