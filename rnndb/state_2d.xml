@@ -377,7 +377,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x0121C" name="SRC_COLOR_FG" type="DE_COLOR">
             <doc>
             In mono expansion this register defines the source color if the mono pixel is 1.
-            The color must be set in A8G8G8B8 format.
+            The color must be set in A8R8G8B8 format.
             </doc>
         </reg32>
         <reg32 offset="0x01220" name="STRETCH_FACTOR_LOW">
