@@ -120,7 +120,7 @@ int viv_invoke(struct viv_conn *conn, struct _gcsHAL_INTERFACE *cmd)
 #ifdef DEBUG
     if(cmd->status != 0)
     {
-        printf("Command %i failed with status %i\n", cmd->command, cmd->status);
+        fprintf(stderr, "Command %i failed with status %i\n", cmd->command, cmd->status);
     }
 #endif
     return cmd->status;
@@ -227,14 +227,14 @@ int viv_open(enum viv_hw_type hw_type, struct viv_conn **out)
             "Vivante GPL kernel driver %i.%i.%i.%i",
             conn->kernel_driver.major, conn->kernel_driver.minor,
             conn->kernel_driver.patch, conn->kernel_driver.build);
-    printf("Kernel: %s\n", conn->kernel_driver.name);
+    fprintf(stderr, "Kernel: %s\n", conn->kernel_driver.name);
 
     /* Determine base address */
     id.command = gcvHAL_GET_BASE_ADDRESS;
     if((err=viv_invoke(conn, &id)) != gcvSTATUS_OK)
         goto error;
     conn->base_address = id.u.GetBaseAddress.baseAddress;
-    printf("Physical address of internal memory: %08x\n", conn->base_address);
+    fprintf(stderr, "Physical address of internal memory: %08x\n", conn->base_address);
 
     /* Get chip identity */
     id.command = gcvHAL_QUERY_CHIP_IDENTITY;
@@ -246,13 +246,13 @@ int viv_open(enum viv_hw_type hw_type, struct viv_conn **out)
     id.command = gcvHAL_QUERY_VIDEO_MEMORY;
     if((err=viv_invoke(conn, &id)) != gcvSTATUS_OK)
         goto error;
-    printf("* Video memory:\n");
-    printf("  Internal physical: 0x%08x\n", (uint32_t)id.u.QueryVideoMemory.internalPhysical);
-    printf("  Internal size: 0x%08x\n", (uint32_t)id.u.QueryVideoMemory.internalSize);
-    printf("  External physical: %08x\n", (uint32_t)id.u.QueryVideoMemory.externalPhysical);
-    printf("  External size: 0x%08x\n", (uint32_t)id.u.QueryVideoMemory.externalSize);
-    printf("  Contiguous physical: 0x%08x\n", (uint32_t)id.u.QueryVideoMemory.contiguousPhysical);
-    printf("  Contiguous size: 0x%08x\n", (uint32_t)id.u.QueryVideoMemory.contiguousSize);
+    fprintf(stderr, "* Video memory:\n");
+    fprintf(stderr, "  Internal physical: 0x%08x\n", (uint32_t)id.u.QueryVideoMemory.internalPhysical);
+    fprintf(stderr, "  Internal size: 0x%08x\n", (uint32_t)id.u.QueryVideoMemory.internalSize);
+    fprintf(stderr, "  External physical: %08x\n", (uint32_t)id.u.QueryVideoMemory.externalPhysical);
+    fprintf(stderr, "  External size: 0x%08x\n", (uint32_t)id.u.QueryVideoMemory.externalSize);
+    fprintf(stderr, "  Contiguous physical: 0x%08x\n", (uint32_t)id.u.QueryVideoMemory.contiguousPhysical);
+    fprintf(stderr, "  Contiguous size: 0x%08x\n", (uint32_t)id.u.QueryVideoMemory.contiguousSize);
 
     conn->mem_base = (viv_addr_t)id.u.QueryVideoMemory.contiguousPhysical;
     conn->mem = mmap(NULL, id.u.QueryVideoMemory.contiguousSize, PROT_READ|PROT_WRITE, MAP_SHARED, conn->fd, conn->mem_base);
@@ -501,24 +501,24 @@ int viv_user_signal_destroy(struct viv_conn *conn, int sig_id)
 
 void viv_show_chip_info(struct viv_conn *conn)
 {
-    printf("* Chip identity:\n");
-    printf("  Chip model: %08x\n", conn->chip.chip_model);
-    printf("  Chip revision: %08x\n", conn->chip.chip_revision);
-    printf("  Chip features: 0x%08x\n", conn->chip.chip_features[0]);
-    printf("  Chip minor features 0: 0x%08x\n", conn->chip.chip_features[1]);
-    printf("  Chip minor features 1: 0x%08x\n", conn->chip.chip_features[2]);
-    printf("  Chip minor features 2: 0x%08x\n", conn->chip.chip_features[3]);
-    printf("  Chip minor features 3: 0x%08x\n", conn->chip.chip_features[4]);
-    printf("  Stream count: 0x%08x\n", conn->chip.stream_count);
-    printf("  Register max: 0x%08x\n", conn->chip.register_max);
-    printf("  Thread count: 0x%08x\n", conn->chip.thread_count);
-    printf("  Shader core count: 0x%08x\n", conn->chip.shader_core_count);
-    printf("  Vertex cache size: 0x%08x\n", conn->chip.vertex_cache_size);
-    printf("  Vertex output buffer size: 0x%08x\n", conn->chip.vertex_output_buffer_size);
-    printf("  Pixel pipes: 0x%08x\n", conn->chip.pixel_pipes);
-    printf("  Instruction count: 0x%08x\n", conn->chip.instruction_count);
-    printf("  Num constants: 0x%08x\n", conn->chip.num_constants);
-    printf("  Buffer size: 0x%08x\n", conn->chip.buffer_size);
+    fprintf(stderr, "* Chip identity:\n");
+    fprintf(stderr, "  Chip model: %08x\n", conn->chip.chip_model);
+    fprintf(stderr, "  Chip revision: %08x\n", conn->chip.chip_revision);
+    fprintf(stderr, "  Chip features: 0x%08x\n", conn->chip.chip_features[0]);
+    fprintf(stderr, "  Chip minor features 0: 0x%08x\n", conn->chip.chip_features[1]);
+    fprintf(stderr, "  Chip minor features 1: 0x%08x\n", conn->chip.chip_features[2]);
+    fprintf(stderr, "  Chip minor features 2: 0x%08x\n", conn->chip.chip_features[3]);
+    fprintf(stderr, "  Chip minor features 3: 0x%08x\n", conn->chip.chip_features[4]);
+    fprintf(stderr, "  Stream count: 0x%08x\n", conn->chip.stream_count);
+    fprintf(stderr, "  Register max: 0x%08x\n", conn->chip.register_max);
+    fprintf(stderr, "  Thread count: 0x%08x\n", conn->chip.thread_count);
+    fprintf(stderr, "  Shader core count: 0x%08x\n", conn->chip.shader_core_count);
+    fprintf(stderr, "  Vertex cache size: 0x%08x\n", conn->chip.vertex_cache_size);
+    fprintf(stderr, "  Vertex output buffer size: 0x%08x\n", conn->chip.vertex_output_buffer_size);
+    fprintf(stderr, "  Pixel pipes: 0x%08x\n", conn->chip.pixel_pipes);
+    fprintf(stderr, "  Instruction count: 0x%08x\n", conn->chip.instruction_count);
+    fprintf(stderr, "  Num constants: 0x%08x\n", conn->chip.num_constants);
+    fprintf(stderr, "  Buffer size: 0x%08x\n", conn->chip.buffer_size);
 }
 
 int viv_reset(struct viv_conn *conn)
@@ -623,7 +623,7 @@ int _viv_fence_new(struct viv_conn *conn, uint32_t *fence_out, int *signal_out)
     if(conn->fences_pending & (1<<fence_mod_signals)) /* fence still pending? */
     {
 #ifdef FENCE_DEBUG
-        printf("Waiting for old fence %08x (which is after %08x)\n", oldfence,
+        fprintf(stderr, "Waiting for old fence %08x (which is after %08x)\n", oldfence,
                 conn->last_fence_id);
 #endif
         if((status = viv_user_signal_wait(conn, signal, VIV_WAIT_INDEFINITE)) != VIV_STATUS_OK)
@@ -638,7 +638,7 @@ int _viv_fence_new(struct viv_conn *conn, uint32_t *fence_out, int *signal_out)
     *fence_out = fence;
     *signal_out = signal;
 #ifdef FENCE_DEBUG
-    printf("New fence: %08x [signal %08x], pending %08x\n", fence, signal, conn->fences_pending);
+    fprintf(stderr, "New fence: %08x [signal %08x], pending %08x\n", fence, signal, conn->fences_pending);
 #endif
     return VIV_STATUS_OK;
 }
@@ -659,7 +659,7 @@ int viv_fence_finish(struct viv_conn *conn, uint32_t fence, uint32_t timeout)
     if(signal == -1)
     {
 #ifdef FENCE_DEBUG
-        printf("Fence already expired: %08x\n", fence);
+        fprintf(stderr, "Fence already expired: %08x\n", fence);
 #endif
         goto unlock_and_ok; /* fence too old, it must have been signalled already */
     }
@@ -674,7 +674,7 @@ int viv_fence_finish(struct viv_conn *conn, uint32_t fence, uint32_t timeout)
         VIV_FENCE_BEFORE_EQ(fence, conn->last_fence_id))
     {
 #ifdef FENCE_DEBUG
-        printf("Fence already signaled: %08x, pending %i, newer than %08x; next fence id is %08x\n",
+        fprintf(stderr, "Fence already signaled: %08x, pending %i, newer than %08x; next fence id is %08x\n",
                 fence,
                 (conn->fences_pending >> fence_mod_signals)&1,
                 conn->last_fence_id, conn->next_fence_id);
@@ -694,7 +694,7 @@ int viv_fence_finish(struct viv_conn *conn, uint32_t fence, uint32_t timeout)
         {
             conn->last_fence_id = fence;
 #ifdef FENCE_DEBUG
-            printf("Last fence id updated to %i\n", conn->last_fence_id);
+            fprintf(stderr, "Last fence id updated to %i\n", conn->last_fence_id);
 #endif
         }
         pthread_mutex_unlock(&conn->fence_mutex);

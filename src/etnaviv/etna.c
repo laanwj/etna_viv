@@ -105,13 +105,13 @@ static int gpu_context_clear(struct etna_ctx *ctx)
      */
     int rv;
 #ifdef DEBUG
-    printf("gpu_context_clear (context %i)\n", (int)GCCTX(ctx)->id);
+    fprintf(stderr, "gpu_context_clear (context %i)\n", (int)GCCTX(ctx)->id);
 #endif
     if(GCCTX(ctx)->inUse != NULL &&
        *GCCTX(ctx)->inUse)
     {
 #ifdef DEBUG
-        printf("gpu_context_clear: context was in use, deferred freeing and reallocating it\n");
+        fprintf(stderr, "gpu_context_clear: context was in use, deferred freeing and reallocating it\n");
 #endif
         if((rv = etna_bo_del(ctx->conn, ctx->ctx_bo, ctx->queue)) != ETNA_OK)
         {
@@ -206,7 +206,7 @@ static int gpu_context_finish_up(struct etna_ctx *ctx)
     /* Update buffer size to final value */
     GCCTX(ctx)->bufferSize = ptr*4;
 #ifdef DEBUG
-    printf("gpu_context_finish_up: bufferSize %i link %p inUse %p\n",
+    fprintf(stderr, "gpu_context_finish_up: bufferSize %i link %p inUse %p\n",
             (int)GCCTX(ctx)->bufferSize, GCCTX(ctx)->link, GCCTX(ctx)->inUse);
 #endif
     return ETNA_OK;
@@ -231,7 +231,7 @@ static int gpu_context_initialize(struct etna_ctx *ctx)
     }
 
 #ifdef DEBUG
-    printf("Context 0x%08x\n", (int)id.u.Attach.context);
+    fprintf(stderr, "Context 0x%08x\n", (int)id.u.Attach.context);
 #endif
 
     ctx->ctx = VIV_TO_HANDLE(id.u.Attach.context);
@@ -262,7 +262,7 @@ int etna_create(struct viv_conn *conn, struct etna_ctx **ctx_out)
         return ETNA_INTERNAL_ERROR;
     }
 #ifdef DEBUG
-    printf("Created user signal %i\n", ctx->sig_id);
+    fprintf(stderr, "Created user signal %i\n", ctx->sig_id);
 #endif
 
     /* Allocate command buffers, and create a synchronization signal for each.
@@ -294,7 +294,7 @@ int etna_create(struct viv_conn *conn, struct etna_ctx **ctx_out)
             return ETNA_INTERNAL_ERROR;
         }
 #ifdef DEBUG
-        printf("Allocated buffer %i: phys=%08x log=%08x bytes=%08x [signal %i]\n", x,
+        fprintf(stderr, "Allocated buffer %i: phys=%08x log=%08x bytes=%08x [signal %i]\n", x,
                 (uint32_t)buf0_physical, (uint32_t)buf0_logical, buf0_bytes, ctx->cmdbufi[x].sig);
 #endif
     }
@@ -330,12 +330,12 @@ static int switch_next_buffer(struct etna_ctx *ctx)
 {
     int next_buf_id = (ctx->cur_buf + 1) % NUM_COMMAND_BUFFERS;
 #if 0
-    printf("Switching to new buffer %i\n", next_buf_id);
+    fprintf(stderr, "Switching to new buffer %i\n", next_buf_id);
 #endif
     if(viv_user_signal_wait(ctx->conn, ctx->cmdbufi[next_buf_id].sig_id, VIV_WAIT_INDEFINITE) != 0)
     {
 #ifdef DEBUG
-        printf("Error waiting for command buffer sync signal\n");
+        fprintf(stderr, "Error waiting for command buffer sync signal\n");
 #endif
         return ETNA_INTERNAL_ERROR;
     }
@@ -344,7 +344,7 @@ static int switch_next_buffer(struct etna_ctx *ctx)
     ctx->buf = VIV_TO_PTR(ctx->cmdbuf[next_buf_id]->logical);
     ctx->offset = ctx->cmdbuf[next_buf_id]->offset / 4;
 #ifdef DEBUG
-    printf("Switched to command buffer %i\n", ctx->cur_buf);
+    fprintf(stderr, "Switched to command buffer %i\n", ctx->cur_buf);
 #endif
     return ETNA_OK;
 }
@@ -378,35 +378,35 @@ int _etna_reserve_internal(struct etna_ctx *ctx, size_t n)
 {
     int status;
 #ifdef DEBUG
-    printf("Buffer full\n");
+    fprintf(stderr, "Buffer full\n");
 #endif
     if((ctx->offset*4 + END_COMMIT_CLEARANCE) > COMMAND_BUFFER_SIZE)
     {
-        printf("%s: Command buffer overflow! This is likely a programming error in the GPU driver.\n", __func__);
+        fprintf(stderr, "%s: Command buffer overflow! This is likely a programming error in the GPU driver.\n", __func__);
         abort();
     }
 #ifdef GCABI_HAS_CONTEXT
     if(ctx->cur_buf == ETNA_CTX_BUFFER)
     {
-        printf("%s: Context buffer overflow! This is likely a programming error in the GPU driver.\n", __func__);
+        fprintf(stderr, "%s: Context buffer overflow! This is likely a programming error in the GPU driver.\n", __func__);
         abort();
     }
 #endif
     if(ctx->cur_buf != ETNA_NO_BUFFER)
     {
 #if 0
-        printf("Submitting old buffer %i\n", ctx->cur_buf);
+        fprintf(stderr, "Submitting old buffer %i\n", ctx->cur_buf);
 #endif
         /* Queue signal to signify when buffer is available again */
         if((status = etna_queue_signal(ctx->queue, ctx->cmdbufi[ctx->cur_buf].sig_id, VIV_WHERE_COMMAND)) != ETNA_OK)
         {
-            printf("%s: queue signal for old buffer failed: %i\n", __func__, status);
+            fprintf(stderr, "%s: queue signal for old buffer failed: %i\n", __func__, status);
             abort(); /* buffer is in invalid state XXX need some kind of recovery */
         }
         /* Otherwise, if there is something to be committed left in the current command buffer, commit it */
         if((status = etna_flush(ctx, NULL)) != ETNA_OK)
         {
-            printf("%s: reserve failed: %i\n", __func__, status);
+            fprintf(stderr, "%s: reserve failed: %i\n", __func__, status);
             abort(); /* buffer is in invalid state XXX need some kind of recovery */
         }
     }
@@ -414,7 +414,7 @@ int _etna_reserve_internal(struct etna_ctx *ctx, size_t n)
     /* Move on to next buffer if not enough free in current one */
     if((status = switch_next_buffer(ctx)) != ETNA_OK)
     {
-        printf("%s: can't switch to next command buffer: %i\n", __func__, status);
+        fprintf(stderr, "%s: can't switch to next command buffer: %i\n", __func__, status);
         abort(); /* Buffer is in invalid state XXX need some kind of recovery.
                     This could involve waiting and re-uploading the context state. */
     }
@@ -442,7 +442,7 @@ int etna_flush(struct etna_ctx *ctx, uint32_t *fence_out)
             /*   Get next fence ID */
             if((status = _viv_fence_new(ctx->conn, &fence, &signal)) != VIV_STATUS_OK)
             {
-                printf("%s: could not request fence\n", __func__);
+                fprintf(stderr, "%s: could not request fence\n", __func__);
                 goto unlock_and_return_status;
             }
         } while(fence == 0); /* don't return fence handle 0 as it is interpreted as error value downstream */
@@ -453,7 +453,7 @@ int etna_flush(struct etna_ctx *ctx, uint32_t *fence_out)
          */
         if((status = etna_queue_signal(ctx->queue, signal, VIV_WHERE_PIXEL)) != ETNA_OK)
         {
-            printf("%s: error %i queueing fence signal %i\n", __func__, status, signal);
+            fprintf(stderr, "%s: error %i queueing fence signal %i\n", __func__, status, signal);
             goto unlock_and_return_status;
         }
         *fence_out = fence;
@@ -484,7 +484,7 @@ int etna_flush(struct etna_ctx *ctx, uint32_t *fence_out)
 
     cur_buf->offset = ctx->offset*4; /* Copy over current end offset into CMDBUF, for kernel */
 #ifdef DEBUG
-    printf("Committing command buffer %i startOffset=%x offset=%x\n", ctx->cur_buf,
+    fprintf(stderr, "Committing command buffer %i startOffset=%x offset=%x\n", ctx->cur_buf,
             cur_buf->startOffset, ctx->offset*4);
 #endif
 #ifdef DEBUG_CMDBUF
@@ -520,12 +520,12 @@ int etna_flush(struct etna_ctx *ctx, uint32_t *fence_out)
         /* Start building GPU context */
         if((status = gpu_context_build_start(ctx)) != ETNA_OK)
         {
-            printf("%s: gpu_context_build_start failed with status %i\n", __func__, status);
+            fprintf(stderr, "%s: gpu_context_build_start failed with status %i\n", __func__, status);
             return status;
         }
         if((status = ctx->ctx_cb(ctx->ctx_cb_data, ctx, &initial_pipe, &final_pipe)) != ETNA_OK)
         {
-            printf("%s: Context callback failed with status %i\n", __func__, status);
+            fprintf(stderr, "%s: Context callback failed with status %i\n", __func__, status);
             return status;
         }
         /* Set initial pipe in context */
@@ -533,7 +533,7 @@ int etna_flush(struct etna_ctx *ctx, uint32_t *fence_out)
         /* Finish building GPU context */
         if((status = gpu_context_build_end(ctx, final_pipe)) != ETNA_OK)
         {
-            printf("%s: gpu_context_build_end failed with status %i\n", __func__, status);
+            fprintf(stderr, "%s: gpu_context_build_end failed with status %i\n", __func__, status);
             return status;
         }
     }
@@ -555,9 +555,9 @@ int etna_flush(struct etna_ctx *ctx, uint32_t *fence_out)
     ctx->offset = cur_buf->offset / 4;
 #ifdef DEBUG
 #ifdef GCABI_HAS_CONTEXT
-    printf("  New start offset: %x New offset: %x Contextbuffer used: %i\n", cur_buf->startOffset, cur_buf->offset, *(GCCTX(ctx)->inUse));
+    fprintf(stderr, "  New start offset: %x New offset: %x Contextbuffer used: %i\n", cur_buf->startOffset, cur_buf->offset, *(GCCTX(ctx)->inUse));
 #else
-    printf("  New start offset: %x New offset: %x\n", cur_buf->startOffset, cur_buf->offset);
+    fprintf(stderr, "  New start offset: %x New offset: %x\n", cur_buf->startOffset, cur_buf->offset);
 #endif
 #endif
     return ETNA_OK;
@@ -581,7 +581,7 @@ int etna_finish(struct etna_ctx *ctx)
     if((status = etna_flush(ctx, NULL)) != ETNA_OK)
         return status;
 #ifdef DEBUG
-    printf("finish: Waiting for signal...\n");
+    fprintf(stderr, "finish: Waiting for signal...\n");
 #endif
     /* Wait for signal */
     if(viv_user_signal_wait(ctx->conn, ctx->sig_id, VIV_WAIT_INDEFINITE) != 0)
@@ -669,11 +669,11 @@ void etna_dump_cmd_buffer(struct etna_ctx *ctx)
     uint32_t start_offset = ctx->cmdbuf[ctx->cur_buf]->startOffset/4 + 8;
     uint32_t *buf = &ctx->buf[start_offset];
     size_t size = ctx->offset - start_offset;
-    printf("cmdbuf:\n");
+    fprintf(stderr, "cmdbuf:\n");
     for(unsigned idx=0; idx<size; ++idx)
     {
-        printf(":%08x ", buf[idx]);
-        printf("\n");
+        fprintf(stderr, ":%08x ", buf[idx]);
+        fprintf(stderr, "\n");
     }
 }
 

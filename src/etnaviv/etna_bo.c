@@ -131,7 +131,7 @@ static int etna_bo_lock(struct viv_conn *conn, struct etna_bo *mem)
         return ETNA_INTERNAL_ERROR;
     }
 #ifdef DEBUG
-    printf("Locked: phys=%08x log=%08x\n", (uint32_t)mem->address, (uint32_t)mem->logical);
+    fprintf(stderr, "Locked: phys=%08x log=%08x\n", (uint32_t)mem->address, (uint32_t)mem->logical);
 #endif
 
     return ETNA_OK;
@@ -219,7 +219,7 @@ struct etna_bo* etna_bo_new(struct viv_conn *conn, size_t bytes, uint32_t flags)
             return NULL;
         }
 #ifdef DEBUG
-        printf("Allocated: type:%s mem=%p node=%08x size=%08x\n", etna_bo_surf_type(mem), mem, (uint32_t)mem->node, mem->size);
+        fprintf(stderr, "Allocated: type:%s mem=%p node=%08x size=%08x\n", etna_bo_surf_type(mem), mem, (uint32_t)mem->node, mem->size);
 #endif
         int status = etna_bo_lock(conn, mem);
         if(status != ETNA_OK)
@@ -304,26 +304,26 @@ int etna_bo_del(struct viv_conn *conn, struct etna_bo *mem, struct etna_queue *q
         {
             if((rv = etna_bo_unlock(conn, mem, queue)) != ETNA_OK)
             {
-                printf("etna: Warning: could not unlock memory\n");
+                fprintf(stderr, "etna: Warning: could not unlock memory\n");
             }
         }
         if(queue)
         {
             if((rv = etna_queue_free_vidmem(queue, mem->node)) != ETNA_OK)
             {
-                printf("etna: Warning: could not queue free video memory\n");
+                fprintf(stderr, "etna: Warning: could not queue free video memory\n");
             }
         } else {
             if((rv = viv_free_vidmem(conn, mem->node)) != ETNA_OK)
             {
-                printf("etna: Warning: could not free video memory\n");
+                fprintf(stderr, "etna: Warning: could not free video memory\n");
             }
         }
         break;
     case ETNA_BO_TYPE_VIDMEM_EXTERNAL:
         if((rv = etna_bo_unlock(conn, mem, queue)) != ETNA_OK)
         {
-            printf("etna: Warning: could not unlock memory\n");
+            fprintf(stderr, "etna: Warning: could not unlock memory\n");
         }
         break;
     case ETNA_BO_TYPE_USERMEM:
