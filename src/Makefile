@@ -11,18 +11,18 @@ DIRS_REV=egl
 
 .PHONY: all clean install rev $(DIRS) $(DIRS_REV)
 
-all: CMD = make all
+all: CMD = all
 all: $(DIRS)
 
-rev: CMD = make all
+rev: CMD = all
 rev: $(DIRS_REV)
 
 $(DIRS) $(DIRS_REV):
-	$(CMD) -C $@
+	$(MAKE) $(CMD) -C $@
 
-install: CMD = make install
+install: CMD = install
 install: $(DIRS)
 
-clean: CMD = make clean
+clean: CMD = clean
 clean: $(DIRS) $(DIRS_REV)
 
