@@ -355,9 +355,9 @@ int etna_free(struct etna_ctx *ctx)
         return ETNA_INVALID_ADDR;
     /* Free kernel command queue */
     etna_queue_free(ctx->queue);
-#ifdef GCABI_HAVE_CONTEXT
+#ifdef GCABI_HAS_CONTEXT
     /* Free context buffer */
-    etna_bo_del(ctx->conn, ctx->ctx_info, NULL);
+    etna_bo_del(ctx->conn, ctx->ctx_bo, NULL);
 #endif
     /* Free command buffers */
     for(int x=0; x<NUM_COMMAND_BUFFERS; ++x)
