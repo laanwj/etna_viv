@@ -669,10 +669,13 @@ void etna_dump_cmd_buffer(struct etna_ctx *ctx)
     uint32_t start_offset = ctx->cmdbuf[ctx->cur_buf]->startOffset/4 + 8;
     uint32_t *buf = &ctx->buf[start_offset];
     size_t size = ctx->offset - start_offset;
-    fprintf(stderr, "cmdbuf:\n");
-    for(unsigned idx=0; idx<size; ++idx)
+    fprintf(stderr, "cmdbuf %u offset %u:\n", ctx->cur_buf, start_offset);
+    for(unsigned idx=0; idx<size; idx+=8)
     {
-        fprintf(stderr, ":%08x ", buf[idx]);
+        for (unsigned i=idx; i<size && i<idx+8; ++i)
+        {
+            fprintf(stderr, "%08x ", buf[i]);
+        }
         fprintf(stderr, "\n");
     }
 }
