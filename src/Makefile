@@ -10,6 +10,7 @@ DIRS=minigallium etnaviv driver fb fb_rawshader replay test2d utils
 DIRS_REV=egl
 
 .PHONY: all clean install rev $(DIRS) $(DIRS_REV)
+.NOTPARALLEL:
 
 all: CMD = all
 all: $(DIRS)
