@@ -258,6 +258,10 @@ int viv_free_vidmem(struct viv_conn *conn, viv_node_t node);
  */
 int viv_free_contiguous(struct viv_conn *conn, size_t bytes, viv_addr_t physical, void *logical);
 
+/** Map a dmabuf to GPU memory.
+ */
+int viv_map_dmabuf(struct viv_conn *conn, int fd, viv_usermem_t *info, viv_addr_t *address, int prot);
+
 /** Map user memory to GPU memory.
  */
 int viv_map_user_memory(struct viv_conn *conn, void *memory, size_t size, viv_usermem_t *info, viv_addr_t *address);

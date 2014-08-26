@@ -71,6 +71,9 @@ struct etna_bo *etna_bo_from_fbdev(struct viv_conn *conn, int fd, size_t offset,
 /* Buffer object from flink name */
 struct etna_bo *etna_bo_from_name(struct viv_conn *conn, uint32_t name);
 
+/* Buffer object from dmabuf fd */
+struct etna_bo *etna_bo_from_dmabuf(struct viv_conn *conn, int fd, int prot);
+
 /* Increase reference count */
 struct etna_bo *etna_bo_ref(struct etna_bo *bo);
 

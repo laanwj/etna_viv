@@ -41,7 +41,8 @@ enum etna_bo_type {
     ETNA_BO_TYPE_VIDMEM_EXTERNAL, /* Main vidmem, external handle */
     ETNA_BO_TYPE_USERMEM,   /* Mapped user memory */
     ETNA_BO_TYPE_CONTIGUOUS,/* Contiguous memory */
-    ETNA_BO_TYPE_PHYSICAL   /* Mmap-ed physical memory */
+    ETNA_BO_TYPE_PHYSICAL,  /* Mmap-ed physical memory */
+    ETNA_BO_TYPE_DMABUF     /* dmabuf memory */
 };
 
 /* Structure describing a block of video or user memory */
@@ -287,6 +288,22 @@ struct etna_bo *etna_bo_from_name(struct viv_conn *conn, uint32_t name)
     return mem;
 }
 
+struct etna_bo *etna_bo_from_dmabuf(struct viv_conn *conn, int fd, int prot)
+{
+    struct etna_bo *mem = ETNA_CALLOC_STRUCT(etna_bo);
+    if(mem == NULL) return NULL;
+
+    mem->bo_type = ETNA_BO_TYPE_DMABUF;
+
+    if(viv_map_dmabuf(conn, fd, &mem->usermem_info, &mem->address, prot)!=0)
+    {
+        ETNA_FREE(mem);
+        return NULL;
+    }
+
+    return mem;
+}
+
 struct etna_bo *etna_bo_ref(struct etna_bo *bo)
 {
     /* TODO */
@@ -347,6 +364,14 @@ int etna_bo_del(struct viv_conn *conn, struct etna_bo *mem, struct etna_queue *q
         if(munmap(mem->logical, mem->size) < 0)
         {
             rv = ETNA_OUT_OF_MEMORY;
+        }
+        break;
+    case ETNA_BO_TYPE_DMABUF:
+        if(queue)
+        {
+            rv = etna_queue_unmap_user_memory(queue, (void *)1, 1, mem->usermem_info, mem->address);
+        } else {
+            rv = viv_unmap_user_memory(conn, (void *)1, 1, mem->usermem_info, mem->address);
         }
         break;
     }
