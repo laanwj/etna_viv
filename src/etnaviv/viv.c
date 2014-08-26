@@ -585,6 +585,9 @@ int viv_map_user_memory(struct viv_conn *conn, void *memory, size_t size, viv_us
         .u = {
             .MapUserMemory = {
                 .memory = PTR_TO_VIV(memory),
+#ifdef GCABI_MAPUSERMEMORY_HAS_PHYSICAL
+                .physical = ~0UL,
+#endif
                 .size = size
             }
         }

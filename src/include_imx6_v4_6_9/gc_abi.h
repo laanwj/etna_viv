@@ -43,6 +43,9 @@
 #define GCABI_UINT64_POINTERS
 #define GCABI_UINT64_IOCTL_DATA
 
+// Interface has a .physical member in MapUserMemory
+#define GCABI_MAPUSERMEMORY_HAS_PHYSICAL
+
 /* IOCTL structure for userspace driver*/
 typedef struct
 {
