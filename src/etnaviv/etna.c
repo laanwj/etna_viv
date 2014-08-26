@@ -362,9 +362,11 @@ int etna_free(struct etna_ctx *ctx)
     /* Free command buffers */
     for(int x=0; x<NUM_COMMAND_BUFFERS; ++x)
     {
+        viv_user_signal_destroy(ctx->conn, ctx->cmdbufi[x].sig_id);
         etna_bo_del(ctx->conn, ctx->cmdbufi[x].bo, NULL);
         ETNA_FREE(ctx->cmdbuf[x]);
     }
+    viv_user_signal_destroy(ctx->conn, ctx->sig_id);
     ETNA_FREE(ctx);
     return ETNA_OK;
 }
