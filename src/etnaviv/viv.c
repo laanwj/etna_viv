@@ -26,6 +26,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -113,7 +114,18 @@ static int viv_ioctl(struct viv_conn *conn, int request, void *data, size_t size
         .out_buf_size = size
 #endif
     };
-    return ioctl(conn->fd, request, &ic);
+    int ret, old_errno = errno;
+
+    do {
+        errno = 0;
+        ret = ioctl(conn->fd, request, &ic);
+    } while (ret == -1 && errno == EINTR);
+
+    /* if there was no error, restore the old errno for proper errno handling */
+    if(errno == 0)
+        errno = old_errno;
+
+    return ret;
 }
 
 /* Call ioctl interface with structure cmd as input and output.
