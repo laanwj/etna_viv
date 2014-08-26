@@ -70,6 +70,17 @@ struct viv_dmabuf_map {
 };
 #define IOC_GDMABUF_MAP _IOWR('_', 0, struct viv_dmabuf_map)
 
+/* rmk's extension for mapping read-only memory (X shmem buffers) */
+struct viv_membuf_map {
+    union rmk_gcabi_header hdr;
+    uint64_t info;
+    uint64_t address;
+    uint64_t virt;
+    uint32_t size;
+    uint32_t prot;
+};
+#define IOC_GMEMBUF_MAP _IOWR('_', 1, struct viv_membuf_map)
+
 const char *galcore_device[] = {"/dev/gal3d", "/dev/galcore", "/dev/graphics/galcore", NULL};
 #define INTERFACE_SIZE (sizeof(gcsHAL_INTERFACE))
 
@@ -609,6 +620,24 @@ int viv_map_dmabuf(struct viv_conn *conn, int fd, viv_usermem_t *info, viv_addr_
         .prot = prot,
     };
     int ret = viv_ioctl(conn, IOC_GDMABUF_MAP, &map, sizeof(map));
+    if(ret < 0 || map.hdr.v4.status)
+        return -1;
+    *info = VIV_TO_HANDLE(map.info);
+    *address = map.address;
+    return VIV_STATUS_OK;
+}
+
+int viv_map_user_memory_prot(struct viv_conn *conn, void *memory, size_t size, int prot, viv_usermem_t *info, viv_addr_t *address)
+{
+    struct viv_membuf_map map = {
+#ifdef GCABI_HAS_HARDWARE_TYPE
+        .hdr.v4.hwtype = (gceHARDWARE_TYPE)conn->hw_type,
+#endif
+        .virt = (uintptr_t)memory,
+        .size = size,
+        .prot = prot,
+    };
+    int ret = viv_ioctl(conn, IOC_GMEMBUF_MAP, &map, sizeof(map));
     if(ret < 0 || map.hdr.v4.status)
         return -1;
     *info = VIV_TO_HANDLE(map.info);

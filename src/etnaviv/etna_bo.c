@@ -232,6 +232,24 @@ struct etna_bo* etna_bo_new(struct viv_conn *conn, size_t bytes, uint32_t flags)
     return mem;
 }
 
+struct etna_bo *etna_bo_from_usermem_prot(struct viv_conn *conn, void *memory, size_t size, int prot)
+{
+    struct etna_bo *mem = ETNA_CALLOC_STRUCT(etna_bo);
+    if(mem == NULL) return NULL;
+
+    mem->bo_type = ETNA_BO_TYPE_USERMEM;
+    mem->logical = memory;
+    mem->size = size;
+
+    if(viv_map_user_memory_prot(conn, memory, size, prot, &mem->usermem_info, &mem->address)!=0)
+    {
+        ETNA_FREE(mem);
+        return NULL;
+    }
+
+    return mem;
+}
+
 struct etna_bo *etna_bo_from_usermem(struct viv_conn *conn, void *memory, size_t size)
 {
     struct etna_bo *mem = ETNA_CALLOC_STRUCT(etna_bo);

@@ -62,6 +62,9 @@ struct etna_bo;
 /* Allocate linear block of video memory */
 struct etna_bo *etna_bo_new(struct viv_conn *conn, size_t bytes, uint32_t flags);
 
+/* Map user memory (which may be write protected) into GPU memory space */
+struct etna_bo *etna_bo_from_usermem_prot(struct viv_conn *conn, void *memory, size_t size, int prot);
+
 /* Map user memory into GPU memory space */
 struct etna_bo *etna_bo_from_usermem(struct viv_conn *conn, void *memory, size_t size);
 

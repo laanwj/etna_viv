@@ -262,6 +262,11 @@ int viv_free_contiguous(struct viv_conn *conn, size_t bytes, viv_addr_t physical
  */
 int viv_map_dmabuf(struct viv_conn *conn, int fd, viv_usermem_t *info, viv_addr_t *address, int prot);
 
+/** Map user memory to GPU memory, allowing for read/write protections.
+ * Note: GPU is not protected against reads/writes.
+ */
+int viv_map_user_memory_prot(struct viv_conn *conn, void *memory, size_t size, int prot, viv_usermem_t *info, viv_addr_t *address);
+
 /** Map user memory to GPU memory.
  */
 int viv_map_user_memory(struct viv_conn *conn, void *memory, size_t size, viv_usermem_t *info, viv_addr_t *address);
