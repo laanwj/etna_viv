@@ -94,28 +94,37 @@ static int signal_for_fence(struct viv_conn *conn, uint32_t fence)
     return conn->fence_signals[fence % VIV_NUM_FENCE_SIGNALS];
 }
 
+/* Almost raw ioctl interface.  This provides an interface similar to
+ * gcoOS_DeviceControl.
+ * @returns standard ioctl semantics
+ */
+static int viv_ioctl(struct viv_conn *conn, int request, void *data, size_t size)
+{
+    vivante_ioctl_data_t ic = {
+#ifdef GCABI_UINT64_IOCTL_DATA
+        .in_buf = PTR_TO_VIV(data),
+        .in_buf_size = size,
+        .out_buf = PTR_TO_VIV(data),
+        .out_buf_size = size
+#else
+        .in_buf = data,
+        .in_buf_size = size,
+        .out_buf = data,
+        .out_buf_size = size
+#endif
+    };
+    return ioctl(conn->fd, request, &ic);
+}
+
 /* Call ioctl interface with structure cmd as input and output.
  * @returns status (VIV_STATUS_xxx)
  */
 int viv_invoke(struct viv_conn *conn, struct _gcsHAL_INTERFACE *cmd)
 {
-    vivante_ioctl_data_t ic = {
-#ifdef GCABI_UINT64_IOCTL_DATA
-        .in_buf = PTR_TO_VIV(cmd),
-        .in_buf_size = INTERFACE_SIZE,
-        .out_buf = PTR_TO_VIV(cmd),
-        .out_buf_size = INTERFACE_SIZE
-#else
-        .in_buf = (void*)cmd,
-        .in_buf_size = INTERFACE_SIZE,
-        .out_buf = (void*)cmd,
-        .out_buf_size = INTERFACE_SIZE
-#endif
-    };
 #ifdef GCABI_HAS_HARDWARE_TYPE
     cmd->hardwareType = (gceHARDWARE_TYPE)conn->hw_type;
 #endif
-    if(ioctl(conn->fd, IOCTL_GCHAL_INTERFACE, &ic) < 0)
+    if(viv_ioctl(conn, IOCTL_GCHAL_INTERFACE, cmd, INTERFACE_SIZE) < 0)
         return -1;
 #ifdef DEBUG
     if(cmd->status != 0)
