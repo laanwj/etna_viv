@@ -237,6 +237,25 @@ static int gpu_context_initialize(struct etna_ctx *ctx)
     ctx->ctx = VIV_TO_HANDLE(id.u.Attach.context);
     return ETNA_OK;
 }
+
+static int gpu_context_free(struct etna_ctx *ctx)
+{
+    /* attach to GPU */
+    int err;
+    gcsHAL_INTERFACE id = {};
+    id.command = gcvHAL_DETACH;
+    id.u.Detach.context = HANDLE_TO_VIV(ctx->ctx);
+
+    if((err=viv_invoke(ctx->conn, &id)) != gcvSTATUS_OK)
+    {
+#ifdef DEBUG
+        fprintf(stderr, "Error detaching from the GPU\n");
+#endif
+        return ETNA_INTERNAL_ERROR;
+    }
+
+    return ETNA_OK;
+}
 #endif
 
 int etna_create(struct viv_conn *conn, struct etna_ctx **ctx_out)
@@ -367,6 +386,10 @@ int etna_free(struct etna_ctx *ctx)
         ETNA_FREE(ctx->cmdbuf[x]);
     }
     viv_user_signal_destroy(ctx->conn, ctx->sig_id);
+#ifndef GCABI_HAS_CONTEXT
+    gpu_context_free(ctx);
+#endif
+
     ETNA_FREE(ctx);
     return ETNA_OK;
 }
