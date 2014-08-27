@@ -582,7 +582,7 @@ int viv_reset(struct viv_conn *conn)
     return viv_invoke(conn, &id);
 }
 
-int viv_free_vidmem(struct viv_conn *conn, viv_node_t node)
+int viv_free_vidmem(struct viv_conn *conn, viv_node_t node, bool submit_as_event)
 {
     gcsHAL_INTERFACE id = {
         .command = gcvHAL_FREE_VIDEO_MEMORY,
@@ -592,7 +592,16 @@ int viv_free_vidmem(struct viv_conn *conn, viv_node_t node)
             }
         }
     };
-    return viv_invoke(conn, &id);
+    if(submit_as_event) /* submit as event immediately */
+    {
+        struct _gcsQUEUE queue = {
+            .next = PTR_TO_VIV(NULL),
+            .iface = id
+        };
+        return viv_event_commit(conn, &queue);
+    } else { /* submit as command */
+        return viv_invoke(conn, &id);
+    }
 }
 
 int viv_free_contiguous(struct viv_conn *conn, size_t bytes, viv_addr_t physical, void *logical)

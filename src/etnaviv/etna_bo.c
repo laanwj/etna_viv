@@ -349,7 +349,7 @@ int etna_bo_del(struct viv_conn *conn, struct etna_bo *mem, struct etna_queue *q
                 fprintf(stderr, "etna: Warning: could not queue free video memory\n");
             }
         } else {
-            if((rv = viv_free_vidmem(conn, mem->node)) != ETNA_OK)
+            if((rv = viv_free_vidmem(conn, mem->node, true)) != ETNA_OK)
             {
                 fprintf(stderr, "etna: Warning: could not free video memory\n");
             }

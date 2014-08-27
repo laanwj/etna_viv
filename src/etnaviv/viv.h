@@ -252,7 +252,7 @@ int viv_unlock_vidmem(struct viv_conn *conn, viv_node_t node, enum viv_surf_type
 
 /** Free a block of video memory previously allocated with viv_alloc_linear_vidmem.
  */
-int viv_free_vidmem(struct viv_conn *conn, viv_node_t node);
+int viv_free_vidmem(struct viv_conn *conn, viv_node_t node, bool submit_as_event);
 
 /** Free block of contiguous memory previously allocated with viv_alloc_contiguous.
  */
