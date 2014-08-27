@@ -189,6 +189,7 @@ struct viv_conn {
 
     viv_addr_t base_address;
     void *mem;
+    size_t mem_length;
     viv_addr_t mem_base;
     viv_handle_t process;
     struct viv_specs chip;

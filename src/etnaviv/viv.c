@@ -186,6 +186,8 @@ int viv_close(struct viv_conn *conn)
 
     (void) viv_deallocate_signals(conn);
 
+    munmap(conn->mem, conn->mem_length);
+
     close(conn->fd);
     free(conn);
 #ifdef ETNAVIV_HOOK
@@ -253,7 +255,7 @@ int viv_open(enum viv_hw_type hw_type, struct viv_conn **out)
     conn->fd = -1;
     for(const char **pname = galcore_device; *pname && conn->fd < 0; ++pname)
     {
-        conn->fd = open(*pname, O_RDWR);
+        conn->fd = open(*pname, O_RDWR | O_CLOEXEC);
     }
     if((err=conn->fd) < 0)
         goto error;
@@ -308,7 +310,8 @@ int viv_open(enum viv_hw_type hw_type, struct viv_conn **out)
     fprintf(stderr, "  Contiguous size: 0x%08x\n", (uint32_t)id.u.QueryVideoMemory.contiguousSize);
 
     conn->mem_base = (viv_addr_t)id.u.QueryVideoMemory.contiguousPhysical;
-    conn->mem = mmap(NULL, id.u.QueryVideoMemory.contiguousSize, PROT_READ|PROT_WRITE, MAP_SHARED, conn->fd, conn->mem_base);
+    conn->mem_length = id.u.QueryVideoMemory.contiguousSize;
+    conn->mem = mmap(NULL, conn->mem_length, PROT_READ|PROT_WRITE, MAP_SHARED, conn->fd, conn->mem_base);
     if(conn->mem == NULL)
     {
         err = -1;
