@@ -49,22 +49,25 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="8" name="UYVY" brief="YUV 4:2:2 interleaved per four bytes, Cb Y0 Cr Y1"/>
         <value value="9" name="INDEX8" brief="8-bit palette indexed"/>
         <value value="10" name="MONOCHROME" brief="1 bit per pixel"/>
-        <value value="15" name="YV12" brief="YUV 4:2:0 8-bit Y plane and 8 bit 2x2 subsampled V and U planes"/>
-        <value value="16" name="A8"/>
-        <value value="17" name="NV12" brief="YUV 4:2:0 8-bit Y plane and interleaved U/V plane with 2x2 subsampling"/>
-        <value value="18" name="NV16" brief="YUV 4:2:2 8-bit Y plane and interleaved U/V plane with 2x1 subsampling"/>
-        <value value="19" name="RG16" brief="Bayer, interleaved RGRG..(odd line), GBGB..(even line), 8-bit samples"/>
+        <value value="15" name="YV12" brief="YUV 4:2:0 8-bit Y plane and 8 bit 2x2 subsampled V and U planes"/> <!--YUV420_SCALER-->
+        <value value="16" name="A8"/> <!--PE20-->
+        <value value="17" name="NV12" brief="YUV 4:2:0 8-bit Y plane and interleaved U/V plane with 2x2 subsampling"/> <!--PE20-->
+        <value value="18" name="NV16" brief="YUV 4:2:2 8-bit Y plane and interleaved U/V plane with 2x1 subsampling"/> <!--PE20-->
+        <value value="19" name="RG16" brief="Bayer, interleaved RGRG..(odd line), GBGB..(even line), 8-bit samples"/> <!--PE20-->
     </enum>
     <enum name="DE_SWIZZLE" brief="2D swizzle">
         <doc>
         Unlike the shader engine, the 2D engine has no full swizzle capability.
         Four predefined common swizzles are available, however these can be specified
         for both the source and destination.
+
+        The blob doesn't allow any source swizzling for PE10, however,
+        in practice it turns out that ARGB and ABGR do work.
         </doc>
         <value value="0" name="ARGB"/>
-        <value value="1" name="RGBA"/>
+        <value value="1" name="RGBA"/> <!--PE20 only, at least for source-->
         <value value="2" name="ABGR"/>
-        <value value="3" name="BGRA"/>
+        <value value="3" name="BGRA"/> <!--PE20 only, at least for source-->
     </enum>
     <enum name="DE_BLENDMODE" brief="2D blending mode">
         <value value="0" name="ZERO" brief="Akin to GL_ZERO"/>
@@ -177,7 +180,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <value value="1" name="FOREGROUND" brief="Transparancy color will be 1"/>
         </bitfield>
         <bitfield high="16" low="16" name="UNK16"/>
-        <bitfield high="21" low="20" name="SWIZZLE" type="DE_SWIZZLE" brief="Color channel swizzles"/>
+        <bitfield high="21" low="20" name="SWIZZLE" type="DE_SWIZZLE" brief="Color channel swizzles"/> <!--limited on PE10, see DE_SWIZZLE description-->
         <bitfield high="28" low="24" name="SOURCE_FORMAT" type="DE_FORMAT" brief="Pixel format of the source surface"/>
         <bitfield high="29" low="29" name="DISABLE420_L2_CACHE" brief="Disable 420 L2 cache"/> <!-- if chip has 420 L2 cache -->
         <bitfield high="31" low="30" name="ENDIAN_CONTROL" type="ENDIAN_MODE" brief="Source endianness"/>
