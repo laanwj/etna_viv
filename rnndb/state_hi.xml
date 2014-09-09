@@ -111,7 +111,15 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x00040" name="PROFILE_READ_BYTES8" brief="Total reads in terms of 64bits"/>
         <reg32 offset="0x00044" name="PROFILE_WRITE_BYTES8" brief="Total writes in terms of 64bits"/>
-        <reg32 offset="0x00048" name="CHIP_SPECS" brief="Chip specifications"/>
+        <reg32 offset="0x00048" name="CHIP_SPECS" brief="Chip specifications">
+            <bitfield high="3" low="0" name="STREAM_COUNT"/>
+            <bitfield high="7" low="4" name="REGISTER_MAX"/>
+            <bitfield high="11" low="8" name="THREAD_COUNT"/>
+            <bitfield high="16" low="12" name="VERTEX_CACHE_SIZE"/>
+            <bitfield high="24" low="20" name="SHADER_CORE_COUNT"/>
+            <bitfield high="27" low="25" name="PIXEL_PIPES"/>
+            <bitfield high="31" low="28" name="VERTEX_OUTPUT_BUFFER_SIZE"/>
+        </reg32>
         <reg32 offset="0x0004C" name="PROFILE_WRITE_BURSTS" brief="Total write Data Count in terms of 64bits value"/>
         <reg32 offset="0x00050" name="PROFILE_WRITE_REQUESTS" brief="Total write Request Count"/>
         <reg32 offset="0x00058" name="PROFILE_READ_BURSTS" brief="Total Read Data Count in terms of 64bits"/>
@@ -132,7 +140,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             idle.
             </doc>
         </reg32>
-        <reg32 offset="0x00080" name="CHIP_SPECS_2" brief="Chip specifications 2"/>
+        <reg32 offset="0x00080" name="CHIP_SPECS_2" brief="Chip specifications 2">
+            <bitfield high="7" low="0" name="BUFFER_SIZE"/>
+            <bitfield high="15" low="8" name="INSTRUCTION_COUNT"/>
+            <bitfield high="31" low="16" name="NUM_CONSTANTS"/>
+        </reg32>
         <reg32 offset="0x00084" name="CHIP_MINOR_FEATURE_2" type="chipMinorFeatures2" brief="Chip minor features 2"/>
         <reg32 offset="0x00088" name="CHIP_MINOR_FEATURE_3" type="chipMinorFeatures3" brief="Chip minor features 3"/>
         <reg32 offset="0x00094" name="CHIP_MINOR_FEATURE_4" type="chipMinorFeatures4" brief="Chip minor features 4"/>
