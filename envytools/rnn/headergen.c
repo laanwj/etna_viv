@@ -229,13 +229,13 @@ void printhead(struct fout f, struct rnndb *db) {
 		"The rules-ng-ng source files this header was generated from are:\n");
 	unsigned maxlen = 0;
 	for(i = 0; i < db->filesnum; ++i) {
-		unsigned len = strlen(db->files[i]);
+		unsigned len = strlen(strrchr(db->files[i], '/')) - 1;
 		if(len > maxlen)
 			maxlen = len;
 	}
 	for(i = 0; i < db->filesnum; ++i) {
-		unsigned len = strlen(db->files[i]);
-		fprintf(f.file, "- %s%*s ", db->files[i], maxlen - len, "");
+		unsigned len = strlen(strrchr(db->files[i], '/')) - 1;
+		fprintf(f.file, "- %s%*s ", strrchr(db->files[i], '/') + 1, maxlen - len, "");
 		print_file_info(f.file, db->files[i]);
 	}
 	fprintf(f.file,
