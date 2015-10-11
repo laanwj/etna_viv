@@ -357,7 +357,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             </bitfield>
         </reg32>
         <reg32 offset="0x0047C" name="PROFILE_CONFIG3"/>
-        <reg32 offset="0x00480" name="BUS_CONFIG"/>
+        <reg32 offset="0x00480" name="BUS_CONFIG">
+                <bitfield high="3" low="0" name="FE_BUS_CONFIG" brief="not sure about the width"/>
+                <bitfield high="7" low="4" name="TX_BUS_CONFIG" brief="not sure about the width"/>
+        </reg32>
         <reg32 offset="0x00554" name="START_COMPOSITION" brief="Kick off composition engine"/>
         <reg32 offset="0x00558" name="128B_MERGE"/>
     </stripe>

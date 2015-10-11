@@ -244,7 +244,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x03810" name="FLUSH_MMU" brief="Flush the virtual address lookup cache inside the MC">
             <bitfield pos="0" name="FLUSH_FEMMU" brief="Flush the FE address translation caches"/>
-            <bitfield pos="1" name="FLUSH_PEMMU" brief="Flush the PE render target address translation caches"/>
+            <bitfield pos="1" name="FLUSH_UNK1" brief="Flush the RA/TX/PEZ address translation caches (not sure about the bit mapping)"/>
+            <bitfield pos="2" name="FLUSH_UNK2" brief="Flush the RA/TX/PEZ address translation caches (not sure about the bit mapping)"/>
+            <bitfield pos="3" name="FLUSH_PEMMU" brief="Flush the PE render target address translation caches"/>
+            <bitfield pos="4" name="FLUSH_UNK4" brief="Flush the RA/TX/PEZ address translation caches (not sure about the bit mapping)"/>
         </reg32>
         <reg32 offset="0x03814" name="VERTEX_ELEMENT_CONFIG" value="0x00000001"/>
         <reg32 offset="0x03818" name="MULTI_SAMPLE_CONFIG" value="0x00000000" masked="yes">

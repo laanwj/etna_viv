@@ -8,14 +8,14 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- /home/christian/projects/etna_viv/rnndb/state.xml    (  18526 bytes, from 2014-09-06 05:57:57)
-- /home/christian/projects/etna_viv/rnndb/common.xml   (  18379 bytes, from 2014-09-06 05:57:57)
-- /home/christian/projects/etna_viv/rnndb/state_hi.xml (  23176 bytes, from 2014-09-06 06:07:47)
-- /home/christian/projects/etna_viv/rnndb/state_2d.xml (  51191 bytes, from 2014-09-06 05:57:57)
-- /home/christian/projects/etna_viv/rnndb/state_3d.xml (  54570 bytes, from 2014-09-06 05:57:57)
-- /home/christian/projects/etna_viv/rnndb/state_vg.xml (   5942 bytes, from 2014-09-06 05:57:57)
+- state.xml    (  18940 bytes, from 2015-10-08 06:38:46)
+- common.xml   (  18379 bytes, from 2015-10-08 06:35:04)
+- state_hi.xml (  23390 bytes, from 2015-10-08 06:40:02)
+- state_2d.xml (  51520 bytes, from 2015-10-08 06:35:04)
+- state_3d.xml (  54570 bytes, from 2015-10-08 06:35:04)
+- state_vg.xml (   5942 bytes, from 2015-10-08 06:35:04)
 
-Copyright (C) 2014
+Copyright (C) 2015
 */
 
 
@@ -396,6 +396,12 @@ Copyright (C) 2014
 #define VIVS_MC_PROFILE_CONFIG3					0x0000047c
 
 #define VIVS_MC_BUS_CONFIG					0x00000480
+#define VIVS_MC_BUS_CONFIG_FE_BUS_CONFIG__MASK			0x0000000f
+#define VIVS_MC_BUS_CONFIG_FE_BUS_CONFIG__SHIFT			0
+#define VIVS_MC_BUS_CONFIG_FE_BUS_CONFIG(x)			(((x) << VIVS_MC_BUS_CONFIG_FE_BUS_CONFIG__SHIFT) & VIVS_MC_BUS_CONFIG_FE_BUS_CONFIG__MASK)
+#define VIVS_MC_BUS_CONFIG_TX_BUS_CONFIG__MASK			0x000000f0
+#define VIVS_MC_BUS_CONFIG_TX_BUS_CONFIG__SHIFT			4
+#define VIVS_MC_BUS_CONFIG_TX_BUS_CONFIG(x)			(((x) << VIVS_MC_BUS_CONFIG_TX_BUS_CONFIG__SHIFT) & VIVS_MC_BUS_CONFIG_TX_BUS_CONFIG__MASK)
 
 #define VIVS_MC_START_COMPOSITION				0x00000554
 
