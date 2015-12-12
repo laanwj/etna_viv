@@ -8,9 +8,9 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- isa.xml (  19194 bytes, from 2015-10-08 06:16:01)
+- isa.xml (  19194 bytes, from 2014-07-14 14:44:55)
 
-Copyright (C) 2015
+Copyright (C) 2014
 */
 
 

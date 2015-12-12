@@ -164,6 +164,13 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="0" low="0" name="DISABLE_MODULE_CLOCK_GATING_FE" brief="Disables module level clock gating for FE"/>
             <bitfield high="1" low="1" name="DISABLE_MODULE_CLOCK_GATING_DE" brief="Disables module level clock gating for DE"/>
             <bitfield high="2" low="2" name="DISABLE_MODULE_CLOCK_GATING_PE" brief="Disables module level clock gating for PE"/>
+            <bitfield high="3" low="3" name="DISABLE_MODULE_CLOCK_GATING_SH" brief="Disables module level clock gating for SH"/>
+            <bitfield high="4" low="4" name="DISABLE_MODULE_CLOCK_GATING_PA" brief="Disables module level clock gating for PA"/>
+            <bitfield high="5" low="5" name="DISABLE_MODULE_CLOCK_GATING_SE" brief="Disables module level clock gating for SE"/>
+            <bitfield high="6" low="6" name="DISABLE_MODULE_CLOCK_GATING_RA" brief="Disables module level clock gating for RA"/>
+            <bitfield high="7" low="7" name="DISABLE_MODULE_CLOCK_GATING_TX" brief="Disables module level clock gating for TX"/>
+            <bitfield high="16" low="16" name="DISABLE_MODULE_CLOCK_GATING_RA_EZ" brief="Disables module level clock gating for RA EZ"/>
+            <bitfield high="17" low="17" name="DISABLE_MODULE_CLOCK_GATING_RA_HZ" brief="Disables module level clock gating for RA HZ"/>
         </reg32>
         <reg32 offset="0x00108" name="MODULE_STATUS" brief="Module level control status">
             <bitfield high="0" low="0" name="MODULE_CLOCK_GATED_FE" brief="Module level clock gating is ON for FE"/>

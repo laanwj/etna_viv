@@ -8,12 +8,12 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- state.xml    (  18940 bytes, from 2015-10-08 06:38:46)
-- common.xml   (  18379 bytes, from 2015-10-08 06:35:04)
-- state_hi.xml (  23390 bytes, from 2015-10-08 06:40:02)
-- state_2d.xml (  51520 bytes, from 2015-10-08 06:35:04)
-- state_3d.xml (  54570 bytes, from 2015-10-08 06:35:04)
-- state_vg.xml (   5942 bytes, from 2015-10-08 06:35:04)
+- state.xml    (  18940 bytes, from 2015-12-12 08:59:16)
+- common.xml   (  18379 bytes, from 2014-07-14 14:44:55)
+- state_hi.xml (  24309 bytes, from 2015-12-12 09:02:53)
+- state_2d.xml (  51520 bytes, from 2015-12-12 08:59:16)
+- state_3d.xml (  54570 bytes, from 2014-07-14 14:44:55)
+- state_vg.xml (   5942 bytes, from 2014-07-14 14:44:55)
 
 Copyright (C) 2015
 */
@@ -205,6 +205,13 @@ Copyright (C) 2015
 #define VIVS_PM_MODULE_CONTROLS_DISABLE_MODULE_CLOCK_GATING_FE	0x00000001
 #define VIVS_PM_MODULE_CONTROLS_DISABLE_MODULE_CLOCK_GATING_DE	0x00000002
 #define VIVS_PM_MODULE_CONTROLS_DISABLE_MODULE_CLOCK_GATING_PE	0x00000004
+#define VIVS_PM_MODULE_CONTROLS_DISABLE_MODULE_CLOCK_GATING_SH	0x00000008
+#define VIVS_PM_MODULE_CONTROLS_DISABLE_MODULE_CLOCK_GATING_PA	0x00000010
+#define VIVS_PM_MODULE_CONTROLS_DISABLE_MODULE_CLOCK_GATING_SE	0x00000020
+#define VIVS_PM_MODULE_CONTROLS_DISABLE_MODULE_CLOCK_GATING_RA	0x00000040
+#define VIVS_PM_MODULE_CONTROLS_DISABLE_MODULE_CLOCK_GATING_TX	0x00000080
+#define VIVS_PM_MODULE_CONTROLS_DISABLE_MODULE_CLOCK_GATING_RA_EZ	0x00010000
+#define VIVS_PM_MODULE_CONTROLS_DISABLE_MODULE_CLOCK_GATING_RA_HZ	0x00020000
 
 #define VIVS_PM_MODULE_STATUS					0x00000108
 #define VIVS_PM_MODULE_STATUS_MODULE_CLOCK_GATED_FE		0x00000001
