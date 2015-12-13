@@ -193,7 +193,7 @@ Copyright (C) 2014
 #define chipMinorFeatures3_UNK5					0x00000020
 #define chipMinorFeatures3_UNK6					0x00000040
 #define chipMinorFeatures3_UNK7					0x00000080
-#define chipMinorFeatures3_UNK8					0x00000100
+#define chipMinorFeatures3_FAST_MSAA				0x00000100
 #define chipMinorFeatures3_UNK9					0x00000200
 #define chipMinorFeatures3_BUG_FIXES10				0x00000400
 #define chipMinorFeatures3_UNK11				0x00000800
@@ -203,7 +203,7 @@ Copyright (C) 2014
 #define chipMinorFeatures3_UNK15				0x00008000
 #define chipMinorFeatures3_UNK16				0x00010000
 #define chipMinorFeatures3_UNK17				0x00020000
-#define chipMinorFeatures3_UNK18				0x00040000
+#define chipMinorFeatures3_ACE					0x00040000
 #define chipMinorFeatures3_UNK19				0x00080000
 #define chipMinorFeatures3_UNK20				0x00100000
 #define chipMinorFeatures3_UNK21				0x00200000
@@ -211,7 +211,7 @@ Copyright (C) 2014
 #define chipMinorFeatures3_UNK23				0x00800000
 #define chipMinorFeatures3_UNK24				0x01000000
 #define chipMinorFeatures3_UNK25				0x02000000
-#define chipMinorFeatures3_UNK26				0x04000000
+#define chipMinorFeatures3_NEW_HZ				0x04000000
 #define chipMinorFeatures3_UNK27				0x08000000
 #define chipMinorFeatures3_UNK28				0x10000000
 #define chipMinorFeatures3_UNK29				0x20000000
@@ -233,9 +233,9 @@ Copyright (C) 2014
 #define chipMinorFeatures4_UNK13				0x00002000
 #define chipMinorFeatures4_UNK14				0x00004000
 #define chipMinorFeatures4_UNK15				0x00008000
-#define chipMinorFeatures4_UNK16				0x00010000
+#define chipMinorFeatures4_HALTI2				0x00010000
 #define chipMinorFeatures4_UNK17				0x00020000
-#define chipMinorFeatures4_UNK18				0x00040000
+#define chipMinorFeatures4_SMALL_MSAA				0x00040000
 #define chipMinorFeatures4_UNK19				0x00080000
 #define chipMinorFeatures4_UNK20				0x00100000
 #define chipMinorFeatures4_UNK21				0x00200000
@@ -249,5 +249,37 @@ Copyright (C) 2014
 #define chipMinorFeatures4_UNK29				0x20000000
 #define chipMinorFeatures4_UNK30				0x40000000
 #define chipMinorFeatures4_UNK31				0x80000000
+#define chipMinorFeatures5_UNK0					0x00000001
+#define chipMinorFeatures5_UNK1					0x00000002
+#define chipMinorFeatures5_UNK2					0x00000004
+#define chipMinorFeatures5_UNK3					0x00000008
+#define chipMinorFeatures5_UNK4					0x00000010
+#define chipMinorFeatures5_UNK5					0x00000020
+#define chipMinorFeatures5_UNK6					0x00000040
+#define chipMinorFeatures5_UNK7					0x00000080
+#define chipMinorFeatures5_UNK8					0x00000100
+#define chipMinorFeatures5_UNK9					0x00000200
+#define chipMinorFeatures5_UNK10				0x00000400
+#define chipMinorFeatures5_UNK11				0x00000800
+#define chipMinorFeatures5_UNK12				0x00001000
+#define chipMinorFeatures5_UNK13				0x00002000
+#define chipMinorFeatures5_UNK14				0x00004000
+#define chipMinorFeatures5_UNK15				0x00008000
+#define chipMinorFeatures5_UNK16				0x00010000
+#define chipMinorFeatures5_UNK17				0x00020000
+#define chipMinorFeatures5_UNK18				0x00040000
+#define chipMinorFeatures5_UNK19				0x00080000
+#define chipMinorFeatures5_UNK20				0x00100000
+#define chipMinorFeatures5_UNK21				0x00200000
+#define chipMinorFeatures5_UNK22				0x00400000
+#define chipMinorFeatures5_UNK23				0x00800000
+#define chipMinorFeatures5_UNK24				0x01000000
+#define chipMinorFeatures5_UNK25				0x02000000
+#define chipMinorFeatures5_UNK26				0x04000000
+#define chipMinorFeatures5_UNK27				0x08000000
+#define chipMinorFeatures5_UNK28				0x10000000
+#define chipMinorFeatures5_UNK29				0x20000000
+#define chipMinorFeatures5_UNK30				0x40000000
+#define chipMinorFeatures5_UNK31				0x80000000
 
 #endif /* COMMON_XML */
