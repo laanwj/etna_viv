@@ -176,6 +176,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="0" low="0" name="MODULE_CLOCK_GATED_FE" brief="Module level clock gating is ON for FE"/>
             <bitfield high="1" low="1" name="MODULE_CLOCK_GATED_DE" brief="Module level clock gating is ON for DE"/>
             <bitfield high="2" low="2" name="MODULE_CLOCK_GATED_PE" brief="Module level clock gating is ON for PE"/>
+            <bitfield high="3" low="3" name="MODULE_CLOCK_GATED_SH" brief="Module level clock gating is ON for SH"/>
+            <bitfield high="4" low="4" name="MODULE_CLOCK_GATED_PA" brief="Module level clock gating is ON for PA"/>
+            <bitfield high="5" low="5" name="MODULE_CLOCK_GATED_SE" brief="Module level clock gating is ON for SE"/>
+            <bitfield high="6" low="6" name="MODULE_CLOCK_GATED_RA" brief="Module level clock gating is ON for RA"/>
+            <bitfield high="7" low="7" name="MODULE_CLOCK_GATED_TX" brief="Module level clock gating is ON for TX"/>
         </reg32>
         <reg32 offset="0x0010C" name="PULSE_EATER" brief="Pulse eater"/>  <!-- power management feature -->
     </stripe>
