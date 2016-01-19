@@ -164,7 +164,7 @@ Copyright (C) 2014
 #define chipMinorFeatures2_UNK8					0x00000100
 #define chipMinorFeatures2_UNK9					0x00000200
 #define chipMinorFeatures2_UNK10				0x00000400
-#define chipMinorFeatures2_SAMPLERBASE_16			0x00000800
+#define chipMinorFeatures2_HALTI1				0x00000800
 #define chipMinorFeatures2_UNK12				0x00001000
 #define chipMinorFeatures2_UNK13				0x00002000
 #define chipMinorFeatures2_UNK14				0x00004000

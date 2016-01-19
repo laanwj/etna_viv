@@ -225,7 +225,13 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield pos="8" name="UNK8"/>
         <bitfield pos="9" name="UNK9"/>
         <bitfield pos="10" name="UNK10"/>
-        <bitfield pos="11" name="SAMPLERBASE_16" brief="New texture block exists (0x10000 - 0x11000)"/>
+        <bitfield pos="11" name="HALTI1" brief="More texture features">
+            <doc>
+                - 14 Linear stride LODs (0x02C00 - 0x02C3C)
+                - New texture block exists (0x10000 - 0x11000)
+                - Has 0x016C0, 0x016E0 and 0x01700 states
+            </doc>
+        </bitfield>
         <bitfield pos="12" name="UNK12"/>
         <bitfield pos="13" name="UNK13"/>
         <bitfield pos="14" name="UNK14"/>
