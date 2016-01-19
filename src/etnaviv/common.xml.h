@@ -258,7 +258,7 @@ Copyright (C) 2014
 #define chipMinorFeatures5_UNK6					0x00000040
 #define chipMinorFeatures5_UNK7					0x00000080
 #define chipMinorFeatures5_UNK8					0x00000100
-#define chipMinorFeatures5_UNK9					0x00000200
+#define chipMinorFeatures5_HALTI3				0x00000200
 #define chipMinorFeatures5_UNK10				0x00000400
 #define chipMinorFeatures5_UNK11				0x00000800
 #define chipMinorFeatures5_UNK12				0x00001000

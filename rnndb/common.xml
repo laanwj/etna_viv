@@ -325,7 +325,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield pos="6" name="UNK6"/>
         <bitfield pos="7" name="UNK7"/>
         <bitfield pos="8" name="UNK8"/>
-        <bitfield pos="9" name="UNK9"/>
+        <bitfield pos="9" name="HALTI3" brief="Extra states at 0x890, 0x104C, 0x14BC, 0x1A80, and 0x10780"/>
         <bitfield pos="10" name="UNK10"/>
         <bitfield pos="11" name="UNK11"/>
         <bitfield pos="12" name="UNK12"/>
