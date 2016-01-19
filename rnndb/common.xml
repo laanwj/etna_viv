@@ -68,15 +68,19 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <!-- Chip model. This is the primary identifier of a core.
       -->
     <enum name="chipModel">
+        <value value="0x0200" name="GC200"/>
         <value value="0x0300" name="GC300"/> <!-- 2D graphics -->
         <value value="0x0320" name="GC320"/> <!-- 2D graphics + Compose engine -->
+        <value value="0x0328" name="GC328"/>
         <value value="0x0350" name="GC350"/> <!-- OpenVG -->
         <value value="0x0355" name="GC355"/> <!-- OpenVG -->
         <value value="0x0400" name="GC400"/> <!-- 3D graphics, 1 core, according to Vivante it is "the smallest OpenGL ES 2.0 compliant GPU available today" -->
         <value value="0x0410" name="GC410"/>
         <value value="0x0420" name="GC420"/>
+        <value value="0x0428" name="GC428"/>
         <value value="0x0450" name="GC450"/>
         <value value="0x0500" name="GC500"/>
+        <value value="0x0520" name="GC520"/>
         <value value="0x0530" name="GC530"/>
         <value value="0x0600" name="GC600"/>
         <value value="0x0700" name="GC700"/>
@@ -84,9 +88,16 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="0x0860" name="GC860"/>
         <value value="0x0880" name="GC880"/>
         <value value="0x1000" name="GC1000"/> <!-- 3D graphics, 2 cores -->
+        <value value="0x1500" name="GC1500"/>
         <value value="0x2000" name="GC2000"/> <!-- 3D graphics, 4 cores -->
         <value value="0x2100" name="GC2100"/>
+        <value value="0x2200" name="GC2200"/>
+        <value value="0x2500" name="GC2500"/>
+        <value value="0x3000" name="GC3000"/>
         <value value="0x4000" name="GC4000"/> <!-- 3D graphics, 8 cores -->
+        <value value="0x5000" name="GC5000"/>
+        <value value="0x5200" name="GC5200"/>
+        <value value="0x6400" name="GC6400"/>
     </enum>
 
     <!-- GPU feature words.
