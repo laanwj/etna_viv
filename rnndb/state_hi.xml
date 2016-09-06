@@ -83,7 +83,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="9" low="9" name="DET_RD_ERR"/>
         </reg32>
         <reg32 offset="0x00010" name="INTR_ACKNOWLEDGE" brief="Interrupt acknowledge register">
-            <bitfield high="30" low="0" name="INTR_VEC" brief="Event signal interrupt bits"/>
+            <bitfield high="29" low="0" name="INTR_VEC" brief="Event signal interrupt bits"/>
+            <bitfield pos="30" name="MMU_EXCEPTION" brief="MMU exception interrupt"/>
             <bitfield pos="31" name="AXI_BUS_ERROR" brief="AXI bus error interrupt"/>
             <doc>Each bit represents a corresponding event being triggered.
                 Reading this register clears the interrupt flags.</doc>

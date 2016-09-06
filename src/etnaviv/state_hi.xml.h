@@ -8,13 +8,13 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- state.xml     (  18940 bytes, from 2016-09-03 18:19:59)
-- common.xml    (  20583 bytes, from 2016-09-03 17:54:32)
-- state_hi.xml  (  25567 bytes, from 2016-09-03 18:19:31)
-- copyright.xml (   1597 bytes, from 2016-09-03 18:17:46)
-- state_2d.xml  (  51552 bytes, from 2016-09-03 18:13:23)
-- state_3d.xml  (  54603 bytes, from 2016-09-03 18:19:05)
-- state_vg.xml  (   5975 bytes, from 2016-09-03 18:19:40)
+- state.xml     (  18940 bytes, from 2016-09-06 14:14:12)
+- common.xml    (  20583 bytes, from 2016-09-06 14:14:12)
+- state_hi.xml  (  25653 bytes, from 2016-09-06 14:45:17)
+- copyright.xml (   1597 bytes, from 2016-09-06 14:44:16)
+- state_2d.xml  (  51552 bytes, from 2016-09-06 14:44:16)
+- state_3d.xml  (  54603 bytes, from 2016-09-06 14:44:16)
+- state_vg.xml  (   5975 bytes, from 2016-09-06 14:44:16)
 
 Copyright (C) 2012-2016 by the following authors:
 - Wladimir J. van der Laan <laanwj@gmail.com>
@@ -106,9 +106,10 @@ DEALINGS IN THE SOFTWARE.
 #define VIVS_HI_AXI_STATUS_DET_RD_ERR				0x00000200
 
 #define VIVS_HI_INTR_ACKNOWLEDGE				0x00000010
-#define VIVS_HI_INTR_ACKNOWLEDGE_INTR_VEC__MASK			0x7fffffff
+#define VIVS_HI_INTR_ACKNOWLEDGE_INTR_VEC__MASK			0x3fffffff
 #define VIVS_HI_INTR_ACKNOWLEDGE_INTR_VEC__SHIFT		0
 #define VIVS_HI_INTR_ACKNOWLEDGE_INTR_VEC(x)			(((x) << VIVS_HI_INTR_ACKNOWLEDGE_INTR_VEC__SHIFT) & VIVS_HI_INTR_ACKNOWLEDGE_INTR_VEC__MASK)
+#define VIVS_HI_INTR_ACKNOWLEDGE_MMU_EXCEPTION			0x40000000
 #define VIVS_HI_INTR_ACKNOWLEDGE_AXI_BUS_ERROR			0x80000000
 
 #define VIVS_HI_INTR_ENBL					0x00000014
