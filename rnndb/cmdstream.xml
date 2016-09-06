@@ -23,9 +23,11 @@
 <database xmlns="http://nouveau.freedesktop.org/"
 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
-<!-- Vivante GCxxxx FE command stream format -->
+
+<import file="copyright.xml"/>
 <import file="common.xml"/>
 
+<!-- Vivante GCxxxx FE command stream format -->
 <enum name="FE_OPCODE">
     <value value="1" name="LOAD_STATE" brief="Load GPU state"/>
     <value value="2" name="END" brief="Stop command stream"/>

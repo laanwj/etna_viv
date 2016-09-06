@@ -31,6 +31,8 @@
 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 
+<import file="copyright.xml"/>
+
 <domain name="VIVS" brief="GPU state">
 <!-- Enumerations for use in the 2D engine -->
     <enum name="DE_FORMAT" brief="2D pixel format"> <!-- 0..7 match RS_FORMAT in 3D engine -->

@@ -23,6 +23,9 @@
 <database xmlns="http://nouveau.freedesktop.org/"
 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
+
+<import file="copyright.xml"/>
+
 <!-- Vivante GCxxxx render states and registers overview:
      OpenVG part (GC350)
  -->
