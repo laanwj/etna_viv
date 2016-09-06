@@ -8,13 +8,13 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- state.xml     (  18940 bytes, from 2016-09-03 18:19:59)
-- common.xml    (  20583 bytes, from 2016-09-03 17:54:32)
-- state_hi.xml  (  25567 bytes, from 2016-09-03 18:19:31)
-- copyright.xml (   1597 bytes, from 2016-09-03 18:17:46)
-- state_2d.xml  (  51552 bytes, from 2016-09-03 18:13:23)
-- state_3d.xml  (  54603 bytes, from 2016-09-03 18:19:05)
-- state_vg.xml  (   5975 bytes, from 2016-09-03 18:19:40)
+- state.xml     (  18940 bytes, from 2016-09-06 14:14:12)
+- common.xml    (  20583 bytes, from 2016-09-06 14:14:12)
+- state_hi.xml  (  25653 bytes, from 2016-09-06 14:45:17)
+- copyright.xml (   1597 bytes, from 2016-09-06 14:44:16)
+- state_2d.xml  (  51552 bytes, from 2016-09-06 14:44:16)
+- state_3d.xml  (  54603 bytes, from 2016-09-06 14:44:16)
+- state_vg.xml  (   5975 bytes, from 2016-09-06 14:44:16)
 
 Copyright (C) 2012-2016 by the following authors:
 - Wladimir J. van der Laan <laanwj@gmail.com>
