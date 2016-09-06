@@ -8,14 +8,38 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- state.xml    (  18940 bytes, from 2015-12-12 08:59:16)
-- common.xml   (  18379 bytes, from 2014-07-14 14:44:55)
-- state_hi.xml (  24309 bytes, from 2015-12-12 09:02:53)
-- state_2d.xml (  51520 bytes, from 2015-12-12 08:59:16)
-- state_3d.xml (  54570 bytes, from 2014-07-14 14:44:55)
-- state_vg.xml (   5942 bytes, from 2014-07-14 14:44:55)
+- state.xml     (  18940 bytes, from 2016-09-03 18:19:59)
+- common.xml    (  20583 bytes, from 2016-09-03 17:54:32)
+- state_hi.xml  (  25567 bytes, from 2016-09-03 18:19:31)
+- copyright.xml (   1597 bytes, from 2016-09-03 18:17:46)
+- state_2d.xml  (  51552 bytes, from 2016-09-03 18:13:23)
+- state_3d.xml  (  54603 bytes, from 2016-09-03 18:19:05)
+- state_vg.xml  (   5975 bytes, from 2016-09-03 18:19:40)
 
-Copyright (C) 2015
+Copyright (C) 2012-2016 by the following authors:
+- Wladimir J. van der Laan <laanwj@gmail.com>
+- Christian Gmeiner <christian.gmeiner@gmail.com>
+- Lucas Stach <l.stach@pengutronix.de>
+- Russell King <rmk@arm.linux.org.uk>
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sub license,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice (including the
+next paragraph) shall be included in all copies or substantial portions
+of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
 */
 
 
