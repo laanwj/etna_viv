@@ -227,15 +227,15 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <bitset name="chipMinorFeatures2">
         <bitfield pos="0" name="LINE_LOOP"/>
         <bitfield pos="1" name="LOGIC_OP"/>
-        <bitfield pos="2" name="UNK2"/>
+        <bitfield pos="2" name="SEAMLESS_CUBE_MAP"/>
         <bitfield pos="3" name="SUPERTILED_TEXTURE"/>
-        <bitfield pos="4" name="UNK4"/>
+        <bitfield pos="4" name="LINEAR_PE"/>
         <bitfield pos="5" name="RECT_PRIMITIVE"/>
         <bitfield pos="6" name="COMPOSITION" brief="Compose engine present"/>
         <bitfield pos="7" name="CORRECT_AUTO_DISABLE_COUNT"/>
-        <bitfield pos="8" name="UNK8"/>
-        <bitfield pos="9" name="UNK9"/>
-        <bitfield pos="10" name="UNK10"/>
+        <bitfield pos="8" name="PE_SWIZZLE"/>
+        <bitfield pos="9" name="END_EVENT"/>
+        <bitfield pos="10" name="S1S8"/>
         <bitfield pos="11" name="HALTI1" brief="More texture features">
             <doc>
                 - 14 Linear stride LODs (0x02C00 - 0x02C3C)
@@ -243,50 +243,50 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 - Has 0x016C0, 0x016E0 and 0x01700 states
             </doc>
         </bitfield>
-        <bitfield pos="12" name="UNK12"/>
-        <bitfield pos="13" name="UNK13"/>
-        <bitfield pos="14" name="UNK14"/>
+        <bitfield pos="12" name="RGB888"/>
+        <bitfield pos="13" name="TX__YUV_ASSEMBLER"/>
+        <bitfield pos="14" name="DYNAMIC_FREQUENCY_SCALING" brief="This feature doesn't apply for 2D cores"/>
         <bitfield pos="15" name="EXTRA_TEXTURE_STATE" brief="Extra texture state (0x12000)"/>
         <bitfield pos="16" name="FULL_DIRECTFB"/>
         <bitfield pos="17" name="2D_TILING" brief="2D tiling, YUV blit and one-pass filter blit"/>
         <bitfield pos="18" name="THREAD_WALKER_IN_PS"/>
         <bitfield pos="19" name="TILE_FILLER"/>
-        <bitfield pos="20" name="UNK20"/>
+        <bitfield pos="20" name="YUV_STANDARD"/>
         <bitfield pos="21" name="2D_MULTI_SOURCE_BLIT"/>
-        <bitfield pos="22" name="UNK22"/>
-        <bitfield pos="23" name="UNK23"/>
-        <bitfield pos="24" name="UNK24"/>
+        <bitfield pos="22" name="YUV_CONVERSION"/>
+        <bitfield pos="23" name="FLUSH_FIXED_2D"/>
+        <bitfield pos="24" name="INTERLEAVER"/>
         <bitfield pos="25" name="MIXED_STREAMS"/>
         <bitfield pos="26" name="2D_420_L2CACHE"/>
-        <bitfield pos="27" name="UNK27"/>
+        <bitfield pos="27" name="BUG_FIXES7"/>
         <bitfield pos="28" name="2D_NO_INDEX8_BRUSH"/>
         <bitfield pos="29" name="TEXTURE_TILED_READ" brief="Tiled read also available with COMPOSITION"/>
-        <bitfield pos="30" name="UNK30"/>
-        <bitfield pos="31" name="UNK31"/>
+        <bitfield pos="30" name="DECOMPRESS_Z16"/>
+        <bitfield pos="31" name="BUG_FIXES8"/>
     </bitset>
     <bitset name="chipMinorFeatures3"> <!-- Only for newer hardware/drivers (gc1000+?) -->
         <bitfield pos="0" name="ROTATION_STALL_FIX"/>
-        <bitfield pos="1" name="UNK1"/>
+        <bitfield pos="1" name="OCL_ONLY"/>
         <bitfield pos="2" name="2D_MULTI_SOURCE_BLT_EX" brief="8 instead of 4 multisource blit sources"/>
-        <bitfield pos="3" name="UNK3"/>
-        <bitfield pos="4" name="UNK4"/>
-        <bitfield pos="5" name="UNK5"/>
-        <bitfield pos="6" name="UNK6"/>
-        <bitfield pos="7" name="UNK7"/>
+        <bitfield pos="3" name="INSTRUCTION_CACHE"/>
+        <bitfield pos="4" name="GEOMETRY_SHADER"/>
+        <bitfield pos="5" name="TEX_COMPRESSION_SUPERTILED"/>
+        <bitfield pos="6" name="GENERICS"/>
+        <bitfield pos="7" name="BUG_FIXES9"/>
         <bitfield pos="8" name="FAST_MSAA"/>
-        <bitfield pos="9" name="UNK9"/>
+        <bitfield pos="9" name="WCLIP"/>
         <bitfield pos="10" name="BUG_FIXES10"/>
-        <bitfield pos="11" name="UNK11"/>
+        <bitfield pos="11" name="UNIFIED_SAMPLERS"/>
         <bitfield pos="12" name="BUG_FIXES11"/>
-        <bitfield pos="13" name="UNK13"/>
-        <bitfield pos="14" name="UNK14"/>
-        <bitfield pos="15" name="UNK15"/>
-        <bitfield pos="16" name="UNK16"/>
-        <bitfield pos="17" name="UNK17"/>
+        <bitfield pos="13" name="PERFORMANCE_COUNTERS"/>
+        <bitfield pos="14" name="HAS_FAST_TRANSCENDENTALS" brief="High precision transcendentals are available"/>
+        <bitfield pos="15" name="BUG_FIXES12"/>
+        <bitfield pos="16" name="BUG_FIXES13"/>
+        <bitfield pos="17" name="DE_ENHANCEMENTS1"/>
         <bitfield pos="18" name="ACE" brief="40-bit address space for MMUv2?"/>
-        <bitfield pos="19" name="UNK19"/>
-        <bitfield pos="20" name="UNK20"/>
-        <bitfield pos="21" name="UNK21"/>
+        <bitfield pos="19" name="TX_ENHANCEMENTS1"/>
+        <bitfield pos="20" name="SH_ENHANCEMENTS1"/>
+        <bitfield pos="21" name="SH_ENHANCEMENTS2"/>
         <bitfield pos="22" name="UNK22"/>
         <bitfield pos="23" name="UNK23"/>
         <bitfield pos="24" name="UNK24"/>
