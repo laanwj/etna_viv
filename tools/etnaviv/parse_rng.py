@@ -536,6 +536,15 @@ class Database(RNNObject):
             return True
         if isinstance(child, Type): # Types can be defined here
             return True
+        if isinstance(child, CopyrightDummy): # Copyrights can be defined here
+            return True
+        return False
+
+class CopyrightDummy(RNNObject):
+    '''Dummy object representing RNN copyright info'''
+    def add_child(self, child):
+        if isinstance(child, CopyrightDummy): # More copyrights can be defined here
+            return True
         return False
 
 #-------------------------------------------------------------------------
@@ -560,6 +569,9 @@ class Tag:
     BRIEF = ns+'brief'
     DOC = ns+'doc'
     IMPORT = ns+'import'
+    COPYRIGHT = ns+'copyright'
+    AUTHOR = ns+'author'
+    LICENSE = ns+'license'
     
     REG_TO_SIZE = {REG8:8, REG16:16, REG32:32, REG64:64}
 
@@ -576,6 +588,9 @@ visit = {
     Tag.REG16: Register,
     Tag.REG32: Register,
     Tag.REG64: Register,
+    Tag.COPYRIGHT: CopyrightDummy,
+    Tag.AUTHOR: CopyrightDummy,
+    Tag.LICENSE: CopyrightDummy,
 # TODO
 #    Tag.GROUP
 #    Tag.USE_GROUP
