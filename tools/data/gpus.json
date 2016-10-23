@@ -237,6 +237,32 @@
             "numConstants": "0",
             "bufferSize": "0"
         }]
+    },
+    {
+        "platform": "i.MX6-GC3000",
+        "chips": [{
+            "type": "GC3000",
+            "chipModel": "0x3000",
+            "chipRevision": "0x5450",
+            "chipFeatures": "0xe0287cad",
+            "chipMinorFeatures": "0xc9799efb",
+            "chipMinorFeatures1": "0xfefbfadb",
+            "chipMinorFeatures2": "0xeb9d4bbf",
+            "chipMinorFeatures3": "0xedffdced",
+            "chipMinorFeatures4": "0x930d2f47",
+            "chipMinorFeatures5": "0x10000133",
+            "streamCount": "10",
+            "registerMax": "40",
+            "threadCount": "400",
+            "shaderCoreCount": "4",
+            "vertexCacheSize": "10",
+            "vertexOutputBufferSize": "400",
+            "pixelPipes": "2",
+            "instructionCount": "100",
+            "numConstants": "140",
+            "numVaryings": "10",
+            "bufferSize": "0"
+        }]
     }
 ]
 
