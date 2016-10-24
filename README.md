@@ -3,11 +3,14 @@ Introduction
 
 Project Etnaviv is an open source user-space driver for the Vivante GCxxx series of embedded GPUs.
 
-A Mesa fork with the etnaviv driver can be found in the [laanwj/mesa](https://github.com/laanwj/mesa) repository.
-At the moment, this driver provides OpenGL ES 1.0 and 2.0 accelerated rendering direct to framebuffer (fbdev).
-This driver has been used to run Dark Places, glquake, d2x and other GLES games so it should be fairly stable.
-There may still be a few rendering bugs, specific bug reports are very welcome. Be sure to attach apitrace
-logs if possible.
+**This repository contains reverse-engineering and debugging tools, and `rnndb` register documentation. It is
+not necessary to use this repository when building the driver.**
+
+Instead, use:
+
+- https://github.com/etnaviv/mesa - Mesa driver (not yet upstreamed)
+- https://cgit.freedesktop.org/mesa/drm/ - Libdrm (etnaviv was upstreamed)
+- A recent mainline linux kernel (etnaviv was upstreamed)
 
 SoCs with Vivante GPU
 =========================
@@ -31,187 +34,11 @@ See also [wikipedia](https://en.wikipedia.org/wiki/Vivante_Corporation).
 For the Vivante GPUs on many platforms feature bits have been determined, these can be found in
 [doc/gpus_comparison.html](http://dev.visucore.com/etna_viv/gpus_comparison.html).
 
-Compatibility
-----------------
-
-`etna_pipe` is currently compatible with at least the following GC chips:
-
-- GC600 (CuBox, GCABI `dove`)
-- GC800 (Rockchip, GCABI `arnova`)
-- GC860 (GCW Zero, GCABI `v2`)
-- GC880 (i.MX6, GCABI imx6 or `imx6_v4_0_0` depending on BSP)
-- GC1000
-
-Support for GC2000 (i.MX6) and others with multiple pixel pipes (GC4000?) requires a few changes.
-The 2D demos do work for GC2000 and should work on all other known Vivante chips.
-
-Building
-=========
-
-As we currently use whatever Vivante kernel driver is available, the build process is complicated by
-the existence of many different kernel drivers, with their subtly different interface (different
-headers, different offsets for fields, different management of context, and so on).  These values
-for environment variable `GCABI` are supported out of the box:
-
-- `dove`: Marvell Dove, newer drivers (0.8.0.3184)
-- `dove_old`: Marvell Dove, older drivers (0.8.0.1998, 0.8.0.1123)
-- `arnova`: Android, Arnova 10B G3 tablet (RK2918)
-- `v2`: Various
-- `v4`: Various, newer API than v2
-- `v4_uapi`: Like `v4` but condensed into one header without all the unnecessary crap and renamed
-   fields not used by the kernel
-   (user space interface of the https://github.com/gcwnow/linux/tree/jz-3.11/drivers/gpu/vivante/v4 
-   condensed kernel version)
-- `imx6`: v4 API, specialized for i.MX6, pre-4.0.0 release
-- `imx6_v4_0_0`: v4 API, but i.MX6 specific, release 4.0.0
-- `imx6_v4_1_0`: v4 API, but i.MX6 specific, release 4.1.0
-
-If possible get the `gc_*.h` headers for your specific kernel version. If that's not possible, try
-to find which of the above sets of headers is most similar, and use or adapt that.
-
-General
---------
-If the goal is to build Mesa and you are not planning to do reverse engineering, only `libetnaviv.a` needs to be built.
-In this case it is sufficient to run make in `src/etnaviv`.
-
-Otherwise, run `make` and `make rev` in `src/` (see the README.md in `src` for a description of all the directories contained within).
-
-`gc_abi.h`
------------
-`gc_abi.h` is an extra header that defines the following flags describing the kernel interface to etna, for a certain
-setting of the environment variable `GCABI`:
-
-- `GCABI_CONTEXT_HAS_PHYSICAL`: `struct _gcoCONTEXT` has `physical` and `bytes` fields
-- `GCABI_HAS_MINOR_FEATURES_2`: `struct _gcsHAL_QUERY_CHIP_IDENTITY` has `chipMinorFeatures2` field
-- `GCABI_HAS_MINOR_FEATURES_3`: `struct _gcsHAL_QUERY_CHIP_IDENTITY` has `chipMinorFeatures3` field
-- `GCABI_USER_SIGNAL_HAS_TYPE`: `struct _gcsHAL_USER_SIGNAL` has `signalType` field
-- `GCABI_HAS_CONTEXT`: `struct _gcsHAL_COMMIT` has `contextBuffer` field
-- `GCABI_HAS_STATE_DELTAS`: `struct _gcsHAL_COMMIT` has `delta` field
-
-Linux cross compile
---------------------
-
-For non-Android Linux ARM cross compile, create a script like this (example for CuBox) to set up the build environment.
-When command stream dumping the egl demos, don't forget to also copy the EGL/GLES2/KDR headers from
-some place and put them in a directory `include` under the location
-where the script is installed, and get the `libEGL.so` and `libGLESv2.so` from the device into `lib`:
-
-    DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-    export GCCPREFIX="arm-linux-gnueabi-"
-    export PLATFORM_CFLAGS="-I${DIR}/include"
-    export PLATFORM_CXXFLAGS="-I${DIR}/include"
-    export PLATFORM_LDFLAGS="-ldl -L${DIR}/lib"
-    # These point to the vivante libs that are only used for reverse engineering
-    export PLATFORM_GL_LIBS="-lEGL -lGLESv2 -L${TOP}/lib/egl -Xlinker --allow-shlib-undefined"
-    # Set GC kernel ABI to dove (important!)
-    #export GCABI="dove"      # 0.8.0.3184
-    export GCABI="dove_old"  # 0.8.0.1998, 0.8.0.1123
-
-If you haven't got the `arm-linux-gnueabi-` bintools, on an Debian/Ubuntu host they can be installed with
-
-    apt-get install gcc-arm-linux-gnueabi g++-arm-linux-gnueabi
-
-On ARM hardfloat targets you should use `gcc-arm-linux-gnueabihf-` instead.
-
-Android cross compile
-----------------------
-
-To build for an Android device, install the Android NDK and define the cross-build environment by setting
-environment variables, for example like this:
-
-    export NDK="/opt/ndk"
-    export TOOLCHAIN="/opt/ndk/toolchains/arm-linux-androideabi-4.6/prebuilt/linux-x86"
-    export SYSROOT="/opt/ndk/platforms/android-14/arch-arm"
-    export PATH="$PATH:$TOOLCHAIN/bin"
-
-    export GCCPREFIX="arm-linux-androideabi-"
-    export CXXABI="armeabi-v7a"
-    export PLATFORM_CFLAGS="--sysroot=${SYSROOT} -DANDROID -DPIPE_ARCH_LITTLE_ENDIAN"
-    export PLATFORM_CXXFLAGS="--sysroot=${SYSROOT} -DANDROID -DPIPE_ARCH_LITTLE_ENDIAN -I${NDK}/sources/cxx-stl/gnu-libstdc++/4.6/include -I${NDK}/sources/cxx-stl/gnu-libstdc++/4.6/libs/${CXXABI}/include"
-    export PLATFORM_LDFLAGS="--sysroot=${SYSROOT} -L${NDK}/sources/cxx-stl/gnu-libstdc++/4.6/libs/${CXXABI} -lgnustl_static"
-    # Set GC kernel ABI (important!)
-    #export GCABI="v2"
-    #export GCABI="v4"
-    export GCABI="arnova"
-
-To build the egl samples (for command stream interception), you need to copy `libEGL_VIVANTE.so` `libGLESv2_VIVANTE.so` from
-the device `/system/lib/egl` to `src/lib/egl`. This is not needed if you just want to build the `replay`, `etna` or `fb`
-tests, which do not rely in any way on the userspace blob.
-
 Contents
 ==========
 
 The repository contains various tools and documentation related to figuring out how to
 program Vivante GCxxx GPU cores.
-
-Framebuffer tests
-------------------
-
-![cube_rotate output](src/replay/cube_replay.png)
-![cube_companion output](src/replay/cube_companion_replay.png)
-
-![mip_cube output](doc/images/mipmap.png)
-![displacement output](doc/images/displacement.png)
-
-To exercise the gallium driver there are a few framebuffer tests in `src/fb`.
-
-These demos do double-buffered animated rendering of 1000 frames to the framebuffer using
-the proof-of-concept `etna` rendering and command stream building API. The goal of this API is to provide a Gallium-like
-low-level interface to the Vivante hardware while abstracting away kernel interface details.
-
-- `companion_cube`: Rotating "weighted companion cube", using array or indexed rendering. Exercised in this demo:
-  - Array and indexed rendering of arbitrary mesh
-  - Video memory allocation
-  - Setting up render state
-  - Depth buffer
-  - Vertex / fragment shader
-  - Texturing
-  - Double-buffered rendering to framebuffer
-  - MSAA (off / 2X / 4X)
-
-- `mip_cube_state`: Rotating cube with a mipmapped texture loaded from a `dds` file provided on the command line. One
-  of the example textures have a different color and number on each mipmap level, to explicitly show interpolation
-  between mipmap levels as the surface
-  goes nearer or farther from the camera.
-
-  - Mipmapping
-  - DXT1 / DXT3 / DXT5 / ETC1 compressed textures
-
-- `alpha_blend`: Alpha blending quads
-
-- `cubemap_sphere`: Cubemap textures
-
-- `stencil_test`: Test stencil buffer handling
-
-- `particle_system`: Simple particle system using vertex shader and point sprites
-
-- `displacement`: Displacement mapping using vertex texture fetch
-
-If you are executing these demos on an Android device, make sure that you are root, otherwise the framebuffer
-is not accessible.
-
-Running these tests while Android is still writing to the framebuffer will result in stroboscopic effects.
-To get surfaceflinger out of the way type:
-
-    adb shell stop surfaceflinger
-    (run test)
-    adb shell start surfaceflinger
-
-libetnaviv
-------------
-
-Low-level command buffer handling library and register definition headers.
-This library completely wraps the kernel interface, to isolate clients (such as Mesa)
-from the madness of kernel-specific headers and defines.
-
-- ioctl (kernel interface) wrapping
-- video memory management
-- command buffer and event queue handling
-- context / state delta handling (still incomplete)
-- register description headers
-- converting surfaces and textures from and to Vivante specific tiling formats
-
-Currently used only by the 3D driver in `src/driver`. A future 2D, SVG or OpenCL driver can share this code.
 
 Debugging support
 ------------------
