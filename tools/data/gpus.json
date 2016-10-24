@@ -239,7 +239,7 @@
         }]
     },
     {
-        "platform": "i.MX6-GC3000",
+        "platform": "Freescale i.MX 6 QuadPlus",
         "chips": [{
             "type": "GC3000",
             "chipModel": "0x3000",
