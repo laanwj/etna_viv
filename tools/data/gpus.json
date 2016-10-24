@@ -262,6 +262,16 @@
             "numConstants": "320",
             "numVaryings": "16",
             "bufferSize": "0"
+        },
+        {
+            "type": "GC320",
+            "chipModel": "0x320",
+            "chipRevision": "0x5303"
+        },
+        {
+            "type": "GC355",
+            "chipModel": "0x355",
+            "chipRevision": "0x1216"
         }]
     }
 ]
