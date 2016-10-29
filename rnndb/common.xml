@@ -103,9 +103,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <!-- GPU feature words.
          Each of the bits of these words signifies the availability (or sometimes lack of) a certain
          rendering feature in the 2D, 3D or VG engine.
-         Not all the words are available on all GPU types, but if missing they default to 0.
+         Not all the words are available on all GPU types, but if missing they default to 0
+         (although the kernel driver can override this in specific cases).
       -->
-    <bitset name="chipFeatures">
+    <bitset name="chipFeatures"> <!-- ETNA_GPU_FEATURES_0 -->
         <bitfield pos="0" name="FAST_CLEAR" brief="Fast clear available"/>
         <bitfield pos="1" name="SPECIAL_ANTI_ALIASING" brief="Special AA (FSAA)"/>
         <bitfield pos="2" name="PIPE_3D" brief="3D engine is present"/>
@@ -139,7 +140,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield pos="30" name="RS_YUV_TARGET" brief="Supports resolving into YUV target"/>
         <bitfield pos="31" name="32_BIT_INDICES" brief="32 bit indices can be used with indexed drawing"/>
     </bitset>
-    <bitset name="chipMinorFeatures0">
+    <bitset name="chipMinorFeatures0"> <!-- ETNA_GPU_FEATURES_1 -->
         <bitfield pos="0" name="FLIP_Y" brief="Y flipping capability is added to resolve"/>
         <bitfield pos="1" name="DUAL_RETURN_BUS" brief="Dual Return Bus from HI to clients"/>
         <bitfield pos="2" name="ENDIANNESS_CONFIG" brief="Configurable endianness support"/>
@@ -175,7 +176,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield pos="30" name="CORRECT_STENCIL" brief="Correct stencil behavior in depth only"/>
         <bitfield pos="31" name="ENHANCE_VR" brief="Enhance video rasterizer"/>
     </bitset>
-    <bitset name="chipMinorFeatures1">
+    <bitset name="chipMinorFeatures1"> <!-- ETNA_GPU_FEATURES_2 -->
         <bitfield pos="0" name="RSUV_SWIZZLE" brief="Resolve UV swizzle"/>
         <bitfield pos="1" name="V2_COMPRESSION" brief="V2 compression"/>
         <bitfield pos="2" name="VG_DOUBLE_BUFFER" brief="Double buffering support for VG (second TS-->VG semaphore is present)"/>
@@ -183,7 +184,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield pos="4" name="NO_STRIPING_NEEDED"/>
         <bitfield pos="5" name="TEXTURE_STRIDE" brief="Texture has stride and memory addressing"/>
         <bitfield pos="6" name="BUG_FIXES3"/>
-        <bitfield pos="7" name="AUTO_DISABLE"/>
+        <bitfield pos="7" name="AUTO_DISABLE" brief="Correct auto-disable count"/>
         <bitfield pos="8" name="AUTO_RESTART_TS"/>
         <bitfield pos="9" name="DISABLE_PE_GATING"/>
         <bitfield pos="10" name="L2_WINDOWING"/>
@@ -213,6 +214,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 - Texture array support
                 - GL_(INT|UNSIGNED)_10_10_10_2_OES texture / vertex support
                 - 16 attr per vertex i.s.o. 10, and 12 varyings i.s.o. 8
+                - PIPE_CL
             </doc>
         </bitfield>
         <bitfield pos="24" name="CORRECT_OVERFLOW_VG"/>
@@ -224,7 +226,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield pos="30" name="BUG_FIXES6"/>
         <bitfield pos="31" name="FC_FLUSH_STALL"/>
     </bitset>
-    <bitset name="chipMinorFeatures2">
+    <bitset name="chipMinorFeatures2"> <!-- ETNA_GPU_FEATURES_3 -->
         <bitfield pos="0" name="LINE_LOOP"/>
         <bitfield pos="1" name="LOGIC_OP"/>
         <bitfield pos="2" name="SEAMLESS_CUBE_MAP"/>
@@ -262,13 +264,17 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield pos="28" name="2D_NO_INDEX8_BRUSH"/>
         <bitfield pos="29" name="TEXTURE_TILED_READ" brief="Tiled read also available with COMPOSITION"/>
         <bitfield pos="30" name="DECOMPRESS_Z16"/>
-        <bitfield pos="31" name="BUG_FIXES8"/>
+        <bitfield pos="31" name="BUG_FIXES8">
+            <doc>
+                - Bug fixed indexed triangle strip
+            </doc>
+        </bitfield>
     </bitset>
-    <bitset name="chipMinorFeatures3"> <!-- Only for newer hardware/drivers (gc1000+?) -->
+    <bitset name="chipMinorFeatures3"> <!-- ETNA_GPU_FEATURES_4 -->
         <bitfield pos="0" name="ROTATION_STALL_FIX"/>
         <bitfield pos="1" name="OCL_ONLY"/>
-        <bitfield pos="2" name="2D_MULTI_SOURCE_BLT_EX" brief="8 instead of 4 multisource blit sources"/>
-        <bitfield pos="3" name="INSTRUCTION_CACHE"/>
+        <bitfield pos="2" name="2D_MULTI_SOURCE_BLT_EX" brief="8 instead of 4 multisource blit sources, 2D minor tiling, and 2D YUV separate stride, 2D pixel alignment"/>
+        <bitfield pos="3" name="INSTRUCTION_CACHE" brief="Shader has instruction cache"/>
         <bitfield pos="4" name="GEOMETRY_SHADER"/>
         <bitfield pos="5" name="TEX_COMPRESSION_SUPERTILED"/>
         <bitfield pos="6" name="GENERICS"/>
@@ -282,86 +288,123 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield pos="14" name="HAS_FAST_TRANSCENDENTALS" brief="High precision transcendentals are available"/>
         <bitfield pos="15" name="BUG_FIXES12"/>
         <bitfield pos="16" name="BUG_FIXES13"/>
-        <bitfield pos="17" name="DE_ENHANCEMENTS1"/>
+        <bitfield pos="17" name="DE_ENHANCEMENTS1" brief="2D filterblit A8 alpha, 2D all quad"/>
         <bitfield pos="18" name="ACE" brief="40-bit address space for MMUv2?"/>
         <bitfield pos="19" name="TX_ENHANCEMENTS1"/>
-        <bitfield pos="20" name="SH_ENHANCEMENTS1"/>
-        <bitfield pos="21" name="SH_ENHANCEMENTS2"/>
+        <bitfield pos="20" name="SH_ENHANCEMENTS1" brief="Shader has atomic"/>
+        <bitfield pos="21" name="SH_ENHANCEMENTS2" brief="Has RTNE"/>
         <bitfield pos="22" name="UNK22"/>
-        <bitfield pos="23" name="UNK23"/>
+        <bitfield pos="23" name="2D_FC_SOURCE"/> <!-- 2D_CC_NOAA_SOURCE -->
         <bitfield pos="24" name="UNK24"/>
         <bitfield pos="25" name="UNK25"/>
         <bitfield pos="26" name="NEW_HZ"/>
         <bitfield pos="27" name="UNK27"/>
         <bitfield pos="28" name="UNK28"/>
-        <bitfield pos="29" name="UNK29"/>
+        <bitfield pos="29" name="SH_ENHANCEMENTS3"/>
         <bitfield pos="30" name="UNK30"/>
         <bitfield pos="31" name="UNK31"/>
     </bitset>
-    <bitset name="chipMinorFeatures4"> <!-- Only for newer hardware/drivers (gc1000+?) -->
+    <bitset name="chipMinorFeatures4"> <!-- ETNA_GPU_FEATURES_5 -->
         <bitfield pos="0" name="UNK0"/>
-        <bitfield pos="1" name="UNK1"/>
-        <bitfield pos="2" name="UNK2"/>
+        <bitfield pos="1" name="PE_ENHANCEMENTS2"/>
+        <bitfield pos="2" name="FRUSTUM_CLIP_FIX"/>
         <bitfield pos="3" name="UNK3"/>
         <bitfield pos="4" name="UNK4"/>
-        <bitfield pos="5" name="UNK5"/>
-        <bitfield pos="6" name="UNK6"/>
+        <bitfield pos="5" name="2D_GAMMA"/>
+        <bitfield pos="6" name="SINGLE_BUFFER"/>
         <bitfield pos="7" name="UNK7"/>
         <bitfield pos="8" name="UNK8"/>
         <bitfield pos="9" name="UNK9"/>
         <bitfield pos="10" name="UNK10"/>
-        <bitfield pos="11" name="UNK11"/>
-        <bitfield pos="12" name="UNK12"/>
-        <bitfield pos="13" name="UNK13"/>
+        <bitfield pos="11" name="TX_LERP_PRECISION_FIX"/>
+        <!-- 2D_SUPER_TILE_VERSION is available if either 2D_COLOR_SPACE_CONVERSION or 2D_COLOR_SPACE_CONVERSION set -->
+        <bitfield pos="12" name="2D_COLOR_SPACE_CONVERSION" brief="Color space conversion - 2D supertile version also available if set"/>
+        <bitfield pos="13" name="TEXTURE_ASTC"/>
         <bitfield pos="14" name="UNK14"/>
         <bitfield pos="15" name="UNK15"/>
-        <bitfield pos="16" name="HALTI2"/>
+        <bitfield pos="16" name="HALTI2">
+            <doc>
+                - Primitive restart
+                - Vertex inst id as attribute
+                - PE multi RT blend enable control
+                - Dual 16
+                - Branch on immediate reg
+                - V2 compression Z16 fix
+                - Vertex inst id as integer
+                - 32BPP component texture channel swizzle
+                - 64BPP HW clear support
+                - MRT tile status buffer
+                - FE start vertex support
+                - FE reset vertex id
+            </doc>
+        </bitfield>
         <bitfield pos="17" name="UNK17"/>
         <bitfield pos="18" name="SMALL_MSAA"/>
         <bitfield pos="19" name="UNK19"/>
-        <bitfield pos="20" name="UNK20"/>
-        <bitfield pos="21" name="UNK21"/>
-        <bitfield pos="22" name="UNK22"/>
-        <bitfield pos="23" name="UNK23"/>
-        <bitfield pos="24" name="UNK24"/>
-        <bitfield pos="25" name="UNK25"/>
-        <bitfield pos="26" name="UNK26"/>
-        <bitfield pos="27" name="UNK27"/>
+        <bitfield pos="20" name="NEW_RA"/>
+        <bitfield pos="21" name="2D_OPF_YUV_OUTPUT"/>
+        <bitfield pos="22" name="2D_MULTI_SOURCE_BLT_EX2" brief="Also determines 2D_POST_FLIP"/>
+        <bitfield pos="23" name="NO_USER_CSC"/>
+        <bitfield pos="24" name="ZFIXES"/> <!-- PA_FARZCLIPPING_FIX and ZSCALE_FIX -->
+        <bitfield pos="25" name="BUG_FIXES18"/>
+        <bitfield pos="26" name="2D_COMPRESSION"/>
+        <bitfield pos="27" name="PROBE"/>
         <bitfield pos="28" name="UNK28"/>
-        <bitfield pos="29" name="UNK29"/>
+        <bitfield pos="29" name="2D_SUPER_TILE_VERSION"/>
         <bitfield pos="30" name="UNK30"/>
         <bitfield pos="31" name="UNK31"/>
     </bitset>
-    <bitset name="chipMinorFeatures5">
+    <bitset name="chipMinorFeatures5"> <!-- ETNA_GPU_FEATURES_6 -->
         <bitfield pos="0" name="UNK0"/>
         <bitfield pos="1" name="UNK1"/>
         <bitfield pos="2" name="UNK2"/>
         <bitfield pos="3" name="UNK3"/>
-        <bitfield pos="4" name="UNK4"/>
+        <bitfield pos="4" name="EEZ"/>
         <bitfield pos="5" name="UNK5"/>
         <bitfield pos="6" name="UNK6"/>
         <bitfield pos="7" name="UNK7"/>
         <bitfield pos="8" name="UNK8"/>
-        <bitfield pos="9" name="HALTI3" brief="Extra states at 0x890, 0x104C, 0x14BC, 0x1A80, and 0x10780"/>
+        <bitfield pos="9" name="HALTI3" brief="Extra states at 0x890, 0x104C, 0x14BC, 0x1A80, and 0x10780">
+            <doc>
+                - Integer signext fix
+                - Integer pipe fix
+                - PS output mapping
+                - 8K RT fix
+                - TX tile status mapping
+                - SRGB RT support
+                - Uniform aperture
+                - Texture 16K
+                - PE dither colormask fix
+                - TX frac precision 6bit
+                - SH instruction prefetch
+            </doc>
+        </bitfield>
         <bitfield pos="10" name="UNK10"/>
-        <bitfield pos="11" name="UNK11"/>
+        <bitfield pos="11" name="2D_ONE_PASS_FILTER_TAP"/>
         <bitfield pos="12" name="UNK12"/>
-        <bitfield pos="13" name="UNK13"/>
-        <bitfield pos="14" name="UNK14"/>
+        <bitfield pos="13" name="SEPARATE_SRC_DST"/>
+        <bitfield pos="14" name="HALTI4">
+            <doc>
+                - Texture ASTC fix
+                - MSAA fragment operation
+                - Zero attrib support
+                - Tex cache flush fix
+            </doc>
+        </bitfield>
         <bitfield pos="15" name="UNK15"/>
-        <bitfield pos="16" name="UNK16"/>
-        <bitfield pos="17" name="UNK17"/>
+        <bitfield pos="16" name="ANDROID_ONLY"/>
+        <bitfield pos="17" name="HAS_PRODUCTID"/>
         <bitfield pos="18" name="UNK18"/>
         <bitfield pos="19" name="UNK19"/>
-        <bitfield pos="20" name="UNK20"/>
+        <bitfield pos="20" name="PE_DITHER_FIX2"/>
         <bitfield pos="21" name="UNK21"/>
         <bitfield pos="22" name="UNK22"/>
         <bitfield pos="23" name="UNK23"/>
         <bitfield pos="24" name="UNK24"/>
         <bitfield pos="25" name="UNK25"/>
         <bitfield pos="26" name="UNK26"/>
-        <bitfield pos="27" name="UNK27"/>
-        <bitfield pos="28" name="UNK28"/>
+        <bitfield pos="27" name="DEPTHSTENCIL_NATIVE_SUPPORT"/>
+        <bitfield pos="28" name="V2_MSAA_COMP_FIX"/>
         <bitfield pos="29" name="UNK29"/>
         <bitfield pos="30" name="UNK30"/>
         <bitfield pos="31" name="UNK31"/>
