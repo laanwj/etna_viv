@@ -251,6 +251,7 @@
             "chipMinorFeatures3": "0xedffdced",
             "chipMinorFeatures4": "0x930d2f47",
             "chipMinorFeatures5": "0x10000133",
+            "chipMinorFeatures6": "0x00000000",
             "streamCount": "16",
             "registerMax": "64",
             "threadCount": "1024",
@@ -266,12 +267,28 @@
         {
             "type": "GC320",
             "chipModel": "0x320",
-            "chipRevision": "0x5303"
+            "chipRevision": "0x5303",
+            "chipFeatures": "0xe02c7eca",
+            "chipMinorFeatures": "0xe9399eff",
+            "chipMinorFeatures1": "0xfe1fb2db",
+            "chipMinorFeatures2": "0xceff0080",
+            "chipMinorFeatures3": "0x10000005",
+            "chipMinorFeatures4": "0x00000000",
+            "chipMinorFeatures5": "0x00000000",
+            "chipMinorFeatures6": "0x00000000"
         },
         {
             "type": "GC355",
             "chipModel": "0x355",
-            "chipRevision": "0x1216"
+            "chipRevision": "0x1216",
+            "chipFeatures": "0x1e2c7cc8",
+            "chipMinorFeatures": "0x0024207f",
+            "chipMinorFeatures1": "0x00000000",
+            "chipMinorFeatures2": "0x01010104",
+            "chipMinorFeatures3": "0x00000000",
+            "chipMinorFeatures4": "0x00000000",
+            "chipMinorFeatures5": "0x00000000",
+            "chipMinorFeatures6": "0x00000000"
         }]
     }
 ]
