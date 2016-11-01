@@ -50,7 +50,6 @@ int main()
     ic.in_buf_size = sizeof(id);
     ic.out_buf = (long long unsigned int)&id;
     ic.out_buf_size = sizeof(id);
-    printf("gcsHAL_INTERFACE size %i\n", sizeof(id));
 
     rv = ioctl(fd, IOCTL_GCHAL_INTERFACE, &ic);
     if(rv < 0)
