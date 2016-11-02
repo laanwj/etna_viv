@@ -70,11 +70,14 @@ class RNNObject(object):
     parent = None # back-reference to parent object
     brief = '' # short documentation
     doc = '' # long documentation
-    # XXX varset, variants
+    varset = ''
+    variants = ''
     def __init__(self, parent, **attr):
         self.parent = parent
         self.name = attr.get('name', None)
         self.parent = attr.get('parent')
+        self.varset = attr.get('varset', None)
+        self.variants = attr.get('variants', None)
         # Extension to rules-ng-ng: allow brief as attribute as well as element
         self.brief = attr.get('brief', '')
 
@@ -233,6 +236,7 @@ class BitField(TypedValue, RNNObject):
             self.high = self.low = attr['pos']
         else:
             raise ValueError('bitfield has neither low/high nor pos')
+        self.shr = int(attr.get('shr', '0'))
         # derived attribute
         self.size = self.high - self.low + 1
 
@@ -243,7 +247,7 @@ class BitField(TypedValue, RNNObject):
 
     def extract(self, value):
         '''Extract this bit field from a value'''
-        return (value >> self.low) & ((1<<(self.high-self.low+1))-1)
+        return ((value >> self.low) & ((1<<(self.high-self.low+1))-1)) << self.shr
     
     def fill(self, value):
         '''Return value filled into this bit field'''
@@ -417,7 +421,7 @@ class Array(RNNObject, Range):
         pathcomp = [(self, d)]
         for range in self.contents:
             try:
-                return pathcomp + range.lookup_address(sub_addr)
+                return pathcomp + range.lookup_address(sub_addr, variants)
             except KeyError:
                 pass
         raise KeyError('Address not found: 0x%x' % addr)
@@ -490,9 +494,13 @@ class Domain(RNNObject, Range, Type):
         within this object. The index will be None in case of single-element
         containers.
         '''
+        if variants is None:
+            variants = (None,None)
         for range in self.contents:
+            if (range.variants,range.varset) != variants:
+                continue
             try:
-                return range.lookup_address(addr)
+                return range.lookup_address(addr, variants)
             except KeyError:
                 pass
         raise KeyError('Address not found: 0x%x' % addr)
@@ -529,6 +537,9 @@ class Database(RNNObject):
     
     def lookup_domain(self, domain_name):
         return self.domains[domain_name]
+
+    def lookup_type(self, type_name):
+        return self.types[type_name]
 
     def add_child(self, child):
         if isinstance(child, Domain):

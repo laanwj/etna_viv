@@ -26,7 +26,7 @@ from __future__ import print_function, division, unicode_literals
 import argparse
 import os, sys, struct
 import json
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 
 from binascii import b2a_hex
 
@@ -185,7 +185,7 @@ def iter_memory(mem, addr, end_addr):
         yield value
         ptr += 1
 
-def dump_command_buffer(f, mem, addr, end_addr, depth, state_map):
+def dump_command_buffer(f, mem, addr, end_addr, depth, state_map, cmdstream_info):
     '''
     Dump Vivante command buffer contents in human-readable
     format.
@@ -194,7 +194,7 @@ def dump_command_buffer(f, mem, addr, end_addr, depth, state_map):
     f.write('{\n')
     states = [] # list of (ptr, state_addr) tuples
     size = (end_addr - addr)//4
-    for rec in parse_command_buffer(iter_memory(mem, addr, end_addr)):
+    for rec in parse_command_buffer(iter_memory(mem, addr, end_addr), cmdstream_info):
         hide = False
         if rec.op == 1 and rec.payload_ofs == -1:
             if options.hide_load_state:
@@ -287,6 +287,9 @@ def parse_arguments():
     parser.add_argument('--rules-file', metavar='RULESFILE', type=str, 
             help='State map definition file (rules-ng-ng)',
             default=rnndb_path('state.xml'))
+    parser.add_argument('--cmdstream-file', metavar='CMDSTREAMFILE', type=str, 
+            help='Command stream definition file (rules-ng-ng)',
+            default=rnndb_path('cmdstream.xml'))
     parser.add_argument('-l', '--hide-load-state', dest='hide_load_state',
             default=False, action='store_const', const=True,
             help='Hide "LOAD_STATE" entries, this can make command stream a bit easier to read')
@@ -340,11 +343,21 @@ def format_addr(value):
     else:
         return 'ADDR_%i' % id
 
+CmdStreamInfo = namedtuple('CmdStreamInfo', ['opcodes', 'domain'])
+
 def main():
     args = parse_arguments()
     defs = load_data_definitions(args.struct_file)
     state_xml = parse_rng_file(args.rules_file)
     state_map = state_xml.lookup_domain('VIVS')
+
+    cmdstream_xml = parse_rng_file(args.cmdstream_file)
+    fe_opcode = cmdstream_xml.lookup_type('FE_OPCODE')
+    cmdstream_map = cmdstream_xml.lookup_domain('VIV_FE')
+    cmdstream_info = CmdStreamInfo(fe_opcode, cmdstream_map)
+    #print(fe_opcode.values_by_value[1].name)
+    #print(format_path(cmdstream_map.lookup_address(0,('LOAD_STATE','FE_OPCODE'))))
+
     fdr = FDRLoader(args.input)
     global options
     options = args
@@ -382,13 +395,13 @@ def main():
                 f.write('&(uint32[])0x%x' % (ptr.addr))
                 dump_command_buffer(f, fdr, ptr.addr + parent.members['startOffset'].value, 
                          ptr.addr + parent.members['offset'].value,
-                         depth, state_map)
+                         depth, state_map, cmdstream_info)
                 return
             if parent.type['name'] == '_gcoCONTEXT' and options.show_context_commands:
                 f.write('&(uint32[])0x%x' % (ptr.addr))
                 dump_command_buffer(f, fdr, ptr.addr, 
                          ptr.addr + parent.members['bufferSize'].value,
-                         depth, state_map)
+                         depth, state_map, cmdstream_info)
                 return
         elif parent.type['name'] == '_gcoCONTEXT' and field == 'map' and ptr.addr != 0 and options.show_state_map:
             f.write('&(uint32[])0x%x' % (ptr.addr))
@@ -401,7 +414,7 @@ def main():
             f.write('&(uint32[])0x%x' % (ptr.addr))
             dump_command_buffer(f, fdr, ptr.addr, 
                      ptr.addr + parent.members['bufferSize'].value,
-                     depth, state_map)
+                     depth, state_map, cmdstream_info)
             return
 
         print_address(f, ptr, depth)

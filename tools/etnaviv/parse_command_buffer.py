@@ -6,7 +6,7 @@ StateInfo = namedtuple('StateInfo', ['pos', 'format'])
 # A PIPE3D command will be inserted here by the kernel if necessary
 CMDBUF_IGNORE_INITIAL = 8
 
-def parse_command_buffer(buffer_words):
+def parse_command_buffer(buffer_words, cmdstream_info):
     '''
     Parse Vivante command buffer contents, return a sequence of 
     CommandInfo records.
@@ -25,6 +25,16 @@ def parse_command_buffer(buffer_words):
             payload_ofs = -1
             op = value >> 27
             payload_start_ptr = payload_end_ptr = ptr + 1
+            try:
+                opname = cmdstream_info.opcodes.values_by_value[op].name
+            except KeyError:
+                opname = None
+            if opname is not None:
+                opinfo = cmdstream_info.domain.lookup_address(0,(opname,'FE_OPCODE'))
+            else:
+                opinfo = None
+            desc = '%s (%i)' % (opname or 'UNKNOWN', op)
+            #print(opdesc, opinfo)
             if op == 1:
                 state_base = (value & 0xFFFF)<<2
                 state_count = (value >> 16) & 0x3FF
@@ -32,36 +42,21 @@ def parse_command_buffer(buffer_words):
                     state_count = 0x400
                 state_format = (value >> 26) & 1
                 payload_end_ptr = payload_start_ptr + state_count
-                desc = "LOAD_STATE (1) Base: 0x%05X Size: %i Fixp: %i" % (state_base, state_count, state_format)
-            elif op == 2:
-                desc = "END (2)"
-            elif op == 3:
-                desc = "NOP (3)"
-            elif op == 4:
-                desc = "DRAW_2D (4)"
+                desc += " Base: 0x%05X Size: %i Fixp: %i" % (state_base, state_count, state_format)
             elif op == 5:
-                desc = "DRAW_PRIMITIVES (5)"
                 payload_end_ptr = payload_start_ptr + 3
             elif op == 6:
-                desc = "DRAW_INDEXED_PRIMITIVES (6)"
                 payload_end_ptr = payload_start_ptr + 4
-            elif op == 7:
-                desc = "WAIT (7)"
             elif op == 8:
-                desc = "LINK (8)"
                 payload_end_ptr = payload_start_ptr + 1
             elif op == 9:
-                desc = "STALL (9)"
                 payload_end_ptr = payload_start_ptr + 1
             elif op == 10:
-                desc = "CALL (10)"
                 payload_end_ptr = payload_start_ptr + 1
-            elif op == 11:
-                desc = "RETURN (11)"
-            elif op == 13:
-                desc = "CHIP_SELECT (13)"
-            else:
-                desc = "UNKNOWN (%i)" % op
+            elif op == 12:
+                payload_end_ptr = payload_start_ptr + 3
+            if op != 1 and opinfo is not None:
+                desc += " " + opinfo[-1][0].describe(value)
             next_cmd = (payload_end_ptr + 1) & (~1)
         elif ptr < payload_end_ptr: # Parse payload 
             payload_ofs = ptr - payload_start_ptr
@@ -69,6 +64,9 @@ def parse_command_buffer(buffer_words):
             if op == 1:
                 pos = payload_ofs*4 + state_base
                 state_info = StateInfo(pos, state_format)
+            elif opname is not None:
+                opinfo = cmdstream_info.domain.lookup_address(payload_ofs*4+4,(opname,'FE_OPCODE'))
+                desc = '  ' + opinfo[-1][0].name + ' ' + opinfo[-1][0].describe(value)
         else:
             desc = "PAD"
             payload_ofs = -2 # padding
