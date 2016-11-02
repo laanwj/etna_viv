@@ -45,6 +45,7 @@
 
 #define GCABI_UINT64_POINTERS
 #define GCABI_UINT64_IOCTL_DATA
+#define GCABI_NO_FREE_VIDEO_MEMORY
 
 /* IOCTL structure for userspace driver*/
 typedef struct
@@ -59,5 +60,6 @@ typedef struct
 #include "gc_hal.h"
 #include "gc_hal_driver.h"
 #include "gc_hal_types.h"
+#include "gc_hal_kernel_buffer.h"
 #endif
 
