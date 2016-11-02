@@ -23,6 +23,7 @@
 #include "viv_hook.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <stdbool.h>
 #include <fcntl.h>
@@ -35,10 +36,49 @@
 #include <sys/ioctl.h>
 #include <pthread.h>
 
+static void parse_environment(struct viv_hook_overrides *overrides)
+{
+    char *value;
+    char envkey[60];
+    if ((value = getenv("ETNAVIV_CHIP_MODEL")) != NULL) {
+        overrides->override_chip_model = true;
+        overrides->chip_model = strtoul(value, 0, 0);
+        printf("Overriding chip model to 0x%x\n", overrides->chip_model);
+    }
+    if ((value = getenv("ETNAVIV_CHIP_REVISION")) != NULL) {
+        overrides->override_chip_revision = true;
+        overrides->chip_revision = strtoul(value, 0, 0);
+        printf("Overriding chip revision to 0x%x\n", overrides->chip_revision);
+    }
+    for (int x=0; x<VIV_NUM_FEATURE_WORDS; ++x) {
+        snprintf(envkey, sizeof(envkey), "ETNAVIV_FEATURES%d_SET", x);
+        if ((value = getenv(envkey)) != NULL) {
+            overrides->features_set[x] = strtoul(value, 0, 0);
+            printf("Setting features 0x%08x of word %d\n", overrides->features_set[x], x);
+        }
+        snprintf(envkey, sizeof(envkey), "ETNAVIV_FEATURES%d_CLEAR", x);
+        if ((value = getenv(envkey)) != NULL) {
+            overrides->features_clear[x] = strtoul(value, 0, 0);
+            printf("Clearing features 0x%08x of word %d\n", overrides->features_clear[x], x);
+        }
+    }
+    if ((value = getenv("ETNAVIV_CHIP_FLAGS_SET")) != NULL) {
+        overrides->chip_flags_set = strtoul(value, 0, 0);
+        printf("Setting chip flags 0x%08x\n", overrides->chip_flags_set);
+    }
+    if ((value = getenv("ETNAVIV_CHIP_FLAGS_CLEAR")) != NULL) {
+        overrides->chip_flags_clear = strtoul(value, 0, 0);
+        printf("Clearing chip flags 0x%08x\n", overrides->chip_flags_clear);
+    }
+}
+
 static void __attribute__((constructor)) constructor()
 {
+    struct viv_hook_overrides overrides = {0};
     printf("Constructor\n");
-    the_hook("out.fdr");
+    parse_environment(&overrides);
+    viv_hook_set_overrides(&overrides);
+    the_hook(getenv("ETNAVIV_FDR"));
 }
 
 static void __attribute__((destructor)) destructor()

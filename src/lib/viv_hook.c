@@ -56,6 +56,7 @@
 flightrec_t _fdr;
 
 static int _galcore_handle = 0;
+static struct viv_hook_overrides overrides;
 
 /* keep track of mapped video memory (not mapped through mmap) */
 #define MAX_MAPPINGS 128
@@ -66,6 +67,11 @@ typedef struct
     size_t bytes;
 } mapping_t;
 static mapping_t mappings[MAX_MAPPINGS];
+
+void viv_hook_set_overrides(const struct viv_hook_overrides *overrides_in)
+{
+    overrides = *overrides_in;
+}
 
 int my_open(const char* path, int flags, ...)
 {
@@ -83,7 +89,7 @@ int my_open(const char* path, int flags, ...)
     } else {
         ret = open(path, flags);
     }
-    
+
     if(ret >= 0 && (!strcmp(path, "/dev/gal3d") || !strcmp(path, "/dev/galcore") || !strcmp(path, "/dev/graphics/galcore")))
     {
         _galcore_handle = ret;
@@ -269,6 +275,42 @@ static void log_interface_out(flightrec_event_t evctx, gcsHAL_INTERFACE *id)
     }
 }
 
+static void override_interface_out(gcsHAL_INTERFACE *id, struct viv_hook_overrides *o)
+{
+    switch(id->command)
+    {
+    case gcvHAL_QUERY_CHIP_IDENTITY:
+        if (o->override_chip_model) {
+            id->u.QueryChipIdentity.chipModel = o->chip_model;
+        }
+        if (o->override_chip_revision) {
+            id->u.QueryChipIdentity.chipRevision = o->chip_revision;
+        }
+        id->u.QueryChipIdentity.chipFeatures &= ~o->features_clear[0];
+        id->u.QueryChipIdentity.chipMinorFeatures &= ~o->features_clear[1];
+        id->u.QueryChipIdentity.chipMinorFeatures1 &= ~o->features_clear[2];
+        id->u.QueryChipIdentity.chipMinorFeatures2 &= ~o->features_clear[3];
+        id->u.QueryChipIdentity.chipMinorFeatures3 &= ~o->features_clear[4];
+        id->u.QueryChipIdentity.chipMinorFeatures4 &= ~o->features_clear[5];
+        id->u.QueryChipIdentity.chipMinorFeatures5 &= ~o->features_clear[6];
+        id->u.QueryChipIdentity.chipMinorFeatures6 &= ~o->features_clear[7];
+        id->u.QueryChipIdentity.chipFlags &= ~o->chip_flags_clear;
+
+        id->u.QueryChipIdentity.chipFeatures |= o->features_set[0];
+        id->u.QueryChipIdentity.chipMinorFeatures |= o->features_set[1];
+        id->u.QueryChipIdentity.chipMinorFeatures1 |= o->features_set[2];
+        id->u.QueryChipIdentity.chipMinorFeatures2 |= o->features_set[3];
+        id->u.QueryChipIdentity.chipMinorFeatures3 |= o->features_set[4];
+        id->u.QueryChipIdentity.chipMinorFeatures4 |= o->features_set[5];
+        id->u.QueryChipIdentity.chipMinorFeatures5 |= o->features_set[6];
+        id->u.QueryChipIdentity.chipMinorFeatures6 |= o->features_set[7];
+        id->u.QueryChipIdentity.chipFlags |= o->chip_flags_set;
+        break;
+    default:
+        break;
+    }
+}
+
 int my_ioctl(int d, int request, void *ptr_)
 {
     vivante_ioctl_data_t *ptr = (vivante_ioctl_data_t*) ptr_;
@@ -296,6 +338,10 @@ int my_ioctl(int d, int request, void *ptr_)
         }
     }
     ret = ioctl(d, request, ptr);
+    if(request == IOCTL_GCHAL_INTERFACE)
+    {
+        override_interface_out(VIV_TO_PTR(ptr->out_buf, gcsHAL_INTERFACE*), &overrides);
+    }
     if(_fdr != NULL)
     {
         if(request == IOCTL_GCHAL_INTERFACE)
@@ -317,7 +363,7 @@ int my_ioctl(int d, int request, void *ptr_)
 
 void hook_start_logging(const char *filename)
 {
-    if(_fdr == NULL)
+    if(_fdr == NULL && filename != NULL)
     {
         printf("viv_hook: logging to %s\n", filename);
         _fdr = fdr_open(filename);
