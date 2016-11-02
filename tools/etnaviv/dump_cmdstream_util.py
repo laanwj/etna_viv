@@ -31,7 +31,10 @@ def int_as_float(i):
 
 def fixp_as_float(i):
     '''Return float from 16.16 fixed-point value of i'''
-    return i / 65536.0
+    if i > 0x80000000:
+        return (i - 0x100000000) / 65536.0
+    else:
+        return i / 65536.0
 
 COMPS = 'xyzw'
 def offset_to_uniform(num):
