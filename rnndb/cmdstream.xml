@@ -40,6 +40,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <value value="9" name="STALL" brief="Stall command queue"/>
     <value value="10" name="CALL"/>
     <value value="11" name="RETURN"/>
+    <value value="12" name="DRAW_NEW" brief="Draw 3D primitives (new)"/> <!-- gc3000+? -->
     <value value="13" name="CHIP_SELECT" brief="Chip select mask"/>
 </enum>
 
@@ -67,8 +68,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <value value="1" name="LOAD_STATE" brief="Load GPU state"/>
             </bitfield>
             <bitfield pos="26" name="FIXP" brief="Convert loaded values from 16.16 fixed point to float32"/>
-            <bitfield pos="25" low="16" name="COUNT" brief="Number of state words to load"/>
-            <bitfield pos="15" low="0" name="OFFSET" shr="2" brief="State load starting offset" type="VIVS"/>
+            <bitfield high="25" low="16" name="COUNT" brief="Number of state words to load"/>
+            <bitfield high="15" low="0" name="OFFSET" shr="2" brief="State load starting offset" type="VIVS"/>
         </reg32>
         <doc>COUNT state words follow. These are literally written to state space at
              the provided offset, after which the offset is increased.
@@ -265,6 +266,27 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <!-- CHIP_SELECT has no arguments -->
     </stripe>
+
+    <stripe name="DRAW_NEW" varset="FE_OPCODE" variants="DRAW_NEW"> <!-- size="16" -->
+        <reg32 offset="0x00000" name="HEADER">
+            <bitfield high="31" low="27" name="OP">
+                <value value="12" name="DRAW_NEW" brief="Draw 3D primitives (new)"/>
+            </bitfield>
+            <bitfield high="23" low="16" name="TYPE" type="PRIMITIVE_TYPE"/>
+            <bitfield pos="0" name="UNK0"/>
+        </reg32>
+        <reg32 offset="0x00004" name="COUNT" brief="Number of primitives to render">
+            <doc>
+            In case of a triangle strip or other concatenated primitive, this is the actual number of lines
+            or triangles to render.
+            </doc>
+        </reg32>
+        <reg32 offset="0x00008" name="START" brief="Index of the first vertex to load">
+        </reg32>
+        <reg32 offset="0x0000C" name="UNKNOWN" brief="Unknown">
+        </reg32>
+    </stripe>
+
 </domain>
 
 </database>
