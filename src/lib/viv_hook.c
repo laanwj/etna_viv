@@ -51,6 +51,8 @@
 #include <sys/ioctl.h>
 #include <pthread.h>
 
+#define VIV_TO_PTR(x,y) ((y)((intptr_t)(x)))
+
 flightrec_t _fdr;
 
 static int _galcore_handle = 0;
@@ -164,28 +166,37 @@ int my_munmap(void *addr, size_t length)
  * Assumes that the parent structure id was already added. */
 static void log_interface_in(flightrec_event_t evctx, gcsHAL_INTERFACE *id)
 {
+    struct _gcoCMDBUF *cmdbuf;
+#ifndef GCABI_HAS_STATE_DELTAS
+    struct _gcoCONTEXT *context;
+#endif
     switch(id->command)
     {
     case gcvHAL_COMMIT:
-        fdr_event_add_oneshot_range(evctx, id->u.Commit.commandBuffer, sizeof(struct _gcoCMDBUF));
-        //fdr_event_add_oneshot_range(evctx, id->u.Commit.commandBuffer->logical, id->u.Commit.commandBuffer->offset);
+        cmdbuf = VIV_TO_PTR(id->u.Commit.commandBuffer, struct _gcoCMDBUF *);
+        fdr_event_add_oneshot_range(evctx, cmdbuf, sizeof(struct _gcoCMDBUF));
+        fdr_event_add_oneshot_range(evctx, VIV_TO_PTR(cmdbuf->logical,void*), cmdbuf->offset);
 #ifndef GCABI_HAS_STATE_DELTAS
-        fdr_event_add_oneshot_range(evctx, id->u.Commit.contextBuffer, sizeof(struct _gcoCONTEXT));
-        if(id->u.Commit.contextBuffer->map) /* state map */
-            fdr_event_add_oneshot_range(evctx, id->u.Commit.contextBuffer->map, id->u.Commit.contextBuffer->stateCount*4);
-        if(id->u.Commit.contextBuffer->buffer) /* context command temp buffer */
-            fdr_event_add_oneshot_range(evctx, id->u.Commit.contextBuffer->buffer, id->u.Commit.contextBuffer->bufferSize);
+        context = VIV_TO_PTR(id->u.Commit.contextBuffer, struct _gcoCONTEXT *);
+        if (context) {
+            fdr_event_add_oneshot_range(evctx, context, sizeof(struct _gcoCONTEXT));
+            if(id->u.Commit.contextBuffer->map) /* state map */
+                fdr_event_add_oneshot_range(evctx, context->map, id->u.Commit.contextBuffer->stateCount*4);
+            if(id->u.Commit.contextBuffer->buffer) /* context command temp buffer */
+                fdr_event_add_oneshot_range(evctx, context->buffer, id->u.Commit.contextBuffer->bufferSize);
+        }
 #endif
         break;
     case gcvHAL_EVENT_COMMIT: { /* log entire event chain */
-            struct _gcsQUEUE *queue = id->u.Event.queue;
+            struct _gcsQUEUE *queue = VIV_TO_PTR(id->u.Event.queue, struct _gcsQUEUE *);
             while(queue != NULL)
             {
                 fdr_event_add_oneshot_range(evctx, queue, sizeof(struct _gcsQUEUE));
                 log_interface_in(evctx, &queue->iface);
-                queue = queue->next;
+                queue = VIV_TO_PTR(queue->next, struct _gcsQUEUE *);
             }
         }
+#ifndef GCABI_NO_FREE_VIDEO_MEMORY
     case gcvHAL_FREE_VIDEO_MEMORY:
         for(int idx=0; idx<MAX_MAPPINGS; ++idx)
         {
@@ -198,10 +209,11 @@ static void log_interface_in(flightrec_event_t evctx, gcsHAL_INTERFACE *id)
             }
         }
         break;
+#endif
     case gcvHAL_UNLOCK_VIDEO_MEMORY:
         for(int idx=0; idx<MAX_MAPPINGS; ++idx)
         {
-            if(mappings[idx].node == id->u.UnlockVideoMemory.node)
+            if(mappings[idx].node == VIV_TO_PTR(id->u.UnlockVideoMemory.node, void*))
             {
                 printf("remove_range %p %08x\n", mappings[idx].logical, mappings[idx].bytes);
                 fdr_remove_monitored_range(_fdr, mappings[idx].logical, mappings[idx].bytes);
@@ -211,7 +223,7 @@ static void log_interface_in(flightrec_event_t evctx, gcsHAL_INTERFACE *id)
         }
         break;
     case gcvHAL_FREE_CONTIGUOUS_MEMORY:
-        fdr_remove_monitored_range(_fdr, id->u.FreeContiguousMemory.logical, id->u.FreeContiguousMemory.bytes);
+        fdr_remove_monitored_range(_fdr, VIV_TO_PTR(id->u.FreeContiguousMemory.logical, void*), id->u.FreeContiguousMemory.bytes);
         break;
     default:
         break;
@@ -225,12 +237,12 @@ static void log_interface_out(flightrec_event_t evctx, gcsHAL_INTERFACE *id)
     switch(id->command)
     {
     case gcvHAL_ALLOCATE_LINEAR_VIDEO_MEMORY:
-        printf("vidalloc %p %08x\n", id->u.AllocateLinearVideoMemory.node, id->u.AllocateLinearVideoMemory.bytes);
+        printf("vidalloc %p %08x\n", VIV_TO_PTR(id->u.AllocateLinearVideoMemory.node, void*), id->u.AllocateLinearVideoMemory.bytes);
         for(int idx=0; idx<MAX_MAPPINGS; ++idx)
         {
             if(mappings[idx].node == NULL)
             {
-                mappings[idx].node = id->u.AllocateLinearVideoMemory.node;
+                mappings[idx].node = VIV_TO_PTR(id->u.AllocateLinearVideoMemory.node, void*);
                 mappings[idx].bytes = id->u.AllocateLinearVideoMemory.bytes;
                 mappings[idx].logical = NULL;
                 break;
@@ -240,9 +252,9 @@ static void log_interface_out(flightrec_event_t evctx, gcsHAL_INTERFACE *id)
     case gcvHAL_LOCK_VIDEO_MEMORY:
         for(int idx=0; idx<MAX_MAPPINGS; ++idx)
         {
-            if(mappings[idx].node == id->u.LockVideoMemory.node)
+            if(mappings[idx].node == VIV_TO_PTR(id->u.LockVideoMemory.node, void*))
             {
-                mappings[idx].logical = id->u.LockVideoMemory.memory;
+                mappings[idx].logical = VIV_TO_PTR(id->u.LockVideoMemory.memory, void*);
                 printf("add_range %p %08x\n", mappings[idx].logical, mappings[idx].bytes);
                 fdr_add_monitored_range(_fdr, mappings[idx].logical, mappings[idx].bytes);
                 break;
@@ -250,7 +262,7 @@ static void log_interface_out(flightrec_event_t evctx, gcsHAL_INTERFACE *id)
         }
         break;
     case gcvHAL_ALLOCATE_CONTIGUOUS_MEMORY:
-        fdr_add_monitored_range(_fdr, id->u.AllocateContiguousMemory.logical, id->u.AllocateContiguousMemory.bytes);
+        fdr_add_monitored_range(_fdr, VIV_TO_PTR(id->u.AllocateContiguousMemory.logical, void*), id->u.AllocateContiguousMemory.bytes);
         break;
     default:
         break;
@@ -260,13 +272,11 @@ static void log_interface_out(flightrec_event_t evctx, gcsHAL_INTERFACE *id)
 int my_ioctl(int d, int request, void *ptr_)
 {
     vivante_ioctl_data_t *ptr = (vivante_ioctl_data_t*) ptr_;
-#if 0 /* UGH, this handle gets passed in some other way instead of open() for i.mx6 blobster */
+    /* UGH, this handle gets passed in some other way instead of open() for i.mx6 blobster */
     if(d != _galcore_handle)
     {
-        printf("unhandled ioctl %08x on fd %i\n", request, d);
-        return -1;
+        printf("warning: ioctl %08x on non-galcore_handle %i\n", request, d);
     }
-#endif
     int ret=0;
     if(_fdr != NULL)
     {
@@ -278,12 +288,11 @@ int my_ioctl(int d, int request, void *ptr_)
             fdr_event_add_parameter(evctx, "ptr",(size_t)ptr);
             fdr_event_add_parameter(evctx, "thread", (size_t)pthread_self());
             fdr_event_add_oneshot_range(evctx, ptr, sizeof(vivante_ioctl_data_t));
-            fdr_event_add_oneshot_range(evctx, ptr->in_buf, ptr->in_buf_size);
-            log_interface_in(evctx, ptr->in_buf);
+            fdr_event_add_oneshot_range(evctx, VIV_TO_PTR(ptr->in_buf, gcsHAL_INTERFACE*), ptr->in_buf_size);
+            log_interface_in(evctx, VIV_TO_PTR(ptr->in_buf, gcsHAL_INTERFACE*));
             fdr_log_event(_fdr, evctx);
         } else {
             printf("unhandled ioctl %08x on fd %i\n", request, d);
-            return -1;
         }
     }
     ret = ioctl(d, request, ptr);
@@ -298,8 +307,8 @@ int my_ioctl(int d, int request, void *ptr_)
             fdr_event_add_parameter(evctx, "thread", (size_t)pthread_self());
             fdr_event_add_parameter(evctx, "ret", (size_t)ret);
             fdr_event_add_oneshot_range(evctx, ptr, sizeof(vivante_ioctl_data_t));
-            fdr_event_add_oneshot_range(evctx, ptr->out_buf, ptr->out_buf_size);
-            log_interface_out(evctx, ptr->out_buf);
+            fdr_event_add_oneshot_range(evctx, VIV_TO_PTR(ptr->out_buf, gcsHAL_INTERFACE*), ptr->out_buf_size);
+            log_interface_out(evctx, VIV_TO_PTR(ptr->out_buf, gcsHAL_INTERFACE*));
             fdr_log_event(_fdr, evctx);
         }
     }
