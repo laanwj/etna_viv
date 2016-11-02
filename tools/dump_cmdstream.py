@@ -307,9 +307,23 @@ def parse_arguments():
             help='Dump shaders to file')
     return parser.parse_args()        
 
+def patch_member_pointer(struct, name, ptrtype):
+    for member in struct['members']:
+        if member['name'] == name:
+            member['indirection'] = 1
+            member['type'] = ptrtype
+
 def load_data_definitions(struct_file):
     with open(struct_file, 'r') as f:
-        return json.load(f)
+        d = json.load(f)
+    # post-patch for missing pointers
+    # these are really pointers, however the kernel interface changed them to 64-bit integers
+    patch_member_pointer(d['_gcsHAL_COMMIT'], 'commandBuffer', '_gcoCMDBUF')
+    for struct in d.values():
+        if struct['kind'] == 'structure_type':
+            patch_member_pointer(struct, 'logical', 'void')
+
+    return d
 
 vidmem_addr = Counter() # Keep track of video memories
 shader_num = 0
