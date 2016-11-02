@@ -49,6 +49,8 @@ IOCTL_GCHAL_INTERFACE          = 30000
 IOCTL_GCHAL_KERNEL_INTERFACE   = 30001
 IOCTL_GCHAL_TERMINATE          = 30002
 
+vivante_ioctl_data_t = struct.Struct(ENDIAN + 'QQQQ')
+
 # HAL commands without input, can hide the input arguments structure completely
 CMDS_NO_INPUT = [
 'gcvHAL_GET_BASE_ADDRESS',
@@ -390,7 +392,6 @@ def main():
 
         print_address(f, ptr, depth)
 
-    vivante_ioctl_data_t = struct.Struct(ENDIAN + ADDR_CHAR + WORD_CHAR + ADDR_CHAR + WORD_CHAR)
     f = sys.stdout
     thread_id = Counter()
 
