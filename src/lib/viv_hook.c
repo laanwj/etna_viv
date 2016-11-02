@@ -262,13 +262,13 @@ static void log_interface_out(flightrec_event_t evctx, gcsHAL_INTERFACE *id)
             {
                 mappings[idx].logical = VIV_TO_PTR(id->u.LockVideoMemory.memory, void*);
                 printf("add_range %p %08x\n", mappings[idx].logical, mappings[idx].bytes);
-                fdr_add_monitored_range(_fdr, mappings[idx].logical, mappings[idx].bytes);
+                //fdr_add_monitored_range(_fdr, mappings[idx].logical, mappings[idx].bytes);
                 break;
             }
         }
         break;
     case gcvHAL_ALLOCATE_CONTIGUOUS_MEMORY:
-        fdr_add_monitored_range(_fdr, VIV_TO_PTR(id->u.AllocateContiguousMemory.logical, void*), id->u.AllocateContiguousMemory.bytes);
+        //fdr_add_monitored_range(_fdr, VIV_TO_PTR(id->u.AllocateContiguousMemory.logical, void*), id->u.AllocateContiguousMemory.bytes);
         break;
     default:
         break;
