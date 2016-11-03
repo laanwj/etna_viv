@@ -181,7 +181,7 @@ static void log_interface_in(flightrec_event_t evctx, gcsHAL_INTERFACE *id)
     case gcvHAL_COMMIT:
         cmdbuf = VIV_TO_PTR(id->u.Commit.commandBuffer, struct _gcoCMDBUF *);
         fdr_event_add_oneshot_range(evctx, cmdbuf, sizeof(struct _gcoCMDBUF));
-        fdr_event_add_oneshot_range(evctx, VIV_TO_PTR(cmdbuf->logical,void*), cmdbuf->offset);
+        fdr_event_add_oneshot_range(evctx, VIV_TO_PTR(cmdbuf->logical,uint8_t*) + cmdbuf->startOffset, cmdbuf->offset - cmdbuf->startOffset);
 #ifndef GCABI_HAS_STATE_DELTAS
         context = VIV_TO_PTR(id->u.Commit.contextBuffer, struct _gcoCONTEXT *);
         if (context) {
