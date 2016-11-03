@@ -345,11 +345,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <value value="1" name="SMOOTH" brief="Gouraud shading"/>
             </bitfield>
             <bitfield pos="18" name="SHADE_MODEL_MASK"/>
-            <bitfield pos="22" name="UNK22"/>
-            <bitfield pos="23" name="UNK22_MASK"/>
+            <bitfield pos="22" name="WIDE_LINE"/> <!-- MUST be set when drawing lines when WIDE_LINE feature available, otherwise GC3000+ will not render lines at all -->
+            <bitfield pos="23" name="WIDE_LINE_MASK"/>
         </reg32>
-        <reg32 offset="0x00A38" name="LINE_UNK00A38" value="0x00000000" type="float"/>
-        <reg32 offset="0x00A3C" name="LINE_UNK00A3C" value="0x00000000" type="float"/>
+        <reg32 offset="0x00A38" name="WIDE_LINE_WIDTH0" value="0x00000000" type="float" brief="Line width, used when PA.CONFIG.WIDE_LINE set"/>
+        <reg32 offset="0x00A3C" name="WIDE_LINE_WIDTH1" value="0x00000000" type="float" brief="Another line width, used when PA.CONFIG.WIDE_LINE set"/>
         <reg32 offset="0x00A40" name="SHADER_ATTRIBUTES" value="0x00000000" length="10" stride="4">
             <doc>Flags word per shader attribute. I suspect that these determine the type of interpolation
                 (color, perspective, linear, ...).</doc>
