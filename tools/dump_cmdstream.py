@@ -114,6 +114,9 @@ class HalResolver(ResolverBase):
         elif name == '_gcsHAL_USER_SIGNAL':
             if self.dir == 'out': # not used as output by any subcommand
                 fields_in.difference_update(['manualReset','wait','state'])
+        elif name == '_gcoCMDBUF':
+            # Internally used by driver, not interesting to kernel
+            fields_in.difference_update(['prev','next','patchHead','patchTail'])
 
         return fields_in
 
