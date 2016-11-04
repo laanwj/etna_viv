@@ -199,6 +199,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             </doc>
         </reg32>
         <reg32 offset="0x00670" name="AUTO_FLUSH" value="0x00000000" brief="Auto flush cycles"/>
+        <reg32 offset="0x00674" name="UNK00674" value="0x00000000"/>
         <reg32 offset="0x00678" name="UNK00678" value="0x00000000"/>
         <reg32 offset="0x0067C" name="UNK0067C" value="0xFFFFFFFF"/>
         <stripe name="VERTEX_STREAMS" length="8" stride="4"> <!-- streamCount > 1 -->
@@ -207,7 +208,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </stripe>
         <reg32 offset="0x00700" name="UNK00700" value="0x00000000" length="16" stride="4"/>
         <reg32 offset="0x00740" name="UNK00740" value="0x00000000" length="16" stride="4"/>
-        <reg32 offset="0x00780" name="UNK00780" value="0x3F800000" length="16" stride="4"/>
+        <reg32 offset="0x00780" name="UNK00780" value="0x3F800000" length="16" stride="4" type="float"/>
     </stripe>
 
     <stripe name="GL" brief="Global states">
@@ -311,6 +312,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             Likely this register is not used by the hardware, but only by debugging software.
             </doc>
         </reg32>
+        <reg32 offset="0x03854" name="UNK03854"/>
         <reg32 offset="0x03A00" name="UNK03A00"/>
         <reg32 offset="0x03C00" name="STALL_TOKEN">
             <bitfield high="4" low="0" name="FROM" type="SYNC_RECIPIENT"/>
@@ -318,6 +320,13 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="30" name="FLIP0"/>
             <bitfield pos="31" name="FLIP1"/>
         </reg32>
+    </stripe>
+
+    <!-- These are used on (at least) gc3000 for extra vertex attribute information -->
+    <stripe name="NFE">
+        <reg32 offset="0x14600" name="UNK14600" value="0x00000000" length="16" stride="4" type="VIVS"/>
+        <reg32 offset="0x14640" name="UNK14640" value="0x00000000" length="16" stride="4"/>
+        <reg32 offset="0x14680" name="UNK14680" value="0x00000000" length="16" stride="4"/>
     </stripe>
 
     <stripe name="DUMMY" brief="/dev/null">

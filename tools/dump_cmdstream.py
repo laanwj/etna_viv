@@ -142,7 +142,7 @@ def format_state(pos, value, fixp, state_map):
         path_str = format_path(path)
     except KeyError:
         path = None
-        path_str = ''
+        path_str = '(UNKNOWN)'
     desc = ('  [%05X]' % pos) + ' ' + path_str 
     if fixp:
         desc += ' = %f' % fixp_as_float(value)

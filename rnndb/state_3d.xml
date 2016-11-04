@@ -249,6 +249,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="31" low="16" name="HIGH" brief="Index of last VS instruction"/>
         </reg32>
         <reg32 offset="0x00860" name="NEW_UNK00860" value="0x00000000"/> <!-- instructionCount > 1024 -->
+        <reg32 offset="0x00864" name="UNK00864"/>
+        <reg32 offset="0x00868" name="UNK00868"/>
+        <reg32 offset="0x0086C" name="UNK0086C"/>
         <reg32 offset="0x04000" name="INST_MEM" value="0x00000000" length="1024" stride="4"> <!-- instructionCount <= 256 -->
             <!-- length="instructionCount * 4" -->
         </reg32>
@@ -359,6 +362,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x00A80" name="VIEWPORT_UNK00A80" value="0x00000000" type="float"/>
         <reg32 offset="0x00A84" name="VIEWPORT_UNK00A84" value="0x00000000" type="float"/>
+        <reg32 offset="0x00A88" name="UNK00A88" type="float"/>
         <reg32 offset="0x00A8C" name="VIEWPORT_UNK00A8C" value="0x00000000" type="float"/>
     </stripe>
 
@@ -388,7 +392,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x00E04" name="MULTISAMPLE_UNK00E04" value="0x00000000"/>
         <reg32 offset="0x00E08" name="EARLY_DEPTH" value="0x00000031" brief="Early depth control"/>
+        <reg32 offset="0x00E0C" name="UNK00E0C" value="0x00000000"/>
         <reg32 offset="0x00E10" name="MULTISAMPLE_UNK00E10" value="0x00000000" length="4" stride="4"/>
+        <reg32 offset="0x00E20" name="UNK00E20" length="4"/>
         <reg32 offset="0x00E40" name="CENTROID_TABLE" value="0x00000000" length="16" stride="4"/>
     </stripe>
 
@@ -413,6 +419,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="15" low="0" name="LOW" brief="Index of first PS instruction"/>
             <bitfield high="31" low="16" name="HIGH" brief="Index of last PS instruction"/>
         </reg32>
+        <reg32 offset="0x01024" name="UNK01024"/>
+        <reg32 offset="0x01028" name="UNK01028"/>
+        <reg32 offset="0x01030" name="UNK01030"/>
         <reg32 offset="0x06000" name="INST_MEM" value="0x00000000" length="1024" stride="4"> <!-- instructionCount <= 256 -->
             <!-- length="instructionCount * 4" -->
         </reg32>
@@ -572,6 +581,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x014A8" name="DITHER" value="0xFFFFFFFF" length="2"/>
         <reg32 offset="0x014B0" name="UNK014B0" value="0x00000000"/>
         <reg32 offset="0x014B4" name="UNK014B4" value="0x00000000"/>
+        <reg32 offset="0x014B8" name="UNK014B8" value="0x00000000"/>
         <reg32 offset="0x01580" name="UNK01580" value="0x00000000" length="3" stride="4"/>
     </stripe>
 
@@ -709,7 +719,12 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="1" low="0" name="AA" brief="Anti-aliasing mode (not used for MSAA)"/>
             <bitfield high="9" low="8" name="ENDIAN" type="ENDIAN_MODE"/>
         </reg32>
+        <reg32 offset="0x016B0" name="UNK016B0" value="0x00000000"/>
         <reg32 offset="0x016B4" name="UNK016B4" value="0x00000000"/>
+        <reg32 offset="0x016B8" name="UNK016B8">
+            <bitfield pos="0" name="UNK0"/>
+        </reg32>
+        <reg32 offset="0x016BC" name="UNK016BC"/> <!-- has values that look like RGBA colors, such as 0xff000033 -->
         <stripe name="PIPE" length="8" stride="4"> <!-- pixelPipes > 1 -->
             <!-- length="pixelPipes" -->
             <reg32 offset="0x016C0" name="SOURCE_ADDR" value="0x00000000" type="VIVM"/>
@@ -899,6 +914,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x08000" name="UNK0C000_MIRROR" value="0x00000000" length="4096" stride="4"> <!-- 256 > instructionCount > 1024 -->
             <!-- length="instructionCount * 4" -->
+        </reg32>
+        <reg32 offset="0x30000" name="UNIFORMS" value="0x00000000" length="1024" stride="4">
+            <!-- length="?" -->
         </reg32>
     </stripe>
 </domain>
