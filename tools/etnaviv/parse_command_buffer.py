@@ -29,6 +29,7 @@ def parse_command_buffer(buffer_words, cmdstream_info):
     Parse Vivante command buffer contents, return a sequence of 
     CommandInfo records.
     '''
+    # TODO: implement in terms of annotate_command_buffer to avoid code duplication
     state_base = 0
     state_count = 0
     state_format = 0
@@ -85,4 +86,42 @@ def parse_command_buffer(buffer_words, cmdstream_info):
             payload_ofs = -2 # padding
         yield CommandInfo(ptr, value, op, payload_ofs, desc, state_info)
         ptr += 1
+
+CmdBufEntry = namedtuple('CmdBufferEntry', ['cat', 'op', 'ofs'])
+def annotate_command_buffer(cmdbuf):
+    '''Produce annotation for command buffer values'''
+    next_cmd = 0
+    payload_start_ptr = 0
+    op = None
+    prev_ptr = None
+    ptr = 0
+    for value in cmdbuf:
+        if value is not None:
+            if ptr >= next_cmd:
+                op = value >> 27
+                payload_start_ptr = ptr + 1
+                if op == 1:
+                    state_base = (value & 0xFFFF)<<2
+                    state_count = (value >> 16) & 0x3FF
+                    if state_count == 0:
+                        state_count = 0x400
+                    state_format = (value >> 26) & 1
+                    payload_end_ptr = payload_start_ptr + state_count
+                else:
+                    payload_end_ptr = payload_start_ptr + CMD_PAYLOAD_SIZES.get(op, 1)
+                next_cmd = (payload_end_ptr + 1) & (~1)
+                yield CmdBufEntry('op', op, 0)
+            elif ptr < payload_end_ptr: # Parse payload 
+                payload_ofs = ptr - payload_start_ptr
+                desc = ''
+                if op == 1:
+                    yield CmdBufEntry('state', None, state_base + payload_ofs*4)
+                else:
+                    yield CmdBufEntry('op', op, payload_ofs+4)
+            else:
+                yield CmdBufEntry('pad', None, None)
+        else:
+            yield CmdBufEntry('pad', None, None)
+        ptr += 1
+
 
