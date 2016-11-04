@@ -6,6 +6,24 @@ StateInfo = namedtuple('StateInfo', ['pos', 'format'])
 # A PIPE3D command will be inserted here by the kernel if necessary
 CMDBUF_IGNORE_INITIAL = 8
 
+# known command payload sizes
+# could fill this in from cmdstream.xml too
+CMD_PAYLOAD_SIZES = {
+    1: 1,  # LOAD_STATE (per state)
+    2: 1,  # END
+    3: 0,  # NOP
+    4: 2,  # DRAW_2D (per rectangle)
+    5: 3,  # DRAW_PRIMITIVES
+    6: 4,  # DRAW_INDEXED_PRIMITIVES
+    7: 0,  # WAIT
+    8: 1,  # LINK
+    9: 1,  # STALL
+    10: 3, # CALL
+    11: 0, # RETURN
+    12: 3, # DRAW_NEW
+    13: 0  # CHIP_SELECT
+}
+
 def parse_command_buffer(buffer_words, cmdstream_info):
     '''
     Parse Vivante command buffer contents, return a sequence of 
@@ -34,7 +52,6 @@ def parse_command_buffer(buffer_words, cmdstream_info):
             else:
                 opinfo = None
             desc = '%s (%i)' % (opname or 'UNKNOWN', op)
-            #print(opdesc, opinfo)
             if op == 1:
                 state_base = (value & 0xFFFF)<<2
                 state_count = (value >> 16) & 0x3FF
@@ -43,18 +60,8 @@ def parse_command_buffer(buffer_words, cmdstream_info):
                 state_format = (value >> 26) & 1
                 payload_end_ptr = payload_start_ptr + state_count
                 desc += " Base: 0x%05X Size: %i Fixp: %i" % (state_base, state_count, state_format)
-            elif op == 5:
-                payload_end_ptr = payload_start_ptr + 3
-            elif op == 6:
-                payload_end_ptr = payload_start_ptr + 4
-            elif op == 8:
-                payload_end_ptr = payload_start_ptr + 1
-            elif op == 9:
-                payload_end_ptr = payload_start_ptr + 1
-            elif op == 10:
-                payload_end_ptr = payload_start_ptr + 1
-            elif op == 12:
-                payload_end_ptr = payload_start_ptr + 3
+            else:
+                payload_end_ptr = payload_start_ptr + CMD_PAYLOAD_SIZES.get(op, 1)
             if op != 1 and opinfo is not None:
                 desc += " " + opinfo[-1][0].describe(value)
             next_cmd = (payload_end_ptr + 1) & (~1)
