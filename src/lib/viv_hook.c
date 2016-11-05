@@ -287,24 +287,35 @@ static void override_interface_out(gcsHAL_INTERFACE *id, struct viv_hook_overrid
             id->u.QueryChipIdentity.chipRevision = o->chip_revision;
         }
         id->u.QueryChipIdentity.chipFeatures &= ~o->features_clear[0];
-        id->u.QueryChipIdentity.chipMinorFeatures &= ~o->features_clear[1];
-        id->u.QueryChipIdentity.chipMinorFeatures1 &= ~o->features_clear[2];
-        id->u.QueryChipIdentity.chipMinorFeatures2 &= ~o->features_clear[3];
-        id->u.QueryChipIdentity.chipMinorFeatures3 &= ~o->features_clear[4];
-        id->u.QueryChipIdentity.chipMinorFeatures4 &= ~o->features_clear[5];
-        id->u.QueryChipIdentity.chipMinorFeatures5 &= ~o->features_clear[6];
-        id->u.QueryChipIdentity.chipMinorFeatures6 &= ~o->features_clear[7];
-        id->u.QueryChipIdentity.chipFlags &= ~o->chip_flags_clear;
-
         id->u.QueryChipIdentity.chipFeatures |= o->features_set[0];
+        id->u.QueryChipIdentity.chipMinorFeatures &= ~o->features_clear[1];
         id->u.QueryChipIdentity.chipMinorFeatures |= o->features_set[1];
+        id->u.QueryChipIdentity.chipMinorFeatures1 &= ~o->features_clear[2];
         id->u.QueryChipIdentity.chipMinorFeatures1 |= o->features_set[2];
+#ifdef GCABI_HAS_MINOR_FEATURES_2
+        id->u.QueryChipIdentity.chipMinorFeatures2 &= ~o->features_clear[3];
         id->u.QueryChipIdentity.chipMinorFeatures2 |= o->features_set[3];
+#endif
+#ifdef GCABI_HAS_MINOR_FEATURES_3
+        id->u.QueryChipIdentity.chipMinorFeatures3 &= ~o->features_clear[4];
         id->u.QueryChipIdentity.chipMinorFeatures3 |= o->features_set[4];
+#endif
+#ifdef GCABI_HAS_MINOR_FEATURES_4
+        id->u.QueryChipIdentity.chipMinorFeatures4 &= ~o->features_clear[5];
         id->u.QueryChipIdentity.chipMinorFeatures4 |= o->features_set[5];
+#endif
+#ifdef GCABI_HAS_MINOR_FEATURES_5
+        id->u.QueryChipIdentity.chipMinorFeatures5 &= ~o->features_clear[6];
         id->u.QueryChipIdentity.chipMinorFeatures5 |= o->features_set[6];
+#endif
+#ifdef GCABI_HAS_MINOR_FEATURES_6
+        id->u.QueryChipIdentity.chipMinorFeatures6 &= ~o->features_clear[7];
         id->u.QueryChipIdentity.chipMinorFeatures6 |= o->features_set[7];
+#endif
+#ifdef GCABI_HAS_CHIPFLAGS
+        id->u.QueryChipIdentity.chipFlags &= ~o->chip_flags_clear;
         id->u.QueryChipIdentity.chipFlags |= o->chip_flags_set;
+#endif
         break;
     default:
         break;

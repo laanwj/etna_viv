@@ -30,6 +30,7 @@
 #define GCABI_HAS_MINOR_FEATURES_4
 #define GCABI_HAS_MINOR_FEATURES_5
 #define GCABI_HAS_MINOR_FEATURES_6
+#define GCABI_HAS_CHIPFLAGS
 
 // One of these must be set:
 //#define GCABI_HAS_CONTEXT
