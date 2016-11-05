@@ -13,7 +13,7 @@ ifeq ($(ETNAVIV_PROFILER), 1)
 COMMON_FLAGS += -DVIVANTE_PROFILER=1
 endif
 
-TARGETS = viv_gpu_top viv_info viv_registers viv_reset viv_watch viv_throughput
+TARGETS = viv_gpu_top viv_info viv_registers viv_reset viv_watch viv_throughput viv_interpose.so
 
 ETNA_OBJS = ../etnaviv/libetnaviv.a
 DRIVER_OBJS = ../lib/fbdemos.o ../lib/etna_bswap.o ../driver/libetnadriver.a ../minigallium/libminigallium.a ../etnaviv/libetnaviv.a
