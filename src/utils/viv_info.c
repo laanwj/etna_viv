@@ -14,6 +14,8 @@
 #include "gc_abi.h"
 
 const char *galcore_device[] = {"/dev/gal3d", "/dev/galcore", "/dev/graphics/galcore", NULL};
+// Unused, just to pull it into the DWARF info
+struct _gcoCMDBUF tmp;
 
 int main()
 {
