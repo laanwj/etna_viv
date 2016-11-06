@@ -179,6 +179,16 @@ def dump_shader(f, name, states, start, end):
     f.write('/* [dumped %s to %s] */ ' % (name, filename))
     shader_num += 1
 
+def dump_cmdbuf(f, name, words):
+    '''Dump binary command buffer to disk'''
+    global shader_num
+    filename = '%s_%i.bin' % (name, shader_num)
+    with open(filename, 'wb') as g:
+        for word in words:
+            g.write(struct.pack('<I', word))
+    f.write('/* [dumped %s to %s] */ ' % (name, filename))
+    shader_num += 1
+
 def iter_memory(mem, addr, end_addr):
     size = (end_addr - addr)//4
     ptr = 0
@@ -197,7 +207,8 @@ def dump_command_buffer(f, mem, addr, end_addr, depth, state_map, cmdstream_info
     f.write('{\n')
     states = [] # list of (ptr, state_addr) tuples
     size = (end_addr - addr)//4
-    for rec in parse_command_buffer(iter_memory(mem, addr, end_addr), cmdstream_info):
+    words = list(iter_memory(mem, addr, end_addr))
+    for rec in parse_command_buffer(words, cmdstream_info):
         hide = False
         if rec.op == 1 and rec.payload_ofs == -1:
             if options.hide_load_state:
@@ -248,6 +259,10 @@ def dump_command_buffer(f, mem, addr, end_addr, depth, state_map, cmdstream_info
         dump_shader(f, 'ps', state_by_pos, 0x06000, 0x07000)
         dump_shader(f, 'vs', state_by_pos, 0x0C000, 0x0D000) # gc2000
         dump_shader(f, 'ps', state_by_pos, 0x0D000, 0x0E000) # XXX this offset is probably variable (gc2000)
+
+    if options.dump_cmdbufs:
+        dump_cmdbuf(f, 'cmd', words)
+        pass
 
 def dump_context_map(f, mem, addr, end_addr, depth, state_map):
     '''
@@ -311,6 +326,9 @@ def parse_arguments():
     parser.add_argument('--dump-shaders', dest='dump_shaders',
             default=False, action='store_const', const=True,
             help='Dump shaders to file')
+    parser.add_argument('--dump-cmdbufs', dest='dump_cmdbufs',
+            default=False, action='store_const', const=True,
+            help='Dump command buffers to file')
     return parser.parse_args()        
 
 def patch_member_pointer(struct, name, ptrtype):
