@@ -8,13 +8,13 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- state.xml     (  18940 bytes, from 2016-09-14 19:36:57)
-- common.xml    (  20957 bytes, from 2016-09-14 19:40:08)
-- state_hi.xml  (  25653 bytes, from 2016-09-14 19:39:09)
-- copyright.xml (   1597 bytes, from 2016-09-14 19:39:09)
-- state_2d.xml  (  51552 bytes, from 2016-09-14 19:39:09)
-- state_3d.xml  (  54603 bytes, from 2016-09-14 19:39:09)
-- state_vg.xml  (   5975 bytes, from 2016-09-14 19:39:09)
+- state.xml     (  19487 bytes, from 2016-11-05 06:17:49)
+- common.xml    (  23272 bytes, from 2016-10-29 14:18:57)
+- state_hi.xml  (  25653 bytes, from 2016-10-29 07:29:22)
+- copyright.xml (   1597 bytes, from 2016-10-29 07:29:22)
+- state_2d.xml  (  51552 bytes, from 2016-10-29 07:29:22)
+- state_3d.xml  (  55854 bytes, from 2016-11-05 06:17:49)
+- state_vg.xml  (   5975 bytes, from 2016-10-29 07:29:22)
 
 Copyright (C) 2012-2016 by the following authors:
 - Wladimir J. van der Laan <laanwj@gmail.com>
@@ -244,6 +244,12 @@ DEALINGS IN THE SOFTWARE.
 
 #define VIVS_VS_NEW_UNK00860					0x00000860
 
+#define VIVS_VS_UNK00864					0x00000864
+
+#define VIVS_VS_UNK00868					0x00000868
+
+#define VIVS_VS_UNK0086C					0x0000086c
+
 #define VIVS_VS_INST_MEM(i0)				       (0x00004000 + 0x4*(i0))
 #define VIVS_VS_INST_MEM__ESIZE					0x00000004
 #define VIVS_VS_INST_MEM__LEN					0x00000400
@@ -385,12 +391,12 @@ DEALINGS IN THE SOFTWARE.
 #define VIVS_PA_CONFIG_SHADE_MODEL_FLAT				0x00000000
 #define VIVS_PA_CONFIG_SHADE_MODEL_SMOOTH			0x00010000
 #define VIVS_PA_CONFIG_SHADE_MODEL_MASK				0x00040000
-#define VIVS_PA_CONFIG_UNK22					0x00400000
-#define VIVS_PA_CONFIG_UNK22_MASK				0x00800000
+#define VIVS_PA_CONFIG_WIDE_LINE				0x00400000
+#define VIVS_PA_CONFIG_WIDE_LINE_MASK				0x00800000
 
-#define VIVS_PA_LINE_UNK00A38					0x00000a38
+#define VIVS_PA_WIDE_LINE_WIDTH0				0x00000a38
 
-#define VIVS_PA_LINE_UNK00A3C					0x00000a3c
+#define VIVS_PA_WIDE_LINE_WIDTH1				0x00000a3c
 
 #define VIVS_PA_SHADER_ATTRIBUTES(i0)			       (0x00000a40 + 0x4*(i0))
 #define VIVS_PA_SHADER_ATTRIBUTES__ESIZE			0x00000004
@@ -406,6 +412,8 @@ DEALINGS IN THE SOFTWARE.
 #define VIVS_PA_VIEWPORT_UNK00A80				0x00000a80
 
 #define VIVS_PA_VIEWPORT_UNK00A84				0x00000a84
+
+#define VIVS_PA_UNK00A88					0x00000a88
 
 #define VIVS_PA_VIEWPORT_UNK00A8C				0x00000a8c
 
@@ -442,9 +450,15 @@ DEALINGS IN THE SOFTWARE.
 
 #define VIVS_RA_EARLY_DEPTH					0x00000e08
 
+#define VIVS_RA_UNK00E0C					0x00000e0c
+
 #define VIVS_RA_MULTISAMPLE_UNK00E10(i0)		       (0x00000e10 + 0x4*(i0))
 #define VIVS_RA_MULTISAMPLE_UNK00E10__ESIZE			0x00000004
 #define VIVS_RA_MULTISAMPLE_UNK00E10__LEN			0x00000004
+
+#define VIVS_RA_UNK00E20(i0)				       (0x00000e20 + 0x4*(i0))
+#define VIVS_RA_UNK00E20__ESIZE					0x00000004
+#define VIVS_RA_UNK00E20__LEN					0x00000004
 
 #define VIVS_RA_CENTROID_TABLE(i0)			       (0x00000e40 + 0x4*(i0))
 #define VIVS_RA_CENTROID_TABLE__ESIZE				0x00000004
@@ -484,6 +498,12 @@ DEALINGS IN THE SOFTWARE.
 #define VIVS_PS_RANGE_HIGH__MASK				0xffff0000
 #define VIVS_PS_RANGE_HIGH__SHIFT				16
 #define VIVS_PS_RANGE_HIGH(x)					(((x) << VIVS_PS_RANGE_HIGH__SHIFT) & VIVS_PS_RANGE_HIGH__MASK)
+
+#define VIVS_PS_UNK01024					0x00001024
+
+#define VIVS_PS_UNK01028					0x00001028
+
+#define VIVS_PS_UNK01030					0x00001030
 
 #define VIVS_PS_INST_MEM(i0)				       (0x00006000 + 0x4*(i0))
 #define VIVS_PS_INST_MEM__ESIZE					0x00000004
@@ -707,6 +727,8 @@ DEALINGS IN THE SOFTWARE.
 
 #define VIVS_PE_UNK014B4					0x000014b4
 
+#define VIVS_PE_UNK014B8					0x000014b8
+
 #define VIVS_PE_UNK01580(i0)				       (0x00001580 + 0x4*(i0))
 #define VIVS_PE_UNK01580__ESIZE					0x00000004
 #define VIVS_PE_UNK01580__LEN					0x00000003
@@ -844,7 +866,14 @@ DEALINGS IN THE SOFTWARE.
 #define VIVS_RS_EXTRA_CONFIG_ENDIAN__SHIFT			8
 #define VIVS_RS_EXTRA_CONFIG_ENDIAN(x)				(((x) << VIVS_RS_EXTRA_CONFIG_ENDIAN__SHIFT) & VIVS_RS_EXTRA_CONFIG_ENDIAN__MASK)
 
+#define VIVS_RS_UNK016B0					0x000016b0
+
 #define VIVS_RS_UNK016B4					0x000016b4
+
+#define VIVS_RS_UNK016B8					0x000016b8
+#define VIVS_RS_UNK016B8_UNK0					0x00000001
+
+#define VIVS_RS_UNK016BC					0x000016bc
 
 #define VIVS_RS_PIPE(i0)				       (0x00000000 + 0x4*(i0))
 #define VIVS_RS_PIPE__ESIZE					0x00000004
@@ -1166,6 +1195,10 @@ DEALINGS IN THE SOFTWARE.
 #define VIVS_SH_UNK0C000_MIRROR(i0)			       (0x00008000 + 0x4*(i0))
 #define VIVS_SH_UNK0C000_MIRROR__ESIZE				0x00000004
 #define VIVS_SH_UNK0C000_MIRROR__LEN				0x00001000
+
+#define VIVS_SH_UNIFORMS(i0)				       (0x00030000 + 0x4*(i0))
+#define VIVS_SH_UNIFORMS__ESIZE					0x00000004
+#define VIVS_SH_UNIFORMS__LEN					0x00000400
 
 
 #endif /* STATE_3D_XML */

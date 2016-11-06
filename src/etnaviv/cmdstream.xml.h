@@ -8,9 +8,9 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- cmdstream.xml (  12621 bytes, from 2016-09-14 19:39:09)
-- copyright.xml (   1597 bytes, from 2016-09-14 19:39:09)
-- common.xml    (  20957 bytes, from 2016-09-14 19:40:08)
+- cmdstream.xml (  13632 bytes, from 2016-11-02 13:52:32)
+- copyright.xml (   1597 bytes, from 2016-10-29 07:29:22)
+- common.xml    (  23272 bytes, from 2016-10-29 14:18:57)
 
 Copyright (C) 2012-2016 by the following authors:
 - Wladimir J. van der Laan <laanwj@gmail.com>
@@ -50,6 +50,7 @@ DEALINGS IN THE SOFTWARE.
 #define FE_OPCODE_STALL						0x00000009
 #define FE_OPCODE_CALL						0x0000000a
 #define FE_OPCODE_RETURN					0x0000000b
+#define FE_OPCODE_DRAW_NEW					0x0000000c
 #define FE_OPCODE_CHIP_SELECT					0x0000000d
 #define PRIMITIVE_TYPE_POINTS					0x00000001
 #define PRIMITIVE_TYPE_LINES					0x00000002
@@ -237,6 +238,23 @@ DEALINGS IN THE SOFTWARE.
 #define VIV_FE_CHIP_SELECT_HEADER_ENABLE_CHIP2			0x00000004
 #define VIV_FE_CHIP_SELECT_HEADER_ENABLE_CHIP1			0x00000002
 #define VIV_FE_CHIP_SELECT_HEADER_ENABLE_CHIP0			0x00000001
+
+#define VIV_FE_DRAW_NEW						0x00000000
+
+#define VIV_FE_DRAW_NEW_HEADER					0x00000000
+#define VIV_FE_DRAW_NEW_HEADER_OP__MASK				0xf8000000
+#define VIV_FE_DRAW_NEW_HEADER_OP__SHIFT			27
+#define VIV_FE_DRAW_NEW_HEADER_OP_DRAW_NEW			0x60000000
+#define VIV_FE_DRAW_NEW_HEADER_TYPE__MASK			0x00ff0000
+#define VIV_FE_DRAW_NEW_HEADER_TYPE__SHIFT			16
+#define VIV_FE_DRAW_NEW_HEADER_TYPE(x)				(((x) << VIV_FE_DRAW_NEW_HEADER_TYPE__SHIFT) & VIV_FE_DRAW_NEW_HEADER_TYPE__MASK)
+#define VIV_FE_DRAW_NEW_HEADER_UNK0				0x00000001
+
+#define VIV_FE_DRAW_NEW_COUNT					0x00000004
+
+#define VIV_FE_DRAW_NEW_START					0x00000008
+
+#define VIV_FE_DRAW_NEW_UNKNOWN					0x0000000c
 
 
 #endif /* CMDSTREAM_XML */

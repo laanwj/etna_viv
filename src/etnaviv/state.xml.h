@@ -8,13 +8,13 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- state.xml     (  18940 bytes, from 2016-09-14 19:36:57)
-- common.xml    (  20957 bytes, from 2016-09-14 19:40:08)
-- state_hi.xml  (  25653 bytes, from 2016-09-14 19:39:09)
-- copyright.xml (   1597 bytes, from 2016-09-14 19:39:09)
-- state_2d.xml  (  51552 bytes, from 2016-09-14 19:39:09)
-- state_3d.xml  (  54603 bytes, from 2016-09-14 19:39:09)
-- state_vg.xml  (   5975 bytes, from 2016-09-14 19:39:09)
+- state.xml     (  19487 bytes, from 2016-11-05 06:17:49)
+- common.xml    (  23272 bytes, from 2016-10-29 14:18:57)
+- state_hi.xml  (  25653 bytes, from 2016-10-29 07:29:22)
+- copyright.xml (   1597 bytes, from 2016-10-29 07:29:22)
+- state_2d.xml  (  51552 bytes, from 2016-10-29 07:29:22)
+- state_3d.xml  (  55854 bytes, from 2016-11-05 06:17:49)
+- state_vg.xml  (   5975 bytes, from 2016-10-29 07:29:22)
 
 Copyright (C) 2012-2016 by the following authors:
 - Wladimir J. van der Laan <laanwj@gmail.com>
@@ -173,6 +173,8 @@ DEALINGS IN THE SOFTWARE.
 #define VIVS_FE_DMA_HIGH					0x0000066c
 
 #define VIVS_FE_AUTO_FLUSH					0x00000670
+
+#define VIVS_FE_UNK00674					0x00000674
 
 #define VIVS_FE_UNK00678					0x00000678
 
@@ -355,6 +357,8 @@ DEALINGS IN THE SOFTWARE.
 
 #define VIVS_GL_CONTEXT_POINTER					0x00003850
 
+#define VIVS_GL_UNK03854					0x00003854
+
 #define VIVS_GL_UNK03A00					0x00003a00
 
 #define VIVS_GL_STALL_TOKEN					0x00003c00
@@ -366,6 +370,20 @@ DEALINGS IN THE SOFTWARE.
 #define VIVS_GL_STALL_TOKEN_TO(x)				(((x) << VIVS_GL_STALL_TOKEN_TO__SHIFT) & VIVS_GL_STALL_TOKEN_TO__MASK)
 #define VIVS_GL_STALL_TOKEN_FLIP0				0x40000000
 #define VIVS_GL_STALL_TOKEN_FLIP1				0x80000000
+
+#define VIVS_NFE						0x00000000
+
+#define VIVS_NFE_UNK14600(i0)				       (0x00014600 + 0x4*(i0))
+#define VIVS_NFE_UNK14600__ESIZE				0x00000004
+#define VIVS_NFE_UNK14600__LEN					0x00000010
+
+#define VIVS_NFE_UNK14640(i0)				       (0x00014640 + 0x4*(i0))
+#define VIVS_NFE_UNK14640__ESIZE				0x00000004
+#define VIVS_NFE_UNK14640__LEN					0x00000010
+
+#define VIVS_NFE_UNK14680(i0)				       (0x00014680 + 0x4*(i0))
+#define VIVS_NFE_UNK14680__ESIZE				0x00000004
+#define VIVS_NFE_UNK14680__LEN					0x00000010
 
 #define VIVS_DUMMY						0x00000000
 

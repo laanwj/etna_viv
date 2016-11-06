@@ -8,13 +8,13 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- state.xml     (  18940 bytes, from 2016-09-14 19:36:57)
-- common.xml    (  20957 bytes, from 2016-09-14 19:40:08)
-- state_hi.xml  (  25653 bytes, from 2016-09-14 19:39:09)
-- copyright.xml (   1597 bytes, from 2016-09-14 19:39:09)
-- state_2d.xml  (  51552 bytes, from 2016-09-14 19:39:09)
-- state_3d.xml  (  54603 bytes, from 2016-09-14 19:39:09)
-- state_vg.xml  (   5975 bytes, from 2016-09-14 19:39:09)
+- state.xml     (  19487 bytes, from 2016-11-05 06:17:49)
+- common.xml    (  23272 bytes, from 2016-10-29 14:18:57)
+- state_hi.xml  (  25653 bytes, from 2016-10-29 07:29:22)
+- copyright.xml (   1597 bytes, from 2016-10-29 07:29:22)
+- state_2d.xml  (  51552 bytes, from 2016-10-29 07:29:22)
+- state_3d.xml  (  55854 bytes, from 2016-11-05 06:17:49)
+- state_vg.xml  (   5975 bytes, from 2016-10-29 07:29:22)
 
 Copyright (C) 2012-2016 by the following authors:
 - Wladimir J. van der Laan <laanwj@gmail.com>
@@ -243,76 +243,76 @@ DEALINGS IN THE SOFTWARE.
 #define chipMinorFeatures3_SH_ENHANCEMENTS1			0x00100000
 #define chipMinorFeatures3_SH_ENHANCEMENTS2			0x00200000
 #define chipMinorFeatures3_UNK22				0x00400000
-#define chipMinorFeatures3_UNK23				0x00800000
+#define chipMinorFeatures3_2D_FC_SOURCE				0x00800000
 #define chipMinorFeatures3_UNK24				0x01000000
 #define chipMinorFeatures3_UNK25				0x02000000
 #define chipMinorFeatures3_NEW_HZ				0x04000000
 #define chipMinorFeatures3_UNK27				0x08000000
 #define chipMinorFeatures3_UNK28				0x10000000
-#define chipMinorFeatures3_UNK29				0x20000000
+#define chipMinorFeatures3_SH_ENHANCEMENTS3			0x20000000
 #define chipMinorFeatures3_UNK30				0x40000000
 #define chipMinorFeatures3_UNK31				0x80000000
 #define chipMinorFeatures4_UNK0					0x00000001
-#define chipMinorFeatures4_UNK1					0x00000002
-#define chipMinorFeatures4_UNK2					0x00000004
+#define chipMinorFeatures4_PE_ENHANCEMENTS2			0x00000002
+#define chipMinorFeatures4_FRUSTUM_CLIP_FIX			0x00000004
 #define chipMinorFeatures4_UNK3					0x00000008
 #define chipMinorFeatures4_UNK4					0x00000010
-#define chipMinorFeatures4_UNK5					0x00000020
-#define chipMinorFeatures4_UNK6					0x00000040
+#define chipMinorFeatures4_2D_GAMMA				0x00000020
+#define chipMinorFeatures4_SINGLE_BUFFER			0x00000040
 #define chipMinorFeatures4_UNK7					0x00000080
 #define chipMinorFeatures4_UNK8					0x00000100
 #define chipMinorFeatures4_UNK9					0x00000200
 #define chipMinorFeatures4_UNK10				0x00000400
-#define chipMinorFeatures4_UNK11				0x00000800
-#define chipMinorFeatures4_UNK12				0x00001000
-#define chipMinorFeatures4_UNK13				0x00002000
+#define chipMinorFeatures4_TX_LERP_PRECISION_FIX		0x00000800
+#define chipMinorFeatures4_2D_COLOR_SPACE_CONVERSION		0x00001000
+#define chipMinorFeatures4_TEXTURE_ASTC				0x00002000
 #define chipMinorFeatures4_UNK14				0x00004000
 #define chipMinorFeatures4_UNK15				0x00008000
 #define chipMinorFeatures4_HALTI2				0x00010000
 #define chipMinorFeatures4_UNK17				0x00020000
 #define chipMinorFeatures4_SMALL_MSAA				0x00040000
 #define chipMinorFeatures4_UNK19				0x00080000
-#define chipMinorFeatures4_UNK20				0x00100000
-#define chipMinorFeatures4_UNK21				0x00200000
-#define chipMinorFeatures4_UNK22				0x00400000
-#define chipMinorFeatures4_UNK23				0x00800000
-#define chipMinorFeatures4_UNK24				0x01000000
-#define chipMinorFeatures4_UNK25				0x02000000
-#define chipMinorFeatures4_UNK26				0x04000000
-#define chipMinorFeatures4_UNK27				0x08000000
+#define chipMinorFeatures4_NEW_RA				0x00100000
+#define chipMinorFeatures4_2D_OPF_YUV_OUTPUT			0x00200000
+#define chipMinorFeatures4_2D_MULTI_SOURCE_BLT_EX2		0x00400000
+#define chipMinorFeatures4_NO_USER_CSC				0x00800000
+#define chipMinorFeatures4_ZFIXES				0x01000000
+#define chipMinorFeatures4_BUG_FIXES18				0x02000000
+#define chipMinorFeatures4_2D_COMPRESSION			0x04000000
+#define chipMinorFeatures4_PROBE				0x08000000
 #define chipMinorFeatures4_UNK28				0x10000000
-#define chipMinorFeatures4_UNK29				0x20000000
+#define chipMinorFeatures4_2D_SUPER_TILE_VERSION		0x20000000
 #define chipMinorFeatures4_UNK30				0x40000000
 #define chipMinorFeatures4_UNK31				0x80000000
 #define chipMinorFeatures5_UNK0					0x00000001
 #define chipMinorFeatures5_UNK1					0x00000002
 #define chipMinorFeatures5_UNK2					0x00000004
 #define chipMinorFeatures5_UNK3					0x00000008
-#define chipMinorFeatures5_UNK4					0x00000010
+#define chipMinorFeatures5_EEZ					0x00000010
 #define chipMinorFeatures5_UNK5					0x00000020
 #define chipMinorFeatures5_UNK6					0x00000040
 #define chipMinorFeatures5_UNK7					0x00000080
 #define chipMinorFeatures5_UNK8					0x00000100
 #define chipMinorFeatures5_HALTI3				0x00000200
 #define chipMinorFeatures5_UNK10				0x00000400
-#define chipMinorFeatures5_UNK11				0x00000800
+#define chipMinorFeatures5_2D_ONE_PASS_FILTER_TAP		0x00000800
 #define chipMinorFeatures5_UNK12				0x00001000
-#define chipMinorFeatures5_UNK13				0x00002000
-#define chipMinorFeatures5_UNK14				0x00004000
+#define chipMinorFeatures5_SEPARATE_SRC_DST			0x00002000
+#define chipMinorFeatures5_HALTI4				0x00004000
 #define chipMinorFeatures5_UNK15				0x00008000
-#define chipMinorFeatures5_UNK16				0x00010000
-#define chipMinorFeatures5_UNK17				0x00020000
+#define chipMinorFeatures5_ANDROID_ONLY				0x00010000
+#define chipMinorFeatures5_HAS_PRODUCTID			0x00020000
 #define chipMinorFeatures5_UNK18				0x00040000
 #define chipMinorFeatures5_UNK19				0x00080000
-#define chipMinorFeatures5_UNK20				0x00100000
+#define chipMinorFeatures5_PE_DITHER_FIX2			0x00100000
 #define chipMinorFeatures5_UNK21				0x00200000
 #define chipMinorFeatures5_UNK22				0x00400000
 #define chipMinorFeatures5_UNK23				0x00800000
 #define chipMinorFeatures5_UNK24				0x01000000
 #define chipMinorFeatures5_UNK25				0x02000000
 #define chipMinorFeatures5_UNK26				0x04000000
-#define chipMinorFeatures5_UNK27				0x08000000
-#define chipMinorFeatures5_UNK28				0x10000000
+#define chipMinorFeatures5_DEPTHSTENCIL_NATIVE_SUPPORT		0x08000000
+#define chipMinorFeatures5_V2_MSAA_COMP_FIX			0x10000000
 #define chipMinorFeatures5_UNK29				0x20000000
 #define chipMinorFeatures5_UNK30				0x40000000
 #define chipMinorFeatures5_UNK31				0x80000000
