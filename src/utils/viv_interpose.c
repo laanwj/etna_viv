@@ -26,17 +26,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdbool.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
-#include <stdarg.h>
+#include <time.h>
 #include <stdint.h>
 #include <string.h>
-#include <sys/ioctl.h>
-#include <pthread.h>
 #include <dlfcn.h>
 
+static int frame_counter = 0;
 static int max_frames = 0;
 
 static void parse_environment(struct viv_hook_overrides *overrides)
@@ -102,16 +97,22 @@ unsigned int eglSwapBuffers(void* dpy, void* surface)
     if (!my_eglSwapBuffers)
 	my_eglSwapBuffers = dlsym(RTLD_NEXT, "eglSwapBuffers");
     unsigned int p = my_eglSwapBuffers(dpy, surface);
-    if (max_frames) {
-        max_frames--;
-        if (max_frames == 0) {
-            printf("Stopping program after ETNAVIV_MAX_FRAMES\n");
-            /* Try to shut down egl properly at least */
-            static unsigned int (*my_eglTerminate)(void* dpy) = NULL;
-            my_eglTerminate = dlsym(RTLD_DEFAULT, "eglTerminate");
-            my_eglTerminate(dpy);
-            exit(0);
-        }
+
+    /* Log a frame marker */
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    uint32_t frame_marker[4] = {0x594e4f50, frame_counter, ts.tv_sec, ts.tv_nsec};
+    viv_hook_log_marker((void*)frame_marker, sizeof(frame_marker));
+    frame_counter += 1;
+
+    /* Stop after ETNAVIV_MAX_FRAMES */
+    if (max_frames && frame_counter >= max_frames) {
+        printf("Stopping program after ETNAVIV_MAX_FRAMES=%d frames\n", max_frames);
+        /* Try to shut down egl properly at least */
+        static unsigned int (*my_eglTerminate)(void* dpy) = NULL;
+        my_eglTerminate = dlsym(RTLD_DEFAULT, "eglTerminate");
+        my_eglTerminate(dpy);
+        exit(0);
     }
     return p;
 }

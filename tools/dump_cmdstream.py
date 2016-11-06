@@ -32,7 +32,7 @@ from binascii import b2a_hex
 
 from etnaviv.util import rnndb_path
 # Parse execution data log files
-from etnaviv.parse_fdr import ENDIAN, WORD_SPEC, ADDR_SPEC, ADDR_CHAR, WORD_CHAR, FDRLoader, Event
+from etnaviv.parse_fdr import ENDIAN, WORD_SPEC, ADDR_SPEC, ADDR_CHAR, WORD_CHAR, FDRLoader, Event, Comment
 # Extract C structures from memory
 from etnaviv.extract_structure import extract_structure, ResolverBase, UNRESOLVED
 # Print C structures
@@ -464,6 +464,11 @@ def main():
                     f.write('Unknown Vivante ioctl %i\n' % rec.parameters['request'].value)
             else:
                 f.write('unhandled event ' + rec.event_type + '\n')
+        elif isinstance(rec, Comment):
+            t = WORD_SPEC.unpack(rec.data[0:4])[0]
+            if t == 0x594e4f50:
+                v = struct.unpack(ENDIAN + WORD_CHAR * 3, rec.data[4:])
+                print('[end of frame %d: %d.%09d]' % v)
 
 if __name__ == '__main__':
     main()

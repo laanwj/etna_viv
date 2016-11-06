@@ -21,6 +21,7 @@ extern void the_hook(const char *filename);
 extern void close_hook(void);
 extern void hook_start_logging(const char *filename);
 extern void viv_hook_set_overrides(const struct viv_hook_overrides *overrides_in);
+extern void viv_hook_log_marker(const char *data, size_t size);
 
 extern int my_open(const char* path, int flags, ...);
 extern void *my_mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset);

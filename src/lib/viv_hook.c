@@ -427,6 +427,14 @@ void the_hook(const char *filename)
     printf("Hook succeeded!\n"); 
 }
 
+void viv_hook_log_marker(const char *data, size_t size)
+{
+    if (_fdr != NULL)
+    {
+        fdr_log_comment(_fdr, data, size);
+    }
+}
+
 void close_hook()
 {
     fdr_close(_fdr);
