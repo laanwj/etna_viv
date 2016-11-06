@@ -35,6 +35,9 @@
 #include <string.h>
 #include <sys/ioctl.h>
 #include <pthread.h>
+#include <dlfcn.h>
+
+static int max_frames = 0;
 
 static void parse_environment(struct viv_hook_overrides *overrides)
 {
@@ -70,6 +73,10 @@ static void parse_environment(struct viv_hook_overrides *overrides)
         overrides->chip_flags_clear = strtoul(value, 0, 0);
         printf("Clearing chip flags 0x%08x\n", overrides->chip_flags_clear);
     }
+    /* Quit after rendering a certain number of frames */
+    if ((value = getenv("ETNAVIV_MAX_FRAMES")) != NULL) {
+        max_frames = strtol(value, 0, 0);
+    }
 }
 
 static void __attribute__((constructor)) constructor()
@@ -87,3 +94,24 @@ static void __attribute__((destructor)) destructor()
     close_hook();
 }
 
+unsigned int eglSwapBuffers(void* dpy, void* surface);
+
+unsigned int eglSwapBuffers(void* dpy, void* surface)
+{
+    static unsigned int (*my_eglSwapBuffers)(void* dpy, void* surface) = NULL;
+    if (!my_eglSwapBuffers)
+	my_eglSwapBuffers = dlsym(RTLD_NEXT, "eglSwapBuffers");
+    unsigned int p = my_eglSwapBuffers(dpy, surface);
+    if (max_frames) {
+        max_frames--;
+        if (max_frames == 0) {
+            printf("Stopping program after ETNAVIV_MAX_FRAMES\n");
+            /* Try to shut down egl properly at least */
+            static unsigned int (*my_eglTerminate)(void* dpy) = NULL;
+            my_eglTerminate = dlsym(RTLD_DEFAULT, "eglTerminate");
+            my_eglTerminate(dpy);
+            exit(0);
+        }
+    }
+    return p;
+}
