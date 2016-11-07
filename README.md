@@ -182,15 +182,7 @@ example that renders a textured cube.
 Vivante GPL kernel drivers
 ---------------------------
 
-The headers and implementation files for the Vivante GPL kernel drivers are also included:
-
-    kernel_drivers/
-
-Four GPL kernel driver versions, `gc600_driver_dove`, `v2` and `v4` and `imx6`, are provided. They are useful in understanding the kernel
-interface, and the hardware at a basic level.
-
-As open source drivers for the kernel are available, there are currently no plans to write a DRM/DRI kernel driver for Vivante.
-(There may be other reasons to do this anyway, you're welcome to contribute one)
+These have been moved to https://github.com/etnaviv/vivante_kernel_drivers
 
 Envytools fork
 ---------------
