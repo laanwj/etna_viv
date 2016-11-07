@@ -213,8 +213,12 @@ Then generate the headers with
 
 Contact
 =============
-There is currently no mailing list for this project, and looking at other GPU reverse engineering projects the mailing lists
-usually see very little traffic, so I won't bother (but you're free to create one and let me know so I can join).
+
+There is a [freedesktop.org mailing list](https://lists.freedesktop.org/mailman/listinfo/etnaviv) for the project.
+
+There is also a Google group for development discussion for this project at
+[etnaviv-devel](https://groups.google.com/forum/#!forum/etnaviv-devel), but we
+are in process of switching to the above freedesktop mailing list.
 
 We usually hang out in `#etnaviv` on `irc.freenode.net`. 
 
