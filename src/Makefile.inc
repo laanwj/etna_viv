@@ -11,7 +11,7 @@ AR = $(GCCPREFIX)ar
 
 GCC_CFLAGS = -D_POSIX_C_SOURCE=200809 -D_GNU_SOURCE
 COMMON_FLAGS = -O2 -g3 -ggdb3 -Wall -Wmissing-prototypes \
-          -DGCABI_${GCABI} $(GCC_CFLAGS) -I$(TOP)/lib -I$(TOP)/include_$(GCABI) \
+          -DGCABI_${GCABI} $(GCC_CFLAGS) -I$(TOP)/lib -I$(TOP)/galcore_headers/include_$(GCABI) \
           -fPIC -pthread \
           -I$(TOP)/minigallium/include -I$(TOP)/minigallium/auxiliary -I$(TOP) \
           -fdiagnostics-show-option \
