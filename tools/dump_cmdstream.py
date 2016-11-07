@@ -31,8 +31,9 @@ from collections import defaultdict, namedtuple
 from binascii import b2a_hex
 
 from etnaviv.util import rnndb_path
+from etnaviv.target_arch import bytes_to_words, ENDIAN, WORD_SPEC, ADDR_SPEC, ADDR_CHAR, WORD_CHAR
 # Parse execution data log files
-from etnaviv.parse_fdr import ENDIAN, WORD_SPEC, ADDR_SPEC, ADDR_CHAR, WORD_CHAR, FDRLoader, Event, Comment
+from etnaviv.parse_fdr import FDRLoader, Event, Comment
 # Extract C structures from memory
 from etnaviv.extract_structure import extract_structure, ResolverBase, UNRESOLVED
 # Print C structures
@@ -161,6 +162,16 @@ def format_state(pos, value, fixp, state_map):
                 desc += register.describe(value)
     return desc
 
+def dump_buf(f, name, data):
+    '''Dump array of 32-bit words to disk (format will always be little-endian binary).'''
+    global shader_num
+    filename = '%s_%i.bin' % (name, shader_num)
+    with open(filename, 'wb') as g:
+        for word in data:
+            g.write(struct.pack('<I', word))
+    f.write('/* [dumped %s to %s] */ ' % (name, filename))
+    shader_num += 1
+
 def dump_shader(f, name, states, start, end):
     '''Dump binary shader code to disk'''
     if not start in states:
@@ -171,32 +182,7 @@ def dump_shader(f, name, states, start, end):
     while pos < end and (pos in states):
         code.append(states[pos])
         pos += 4
-    global shader_num
-    filename = '%s_%i.bin' % (name, shader_num)
-    with open(filename, 'wb') as g:
-        for word in code:
-            g.write(struct.pack('<I', word))
-    f.write('/* [dumped %s to %s] */ ' % (name, filename))
-    shader_num += 1
-
-def dump_cmdbuf(f, name, words):
-    '''Dump binary command buffer to disk'''
-    global shader_num
-    filename = '%s_%i.bin' % (name, shader_num)
-    with open(filename, 'wb') as g:
-        for word in words:
-            g.write(struct.pack('<I', word))
-    f.write('/* [dumped %s to %s] */ ' % (name, filename))
-    shader_num += 1
-
-def iter_memory(mem, addr, end_addr):
-    size = (end_addr - addr)//4
-    ptr = 0
-    while ptr < size:
-        hide = False
-        (value,) = WORD_SPEC.unpack(mem[addr+ptr*4:addr+ptr*4+4])
-        yield value
-        ptr += 1
+    dump_buf(f, name, code)
 
 def dump_command_buffer(f, mem, addr, end_addr, depth, state_map, cmdstream_info):
     '''
@@ -206,8 +192,8 @@ def dump_command_buffer(f, mem, addr, end_addr, depth, state_map, cmdstream_info
     indent = '    ' * len(depth)
     f.write('{\n')
     states = [] # list of (ptr, state_addr) tuples
+    words = bytes_to_words(mem[addr:end_addr])
     size = (end_addr - addr)//4
-    words = list(iter_memory(mem, addr, end_addr))
     for rec in parse_command_buffer(words, cmdstream_info):
         hide = False
         if rec.op == 1 and rec.payload_ofs == -1:
@@ -261,8 +247,7 @@ def dump_command_buffer(f, mem, addr, end_addr, depth, state_map, cmdstream_info
         dump_shader(f, 'ps', state_by_pos, 0x0D000, 0x0E000) # XXX this offset is probably variable (gc2000)
 
     if options.dump_cmdbufs:
-        dump_cmdbuf(f, 'cmd', words)
-        pass
+        dump_buf(f, 'cmd', words)
 
 def dump_context_map(f, mem, addr, end_addr, depth, state_map):
     '''

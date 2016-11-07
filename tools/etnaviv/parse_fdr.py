@@ -28,29 +28,16 @@ from collections import namedtuple
 from bisect import bisect_right
 from binascii import b2a_hex
 
-LITTLE_ENDIAN = b'<'
-BIG_ENDIAN = b'>'
+from etnaviv.target_arch import ENDIAN, WORD_SPEC, ADDR_SPEC, ADDR_CHAR, WORD_CHAR, MAGIC_CHAR, SHORT_STRING_SIZE_CHAR, RECTYPE_CHAR, SHORT_STRING_SIZE_SPEC
 
-# target architecture description
-ENDIAN = LITTLE_ENDIAN
-DEBUG = False
-
-RECTYPE_CHAR = b'B' # always 8 bit
-MAGIC_CHAR = b'I' # always 32 bit
-WORD_CHAR = b'I' # 32 bit
-ADDR_CHAR = b'I' # 32/64 bit
-SHORT_STRING_SIZE_CHAR = b'B'
-
-# struct specifiers for decoding
-RECTYPE_SPEC = struct.Struct(ENDIAN + RECTYPE_CHAR)
+# fdr data structures definition
 HDR_SPEC = struct.Struct(ENDIAN + MAGIC_CHAR + WORD_CHAR)
-WORD_SPEC = struct.Struct(ENDIAN + WORD_CHAR)
-ADDR_SPEC = struct.Struct(ENDIAN + ADDR_CHAR)
+RECTYPE_SPEC = struct.Struct(ENDIAN + RECTYPE_CHAR)
 RANGE_SPEC = struct.Struct(ENDIAN + ADDR_CHAR + ADDR_CHAR)
-SHORT_STRING_SIZE_SPEC = struct.Struct(ENDIAN + SHORT_STRING_SIZE_CHAR)
-
 FDR_MAGIC = 0x8e1aaa8f
 FDR_VERSION = 1
+
+DEBUG = False
 
 class RTYPE:
     '''
