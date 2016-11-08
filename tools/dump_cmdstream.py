@@ -42,6 +42,7 @@ from etnaviv.dump_structure import dump_structure, print_address
 from etnaviv.parse_rng import parse_rng_file, format_path, BitSet, Domain
 from etnaviv.dump_cmdstream_util import int_as_float, fixp_as_float
 from etnaviv.parse_command_buffer import parse_command_buffer
+from etnaviv.rng_describe_c import format_path_c, describe_c
 
 DEBUG = False
 
@@ -249,6 +250,23 @@ def dump_command_buffer(f, mem, addr, end_addr, depth, state_map, cmdstream_info
     if options.dump_cmdbufs:
         dump_buf(f, 'cmd', words)
 
+    if options.output_c:
+        f.write('\n')
+        for rec in parse_command_buffer(words, cmdstream_info):
+            if rec.state_info is not None:
+                try:
+                    path = state_map.lookup_address(rec.state_info.pos)
+                except KeyError:
+                    f.write('/* Warning: unknown state %05x */\n')
+                else:
+                    prefix = 'VIVS_' + format_path_c(path, True)
+                    regname = 'VIVS_' + format_path_c(path, False)
+                    expr = describe_c(prefix, path[-1][0].type, rec.value)
+                    f.write('etna_set_state(stream, %s, %s);\n' % (regname, expr))
+            else:
+                # Handle other commands?
+                pass
+
 def dump_context_map(f, mem, addr, end_addr, depth, state_map):
     '''
     Dump Vivante context map.
@@ -314,6 +332,9 @@ def parse_arguments():
     parser.add_argument('--dump-cmdbufs', dest='dump_cmdbufs',
             default=False, action='store_const', const=True,
             help='Dump command buffers to file')
+    parser.add_argument('--output-c', dest='output_c',
+            default=False, action='store_const', const=True,
+            help='Print command buffer emission in C format')
     return parser.parse_args()        
 
 def patch_member_pointer(struct, name, ptrtype):
