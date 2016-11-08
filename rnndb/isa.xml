@@ -34,10 +34,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
  an instruction using the bitfields and instructions defined in this file.
  -->
 <enum name="INST_OPCODE" brief="Main opcode table">
-    <!-- TODO: match against TGSI instructions
-         http://people.freedesktop.org/~csimpson/gallium-docs/tgsi.html
-
-         Overall the ISA seems to be based on DirectX shader assembly. This is pretty obvious in retrospect
+    <--  Overall the ISA seems to be based on DirectX shader assembly. This is pretty obvious in retrospect
          as Vivante started by marketing DirectX-compatible GPUs for playing desktop PC games.
 
          Restrictions:
