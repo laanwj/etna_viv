@@ -20,13 +20,21 @@ def describe_c(prefix, typ, value):
     '''
     if isinstance(typ, BitField):
         if isinstance(typ.type, BaseType) and typ.type.kind == 'boolean':
-            return prefix + '_' + typ.name
+            if value:
+                return prefix + '_' + typ.name
+            else:
+                return None
         elif isinstance(typ.type, Enum) and typ.type.name is None:
             return prefix + '_' + typ.name + '_' + typ.type.values_by_value[value].name
         else:
             return prefix + '_' + typ.name + '(' + describe_c(prefix, typ.type, value) + ')'
     elif isinstance(typ, BitSet):
-        return ' | '.join(describe_c(prefix, field, field.extract(value)) for field in typ.bitfields)
+        terms = (describe_c(prefix, field, field.extract(value)) for field in typ.bitfields)
+        terms = [t for t in terms if t is not None]
+        if terms:
+            return ' | '.join(terms)
+        else:
+            return '0'
     elif isinstance(typ, Domain):
         return '*0x%08x' % value  # address: need special handling
     elif isinstance(typ, BaseType):
