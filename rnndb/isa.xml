@@ -273,29 +273,32 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <!-- OpenCL (GC2000+) -->
     <value value="0x2D" name="I2F" brief="Integer to float">
         <doc>
-            dst := float(src0)
+            dst := float(src0.x)
 
             Convert source operand to a float and put the result in temporary register dst.
+            This is a scalar operation, the result is broadcasted over all active destination components.
         </doc>
     </value>
     <value value="0x31" name="CMP" brief="Integer compare"/>
     <value value="0x32" name="LOAD" brief="Memory load">
         <doc>
-            dst := [src0+src1]
+            dst := mem[src0.x+src1.x]
 
-            Load dst from address src0+src1.
+            Load dst from address src0.x + src1.x.
             The size of the load operation is determined by:
 
             - The INST_TYPE of this instruction
             - DST.COMPS: .x loads only one value, .xy two values, .xyz three values, .xyzw four values.
               Other combination may be possible but this has not been verified.
+
+            This is a scalar operation, the result is broadcasted over all active destination components.
         </doc>
     </value>
     <value value="0x33" name="STORE" brief="Memory store">
         <doc>
-            [src0+src1] := src2
+            mem[src0.x+src1.x] := src2.x
 
-            Store at src2 at address src0+src1.
+            Store at src2.x at address src0.x + src1.x.
             The size of the store operation is determined by:
 
             - The INST_TYPE of this instruction
@@ -304,18 +307,68 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 
             It looks like DST.REG is set to 4 in some cases when __local memory is used,
             this must be some kind of synchronization flag.
+
+            This is a scalar operation, the result is broadcasted over all active destination components.
         </doc>
     </value>
-    <value value="0x3C" name="IMULLO0" brief="Integer multiply"/>
+    <value value="0x3C" name="IMULLO0" brief="Integer multiply">
+        <doc>
+            dst := src0.x * src1.x
+
+            This is a scalar operation, the result is broadcasted over all active destination components.
+        </doc>
+    </value>
     <value value="0x40" name="IMULHI0" brief="High half of the product of x and y (mul_hi intrinsic)"/>
     <value value="0x58" name="LEADZERO" brief="Count leading zeros (clz intrinsic)"/>
-    <value value="0x59" name="LSHIFT" brief="Bitwise left shift"/>
-    <value value="0x5A" name="RSHIFT" brief="Bitwise right shift"/>
-    <value value="0x5B" name="ROTATE" brief="Bitwise rotate (rotate intrinsic)"/>
-    <value value="0x5C" name="OR" brief="Bitwise or"/>
-    <value value="0x5D" name="AND" brief="Bitwise and"/>
-    <value value="0x5E" name="XOR" brief="Bitwise exclusive or"/>
-    <value value="0x5F" name="NOT" brief="Bitwise not"/>
+    <value value="0x59" name="LSHIFT" brief="Bitwise left shift">
+        <doc>
+            dst := src0.x &lt;&lt; (src2.x &amp; 31)
+
+            This is a scalar operation, the result is broadcasted over all active destination components.
+        </doc>
+    </value>
+    <value value="0x5A" name="RSHIFT" brief="Bitwise right shift">
+        <doc>
+            dst := src0.x &gt;&gt; (src2.x &amp; 31)
+
+            This is a scalar operation, the result is broadcasted over all active destination components.
+        </doc>
+    </value>
+    <value value="0x5B" name="ROTATE" brief="Bitwise rotate left">
+        <doc>
+            dst := (src0.x &lt;&lt; (src2.x &amp; 31)) | (src0.x &gt;&gt; ((32-src2.x) &amp; 31))
+
+            This is a scalar operation, the result is broadcasted over all active destination components.
+        </doc>
+    </value>
+    <value value="0x5C" name="OR" brief="Bitwise or">
+        <doc>
+            dst := src0.x | src2.x
+
+            This is a scalar operation, the result is broadcasted over all active destination components.
+        </doc>
+    </value>
+    <value value="0x5D" name="AND" brief="Bitwise and">
+        <doc>
+            dst := src0.x &amp; src2.x
+
+            This is a scalar operation, the result is broadcasted over all active destination components.
+        </doc>
+    </value>
+    <value value="0x5E" name="XOR" brief="Bitwise exclusive or">
+        <doc>
+            dst := src0.x ^ src2.x
+
+            This is a scalar operation, the result is broadcasted over all active destination components.
+        </doc>
+    </value>
+    <value value="0x5F" name="NOT" brief="Bitwise not">
+        <doc>
+            dst := ~src2.x
+
+            This is a scalar operation, the result is broadcasted over all active destination components.
+        </doc>
+    </value>
 </enum>
 
 <enum name="INST_CONDITION" brief="Condition code">
