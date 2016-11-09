@@ -65,6 +65,8 @@ def assemble(isa, inst, warnings):
     fields['OPCODE_BIT6'] = (inst.op >> 6) & 0x01
     fields['COND'] = inst.cond
     fields['SAT'] = inst.sat
+    fields['TYPE_BIT2'] = inst.type >> 2
+    fields['TYPE_BIT01'] = inst.type & 3
    
     if isinstance(inst.dst, DstOperandAReg):
         # XXX validate that this instruction accepts
@@ -167,9 +169,13 @@ class Assembler(object):
         cond = 0
         sat = False
         conditions = self.isa.types['INST_CONDITION'].values_by_name
+        types = self.isa.types['INST_TYPE'].values_by_name
+        type_ = 0
         for atom in inst[1:]:
             if atom in conditions:
                 cond = conditions[atom].value
+            elif atom in types:
+                type_ = types[atom].value
             elif atom == 'SAT':
                 sat = True
             else:
@@ -252,7 +258,7 @@ class Assembler(object):
         if num_operands != 4:
             self.errors.append((self.linenr, 'Invalid number of operands (%i)' % num_operands))
         inst_out = Instruction(op=op,
-            cond=cond,sat=sat,
+            cond=cond,sat=sat,type=type_,
             tex=tex,dst=dst,src=src,addr=addr,unknowns={},linenr=self.linenr)
         self.instructions.append(inst_out)
         return inst_out
@@ -286,7 +292,7 @@ class Assembler(object):
 
 def compare_inst(a,b,warnings):
     match = True
-    for attr in ['op', 'cond', 'sat', 'tex', 'dst', 'src', 'addr']:
+    for attr in ['op', 'cond', 'sat', 'tex', 'dst', 'src', 'addr', 'type']:
         if getattr(a, attr) != getattr(b, attr):
             warnings.append('Assembly/disassembly mismatch: %s %s %s' % (attr, getattr(a, attr), getattr(b, attr)))
             match = False

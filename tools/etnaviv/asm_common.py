@@ -52,7 +52,7 @@ DstOperandAReg = namedtuple('DstOperandAReg', ['reg', 'comps'])
 SrcOperand = namedtuple('SrcOperand', ['use', 'reg', 'swiz', 'neg', 'abs', 'amode', 'rgroup'])
 TexOperand = namedtuple('TexOperand', ['id', 'amode', 'swiz'])
 AddrOperand = namedtuple('AddrOperand', ['addr'])
-Instruction = namedtuple('Instruction', ['op', 'cond', 'sat', 'tex', 'dst', 'src', 'addr', 'unknowns', 'linenr'])
+Instruction = namedtuple('Instruction', ['op', 'cond', 'sat', 'tex', 'dst', 'src', 'addr', 'unknowns', 'linenr', 'type'])
 
 def disassemble(isa, inst, warnings):
     '''Parse four 32-bit instruction words into Instruction object'''
@@ -124,10 +124,12 @@ def disassemble(isa, inst, warnings):
 
         src.append(operand)
 
+    # Type
+    type_ = (fields['TYPE_BIT2'] << 2) | fields['TYPE_BIT01']
+
     # Unknown fields -- will warn if these are not 0
     unknowns = [
-        ('bit_1_21', fields['UNK1_21']),
-        ('bit_2_30', fields['UNK2_30']), ('bit_3_24', fields['UNK3_24']),
+        ('bit_3_24', fields['UNK3_24']),
         ('bit_3_31', fields['UNK3_31'])
     ]
     if addr is None: # bit13 may be set if immediate operand 2
@@ -137,7 +139,7 @@ def disassemble(isa, inst, warnings):
         if value != 0:
             warnings.append('!%s=%i!' % (name,value))
     return Instruction(op=op,
-            cond=fields['COND'],sat=fields['SAT'],
+            cond=fields['COND'],sat=fields['SAT'],type=type_,
             tex=tex,dst=dst,src=src,addr=addr,unknowns=unknowns,linenr=None)
 
 def format_dst(isa, dst):
@@ -206,6 +208,8 @@ def format_instruction(isa, inst):
     atoms.append(isa.types['INST_OPCODE'].describe(inst.op))
     if inst.cond:
         atoms.append(isa.types['INST_CONDITION'].describe(inst.cond))
+    if inst.type:
+        atoms.append(isa.types['INST_TYPE'].describe(inst.type))
     if inst.sat:
         atoms.append('SAT')
     opcode = '.'.join(atoms)
