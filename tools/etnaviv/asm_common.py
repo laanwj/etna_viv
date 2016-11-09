@@ -49,6 +49,7 @@ def format_comps(comps):
 
 DstOperand = namedtuple('DstOperand', ['use', 'amode', 'reg', 'comps'])
 DstOperandAReg = namedtuple('DstOperandAReg', ['reg', 'comps'])
+DstOperandMem = namedtuple('DstOperandMem', ['comps'])
 SrcOperand = namedtuple('SrcOperand', ['use', 'reg', 'swiz', 'neg', 'abs', 'amode', 'rgroup'])
 TexOperand = namedtuple('TexOperand', ['id', 'amode', 'swiz'])
 AddrOperand = namedtuple('AddrOperand', ['addr'])
@@ -76,6 +77,12 @@ def disassemble(isa, inst, warnings):
         )
         if fields['DST_AMODE'] != 0 or fields['DST_USE'] != 0:
             warnings.append('use and amode bitfields are nonzero for areg (amode=%d,use=%d)' % (fields['DST_AMODE'], fields['DST_USE']))
+    elif op in [0x33]: # Store
+        dst = DstOperandMem(
+            comps = fields['DST_COMPS'] # xyzw
+        )
+        if fields['DST_AMODE'] != 0 or fields['DST_USE'] != 0 or fields['DST_REG'] != 0:
+            warnings.append('use or amode or reg bitfields are nonzero for store (amode=%d,use=%d,reg=%d)' % (fields['DST_AMODE'], fields['DST_USE'], fields['DST_REG']))
     else:
         dst = DstOperand(
             use = fields['DST_USE'], # destination used
@@ -145,22 +152,22 @@ def disassemble(isa, inst, warnings):
 def format_dst(isa, dst):
     '''Format destination operand'''
     if dst is not None:
-        # actually, target register group depends on the instruction, but usually it's a temporary...
-        arg = 't%i' % (dst.reg)
-        if dst.amode != 0:
-            arg += '[%s]' % amodes[dst.amode]
-        if dst.comps != 15: # if not all comps selected
-            arg += '.' + format_comps(dst.comps)
+        if isinstance(dst, DstOperand):
+            arg = 't%i' % (dst.reg)
+            if dst.amode != 0:
+                arg += '[%s]' % amodes[dst.amode]
+            if dst.comps != 15: # if not all comps selected
+                arg += '.' + format_comps(dst.comps)
+        elif isinstance(dst, DstOperandAReg):
+            arg = 'a%i' % (dst.reg)
+            if dst.comps != 15: # if not all comps selected
+                arg += '.' + format_comps(dst.comps)
+        elif isinstance(dst, DstOperandMem):
+            arg = '%s.%s' % ('mem', format_comps(dst.comps))
+        else:
+            raise NotImplementedError
     else:
         arg = 'void' # unused argument
-
-    return arg
-
-def format_dst_areg(isa, dst):
-    '''Format destination operand'''
-    arg = 'a%i' % (dst.reg)
-    if dst.comps != 15: # if not all comps selected
-        arg += '.' + format_comps(dst.comps)
 
     return arg
 
@@ -214,10 +221,7 @@ def format_instruction(isa, inst):
         atoms.append('SAT')
     opcode = '.'.join(atoms)
 
-    if isinstance(inst.dst, DstOperandAReg):
-        args.append(format_dst_areg(isa, inst.dst))
-    else:
-        args.append(format_dst(isa, inst.dst))
+    args.append(format_dst(isa, inst.dst))
 
     if inst.tex is not None:
         args.append(format_tex(isa, inst.tex))

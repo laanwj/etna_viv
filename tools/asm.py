@@ -32,10 +32,11 @@ import re
 
 from etnaviv.util import rnndb_path
 from etnaviv.parse_rng import parse_rng_file, format_path, BitSet, Domain
-from etnaviv.asm_common import DstOperand, DstOperandAReg, SrcOperand, TexOperand, AddrOperand, Instruction, AMODES, COMPS, RGROUPS
+from etnaviv.asm_common import DstOperand, DstOperandAReg, DstOperandMem, SrcOperand, TexOperand, AddrOperand, Instruction, AMODES, COMPS, RGROUPS
 from etnaviv.asm_common import disassemble, format_instruction
 
 reg_re = re.compile('^(i|t|u|a|tex|\?4\?|\?5\?|\?6\?|\?7\?)(\d+)(\[.*?\])?(\.[\_xyzw]{1,4})?$')
+mem_re = re.compile('^mem(\.[\_xyzw]{1,4})?$')
 label_re = re.compile('^[0-9a-zA-Z\-\_]+$')
 
 def parse_amode(amode):
@@ -72,6 +73,8 @@ def assemble(isa, inst, warnings):
         # XXX validate that this instruction accepts
         # address destination arguments
         fields['DST_REG'] = inst.dst.reg
+        fields['DST_COMPS'] = inst.dst.comps
+    elif isinstance(inst.dst, DstOperandMem):
         fields['DST_COMPS'] = inst.dst.comps
     elif isinstance(inst.dst, DstOperand):
         fields['DST_USE'] = inst.dst.use
@@ -203,6 +206,7 @@ class Assembler(object):
             # check kind of operand
             # (t|u|a)XXX[.xyzw] (address)register
             match_reg = reg_re.match(operand)
+            match_mem = mem_re.match(operand)
             if match_reg:
                 (regtype, regid, amode, swiz) = match_reg.groups()
                 regid = int(regid)
@@ -242,6 +246,12 @@ class Assembler(object):
                     else:
                         self.errors.append((self.linenr, 'Unparseable register type %s' % regtype))
                 arg_obj = None
+            elif match_mem:
+                if idx == 0: # destination operand
+                    comps = parse_comps(match_mem.group(1))
+                    dst = DstOperandMem(comps=comps)
+                else:
+                    self.errors.append((self.linenr, 'Cannot have mem as source argument'))
             elif operand == 'void':
                 #print('void')
                 if idx == 0: # destination operand

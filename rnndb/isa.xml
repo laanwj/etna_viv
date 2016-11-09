@@ -284,6 +284,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             dst := [src0+src1]
 
             Load dst from address src0+src1.
+            The size of the load operation is determined by:
+
+            - The INST_TYPE of this instruction
+            - DST.COMPS: .x loads only one value, .xy two values, .xyz three values, .xyzw four values.
+              Other combination may be possible but this has not been verified.
         </doc>
     </value>
     <value value="0x33" name="STORE" brief="Memory store">
@@ -291,6 +296,14 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             [src0+src1] := src2
 
             Store at src2 at address src0+src1.
+            The size of the store operation is determined by:
+
+            - The INST_TYPE of this instruction
+            - DST.COMPS: .x stores only one value, .xy two values, .xyz three values, .xyzw four values
+              Other combination may be possible but this has not been verified.
+
+            It looks like DST.REG is set to 4 in some cases when __local memory is used,
+            this must be some kind of synchronization flag.
         </doc>
     </value>
     <value value="0x3C" name="IMULLO0" brief="Integer multiply"/>
