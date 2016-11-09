@@ -134,21 +134,30 @@ class Assembler(object):
         # remove comment
         self.source.append(line)
         self.linenr += 1
-        (line, _, _) = line.partition(';')
 
-        (label, _, line) = line.rpartition(':')
+        (line, _, _) = line.partition(';') # drop comments
+
+        (label, _, line) = line.rpartition(':') # handle optional labels
         if label:
             label = label.strip()
             if not label_re.match(label):
                 self.errors.append((self.linenr, 'Invalid label: %s' % label))
             self.labels[label] = len(self.instructions)
-        
-        (inst, _, operands) = line.strip().partition(' ')
 
-        inst = inst.split('.')
-        if not inst[0]: # empty line
+        line = line.strip()
+        if not line: # empty line
             return None
+       
+        (inst, _, operands) = line.partition(' ')
+        m = re.match('\s*([a-zA-Z0-9\.]+)\s*(.*?)\s*$', line)
+        if not m:
+            self.errors.append((self.linenr, 'Cannot parse line: %s' % line))
+            return None
+        inst = m.group(1)
+        operands = m.group(2)
 
+        # uppercase, split into atoms
+        inst = inst.upper().split('.')
         try:
             op = self.isa.types['INST_OPCODE'].values_by_name[inst[0]].value
         except KeyError:
@@ -261,7 +270,7 @@ class Assembler(object):
                 inst = inst._replace(addr=addr)
             inst_out = assemble(self.isa, inst, warnings)
             rv.append(inst_out)
-
+            # sanity check: disassemble and see if the instruction matches
             dis_i = disassemble(self.isa, inst_out, warnings)
             if not compare_inst(inst, dis_i, warnings):
                 # Assembly did not match disassembly, print details

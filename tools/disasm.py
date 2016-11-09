@@ -42,8 +42,8 @@ def parse_arguments():
     parser.add_argument('input', metavar='INFILE', type=str, 
             help='Binary shader file')
     parser.add_argument('-a', dest='addr',
-            default=False, action='store_const', const=True,
-            help='Show address with instructions')
+            default=True, action='store_const', const=False,
+            help='Show no address with instructions')
     parser.add_argument('-r', dest='raw',
             default=False, action='store_const', const=True,
             help='Show raw data with instructions')
@@ -62,7 +62,7 @@ def main():
         for idx in xrange(len(data)//16):
             inst = struct.unpack(b'<IIII', data[idx*16:idx*16+16])
             if args.addr:
-                out.write('%3x: ' % idx)
+                out.write('%3i: ' % idx)
             if args.raw:
                 out.write('%08x %08x %08x %08x  ' % inst)
             warnings = []
@@ -70,7 +70,7 @@ def main():
             text = format_instruction(isa, parsed)
             out.write(text)
             if warnings:
-                out.write(' ; ')
+                out.write('\t; ')
                 out.write(' '.join(warnings))
             out.write('\n')
 

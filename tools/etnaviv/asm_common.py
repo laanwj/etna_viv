@@ -75,7 +75,7 @@ def disassemble(isa, inst, warnings):
             comps = fields['DST_COMPS'] # xyzw
         )
         if fields['DST_AMODE'] != 0 or fields['DST_USE'] != 0:
-            warnings.append('use and amode bitfields are nonzero for areg')
+            warnings.append('use and amode bitfields are nonzero for areg (amode=%d,use=%d)' % (fields['DST_AMODE'], fields['DST_USE']))
     else:
         dst = DstOperand(
             use = fields['DST_USE'], # destination used
@@ -85,7 +85,7 @@ def disassemble(isa, inst, warnings):
         )
         if not dst.use:
             if dst.amode != 0 or dst.reg != 0 or dst.comps != 0:
-                warnings.append('dst not used but fields non-zero')
+                warnings.append('dst not used but fields non-zero (amode=%d,reg=%d,comps=%d)' % (dst.amode,dst.reg,dst.comps))
             dst = None
 
     tex = TexOperand(
@@ -95,7 +95,7 @@ def disassemble(isa, inst, warnings):
     )
     if op not in [0x18, 0x19, 0x1A, 0x1B, 0x1C]: # tex op
         if tex.id != 0 or tex.amode != 0 or tex.swiz != 0:
-            warnings.append('tex not used but fields non-zero')
+            warnings.append('tex not used but fields non-zero (id=%d,amode=%d,swiz=%d)' % (tex.id,tex.amode,tex.swiz))
         tex = None
 
     if op in [0x14, 0x16]: # CALL, BRANCH
@@ -119,7 +119,7 @@ def disassemble(isa, inst, warnings):
         )
         if not operand.use:
             if operand.reg != 0 or operand.swiz != 0 or operand.neg != 0 or operand.abs != 0 or operand.amode != 0 or operand.rgroup != 0:
-                warnings.append('src%i not used but fields non-zero' % idx)
+                warnings.append('src%i not used but fields non-zero (reg=%d,swiz=%d,neg=%d,abs=%d,amode=%d,rgroup=%d)' % (idx, operand.reg, operand.swiz, operand.neg, operand.abs, operand.amode, operand.rgroup))
             operand = None
 
         src.append(operand)
@@ -195,7 +195,7 @@ def format_tex(isa, tex):
     return arg
 
 def format_addr(isa, addr):
-    return 'label_%x' % (addr.addr)
+    return '%i' % (addr.addr)
 
 def format_instruction(isa, inst):
     '''
@@ -224,5 +224,5 @@ def format_instruction(isa, inst):
     if inst.addr is not None:
         args.append(format_addr(isa, inst.addr))
 
-    return opcode+' '+(', '.join(args))
+    return opcode.lower()+'\t'+(', '.join(args))
 
