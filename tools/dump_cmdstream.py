@@ -255,14 +255,14 @@ def dump_command_buffer(f, mem, addr, end_addr, depth, state_map, cmdstream_info
         for rec in parse_command_buffer(words, cmdstream_info):
             if rec.state_info is not None:
                 try:
-                    path = state_map.lookup_address(rec.state_info.pos)
+                    path = [(state_map,None)] + state_map.lookup_address(rec.state_info.pos)
                 except KeyError:
                     f.write('/* Warning: unknown state %05x */\n')
                 else:
-                    prefix = 'VIVS_' + format_path_c(path, True)
-                    regname = 'VIVS_' + format_path_c(path, False)
-                    expr = describe_c(prefix, path[-1][0].type, rec.value)
-                    f.write('etna_set_state(stream, %s, %s);\n' % (regname, expr))
+                    # could pipe this to clang-format to format and break up lines etc
+                    f.write('etna_set_state(stream, %s, %s);\n' % (
+                        format_path_c(path),
+                        describe_c(path, rec.value)))
             else:
                 # Handle other commands?
                 pass

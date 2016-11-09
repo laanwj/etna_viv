@@ -1,6 +1,6 @@
 from etnaviv.parse_rng import BitField, BaseType, Enum, BitSet, Domain
 
-def format_path_c(path, only_prefix):
+def format_path_c(path, only_prefix=False):
     '''Format path into state space as C string'''
     retval = []
     indices = []
@@ -14,7 +14,7 @@ def format_path_c(path, only_prefix):
         name += '(' + (','.join(indices)) + ')'
     return name
 
-def describe_c(prefix, typ, value):
+def describe_c_inner(prefix, typ, value):
     '''
     Visitor to descibe expression in C format.
     '''
@@ -27,9 +27,9 @@ def describe_c(prefix, typ, value):
         elif isinstance(typ.type, Enum) and typ.type.name is None:
             return prefix + '_' + typ.name + '_' + typ.type.values_by_value[value].name
         else:
-            return prefix + '_' + typ.name + '(' + describe_c(prefix, typ.type, value) + ')'
+            return prefix + '_' + typ.name + '(' + describe_c_inner(prefix, typ.type, value) + ')'
     elif isinstance(typ, BitSet):
-        terms = (describe_c(prefix, field, field.extract(value)) for field in typ.bitfields)
+        terms = (describe_c_inner(prefix, field, field.extract(value)) for field in typ.bitfields)
         terms = [t for t in terms if t is not None]
         if terms:
             return ' | '.join(terms)
@@ -46,4 +46,8 @@ def describe_c(prefix, typ, value):
         return (typ.name or prefix) + '_' + typ.values_by_value[value].name
     raise NotImplementedError(type(typ))
 
+def describe_c(path, value):
+    '''Describe state value as C expression.'''
+    prefix = format_path_c(path, True)
+    return describe_c_inner(prefix, path[-1][0].type, value)
 

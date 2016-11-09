@@ -8,5 +8,5 @@ if [ -z "$1" ]; then
     echo "Usage: show_egl2_log.sh ../native/egl2/cube.fdr <flags>"
     echo
 fi
-python dump_cmdstream.py $* ${DIR}/data/gcs_hal_interface_${GCABI}.json
+python ${DIR}/dump_cmdstream.py $* ${DIR}/data/gcs_hal_interface_${GCABI}.json
 
