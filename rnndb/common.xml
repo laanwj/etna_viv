@@ -311,7 +311,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield pos="3" name="UNK3"/>
         <bitfield pos="4" name="UNK4"/>
         <bitfield pos="5" name="2D_GAMMA"/>
-        <bitfield pos="6" name="SINGLE_BUFFER"/>
+        <bitfield pos="6" name="SINGLE_BUFFER" brief="Supports rendering into single buffer with multiple pixel pipes"/>
         <bitfield pos="7" name="UNK7"/>
         <bitfield pos="8" name="UNK8"/>
         <bitfield pos="9" name="UNK9"/>
