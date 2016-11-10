@@ -91,6 +91,7 @@ Map of documentation for known render state and registers. Mapped in rules-ng-ng
     rnndb/state_hi.xml  Host interface registers
     rnndb/state_2d.xml  2D engine state
     rnndb/state_3d.xml  3D engine state
+    rnndb/state_vg.xml  VG engine state (stub)
     rnndb/state_common.xml  Common, shared state defines
 
 Other scattered bits of documentation about the hardware and ISA can be found in `doc/hardware.md`.
@@ -139,18 +140,11 @@ The command stream format represented in rules-ng-ng XML format can be found her
 Command stream interception
 ----------------------------
 
-A significant part of reverse engineering was done by intercepting command streams while running GL simple demos.
-`viv_hook` is a library to intercept and log the traffic between `libGAL` (the Vivante user space blob) and the kernel
-driver / hardware.
+A significant part of reverse engineering was done by intercepting command streams while running GL demos
+and examples.
 
-This library uses ELF hooks to intercept only system calls such as `ioctl` and `mmap` coming from the driver, not from
-other parts of the application, unlike more crude hacks using `LD_PRELOAD`.
-
-At the beginning of the program call `the_hook`, at the end of the program call `end_hook` to finalize
-and flush buffers. This should even work for native android applications that fork from the zygote.
-
-The raw binary structures interchanged with the kernel are written to disk in a `.fdr` file, along
-with updates to video memory, to be parsed by the accompanying command stream dumper and other tools.
+Command stream interception functionality moved to the [libvivhook](https://github.com/etnaviv/libvivhook)
+repository.
 
 Command stream dumper
 ----------------------
@@ -168,16 +162,6 @@ Decodes and dumps the intercepted command stream in human readable format, makin
 - `fdr_dump_mem.py`
 
 Extract areas of video memory, images, and command buffers at certain points of execution.
-
-Replay tests
---------------
-
-The replay tests replay the command stream and ioctl commands of the EGL demos, to get the same output.
-
-They can be found in `src/replay`.
-
-Currently this is available for the `cube` example that renders a smoothed cube, and the `cube_companion`
-example that renders a textured cube.
 
 Vivante GPL kernel drivers
 ---------------------------
