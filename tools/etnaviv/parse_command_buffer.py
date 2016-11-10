@@ -20,7 +20,7 @@ CMD_PAYLOAD_SIZES = {
     9: 1,  # STALL
     10: 3, # CALL
     11: 0, # RETURN
-    12: 3, # DRAW_NEW
+    12: 2, # DRAW_INSTANCED
     13: 0  # CHIP_SELECT
 }
 
@@ -47,10 +47,12 @@ def parse_command_buffer(buffer_words, cmdstream_info):
                 opname = cmdstream_info.opcodes.values_by_value[op].name
             except KeyError:
                 opname = None
+            opinfo = None
             if opname is not None:
-                opinfo = cmdstream_info.domain.lookup_address(0,(opname,'FE_OPCODE'))
-            else:
-                opinfo = None
+                try:
+                    opinfo = cmdstream_info.domain.lookup_address(0,(opname,'FE_OPCODE'))
+                except KeyError:
+                    pass
             desc = '%s (%i)' % (opname or 'UNKNOWN', op)
             if op == 1:
                 state_base = (value & 0xFFFF)<<2
@@ -72,8 +74,12 @@ def parse_command_buffer(buffer_words, cmdstream_info):
                 pos = payload_ofs*4 + state_base
                 state_info = StateInfo(pos, state_format)
             elif opname is not None:
-                opinfo = cmdstream_info.domain.lookup_address(payload_ofs*4+4,(opname,'FE_OPCODE'))
-                desc = '  ' + opinfo[-1][0].name + ' ' + opinfo[-1][0].describe(value)
+                try:
+                    opinfo = cmdstream_info.domain.lookup_address(payload_ofs*4+4,(opname,'FE_OPCODE'))
+                except KeyError:
+                    pass
+                else:
+                    desc = '  ' + opinfo[-1][0].name + ' ' + opinfo[-1][0].describe(value)
         else:
             desc = "PAD"
             payload_ofs = -2 # padding
