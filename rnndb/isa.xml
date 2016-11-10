@@ -56,7 +56,12 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <doc>
             dst := src0 + src2
 
-            src0 is added to src1 and the result is put into temporary register dst.
+            f32: src0 is added to src2 and the result is put into temporary register dst. This
+            is a four-wide vector operation.
+
+            u32: src0.x is added to src2.x and the result is put into the first enabled component
+            of register dst. This is a scalar operation, and unlike some of the other scalar
+            instructions the result is never broadcasted to multiple components.
         </doc>
     </value>
     <value value="0x02" name="MAD" brief="Multiply add">
@@ -318,8 +323,33 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             This is a scalar operation, the result is broadcasted over all active destination components.
         </doc>
     </value>
-    <value value="0x40" name="IMULHI0" brief="High half of the product of x and y (mul_hi intrinsic)"/>
-    <value value="0x58" name="LEADZERO" brief="Count leading zeros (clz intrinsic)"/>
+    <value value="0x40" name="IMULHI0" brief="High half of the product of x and y">
+        <doc>
+            dst := (src0.x * src1.x) >> 32
+
+            A 64-bit multiplication between src0.x and src1.x is performed and the upper 32 bits of the
+            result are returned. Matches the mul_hi intrinsic in OpenCL.
+
+            This is a scalar operation, the result is broadcasted over all active destination components.
+        </doc>
+    </value>
+    <value value="0x4C" name="IMADLO0" brief="Integer multiply and add">
+        <doc>
+            dst := src0.x * src1.x + src2.x
+
+            This is a scalar operation, the result is broadcasted over all active destination components.
+        </doc>
+    </value>
+    <value value="0x58" name="LEADZERO" brief="Count leading zeros">
+        <doc>
+            dst := clz(src0.x)
+
+            Returns the number of leading 0-bits in src.x, starting at the most significant bit position.
+            If the input argument is 0, 32 iz returned. Matches the clz intrinsic in OpenCL.
+
+            This is a scalar operation, the result is broadcasted over all active destination components.
+        </doc>
+    </value>
     <value value="0x59" name="LSHIFT" brief="Bitwise left shift">
         <doc>
             dst := src0.x &lt;&lt; (src2.x &amp; 31)
