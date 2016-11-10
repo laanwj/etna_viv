@@ -58,6 +58,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <!-- Only for DRAW_INSTANCED -->
     <value value="18" name="LINES_INDEXED" brief="Lines (indexed draw)"/>
     <value value="20" name="TRIANGLES_INDEXED" brief="Triangles (indexed draw)"/>
+    <!-- As of 5.0.11.p8.4 Vivante drivers this is being generated on gc3000 but never on gc2000.
+         Instead, triangle strips are converted to TRIANGLES_INDEXED. Has to be verified what
+         hardware this is functional on:
+     -->
+    <value value="21" name="TRIANGLE_STRIP_INDEXED" brief="Triangle strip (indexed draw)"/>
 </enum>
 <domain name="VIVS"/>
 

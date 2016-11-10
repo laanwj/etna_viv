@@ -120,6 +120,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <value value="1" name="UNSIGNED_SHORT" brief="16-bit indices"/>
                 <value value="2" name="UNSIGNED_INT" brief="32-bit indices"/>
             </bitfield>
+            <bitfield pos="8" name="PRIMITIVE_RESTART" brief="Enable primitive restart"/>
         </reg32>
         <reg32 offset="0x0064C" name="VERTEX_STREAM_BASE_ADDR" value="0x00000000" type="VIVM"/> <!-- streamCount == 1 -->
         <reg32 offset="0x00650" name="VERTEX_STREAM_CONTROL" value="0x00000000" type="FE_VERTEX_STREAM_CONTROL"/> <!-- streamCount == 1 -->
@@ -199,7 +200,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             </doc>
         </reg32>
         <reg32 offset="0x00670" name="AUTO_FLUSH" value="0x00000000" brief="Auto flush cycles"/>
-        <reg32 offset="0x00674" name="UNK00674" value="0x00000000"/>
+        <!-- Used when PRIMITIVE_RESTART bit set in INDEX_STREAM_CONTROL -->
+        <reg32 offset="0x00674" name="PRIMITIVE_RESTART_INDEX" value="0x00000000" brief="Primitive restart index"/>
         <reg32 offset="0x00678" name="UNK00678" value="0x00000000"/>
         <reg32 offset="0x0067C" name="UNK0067C" value="0xFFFFFFFF"/>
         <stripe name="VERTEX_STREAMS" length="8" stride="4"> <!-- streamCount > 1 -->
