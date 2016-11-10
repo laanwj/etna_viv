@@ -32,7 +32,7 @@ from collections import namedtuple
 
 from etnaviv.util import rnndb_path
 from etnaviv.parse_rng import parse_rng_file, format_path, BitSet, Domain
-from etnaviv.asm_common import format_instruction, disassemble
+from etnaviv.disasm import disasm_format
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Disassemble shader')
@@ -47,6 +47,9 @@ def parse_arguments():
     parser.add_argument('-r', dest='raw',
             default=False, action='store_const', const=True,
             help='Show raw data with instructions')
+    parser.add_argument('-c', dest='cfmt',
+            default=False, action='store_const', const=True,
+            help='Output in format suitable for inclusion in C source')
     return parser.parse_args()        
 
 def main():
@@ -59,20 +62,7 @@ def main():
         if len(data)%16:
             print >>sys.stderr,'Size of code must be multiple of 16.'
             exit(1)
-        for idx in xrange(len(data)//16):
-            inst = struct.unpack(b'<IIII', data[idx*16:idx*16+16])
-            if args.addr:
-                out.write('%3i: ' % idx)
-            if args.raw:
-                out.write('%08x %08x %08x %08x  ' % inst)
-            warnings = []
-            parsed = disassemble(isa, inst, warnings)
-            text = format_instruction(isa, parsed)
-            out.write(text)
-            if warnings:
-                out.write('\t; ')
-                out.write(' '.join(warnings))
-            out.write('\n')
+        disasm_format(out, isa, data, args.addr, args.raw, args.cfmt)
 
 if __name__ == '__main__':
     main()

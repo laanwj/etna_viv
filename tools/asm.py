@@ -34,6 +34,7 @@ from etnaviv.util import rnndb_path
 from etnaviv.parse_rng import parse_rng_file, format_path, BitSet, Domain
 from etnaviv.asm_common import DstOperand, DstOperandAReg, DstOperandMem, SrcOperand, TexOperand, AddrOperand, Instruction, AMODES, COMPS, RGROUPS
 from etnaviv.asm_common import disassemble, format_instruction
+from etnaviv.disasm import disasm_format
 
 reg_re = re.compile('^(i|t|u|a|tex|\?4\?|\?5\?|\?6\?|\?7\?)(\d+)(\[.*?\])?(\.[\_xyzw]{1,4})?$')
 mem_re = re.compile('^mem(\.[\_xyzw]{1,4})?$')
@@ -345,17 +346,14 @@ def main():
             print('Line %i: %s' % (line, error))
 
         if code is not None:
+            data = b''.join(struct.pack(b'<IIII', *inst) for inst in code)
             if args.bin_out is not None:
                 with open(args.bin_out, 'wb') as f:
-                    for inst in code:
-                        f.write(struct.pack(b'<IIII', *inst))
-            else: # no binary output, print as ascii
-                for inst in code:
-                    print('0x%08x,0x%08x,0x%08x,0x%08x,' % tuple(inst))
+                    f.write(data)
+            else: # no binary output, print as C-ish ASCII through disassembler
+                disasm_format(out, isa, data, opt_addr=False, opt_raw=False, opt_cfmt=True)
         else:
             exit(1)
-
-
 
 if __name__ == '__main__':
     main()

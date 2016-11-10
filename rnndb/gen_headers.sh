@@ -6,5 +6,6 @@ HEADERGEN=${DIR}/../envytools/build/rnn/headergen
 ${HEADERGEN} isa.xml
 ${HEADERGEN} cmdstream.xml
 ${HEADERGEN} state.xml
+rm -f ${DIR}/copyright.xml.h
 mv ${DIR}/*.xml.h ${DIR}/../src/etnaviv
 
