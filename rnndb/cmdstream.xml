@@ -55,14 +55,6 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <value value="8" name="QUADS" brief="Quadliterals (GL_QUADS)">
         <doc>Only supported when RECT_PRIMITIVE feature bit is st.</doc>
     </value>
-    <!-- Only for DRAW_INSTANCED -->
-    <value value="18" name="LINES_INDEXED" brief="Lines (indexed draw)"/>
-    <value value="20" name="TRIANGLES_INDEXED" brief="Triangles (indexed draw)"/>
-    <!-- As of 5.0.11.p8.4 Vivante drivers this is being generated on gc3000 but never on gc2000.
-         Instead, triangle strips are converted to TRIANGLES_INDEXED. Has to be verified what
-         hardware this is functional on:
-     -->
-    <value value="21" name="TRIANGLE_STRIP_INDEXED" brief="Triangle strip (indexed draw)"/>
 </enum>
 <domain name="VIVS"/>
 
@@ -280,7 +272,14 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="31" low="27" name="OP">
                 <value value="12" name="DRAW_INSTANCED"/>
             </bitfield>
-            <bitfield high="23" low="16" name="TYPE" type="PRIMITIVE_TYPE"/>
+            <!-- As of 5.0.11.p8.4 Vivante drivers, indexed TRIANGLE_STRIPS are
+                 never being generated on i.MX6 gc2000.
+                 Instead, indexed triangle strips are converted to indexed
+                 TRIANGLES. It is unclear why the driver is doing this, it may
+                 be working around a hardware issue.
+             -->
+            <bitfield pos="20" name="INDEXED" brief="Use indexed drawing"/>
+            <bitfield high="19" low="16" name="TYPE" type="PRIMITIVE_TYPE"/>
             <bitfield high="15" low="0" name="INSTANCE_COUNT_LO" brief="Lower 16 bits of instance count"/>
         </reg32>
         <reg32 offset="0x00004" name="COUNT" brief="Number of primitives to render">
