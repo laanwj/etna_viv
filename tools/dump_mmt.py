@@ -8,6 +8,7 @@ from etnaviv.mmt import parse_mmt_file, LogMessage, Open, Mmap, StoreInfo, Store
 from etnaviv.parse_command_buffer import annotate_command_buffer
 from etnaviv.parse_proc_map import extract_mem_ranges
 from etnaviv.textutil import pad_right
+import json
 
 class ATTRS:
     state = '\x1b[93m'
@@ -135,7 +136,7 @@ def uninteresting_loc(info):
 def format_loc(loc):
     return '{loc.basename}+0x{loc.offset:x}: {loc.func}'.format(loc=loc,a=ATTRS)
 
-def dump_mmt_file(f, verbose, show_depth):
+def dump_mmt_file(f, verbose, show_depth, as_json):
     state_to_info = set()
     cmd_to_info = set()
     for states in mmt_state_blocks(mmt_file_states(f)):
@@ -144,26 +145,36 @@ def dump_mmt_file(f, verbose, show_depth):
             dump_states(states)
         update_mappings(states, state_to_info, cmd_to_info)
 
-    print('{a.header}States{a.end}'.format(a=ATTRS))
+    if not as_json:
+        print('{a.header}States{a.end}'.format(a=ATTRS))
+    per_state = []
     for addr,info in sorted(state_to_info):
         if uninteresting_loc(info): # not interested in this, usually
             # if this happens and there is no other source that would indicate a bug
             continue
-        print('[{a.state}{:05X}{a.end}] {a.top}{}{a.end}'.format(addr,format_loc(info[0]),a=ATTRS))
+        if not as_json:
+            print('[{a.state}{:05X}{a.end}] {a.top}{}{a.end}'.format(addr,format_loc(info[0]),a=ATTRS))
         if show_depth:
             for line in info[1:]:
                 print('        {}'.format(format_loc(line),a=ATTRS))
-    print()
-    print('{a.header}Commands{a.end}'.format(a=ATTRS))
-    print('{a.th}cmd   ofs  addr{a.end}'.format(a=ATTRS))
+        per_state.append({'state':addr, 'loc':[i._asdict() for i in info]})
+    if not as_json:
+        print()
+        print('{a.header}Commands{a.end}'.format(a=ATTRS))
+        print('{a.th}cmd   ofs  addr{a.end}'.format(a=ATTRS))
+    per_command = []
     for cmd,ofs,info in sorted(cmd_to_info):
         if cmd == 1:
             continue # State loading is above
-        print('0x%02x +0x%02x %s' % (cmd, ofs, format_loc(info[0])))
+        if not as_json:
+            print('0x%02x +0x%02x %s' % (cmd, ofs, format_loc(info[0])))
+        per_command.append({'cmd':cmd,'ofs':ofs,'loc':[i._asdict() for i in info]})
+    if as_json:
+        json.dump({'states':per_state,'commands':per_command}, sys.stdout, indent=4)
 
-def dump_mmt(filename, verbose, show_depth):
+def dump_mmt(filename, verbose, show_depth, as_json):
     with open(filename, 'rb') as f:
-        dump_mmt_file(f, verbose, show_depth)
+        dump_mmt_file(f, verbose, show_depth, as_json)
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Dump mmt')
@@ -173,14 +184,16 @@ def parse_arguments():
     parser.add_argument('-v','--verbose', dest='verbose',
             default=False, action='store_const', const=True,
             help='Show verbose output while processing')
+    parser.add_argument('-j','--json', dest='json',
+            default=False, action='store_const', const=True,
+            help='Export as JSON format')
     parser.add_argument('input', metavar='INFILE', type=str,
             help='Input mmt file')
     return parser.parse_args()
 
 def main():
     args = parse_arguments()
-    dump_mmt(args.input, args.verbose, args.show_depth)
-    # TODO: JSON export
+    dump_mmt(args.input, args.verbose, args.show_depth, args.json)
 
 if __name__ == '__main__':
     main()
