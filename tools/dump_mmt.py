@@ -2,6 +2,7 @@
 # Parse mmt log
 import sys
 import struct
+import argparse
 from collections import namedtuple
 from etnaviv.mmt import parse_mmt_file, LogMessage, Open, Mmap, StoreInfo, Store, Commit, ProcessMap
 from etnaviv.parse_command_buffer import annotate_command_buffer
@@ -160,9 +161,26 @@ def dump_mmt_file(f, verbose, show_depth):
             continue # State loading is above
         print('0x%02x +0x%02x %s' % (cmd, ofs, format_loc(info[0])))
 
-def dump_mmt(filename):
+def dump_mmt(filename, verbose, show_depth):
     with open(filename, 'rb') as f:
-        dump_mmt_file(f, False, True)
+        dump_mmt_file(f, verbose, show_depth)
+
+def parse_arguments():
+    parser = argparse.ArgumentParser(description='Dump mmt')
+    parser.add_argument('-d','--show-depth', dest='show_depth',
+            default=False, action='store_const', const=True,
+            help='Show stack traces')
+    parser.add_argument('-v','--verbose', dest='verbose',
+            default=False, action='store_const', const=True,
+            help='Show verbose output while processing')
+    parser.add_argument('input', metavar='INFILE', type=str,
+            help='Input mmt file')
+    return parser.parse_args()
+
+def main():
+    args = parse_arguments()
+    dump_mmt(args.input, args.verbose, args.show_depth)
+    # TODO: JSON export
 
 if __name__ == '__main__':
-    dump_mmt(sys.argv[1])
+    main()
