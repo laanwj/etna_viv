@@ -175,10 +175,17 @@ def dump_buf(f, name, data):
 
 def dump_shader(f, name, states, start, end):
     '''Dump binary shader code to disk'''
-    if not start in states:
+    dump = False
+
+    for x in range(start, end, 4):
+        if x in states:
+            dump = True
+            pos = x
+            break
+
+    if not dump:
         return # No shader detected
     # extract code from consecutive addresses
-    pos = start
     code = []
     while pos < end and (pos in states):
         code.append(states[pos])
