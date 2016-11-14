@@ -501,10 +501,12 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="15" low="8" name="REF_FRONT" brief="glStencilFunc ref (GL_FRONT)">
                 <doc>REF_BACK is in register STENCIL_CONFIG_EXT.</doc>
             </bitfield>
-            <bitfield high="23" low="16" name="MASK_FRONT" brief="glStencilFunc mask">
-                <doc>XXX there appears to be no specific MASK_BACK, this state is used for both front and back?</doc>
+            <bitfield high="23" low="16" name="MASK_FRONT" brief="glStencilFunc mask (GL_FRONT)">
+                <doc>MASK_BACK is in register STENCIL_CONFIG_EXT2.</doc>
             </bitfield>
-            <bitfield high="31" low="24" name="WRITE_MASK" brief="glStencilMask"/>
+            <bitfield high="31" low="24" name="WRITE_MASK_FRONT" brief="glStencilMask (GL_FRONT)">
+                <doc>WRITE_MASK_BACK is in register STENCIL_CONFIG_EXT2.</doc>
+            </bitfield>
         </reg32>
         <reg32 offset="0x01420" name="ALPHA_OP" value="0x00000000" masked="yes">
             <bitfield pos="0" name="ALPHA_TEST"/>
@@ -581,7 +583,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x014A8" name="DITHER" value="0xFFFFFFFF" length="2"/>
         <reg32 offset="0x014B0" name="UNK014B0" value="0x00000000"/>
         <reg32 offset="0x014B4" name="UNK014B4" value="0x00000000"/>
-        <reg32 offset="0x014B8" name="UNK014B8" value="0x00000000"/>
+        <reg32 offset="0x014B8" name="STENCIL_CONFIG_EXT2" value="0x00000000">
+            <bitfield high="7" low="0" name="MASK_BACK" brief="glStencilFunc mask (GL_BACK)"/>
+            <bitfield high="15" low="8" name="WRITE_MASK_BACK" brief="glStencilMask (GL_BACK)"/>
+        </reg32>
         <reg32 offset="0x01580" name="UNK01580" value="0x00000000" length="3" stride="4"/>
     </stripe>
 
