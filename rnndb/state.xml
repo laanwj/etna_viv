@@ -75,6 +75,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 
     <bitset name="FE_VERTEX_STREAM_CONTROL">
         <bitfield high="7" low="0" name="VERTEX_STRIDE"/>
+        <bitfield high="23" low="16" name="VERTEX_DIVISOR" brief="glVertexAttribDivisor"/>
     </bitset>
 
     <!-- State ranges -->
