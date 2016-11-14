@@ -362,8 +362,21 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x00A80" name="VIEWPORT_UNK00A80" value="0x00000000" type="float"/>
         <reg32 offset="0x00A84" name="VIEWPORT_UNK00A84" value="0x00000000" type="float"/>
-        <reg32 offset="0x00A88" name="UNK00A88" type="float"/>
-        <reg32 offset="0x00A8C" name="VIEWPORT_UNK00A8C" value="0x00000000" type="float"/>
+        <reg32 offset="0x00A88" name="FLAGS">
+            <doc>
+                The Vivante driver sets these at context setup, they seem to be
+                some global bypasses and CYA flags.
+            </doc>
+            <bitfield pos="24" name="UNK24"/> <!-- set on gc2000 -->
+            <bitfield pos="30" name="ZCONVERT_BYPASS"/> <!-- set on gc3000 -->
+        </reg32>
+        <reg32 offset="0x00A8C" name="ZFARCLIPPING" value="0x00000000">
+            <doc>
+                This is set by the Vivante driver to 0x00000000 if the
+                chipMinorFeatures4_ZFIXES bit is set (as on gc3000), 0x38000000
+                otherwise (gc2000).
+            </doc>
+	</reg32>
     </stripe>
 
     <stripe name="SE" brief="Setup Engine states">
@@ -394,7 +407,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00E08" name="EARLY_DEPTH" value="0x00000031" brief="Early depth control"/>
         <reg32 offset="0x00E0C" name="UNK00E0C" value="0x00000000"/>
         <reg32 offset="0x00E10" name="MULTISAMPLE_UNK00E10" value="0x00000000" length="4" stride="4"/>
-        <reg32 offset="0x00E20" name="UNK00E20" length="4"/>
+        <reg32 offset="0x00E20" name="HDEPTH_CONTROL">
+            <bitfield pos="0" name="UNK0"/>
+            <bitfield high="14" low="12" name="COMPARE" type="COMPARE_FUNC"/>
+        </reg32>
         <reg32 offset="0x00E40" name="CENTROID_TABLE" value="0x00000000" length="16" stride="4"/>
     </stripe>
 
@@ -456,6 +472,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="13" name="WRITE_ENABLE_MASK"/>
             <bitfield pos="16" name="EARLY_Z"/>
             <bitfield pos="17" name="EARLY_Z_MASK"/>
+            <bitfield pos="18" name="UNK18"/>
             <bitfield pos="20" name="ONLY_DEPTH"/>
             <bitfield pos="21" name="ONLY_DEPTH_MASK"/>
             <bitfield pos="24" name="DISABLE_ZS" brief="Completely disables writing to depth stencil buffer"/>
@@ -549,6 +566,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="17" name="OVERWRITE_MASK"/>
             <bitfield pos="20" name="SUPER_TILED" brief="64x64 alignment"/>
             <bitfield pos="21" name="SUPER_TILED_MASK"/>
+            <bitfield pos="25" name="UNK25"/>
+            <bitfield pos="26" name="UNK26"/>
         </reg32>
         <reg32 offset="0x01430" name="COLOR_ADDR" value="0x00000000" type="VIVM"/> <!-- pixelPipes == 1 -->
         <reg32 offset="0x01434" name="COLOR_STRIDE" value="0x00000000"/>
@@ -729,8 +748,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x016A0" name="EXTRA_CONFIG" value="0x00000000">
             <bitfield high="1" low="0" name="AA" brief="Anti-aliasing mode (not used for MSAA)"/>
             <bitfield high="9" low="8" name="ENDIAN" type="ENDIAN_MODE"/>
+            <bitfield pos="20" name="UNK20"/>
+            <bitfield pos="28" name="UNK28"/>
         </reg32>
-        <reg32 offset="0x016B0" name="UNK016B0" value="0x00000000"/>
+        <reg32 offset="0x016B0" name="UNK016B0" value="0x00000000"/> <!-- size / 64 -->
         <reg32 offset="0x016B4" name="UNK016B4" value="0x00000000"/>
         <reg32 offset="0x016B8" name="UNK016B8">
             <bitfield pos="0" name="UNK0"/>
