@@ -29,6 +29,7 @@ from collections import OrderedDict
 from lxml import etree as ET # parsing
 from itertools import izip
 from os import path
+from etnaviv.floatutil import int_as_float
 
 ns = "{http://nouveau.freedesktop.org/}"
 XML_BOOL = {'1':True, '0':False, 'false':False, 'true':True, 'yes':True, 'no':False}
@@ -50,14 +51,6 @@ def interval_add(bounds, val):
 def interval_check(bounds, val):
     '''Check if val lies within this interval'''
     return bounds[0] <= val < bounds[1]
-def int_as_float(i, size):
-    '''Return float with binary representation of unsigned int i'''
-    if size == 32:
-        return struct.unpack(b'f', struct.pack(b'I', i))[0]
-    elif size == 64:
-        return struct.unpack(b'd', struct.pack(b'Q', i))[0]
-    elif size == 16: # half-float
-        pass # TODO
 
 #-------------------------------------------------------------------------
 # Helper classes

@@ -581,8 +581,14 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="4" name="OP_MASK"/>
         </reg32>
         <reg32 offset="0x014A8" name="DITHER" value="0xFFFFFFFF" length="2"/>
-        <reg32 offset="0x014B0" name="UNK014B0" value="0x00000000"/>
-        <reg32 offset="0x014B4" name="UNK014B4" value="0x00000000"/>
+        <reg32 offset="0x014B0" name="ALPHA_COLOR_EXT0" value="0x00000000" brief="High-precision alpha blend color"> <!--gc3000?-->
+            <bitfield high="15" low="0" name="B" type="float"/> <!-- 16-bit float --> 
+            <bitfield high="31" low="16" name="G" type="float"/> <!-- 16-bit float -->
+        </reg32>
+        <reg32 offset="0x014B4" name="ALPHA_COLOR_EXT1" value="0x00000000" brief="High-precision alpha blend color"> <!--gc3000?-->
+            <bitfield high="15" low="0" name="R" type="float"/> <!-- 16-bit float -->
+            <bitfield high="31" low="16" name="A" type="float"/> <!-- 16-bit float -->
+        </reg32>
         <reg32 offset="0x014B8" name="STENCIL_CONFIG_EXT2" value="0x00000000">
             <bitfield high="7" low="0" name="MASK_BACK" brief="glStencilFunc mask (GL_BACK)"/>
             <bitfield high="15" low="8" name="WRITE_MASK_BACK" brief="glStencilMask (GL_BACK)"/>
