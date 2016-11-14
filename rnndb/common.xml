@@ -403,7 +403,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield pos="24" name="UNK24"/>
         <bitfield pos="25" name="UNK25"/>
         <bitfield pos="26" name="UNK26"/>
-        <bitfield pos="27" name="DEPTHSTENCIL_NATIVE_SUPPORT"/>
+        <bitfield pos="27" name="RS_DEPTHSTENCIL_NATIVE_SUPPORT" brief="Likely indicates that the RS can work with depth/stencil format(s)"/>
         <bitfield pos="28" name="V2_MSAA_COMP_FIX"/>
         <bitfield pos="29" name="UNK29"/>
         <bitfield pos="30" name="UNK30"/>
