@@ -155,7 +155,7 @@ def format_dst(isa, dst):
         if isinstance(dst, DstOperand):
             arg = 't%i' % (dst.reg)
             if dst.amode != 0:
-                arg += '[%s]' % amodes[dst.amode]
+                arg += '[%s]' % AMODES[dst.amode]
             if dst.comps != 15: # if not all comps selected
                 arg += '.' + format_comps(dst.comps)
         elif isinstance(dst, DstOperandAReg):
@@ -197,7 +197,7 @@ def format_tex(isa, tex):
     '''Format texture operand'''
     arg = 'tex%i' % (tex.id)
     if tex.amode != 0:
-        arg += '[%i]' % amodes[tex.amode]
+        arg += '[%i]' % AMODES[tex.amode]
     if tex.swiz != 0xe4: # if not null swizzle
         arg += '.' + format_swiz(tex.swiz)
 

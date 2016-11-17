@@ -287,6 +287,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="23" low="0" name="VERTEX_COUNT"/>
         </reg32>
         <reg32 offset="0x00008" name="START">
+            <!-- This appears to be ignored on i.MX6 GC2000, and only
+                 ever emitted by Vivante driver as non-zero for GC3000.
+                 Probably determined by HALTI2 feature bit.
+             -->
             <bitfield high="31" low="0" name="INDEX" brief="Index of the first vertex to load"/>
         </reg32>
     </stripe>

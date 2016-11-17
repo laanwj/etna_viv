@@ -50,7 +50,7 @@ def parse_arguments():
     parser.add_argument('-c', dest='cfmt',
             default=False, action='store_const', const=True,
             help='Output in format suitable for inclusion in C source')
-    return parser.parse_args()        
+    return parser.parse_args()
 
 def main():
     args = parse_arguments()
@@ -60,7 +60,7 @@ def main():
     with open(args.input, 'rb') as f:
         data = f.read()
         if len(data)%16:
-            print >>sys.stderr,'Size of code must be multiple of 16.'
+            print('Size of code must be multiple of 16.', file=sys.stderr)
             exit(1)
         disasm_format(out, isa, data, args.addr, args.raw, args.cfmt)
 
