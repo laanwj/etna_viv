@@ -257,7 +257,7 @@ def dump_command_buffer(f, mem, addr, end_addr, depth, state_map, cmdstream_info
                 try:
                     path = [(state_map,None)] + state_map.lookup_address(rec.state_info.pos)
                 except KeyError:
-                    f.write('/* Warning: unknown state %05x */\n')
+                    f.write('/* Warning: unknown state %05x */\n' % rec.state_info.pos)
                 else:
                     # could pipe this to clang-format to format and break up lines etc
                     f.write('etna_set_state(stream, %s, %s);\n' % (
