@@ -297,6 +297,14 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <doc>Write some value to this register to kick off thread walker</doc>
         </reg32>
         <reg32 offset="0x00924" name="UNK00924" value="0x00000000"/>
+        <!-- these 3 seem to match workgroup count x/y/z-->
+        <reg32 offset="0x00940" name="UNK00940" value="0x00000000"/>
+        <reg32 offset="0x00944" name="UNK00944" value="0x00000000"/>
+        <reg32 offset="0x00948" name="UNK00948" value="0x00000000"/>
+        <!-- these 3 seem to match workgroup size x/y/z-->
+        <reg32 offset="0x0094C" name="UNK0094C" value="0x00000000"/>
+        <reg32 offset="0x00950" name="UNK00950" value="0x00000000"/>
+        <reg32 offset="0x00954" name="UNK00954" value="0x00000000"/>
     </stripe>
 
     <stripe name="PA" brief="Primitive assembly states">
@@ -436,7 +444,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="31" low="16" name="HIGH" brief="Index of last PS instruction"/>
         </reg32>
         <reg32 offset="0x01024" name="UNK01024"/>
-        <reg32 offset="0x01028" name="UNK01028"/>
+        <reg32 offset="0x01028" name="INST_ADDR" type="VIVS" brief="Memory address of shader instructions"/> <!-- gc3000 "icache" -->
         <reg32 offset="0x01030" name="UNK01030"/>
         <reg32 offset="0x06000" name="INST_MEM" value="0x00000000" length="1024" stride="4"> <!-- instructionCount <= 256 -->
             <!-- length="instructionCount * 4" -->
