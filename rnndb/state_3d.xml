@@ -955,7 +955,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x08000" name="UNK0C000_MIRROR" value="0x00000000" length="4096" stride="4"> <!-- 256 > instructionCount > 1024 -->
             <!-- length="instructionCount * 4" -->
         </reg32>
-        <reg32 offset="0x30000" name="UNIFORMS" value="0x00000000" length="1024" stride="4">
+        <reg32 offset="0x30000" name="UNIFORMS" value="0x00000000" length="2048" stride="4">
             <!-- length="?" -->
         </reg32>
     </stripe>
