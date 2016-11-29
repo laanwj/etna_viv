@@ -251,6 +251,8 @@ def dump_command_buffer(f, mem, addr, end_addr, depth, state_map, cmdstream_info
         # 0x04000 and 0x06000 contain shader instructions
         dump_shader(f, 'vs', state_by_pos, 0x04000, 0x05000)
         dump_shader(f, 'ps', state_by_pos, 0x06000, 0x07000)
+        dump_shader(f, 'vs', state_by_pos, 0x08000, 0x09000) # gc3000
+        dump_shader(f, 'ps', state_by_pos, 0x09000, 0x0A000)
         dump_shader(f, 'vs', state_by_pos, 0x0C000, 0x0D000) # gc2000
         dump_shader(f, 'ps', state_by_pos, 0x0D000, 0x0E000) # XXX this offset is probably variable (gc2000)
 
