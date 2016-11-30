@@ -240,6 +240,18 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 
             The period of the sine is 4 and not 2 PI, thus to get normal behavior the instruction
             should be prefixed by a division by PI/2.
+
+            Note: on GC2000 the src register cannot be the same as dst. This limitation does not
+            appear to exist on GC3000.
+
+            Note: if HAS_FAST_TRANSCENDENTALS feature is enabled, the GPU implements a completely
+            different instruction:
+
+            dst.x * dst.y := sin(src2 * PI)
+
+            - The period of the sine is 2 instead of 4
+            - x and y of the result need to be multiplied to get the result of the sine
+            - TEX.AMODE needs to be set to 1
         </doc>
     </value>
     <value value="0x23" name="COS" brief="Cosine"> <!-- HAS_SQRT_TRIG -->
@@ -250,6 +262,19 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 
             The period of the cosine is 4 and not 2 PI, thus to get normal behavior the instruction
             should be prefixed by a division by PI/2.
+            
+            Note: on GC2000 the src register cannot be the same as dst. This limitation does not
+            appear to exist on GC3000.
+
+            Note: if HAS_FAST_TRANSCENDENTALS feature is enabled, the GPU implements a completely
+            different instruction:
+
+            dst.x * dst.y := cos(src2 * PI)
+
+            - The period of the sine is 2 instead of 4
+            - x and y of the result need to be multiplied to get the result of the cosine
+            - TEX.AMODE needs to be set to 1
+        </doc>
         </doc>
     </value>
     <value value="0x25" name="FLOOR" brief="Largest integral value not greater than the argument"> <!-- HAS_SIGN_FLOOR_CEIL -->
