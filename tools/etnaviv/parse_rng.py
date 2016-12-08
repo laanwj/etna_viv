@@ -278,15 +278,18 @@ class BitSet(RNNObject, Type):
         if self.masked:
             # first, find out which fields are to be modified
             unmasked = set()
+            mask_fields = set()
             residue = 0xffffffff
             for field in self.bitfields:
                 if field.name.endswith(MASK_FIELD_SUFFIX) and field.size == 1:
+                    mask_fields.add(field.name)
+                    mask_fields.add(field.name[0:-len(MASK_FIELD_SUFFIX)])
                     if field.extract(value) == 0:
                         unmasked.add(field.name[0:-len(MASK_FIELD_SUFFIX)])
                         residue &= ~field.mask
             # then log fields that are unmaked
             for field in self.bitfields:
-                if field.name in unmasked:
+                if field.name in unmasked or (field.name not in mask_fields):
                     fields.append(field.name + '=' + field.describe(value))
                     residue &= ~field.mask
                     residue |= value & field.mask
