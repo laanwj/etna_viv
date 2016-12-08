@@ -275,7 +275,6 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             - x and y of the result need to be multiplied to get the result of the cosine
             - TEX.AMODE needs to be set to 1
         </doc>
-        </doc>
     </value>
     <value value="0x25" name="FLOOR" brief="Largest integral value not greater than the argument"> <!-- HAS_SIGN_FLOOR_CEIL -->
         <doc>
