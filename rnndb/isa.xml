@@ -372,56 +372,71 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             Returns the number of leading 0-bits in src.x, starting at the most significant bit position.
             If the input argument is 0, 32 iz returned. Matches the clz intrinsic in OpenCL.
 
-            This is a scalar operation, the result is broadcasted over all active destination components.
+            Before GC3000 this is a scalar operation, the result is broadcasted over all active destination components.
+            On GC3000 this is a SIMD operation, with the operation applied to each component separately.
         </doc>
     </value>
     <value value="0x59" name="LSHIFT" brief="Bitwise left shift">
         <doc>
             dst := src0.x &lt;&lt; (src2.x &amp; 31)
 
-            This is a scalar operation, the result is broadcasted over all active destination components.
+            Before GC3000 this is a scalar operation, the result is broadcasted over all active destination components.
+            On GC3000 this is a SIMD operation, with the operation applied to each component separately. This means that
+            potentially different shifts can be applied to every component.
         </doc>
     </value>
     <value value="0x5A" name="RSHIFT" brief="Bitwise right shift">
         <doc>
             dst := src0.x &gt;&gt; (src2.x &amp; 31)
 
-            This is a scalar operation, the result is broadcasted over all active destination components.
+            Before GC3000 this is a scalar operation, the result is broadcasted over all active destination components.
+            On GC3000 this is a SIMD operation, with the operation applied to each component separately. This means that
+            potentially different shifts can be applied to every component.
         </doc>
     </value>
     <value value="0x5B" name="ROTATE" brief="Bitwise rotate left">
         <doc>
             dst := (src0.x &lt;&lt; (src2.x &amp; 31)) | (src0.x &gt;&gt; ((32-src2.x) &amp; 31))
 
-            This is a scalar operation, the result is broadcasted over all active destination components.
+            Before GC3000 this is a scalar operation, the result is broadcasted over all active destination components.
+            On GC3000 this is a SIMD operation, with the operation applied to each component separately. This means that
+            potentially different shifts can be applied to every component.
         </doc>
     </value>
     <value value="0x5C" name="OR" brief="Bitwise or">
         <doc>
             dst := src0.x | src2.x
 
-            This is a scalar operation, the result is broadcasted over all active destination components.
+            Before GC3000 this is a scalar operation, the result is broadcasted over all active destination components.
+            On GC3000 this is a SIMD operation, with the operation applied to each component separately. This means that
+            potentially different shifts can be applied to every component.
         </doc>
     </value>
     <value value="0x5D" name="AND" brief="Bitwise and">
         <doc>
             dst := src0.x &amp; src2.x
 
-            This is a scalar operation, the result is broadcasted over all active destination components.
+            Before GC3000 this is a scalar operation, the result is broadcasted over all active destination components.
+            On GC3000 this is a SIMD operation, with the operation applied to each component separately. This means that
+            potentially different shifts can be applied to every component.
         </doc>
     </value>
     <value value="0x5E" name="XOR" brief="Bitwise exclusive or">
         <doc>
             dst := src0.x ^ src2.x
 
-            This is a scalar operation, the result is broadcasted over all active destination components.
+            Before GC3000 this is a scalar operation, the result is broadcasted over all active destination components.
+            On GC3000 this is a SIMD operation, with the operation applied to each component separately. This means that
+            potentially different shifts can be applied to every component.
         </doc>
     </value>
     <value value="0x5F" name="NOT" brief="Bitwise not">
         <doc>
             dst := ~src2.x
 
-            This is a scalar operation, the result is broadcasted over all active destination components.
+            Before GC3000 this is a scalar operation, the result is broadcasted over all active destination components.
+            On GC3000 this is a SIMD operation, with the operation applied to each component separately. This means that
+            potentially different shifts can be applied to every component.
         </doc>
     </value>
 </enum>
