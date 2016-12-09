@@ -291,13 +291,13 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 PROFILE_xx_READ registers. Selecting counter 15 resets
                 all the counters of that unit.
             </doc>
-            <bitfield high="3" low="0" name="FE">
+            <bitfield high="7" low="0" name="FE">
                 <value value="15" name="RESET"/>
             </bitfield>
-            <bitfield high="11" low="8" name="DE">
+            <bitfield high="15" low="8" name="DE">
                 <value value="15" name="RESET"/>
             </bitfield>
-            <bitfield high="19" low="16" name="PE">
+            <bitfield high="23" low="16" name="PE">
                 <value value="0" name="PIXEL_COUNT_KILLED_BY_COLOR_PIPE"/>
                 <value value="1" name="PIXEL_COUNT_KILLED_BY_DEPTH_PIPE"/>
                 <value value="2" name="PIXEL_COUNT_DRAWN_BY_COLOR_PIPE"/>
@@ -305,7 +305,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <value value="11" name="PIXELS_RENDERED_2D"/>
                 <value value="15" name="RESET"/>
             </bitfield>
-            <bitfield high="27" low="24" name="SH">
+            <bitfield high="31" low="24" name="SH">
                 <value value="4" name="SHADER_CYCLES"/>
                 <value value="7" name="PS_INST_COUNTER"/>
                 <value value="8" name="RENDERED_PIXEL_COUNTER"/>
@@ -324,7 +324,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 PROFILE_xx_READ registers. Selecting counter 15 resets
                 all the counters of that unit.
             </doc>
-            <bitfield high="3" low="0" name="PA">
+            <bitfield high="7" low="0" name="PA">
                 <value value="3" name="INPUT_VTX_COUNTER"/>
                 <value value="4" name="INPUT_PRIM_COUNTER"/>
                 <value value="5" name="OUTPUT_PRIM_COUNTER"/>
@@ -333,12 +333,12 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <value value="8" name="CULLED_COUNTER"/>
                 <value value="15" name="RESET"/>
             </bitfield>
-            <bitfield high="11" low="8" name="SE">
+            <bitfield high="15" low="8" name="SE">
                 <value value="0" name="CULLED_TRIANGLE_COUNT"/>
                 <value value="1" name="CULLED_LINES_COUNT"/>
                 <value value="15" name="RESET"/>
             </bitfield>
-            <bitfield high="19" low="16" name="RA">
+            <bitfield high="23" low="16" name="RA">
                 <value value="0" name="VALID_PIXEL_COUNT"/>
                 <value value="1" name="TOTAL_QUAD_COUNT"/>
                 <value value="2" name="VALID_QUAD_COUNT_AFTER_EARLY_Z"/>
@@ -348,7 +348,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <value value="11" name="CULLED_QUAD_COUNT"/>
                 <value value="15" name="RESET"/>
             </bitfield>
-            <bitfield high="27" low="24" name="TX">
+            <bitfield high="31" low="24" name="TX">
                 <value value="0" name="TOTAL_BILINEAR_REQUESTS"/>
                 <value value="1" name="TOTAL_TRILINEAR_REQUESTS"/>
                 <value value="2" name="TOTAL_DISCARDED_TEXTURE_REQUESTS"/>
@@ -368,13 +368,13 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 PROFILE_xx_READ registers. Selecting counter 15 resets
                 all the counters of that unit.
             </doc>
-            <bitfield high="3" low="0" name="MC">
+            <bitfield high="7" low="0" name="MC">
                 <value value="1" name="TOTAL_READ_REQ_8B_FROM_PIPELINE"/>
                 <value value="2" name="TOTAL_READ_REQ_8B_FROM_IP"/>
                 <value value="3" name="TOTAL_WRITE_REQ_8B_FROM_PIPELINE"/>
                 <value value="15" name="RESET"/>
             </bitfield>
-            <bitfield high="11" low="8" name="HI">
+            <bitfield high="15" low="8" name="HI">
                 <value value="0" name="AXI_CYCLES_READ_REQUEST_STALLED"/>
                 <value value="1" name="AXI_CYCLES_WRITE_REQUEST_STALLED"/>
                 <value value="2" name="AXI_CYCLES_WRITE_DATA_STALLED"/>
