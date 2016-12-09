@@ -312,6 +312,31 @@ def compare_inst(a,b,warnings):
             match = False
     return match
 
+def do_asm(out, isa, args, f):
+    asm = Assembler(isa)
+    errors = []
+    for linenr, line in enumerate(f):
+        line = line.rstrip('\n')
+        asm.parse(line)
+
+    if not asm.errors:
+        code = asm.generate_code()
+    else:
+        code = None
+
+    for line, error in asm.errors:
+        print('Line %i: %s' % (line, error))
+
+    if code is not None:
+        data = b''.join(struct.pack(b'<IIII', *inst) for inst in code)
+        if args.bin_out is not None:
+            with open(args.bin_out, 'wb') as f:
+                f.write(data)
+        else: # no binary output, print as C-ish ASCII through disassembler
+            disasm_format(out, isa, data, opt_addr=False, opt_raw=False, opt_cfmt=True)
+    else:
+        exit(1)
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Disassemble shader')
     parser.add_argument('--isa-file', metavar='ISAFILE', type=str, 
@@ -333,30 +358,11 @@ def main():
     out = sys.stdout
     isa = parse_rng_file(args.isa_file)
 
-    with open(args.input, 'rb') as f:
-        asm = Assembler(isa)
-        errors = []
-        for linenr, line in enumerate(f):
-            line = line.rstrip('\n')
-            asm.parse(line)
-       
-        if not asm.errors:
-            code = asm.generate_code()
-        else: 
-            code = None
-
-        for line, error in asm.errors:
-            print('Line %i: %s' % (line, error))
-
-        if code is not None:
-            data = b''.join(struct.pack(b'<IIII', *inst) for inst in code)
-            if args.bin_out is not None:
-                with open(args.bin_out, 'wb') as f:
-                    f.write(data)
-            else: # no binary output, print as C-ish ASCII through disassembler
-                disasm_format(out, isa, data, opt_addr=False, opt_raw=False, opt_cfmt=True)
-        else:
-            exit(1)
+    if args.input == '-':
+        do_asm(out, isa, args, sys.stdin)
+    else:
+        with open(args.input, 'rb') as f:
+            do_asm(out, isa, args, f)
 
 if __name__ == '__main__':
     main()
