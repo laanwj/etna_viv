@@ -167,8 +167,11 @@ class Assembler(object):
         try:
             op = self.isa.types['INST_OPCODE'].values_by_name[inst[0]].value
         except KeyError:
-            self.errors.append((self.linenr, 'Unknown instruction %s' % inst[0]))
-            return None
+            if inst[0].startswith('0X'): # hexdecimal (unknown) op
+                op = int(inst[0][2:], 16)
+            else:
+                self.errors.append((self.linenr, 'Unknown instruction %s' % inst[0]))
+                return None
 
         cond = 0
         sat = False
