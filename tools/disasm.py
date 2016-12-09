@@ -50,19 +50,36 @@ def parse_arguments():
     parser.add_argument('-c', dest='cfmt',
             default=False, action='store_const', const=True,
             help='Output in format suitable for inclusion in C source')
+    parser.add_argument('-t', dest='ifmt',
+            default=False, action='store_const', const=True,
+            help='Input comma-separated integers instead of binary shader')
     return parser.parse_args()
+
+def do_disasm(out, isa, args, f):
+    if not args.ifmt:
+        data = f.read()
+    else: # 0x00841001, 0x00202800, 0x80000000, 0x00000038
+        text = f.read()
+        text = [x.strip() for x in text.split(b',')] # split by ',' remote whitespace
+        if text and not text[-1]: # remove empty trailer
+            text = text[0:-1]
+        data = b''.join(struct.pack(b'<I', int(x,0)) for x in text)
+    if len(data)%16:
+        print('Size of code must be multiple of 16.', file=sys.stderr)
+        exit(1)
+
+    disasm_format(out, isa, data, args.addr, args.raw, args.cfmt)
 
 def main():
     args = parse_arguments()
     out = sys.stdout
     isa = parse_rng_file(args.isa_file)
 
-    with open(args.input, 'rb') as f:
-        data = f.read()
-        if len(data)%16:
-            print('Size of code must be multiple of 16.', file=sys.stderr)
-            exit(1)
-        disasm_format(out, isa, data, args.addr, args.raw, args.cfmt)
+    if args.input == '-':
+        do_disasm(out, isa, args, sys.stdin)
+    else:
+        with open(args.input, 'rb') as f:
+            do_disasm(out, isa, args, f)
 
 if __name__ == '__main__':
     main()
