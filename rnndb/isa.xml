@@ -59,9 +59,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             f32: src0 is added to src2 and the result is put into temporary register dst. This
             is a four-wide vector operation.
 
-            u32: src0.x is added to src2.x and the result is put into the first enabled component
-            of register dst. This is a scalar operation, and unlike some of the other scalar
-            instructions the result is never broadcasted to multiple components.
+            u32, GC2000: src0.x is added to src2.x and the result is put into the first enabled component
+            of register dst. This is a scalar operation, the result is broadcasted to multiple components.
+            u32, GC3000: Every component of src0 is added that of src2 in a SIMD operation.
         </doc>
     </value>
     <value value="0x02" name="MAD" brief="Multiply add">
@@ -305,7 +305,21 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             dst := float(src0.x)
 
             Convert source operand to a float and put the result in temporary register dst.
-            This is a scalar operation, the result is broadcasted over all active destination components.
+            The type of the instruction (at least s32/u32) is taken into account.
+
+            Before GC3000 this is a scalar operation, the result is broadcasted over all active destination components.
+            On GC3000 this is a SIMD operation, with the operation applied to each component separately.
+        </doc>
+    </value>
+    <value value="0x2E" name="F2I" brief="Float to integer">
+        <doc>
+            dst := int(src0.x)
+
+            Truncate source operand and convert to an integer and put the result in temporary register dst.
+            The type of the instruction (at least s32/u32) is taken into account.
+
+            Before GC3000 this is a scalar operation, the result is broadcasted over all active destination components.
+            On GC3000 this is a SIMD operation, with the operation applied to each component separately.
         </doc>
     </value>
     <value value="0x31" name="CMP" brief="Integer compare"/>
