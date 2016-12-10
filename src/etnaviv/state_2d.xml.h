@@ -10,10 +10,10 @@ git clone git://0x04.net/rules-ng-ng
 The rules-ng-ng source files this header was generated from are:
 - state.xml     (  19792 bytes, from 2016-11-15 06:55:13)
 - common.xml    (  23422 bytes, from 2016-11-15 06:55:13)
-- state_hi.xml  (  25653 bytes, from 2016-10-29 07:29:22)
+- state_hi.xml  (  25653 bytes, from 2016-12-10 07:08:10)
 - copyright.xml (   1597 bytes, from 2016-10-29 07:29:22)
 - state_2d.xml  (  51552 bytes, from 2016-10-29 07:29:22)
-- state_3d.xml  (  61198 bytes, from 2016-12-08 16:22:43)
+- state_3d.xml  (  63206 bytes, from 2016-12-10 07:08:15)
 - state_vg.xml  (   5975 bytes, from 2016-10-29 07:29:22)
 
 Copyright (C) 2012-2016 by the following authors:
