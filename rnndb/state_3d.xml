@@ -290,15 +290,24 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
              - Rendering on GC3000: 0x0 0x1 0x11
              - OpenCL on GC2000: 0x0
              - OpenCL on GC3000: 0x1011
-             Possibly this switches shader units or stages on/off based on usage. I have not seen it have
-             direct effect on rendering or OpenCL output though.
+             May be cache flushes or toggles of some kind. For the Vivante driver
+             setting coincides with setting of uniforms.
+             I've haven't observed these to have any impact on rendering nor OpenCL output
+             on GC2000/GC3000.
          -->
-        <reg32 offset="0x00860" name="NEW_UNK00860" value="0x00000000"/> <!-- instructionCount > 1024 -->
+        <reg32 offset="0x00860" name="NEW_UNK00860" value="0x00000000"> <!-- instructionCount > 1024 -->
+            <bitfield pos="0" name="UNK0"/>
+            <bitfield pos="4" name="UNK4"/>
+            <bitfield pos="16" name="UNK16"/>
+        </reg32>
         <reg32 offset="0x00864" name="UNK00864"/>
         <reg32 offset="0x00868" name="ICACHE_CONTROL"> <!-- gc3000 -->
             <bitfield pos="0" name="ENABLE" brief="Enables loading of shader instructions from memory"/>
-            <bitfield pos="4" name="UNK4"/>
-            <bitfield pos="5" name="UNK5"/>
+            <!-- "flush" guess is based on the Vivante driver behavior where
+                 these bits are only being set before setting instruction address
+             -->
+            <bitfield pos="4" name="FLUSH_VS"/>
+            <bitfield pos="5" name="FLUSH_PS"/>
         </reg32>
         <reg32 offset="0x0086C" name="INST_ADDR" type="VIVS" brief="Memory address of shader instructions"/> <!-- gc3000 "icache" -->
         <reg32 offset="0x04000" name="INST_MEM" value="0x00000000" length="1024" stride="4"> <!-- instructionCount <= 256 -->
@@ -425,6 +434,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 some global bypasses and CYA flags.
             </doc>
             <bitfield pos="24" name="UNK24"/> <!-- set on gc2000 -->
+            <!-- Below state basically breaks the Z buffer when enabled in Mesa driver -
+                 should be coupled with a change in shaders.
+             -->
             <bitfield pos="30" name="ZCONVERT_BYPASS"/> <!-- set on gc3000 -->
         </reg32>
         <reg32 offset="0x00A8C" name="ZFARCLIPPING" value="0x00000000">
@@ -492,9 +504,13 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="15" low="0" name="LOW" brief="Index of first PS instruction"/>
             <bitfield high="31" low="16" name="HIGH" brief="Index of last PS instruction"/>
         </reg32>
-        <reg32 offset="0x01024" name="UNK01024"/>
+        <reg32 offset="0x01024" name="UNIFORM_BASE" brief="Offset applied to PS uniform loads (granularity is 4-vectors)"/>
         <reg32 offset="0x01028" name="INST_ADDR" type="VIVS" brief="Memory address of shader instructions"/> <!-- gc3000 "icache" -->
-        <reg32 offset="0x01030" name="UNK01030"/>
+        <reg32 offset="0x01030" name="CONTROL_EXT">
+            <!-- Multiple render targets - GC3000.
+             -->
+            <bitfield high="1" low="0" name="COLOR_OUTPUT_COUNT" brief="Number of outputs minus one"/>
+        </reg32>
         <reg32 offset="0x06000" name="INST_MEM" value="0x00000000" length="1024" stride="4"> <!-- instructionCount <= 256 -->
             <!-- length="instructionCount * 4" -->
         </reg32>
@@ -530,6 +546,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="16" name="EARLY_Z"/>
             <bitfield pos="17" name="EARLY_Z_MASK"/>
             <bitfield pos="18" name="UNK18"/>
+            <bitfield pos="19" name="UNK18_MASK"/>
             <bitfield pos="20" name="ONLY_DEPTH"/>
             <bitfield pos="21" name="ONLY_DEPTH_MASK"/>
             <bitfield pos="24" name="DISABLE_ZS" brief="Completely disables writing to depth stencil buffer"/>
@@ -658,6 +675,17 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                  Either a coincidence or due to shared roots in DirectX: same enum as Gallium3D PIPE_LOGICOP -->
             <bitfield high="3" low="0" name="OP" type="LOGIC_OP"/>
             <bitfield pos="4" name="OP_MASK"/>
+            <!-- These are toggled frequently by the Vivante driver on
+                 GC2000/GC3000, for unknown reason, but not related to logic operations.
+            -->
+            <bitfield pos="7" name="UNK8_MASK"/>
+            <bitfield high="9" low="8" name="UNK8"/>  <!-- Depth/Target related -->
+            <bitfield pos="10" name="UNK11_MASK"/>
+            <bitfield pos="11" name="UNK11"/> <!-- Alpha related -->
+            <bitfield high="22" low="20" name="UNK20"/> <!-- Depth related -->
+            <bitfield pos="23" name="UNK20_MASK"/>
+            <bitfield high="26" low="24" name="UNK24"/> <!-- Sampling related -->
+            <bitfield pos="27" name="UNK24_MASK"/>
         </reg32>
         <reg32 offset="0x014A8" name="DITHER" value="0xFFFFFFFF" length="2"/>
         <reg32 offset="0x014B0" name="ALPHA_COLOR_EXT0" value="0x00000000" brief="High-precision alpha blend color"> <!--gc3000?-->
@@ -814,7 +842,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x016B0" name="UNK016B0" value="0x00000000"/> <!-- size / 64 -->
         <reg32 offset="0x016B4" name="UNK016B4" value="0x00000000"/>
         <reg32 offset="0x016B8" name="UNK016B8">
-            <bitfield pos="0" name="UNK0"/>
+            <bitfield pos="0" name="UNK0"/> <!-- Has to do with SINGLE_BUFFER feature - enabling this only resolves first pipe address -->
         </reg32>
         <reg32 offset="0x016BC" name="UNK016BC"/> <!-- has values that look like RGBA colors, such as 0xff000033 -->
         <stripe name="PIPE" length="8" stride="4"> <!-- pixelPipes > 1 -->
