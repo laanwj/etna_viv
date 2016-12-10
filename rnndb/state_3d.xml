@@ -295,8 +295,12 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
          -->
         <reg32 offset="0x00860" name="NEW_UNK00860" value="0x00000000"/> <!-- instructionCount > 1024 -->
         <reg32 offset="0x00864" name="UNK00864"/>
-        <reg32 offset="0x00868" name="UNK00868"/>
-        <reg32 offset="0x0086C" name="UNK0086C"/>
+        <reg32 offset="0x00868" name="ICACHE_CONTROL"> <!-- gc3000 -->
+            <bitfield pos="0" name="ENABLE" brief="Enables loading of shader instructions from memory"/>
+            <bitfield pos="4" name="UNK4"/>
+            <bitfield pos="5" name="UNK5"/>
+        </reg32>
+        <reg32 offset="0x0086C" name="INST_ADDR" type="VIVS" brief="Memory address of shader instructions"/> <!-- gc3000 "icache" -->
         <reg32 offset="0x04000" name="INST_MEM" value="0x00000000" length="1024" stride="4"> <!-- instructionCount <= 256 -->
             <!-- length="instructionCount * 4" -->
         </reg32>
