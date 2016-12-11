@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Copyright (c) 2012-2013 The Etnaviv Project
+<!-- Copyright (c) 2012-2016 The Etnaviv Project
 
  Permission is hereby granted, free of charge, to any person obtaining a
  copy of this software and associated documentation files (the "Software"),
@@ -50,6 +50,59 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         operands.
 
         Operands src0,src1 and src2 can come from a temporary register or an uniform.
+
+        Immediate values
+        -----------------
+
+        On GC3000 it is possible to provide immediate values inline for source
+        arguments for other instructions than control flow instructions.
+
+        The encoding is different. How this works is that SRCx_RGROUP is set to
+        7.  Then the immediate value is scattered over several fields of that
+        source operand. This in total gives 20 bits of integer range for
+        signed and unsigned values.
+
+        The 20-bit value can also be interpreted as floating point, in the following way:
+
+        bit
+        ------------------------------------------------------------
+        |19|18 17 16 15 14 13 12 11|10 9  8  7  6  5  4  3  2  1  0|
+        +--+-----------------------+-------------------------------+
+        |s |e  e  e  e  e  e  e  e |m  m  m  m  m  m  m  m  m  m  m|
+        ------------------------------------------------------------
+
+        s   Sign bit
+        e   Exponent
+        m   Mantissa
+
+        1 sign bit, 8 exponent bits, 11 mantissa bits. Exponent bits appear to be interpreted
+        the same as for IEEE 754 single precision. A useful observation is that
+        this is the upper 20 bits of a 32-bit floating point value.
+
+        - SRCx_RGROUP is 7
+        - SRCx_REG contains bit 8..0
+        - SRCx_SWIZZLE contains bit 16..9
+        - SRCx_NEG contains bit 17 of i
+        - SRCx_ABS contains bit 18 of i
+        - SRCx_AMODE determines type conversion and sign:
+
+         AMODE | Type| Value
+         ------+-----+---------------------
+          000  | f32 | i.x
+          001  | f32 | -i.x
+          010  | s32 | 0 + i
+          011  | s32 | -0x80000 + i
+          100  | u32 | 0 + i (same as 010)
+          101  | u32 | 0x80000 + i
+          110  | ?   | ?
+          111  | ?   | ?
+
+          Immediates values are broadcasted to all lanes of the source argument.
+
+          The conversion type does not have to match the instruction type. It is valid
+          for an instruction to have multiple immediates values, one for each source argument,
+          of different conversion types. This can be useful for the STORE instruction
+          to store a fixed value at a fixed offset.
     </doc>
     <value value="0x00" name="NOP" brief="No operation"/>
     <value value="0x01" name="ADD" brief="Add">
@@ -446,6 +499,17 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <value value="0x5F" name="NOT" brief="Bitwise not">
         <doc>
             dst := ~src2.x
+
+            Before GC3000 this is a scalar operation, the result is broadcasted over all active destination components.
+            On GC3000 this is a SIMD operation, with the operation applied to each component separately. This means that
+            potentially different shifts can be applied to every component.
+        </doc>
+    </value>
+    <value value="0x61" name="POPCOUNT" brief="Population count">
+        <doc>
+            dst := popcount(src2.x)
+
+            Count the number of '1' bits in the source operand.
 
             Before GC3000 this is a scalar operation, the result is broadcasted over all active destination components.
             On GC3000 this is a SIMD operation, with the operation applied to each component separately. This means that

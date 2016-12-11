@@ -2,7 +2,7 @@
 '''
 Etna shader disassembler/assembler common utils.
 '''
-# Copyright (c) 2012-2013 Wladimir J. van der Laan
+# Copyright (c) 2012-2016 Wladimir J. van der Laan
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -35,6 +35,7 @@ from etnaviv.parse_rng import parse_rng_file, format_path, BitSet, Domain
 # u uniform 0..127
 # v uniform 127..255 (this is rewritten to u in format_src)
 #  others are unknown
+# rgroup 7 is used for immediate values on gc3000
 RGROUPS = ['t', 'i', 'u', 'v', '?4?', '?5?', '?6?', '?7?']
 # Addressing modes
 AMODES = ['', 'a.x', 'a.y', 'a.z', 'a.w', '?5?', '?6?', '?7?']
