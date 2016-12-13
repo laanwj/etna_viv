@@ -333,7 +333,7 @@ def do_asm(out, isa, args, f):
             with open(args.bin_out, 'wb') as f:
                 f.write(data)
         else: # no binary output, print as C-ish ASCII through disassembler
-            disasm_format(out, isa, data, opt_addr=False, opt_raw=False, opt_cfmt=True)
+            disasm_format(out, isa, data, opt_addr=args.addr, opt_raw=False, opt_cfmt=True)
     else:
         exit(1)
 
@@ -349,6 +349,9 @@ def parse_arguments():
     #parser.add_argument('-a', dest='addr',
     #        default=False, action='store_const', const=True,
     #        help='Show address data with instructions')
+    parser.add_argument('-a', dest='addr',
+            default=False, action='store_const', const=True,
+            help='Show address with instructions')
     parser.add_argument('-o', dest='bin_out', type=str,
             help='Write binary shader to output file')
     return parser.parse_args()        
