@@ -8,12 +8,12 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- state.xml     (  19792 bytes, from 2016-11-15 06:55:13)
-- common.xml    (  23422 bytes, from 2016-11-15 06:55:13)
-- state_hi.xml  (  25653 bytes, from 2016-12-10 07:08:10)
+- state.xml     (  19930 bytes, from 2016-12-14 15:25:40)
+- common.xml    (  23473 bytes, from 2016-12-11 10:32:13)
+- state_hi.xml  (  26403 bytes, from 2016-12-14 06:43:27)
 - copyright.xml (   1597 bytes, from 2016-10-29 07:29:22)
 - state_2d.xml  (  51552 bytes, from 2016-10-29 07:29:22)
-- state_3d.xml  (  63206 bytes, from 2016-12-10 07:08:15)
+- state_3d.xml  (  66957 bytes, from 2016-12-15 11:31:03)
 - state_vg.xml  (   5975 bytes, from 2016-10-29 07:29:22)
 
 Copyright (C) 2012-2016 by the following authors:
@@ -377,17 +377,15 @@ DEALINGS IN THE SOFTWARE.
 
 #define VIVS_NFE						0x00000000
 
-#define VIVS_NFE_UNK14600(i0)				       (0x00014600 + 0x4*(i0))
-#define VIVS_NFE_UNK14600__ESIZE				0x00000004
-#define VIVS_NFE_UNK14600__LEN					0x00000010
+#define VIVS_NFE_VERTEX_STREAMS(i0)			       (0x00000000 + 0x4*(i0))
+#define VIVS_NFE_VERTEX_STREAMS__ESIZE				0x00000004
+#define VIVS_NFE_VERTEX_STREAMS__LEN				0x00000010
 
-#define VIVS_NFE_UNK14640(i0)				       (0x00014640 + 0x4*(i0))
-#define VIVS_NFE_UNK14640__ESIZE				0x00000004
-#define VIVS_NFE_UNK14640__LEN					0x00000010
+#define VIVS_NFE_VERTEX_STREAMS_BASE_ADDR(i0)		       (0x00014600 + 0x4*(i0))
 
-#define VIVS_NFE_UNK14680(i0)				       (0x00014680 + 0x4*(i0))
-#define VIVS_NFE_UNK14680__ESIZE				0x00000004
-#define VIVS_NFE_UNK14680__LEN					0x00000010
+#define VIVS_NFE_VERTEX_STREAMS_CONTROL(i0)		       (0x00014640 + 0x4*(i0))
+
+#define VIVS_NFE_VERTEX_STREAMS_UNK14680(i0)		       (0x00014680 + 0x4*(i0))
 
 #define VIVS_DUMMY						0x00000000
 

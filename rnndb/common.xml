@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Copyright (c) 2012-2013 The Etnaviv Project
+<!-- Copyright (c) 2012-2016 The Etnaviv Project
 
  Permission is hereby granted, free of charge, to any person obtaining a
  copy of this software and associated documentation files (the "Software"),
@@ -274,7 +274,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield pos="0" name="ROTATION_STALL_FIX"/>
         <bitfield pos="1" name="OCL_ONLY"/>
         <bitfield pos="2" name="2D_MULTI_SOURCE_BLT_EX" brief="8 instead of 4 multisource blit sources, 2D minor tiling, and 2D YUV separate stride, 2D pixel alignment"/>
-        <bitfield pos="3" name="INSTRUCTION_CACHE" brief="Shader has instruction cache"/>
+        <bitfield pos="3" name="INSTRUCTION_CACHE" brief="Shader has instruction cache (implies being able to source shaders from memory)"/>
         <bitfield pos="4" name="GEOMETRY_SHADER"/>
         <bitfield pos="5" name="TEX_COMPRESSION_SUPERTILED"/>
         <bitfield pos="6" name="GENERICS"/>

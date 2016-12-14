@@ -8,12 +8,12 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- state.xml     (  19792 bytes, from 2016-11-15 06:55:13)
-- common.xml    (  23422 bytes, from 2016-11-15 06:55:13)
-- state_hi.xml  (  25653 bytes, from 2016-12-10 07:08:10)
+- state.xml     (  19930 bytes, from 2016-12-14 15:25:40)
+- common.xml    (  23473 bytes, from 2016-12-11 10:32:13)
+- state_hi.xml  (  26403 bytes, from 2016-12-14 06:43:27)
 - copyright.xml (   1597 bytes, from 2016-10-29 07:29:22)
 - state_2d.xml  (  51552 bytes, from 2016-10-29 07:29:22)
-- state_3d.xml  (  63206 bytes, from 2016-12-10 07:08:15)
+- state_3d.xml  (  66957 bytes, from 2016-12-15 11:31:03)
 - state_vg.xml  (   5975 bytes, from 2016-10-29 07:29:22)
 
 Copyright (C) 2012-2016 by the following authors:
@@ -266,6 +266,17 @@ DEALINGS IN THE SOFTWARE.
 #define VIVS_PM_MODULE_STATUS_MODULE_CLOCK_GATED_TX		0x00000080
 
 #define VIVS_PM_PULSE_EATER					0x0000010c
+#define VIVS_PM_PULSE_EATER_DISABLE				0x00000001
+#define VIVS_PM_PULSE_EATER_DVFS_PERIOD__MASK			0x0000ff00
+#define VIVS_PM_PULSE_EATER_DVFS_PERIOD__SHIFT			8
+#define VIVS_PM_PULSE_EATER_DVFS_PERIOD(x)			(((x) << VIVS_PM_PULSE_EATER_DVFS_PERIOD__SHIFT) & VIVS_PM_PULSE_EATER_DVFS_PERIOD__MASK)
+#define VIVS_PM_PULSE_EATER_UNK16				0x00010000
+#define VIVS_PM_PULSE_EATER_UNK17				0x00020000
+#define VIVS_PM_PULSE_EATER_INTERNAL_DFS			0x00040000
+#define VIVS_PM_PULSE_EATER_UNK19				0x00080000
+#define VIVS_PM_PULSE_EATER_UNK20				0x00100000
+#define VIVS_PM_PULSE_EATER_UNK22				0x00400000
+#define VIVS_PM_PULSE_EATER_UNK23				0x00800000
 
 #define VIVS_MMUv2						0x00000000
 

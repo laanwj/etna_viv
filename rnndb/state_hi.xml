@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Copyright (c) 2012-2013 The Etnaviv Project
+<!-- Copyright (c) 2012-2016 The Etnaviv Project
 
  Permission is hereby granted, free of charge, to any person obtaining a
  copy of this software and associated documentation files (the "Software"),
@@ -195,7 +195,17 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="6" low="6" name="MODULE_CLOCK_GATED_RA" brief="Module level clock gating is ON for RA"/>
             <bitfield high="7" low="7" name="MODULE_CLOCK_GATED_TX" brief="Module level clock gating is ON for TX"/>
         </reg32>
-        <reg32 offset="0x0010C" name="PULSE_EATER" brief="Pulse eater"/>  <!-- power management feature -->
+        <reg32 offset="0x0010C" name="PULSE_EATER" brief="Pulse eater">  <!-- power management feature -->
+            <bitfield pos="0" name="DISABLE"/> <!-- pulsed high to disable pulse eater before reset -->
+            <bitfield high="15" low="8" name="DVFS_PERIOD"/>
+            <bitfield pos="16" name="UNK16"/> <!-- cleared on GC1000 revision 0x5039 and 0x5040 -->
+            <bitfield pos="17" name="UNK17"/> <!-- set on GC4000 revision 0x5208 and 0x5222 -->
+            <bitfield pos="18" name="INTERNAL_DFS"/> <!-- set on all revision > 0x5420 with 3D PIPE -->
+            <bitfield pos="19" name="UNK19"/> <!-- DVFS -->
+            <bitfield pos="20" name="UNK20"/> <!-- DVFS -->
+            <bitfield pos="22" name="UNK22"/> <!-- DVFS -->
+            <bitfield pos="23" name="UNK23"/> <!-- set on GC4000 revision 0x5208 and 0x5222 -->
+	</reg32>
     </stripe>
 
     <enum name="MMU_EXCEPTION">

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Copyright (c) 2012-2013 The Etnaviv Project
+<!-- Copyright (c) 2012-2016 The Etnaviv Project
 
  Permission is hereby granted, free of charge, to any person obtaining a
  copy of this software and associated documentation files (the "Software"),
@@ -281,26 +281,49 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00850" name="UNK00850" value="0x000003e8"/>
         <reg32 offset="0x00854" name="UNK00854" value="0x00000100"/>
         <reg32 offset="0x00858" name="UNK00858" value="0x00001005"/>
-        <reg32 offset="0x0085C" name="RANGE" value="0x00000000"> <!-- instructionCount > 1024 -->
+        <reg32 offset="0x0085C" name="RANGE" value="0x00000000" brief="Defines the range within which VS instructions are executed, relative to start of the state area"> <!-- instructionCount > 1024 -->
             <bitfield high="15" low="0" name="LOW" brief="Index of first VS instruction"/>
             <bitfield high="31" low="16" name="HIGH" brief="Index of last VS instruction"/>
         </reg32>
         <!-- The following register is set to the Vivante driver to:
-             - Rendering on GC2000: 0x0 0x11
-             - Rendering on GC3000: 0x0 0x1 0x11
-             - OpenCL on GC2000: 0x0
-             - OpenCL on GC3000: 0x1011
-             May be cache flushes or toggles of some kind. For the Vivante driver
-             setting coincides with setting of uniforms.
+             - Rendering on GC2000: 
+               - 0x00000000  Before loading VS uniform / code
+               - 0x00000011  Before loading PS uniform / code
+             - Rendering on GC3000: 
+               - 0x00000001  Before loading VS uniform
+               - 0x00000000  Before loading VS code
+               - 0x00000011  Before loading PS uniform / code
+             - OpenCL on GC2000: always 0x0
+             - OpenCL on GC3000: always 0x1011
+             May be cache flushes, synchronization or toggles of some kind.
              I've haven't observed these to have any impact on rendering nor OpenCL output
-             on GC2000/GC3000.
+             on GC2000/GC3000, which mean they can turn out to be a sneaky source of hangs
+             at some point if misconfigured.
          -->
         <reg32 offset="0x00860" name="NEW_UNK00860" value="0x00000000"> <!-- instructionCount > 1024 -->
             <bitfield pos="0" name="UNK0"/>
-            <bitfield pos="4" name="UNK4"/>
-            <bitfield pos="16" name="UNK16"/>
+            <bitfield pos="4" name="PS" brief="0 for VS, 1 for PS"/>
+            <bitfield pos="12" name="UNK12"/>
         </reg32>
-        <reg32 offset="0x00864" name="UNK00864"/>
+        <!-- The following is used with unified uniforms (SH_UNIFORM_*) -->
+        <reg32 offset="0x00864" name="UNIFORM_BASE" brief="Offset applied to VS uniform loads (granularity is 4-vectors)"/>
+        <!-- ICACHE is a new feature in GC3000 on i.MX6qp where the shader code
+             is stored in memory instead
+             of having to be loaded into a range of states.
+             The Vivante driver (as of 5.0.11.p8.4) only uses this for:
+
+             - OpenCL compute - always
+             - When a shader is too large to fit into the assigned state area
+
+             It is unclear what the rationale is to not always use it: either stability
+             or performance.
+
+             Setting it up:
+               - ICACHE_CONTROL := ENABLE | FLUSH_VS
+               - VS.INST_ADDR := <GPU address>
+               - ICACHE_CONTROL := ENABLE | FLUSH_PS
+               - PS.INST_ADDR := <GPU address>
+          -->
         <reg32 offset="0x00868" name="ICACHE_CONTROL"> <!-- gc3000 -->
             <bitfield pos="0" name="ENABLE" brief="Enables loading of shader instructions from memory"/>
             <!-- "flush" guess is based on the Vivante driver behavior where
@@ -500,15 +523,15 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x01014" name="PERF_COUNTER" brief="Performance counter control"/>
         <reg32 offset="0x01018" name="START_PC" value="0x01000000"/>
-        <reg32 offset="0x0101C" name="RANGE" value="0x00000100"> <!-- instructionCount > 1024 -->
+        <reg32 offset="0x0101C" name="RANGE" value="0x00000100" brief="Defines the range within which PS instructions are executed, relative to start of the state area"> <!-- instructionCount > 1024 -->
             <bitfield high="15" low="0" name="LOW" brief="Index of first PS instruction"/>
             <bitfield high="31" low="16" name="HIGH" brief="Index of last PS instruction"/>
         </reg32>
+        <!-- The following is used with unified uniforms (SH_UNIFORM_*) -->
         <reg32 offset="0x01024" name="UNIFORM_BASE" brief="Offset applied to PS uniform loads (granularity is 4-vectors)"/>
         <reg32 offset="0x01028" name="INST_ADDR" type="VIVS" brief="Memory address of shader instructions"/> <!-- gc3000 "icache" -->
         <reg32 offset="0x01030" name="CONTROL_EXT">
-            <!-- Multiple render targets - GC3000.
-             -->
+            <!-- Not used for multiple render targets -->
             <bitfield high="1" low="0" name="COLOR_OUTPUT_COUNT" brief="Number of outputs minus one"/>
         </reg32>
         <reg32 offset="0x06000" name="INST_MEM" value="0x00000000" length="1024" stride="4"> <!-- instructionCount <= 256 -->
@@ -675,16 +698,27 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                  Either a coincidence or due to shared roots in DirectX: same enum as Gallium3D PIPE_LOGICOP -->
             <bitfield high="3" low="0" name="OP" type="LOGIC_OP"/>
             <bitfield pos="4" name="OP_MASK"/>
-            <!-- These are toggled frequently by the Vivante driver on
-                 GC2000/GC3000, for unknown reason, but not related to logic operations.
+            <!-- Global PE state not related to logic operations but "conveniently"
+                 squashed into this register.
             -->
-            <bitfield pos="7" name="UNK8_MASK"/>
-            <bitfield high="9" low="8" name="UNK8"/>  <!-- Depth/Target related -->
+            <bitfield pos="7" name="SINGLE_BUFFER_MASK"/>
+            <!-- SINGLE_BUFFER is a feature, introduced in GC3000 on i.MX6qp, that allows
+                 multiple pixel pipes to render to a single buffer. This is very useful:
+
+                 - The PRE unit on i.MX6qp can handle Vivante's tiled formats but not
+                   multi-tiled formats.
+                 - Could make render-to-texture less of a hassle.
+
+                 It is apparently switched on by setting the following state to
+                 2 or 3, and assigning the same address to both pixel pipes for both
+                 depth and color.
+            -->
+            <bitfield high="9" low="8" name="SINGLE_BUFFER"/>
             <bitfield pos="10" name="UNK11_MASK"/>
             <bitfield pos="11" name="UNK11"/> <!-- Alpha related -->
-            <bitfield high="22" low="20" name="UNK20"/> <!-- Depth related -->
+            <bitfield high="21" low="20" name="UNK20"/> <!-- Depth related -->
             <bitfield pos="23" name="UNK20_MASK"/>
-            <bitfield high="26" low="24" name="UNK24"/> <!-- Sampling related -->
+            <bitfield high="26" low="24" name="UNK24"/> <!-- Sampling related (set on GC3000 but not GC2000) -->
             <bitfield pos="27" name="UNK24_MASK"/>
         </reg32>
         <reg32 offset="0x014A8" name="DITHER" value="0xFFFFFFFF" length="2"/>
@@ -701,6 +735,17 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="15" low="8" name="WRITE_MASK_BACK" brief="glStencilMask (GL_BACK)"/>
         </reg32>
         <reg32 offset="0x01580" name="UNK01580" value="0x00000000" length="3" stride="4"/>
+        <!-- Multiple render targets (color attachments).
+             These figure output 1..N as index 0..N-1.
+         -->
+        <stripe name="RT_ADDR" length="8" stride="0x20">
+            <reg32 offset="0x14800" name="PIPE" length="8" stride="4" type="VIVS"/>
+        </stripe>
+        <reg32 offset="0x14900" name="RT_CONFIG" length="8" stride="4">
+            <bitfield high="15" low="0" name="STRIDE"/>
+            <!-- Likely per-output format flags -->
+            <bitfield high="31" low="16" name="UNK16"/>
+        </reg32>
     </stripe>
 
     <stripe name="CO" brief="Compose states">
@@ -911,6 +956,17 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             </reg32>
             <reg32 offset="0x01740" name="STATUS_BASE" value="0x00000000" type="VIVM"/>
             <reg32 offset="0x01760" name="CLEAR_VALUE" value="0x00000000"/>
+            <!-- New on GC3000 - seems simply a second copy of CLEAR_VALUE -->
+            <reg32 offset="0x01780" name="CLEAR_VALUE2" value="0x00000000"/>
+        </stripe>
+        <!-- Multiple render targets (color attachments) -->
+        <stripe name="RT" length="8" stride="4">
+            <reg32 offset="0x017A0" name="UNK017A0"/>
+            <reg32 offset="0x017C0" name="STATUS_BASE" type="VIVS"/>
+            <reg32 offset="0x017E0" name="SURFACE_BASE" type="VIVS"/>
+            <reg32 offset="0x01A00" name="CLEAR_VALUE"/>
+            <reg32 offset="0x01A20" name="CLEAR_VALUE2"/>
+            <reg32 offset="0x01A40" name="UNK01A40"/>
         </stripe>
     </stripe>
 
@@ -1000,19 +1056,20 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 
     <stripe name="NTE" brief="New texture states">
         <doc>Extra texture states for newer hardware. These exist if chipMinorFeatures2 bit 11 set.</doc>
-        <array offset="0x10000" name="SAMPLER" length="32" stride="4">
+        <stripe name="SAMPLER" length="32" stride="4">
             <doc>16 fragment texture samplers, 16 vertex texture samplers</doc>
-            <reg32 offset="0x000" name="CONFIG0" value="0x00000000" type="TE_SAMPLER_CONFIG0"/>
-            <reg32 offset="0x080" name="SIZE" value="0x00000000" type="TE_SAMPLER_SIZE"/>
-            <reg32 offset="0x100" name="LOG_SIZE" value="0x00000000" type="TE_SAMPLER_LOG_SIZE"/>
-            <reg32 offset="0x180" name="LOD_CONFIG" value="0x00000000" type="TE_SAMPLER_LOD_CONFIG"/>
-            <reg32 offset="0x200" name="UNK10200" value="0x00000000"/>
-            <reg32 offset="0x280" name="UNK10280" value="0x00000000"/>
-            <reg32 offset="0x300" name="UNK10300" value="0x00000000"/>
-            <reg32 offset="0x380" name="CONFIG1" value="0x00321000" type="TE_SAMPLER_CONFIG1"/>
-            <reg32 offset="0x400" name="UNK10400" value="0x00000000"/>
-            <reg32 offset="0x480" name="UNK10480" value="0x00000000"/>
-        </array>
+            <reg32 offset="0x10000" name="CONFIG0" value="0x00000000" type="TE_SAMPLER_CONFIG0"/>
+            <reg32 offset="0x10080" name="SIZE" value="0x00000000" type="TE_SAMPLER_SIZE"/>
+            <reg32 offset="0x10100" name="LOG_SIZE" value="0x00000000" type="TE_SAMPLER_LOG_SIZE"/>
+            <reg32 offset="0x10180" name="LOD_CONFIG" value="0x00000000" type="TE_SAMPLER_LOD_CONFIG"/>
+            <reg32 offset="0x10200" name="UNK10200" value="0x00000000"/>
+            <reg32 offset="0x10280" name="UNK10280" value="0x00000000"/>
+            <reg32 offset="0x10300" name="UNK10300" value="0x00000000"/>
+            <reg32 offset="0x10380" name="CONFIG1" value="0x00321000" type="TE_SAMPLER_CONFIG1"/>
+            <reg32 offset="0x10400" name="UNK10400" value="0x00000000"/>
+            <reg32 offset="0x10480" name="UNK10480" value="0x00000000"/>
+            <reg32 offset="0x10500" name="UNK10500" value="0x00000000"/>
+        </stripe>
         <array offset="0x10800" name="SAMPLER_ADDR" length="32" stride="64"> <!-- Per sampler -->
             <!-- length="texBlockCount"
                  where texBlockCount=12 if chipModel == GC2000 && chipRevision == 0x5108, otherwise 32
@@ -1032,9 +1089,15 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x0C000" name="INST_MEM" value="0x00000000" length="4096" stride="4"> <!-- 256 > instructionCount > 1024 -->
             <!-- length="instructionCount * 4" -->
         </reg32>
-        <reg32 offset="0x08000" name="UNK0C000_MIRROR" value="0x00000000" length="4096" stride="4"> <!-- 256 > instructionCount > 1024 -->
+        <reg32 offset="0x08000" name="INST_MEM_MIRROR" value="0x00000000" length="4096" stride="4"> <!-- 256 > instructionCount > 1024 -->
             <!-- length="instructionCount * 4" -->
         </reg32>
+        <!-- Unified uniforms area. On hardware that uses unified uniforms
+             (signified by feature bit ?), both the VS and PS uniforms share this single state
+             array. Their offsets are determined by VS_UNIFORM_BASE and PS_UNIFORM_BASE
+             respecively. It seems to be necessary to set state 00860 to an appropriate
+             value before loading these.
+          -->
         <reg32 offset="0x30000" name="UNIFORMS" value="0x00000000" length="2048" stride="4">
             <!-- length="?" -->
         </reg32>

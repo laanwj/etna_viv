@@ -110,7 +110,7 @@ class HalResolver(ResolverBase):
                 return {'node'}
         elif name == '_gcsHAL_LOCK_VIDEO_MEMORY':
             if self.dir == 'in':
-                fields_in.difference_update(['address','memory'])
+                fields_in.difference_update(['address','memory','physicalAddress'])
             else:
                 fields_in.difference_update(['node'])
         elif name == '_gcsHAL_USER_SIGNAL':

@@ -8,12 +8,12 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- state.xml     (  19792 bytes, from 2016-11-15 06:55:13)
-- common.xml    (  23422 bytes, from 2016-11-15 06:55:13)
-- state_hi.xml  (  25653 bytes, from 2016-12-10 07:08:10)
+- state.xml     (  19930 bytes, from 2016-12-14 15:25:40)
+- common.xml    (  23473 bytes, from 2016-12-11 10:32:13)
+- state_hi.xml  (  26403 bytes, from 2016-12-14 06:43:27)
 - copyright.xml (   1597 bytes, from 2016-10-29 07:29:22)
 - state_2d.xml  (  51552 bytes, from 2016-10-29 07:29:22)
-- state_3d.xml  (  63206 bytes, from 2016-12-10 07:08:15)
+- state_3d.xml  (  66957 bytes, from 2016-12-15 11:31:03)
 - state_vg.xml  (   5975 bytes, from 2016-10-29 07:29:22)
 
 Copyright (C) 2012-2016 by the following authors:
@@ -280,10 +280,10 @@ DEALINGS IN THE SOFTWARE.
 
 #define VIVS_VS_NEW_UNK00860					0x00000860
 #define VIVS_VS_NEW_UNK00860_UNK0				0x00000001
-#define VIVS_VS_NEW_UNK00860_UNK4				0x00000010
-#define VIVS_VS_NEW_UNK00860_UNK16				0x00010000
+#define VIVS_VS_NEW_UNK00860_PS					0x00000010
+#define VIVS_VS_NEW_UNK00860_UNK12				0x00001000
 
-#define VIVS_VS_UNK00864					0x00000864
+#define VIVS_VS_UNIFORM_BASE					0x00000864
 
 #define VIVS_VS_ICACHE_CONTROL					0x00000868
 #define VIVS_VS_ICACHE_CONTROL_ENABLE				0x00000001
@@ -785,13 +785,13 @@ DEALINGS IN THE SOFTWARE.
 #define VIVS_PE_LOGIC_OP_OP__SHIFT				0
 #define VIVS_PE_LOGIC_OP_OP(x)					(((x) << VIVS_PE_LOGIC_OP_OP__SHIFT) & VIVS_PE_LOGIC_OP_OP__MASK)
 #define VIVS_PE_LOGIC_OP_OP_MASK				0x00000010
-#define VIVS_PE_LOGIC_OP_UNK8_MASK				0x00000080
-#define VIVS_PE_LOGIC_OP_UNK8__MASK				0x00000300
-#define VIVS_PE_LOGIC_OP_UNK8__SHIFT				8
-#define VIVS_PE_LOGIC_OP_UNK8(x)				(((x) << VIVS_PE_LOGIC_OP_UNK8__SHIFT) & VIVS_PE_LOGIC_OP_UNK8__MASK)
+#define VIVS_PE_LOGIC_OP_SINGLE_BUFFER_MASK			0x00000080
+#define VIVS_PE_LOGIC_OP_SINGLE_BUFFER__MASK			0x00000300
+#define VIVS_PE_LOGIC_OP_SINGLE_BUFFER__SHIFT			8
+#define VIVS_PE_LOGIC_OP_SINGLE_BUFFER(x)			(((x) << VIVS_PE_LOGIC_OP_SINGLE_BUFFER__SHIFT) & VIVS_PE_LOGIC_OP_SINGLE_BUFFER__MASK)
 #define VIVS_PE_LOGIC_OP_UNK11_MASK				0x00000400
 #define VIVS_PE_LOGIC_OP_UNK11					0x00000800
-#define VIVS_PE_LOGIC_OP_UNK20__MASK				0x00700000
+#define VIVS_PE_LOGIC_OP_UNK20__MASK				0x00300000
 #define VIVS_PE_LOGIC_OP_UNK20__SHIFT				20
 #define VIVS_PE_LOGIC_OP_UNK20(x)				(((x) << VIVS_PE_LOGIC_OP_UNK20__SHIFT) & VIVS_PE_LOGIC_OP_UNK20__MASK)
 #define VIVS_PE_LOGIC_OP_UNK20_MASK				0x00800000
@@ -831,6 +831,24 @@ DEALINGS IN THE SOFTWARE.
 #define VIVS_PE_UNK01580(i0)				       (0x00001580 + 0x4*(i0))
 #define VIVS_PE_UNK01580__ESIZE					0x00000004
 #define VIVS_PE_UNK01580__LEN					0x00000003
+
+#define VIVS_PE_RT_ADDR(i0)				       (0x00000000 + 0x20*(i0))
+#define VIVS_PE_RT_ADDR__ESIZE					0x00000020
+#define VIVS_PE_RT_ADDR__LEN					0x00000008
+
+#define VIVS_PE_RT_ADDR_PIPE(i0, i1)			       (0x00014800 + 0x20*(i0) + 0x4*(i1))
+#define VIVS_PE_RT_ADDR_PIPE__ESIZE				0x00000004
+#define VIVS_PE_RT_ADDR_PIPE__LEN				0x00000008
+
+#define VIVS_PE_RT_CONFIG(i0)				       (0x00014900 + 0x4*(i0))
+#define VIVS_PE_RT_CONFIG__ESIZE				0x00000004
+#define VIVS_PE_RT_CONFIG__LEN					0x00000008
+#define VIVS_PE_RT_CONFIG_STRIDE__MASK				0x0000ffff
+#define VIVS_PE_RT_CONFIG_STRIDE__SHIFT				0
+#define VIVS_PE_RT_CONFIG_STRIDE(x)				(((x) << VIVS_PE_RT_CONFIG_STRIDE__SHIFT) & VIVS_PE_RT_CONFIG_STRIDE__MASK)
+#define VIVS_PE_RT_CONFIG_UNK16__MASK				0xffff0000
+#define VIVS_PE_RT_CONFIG_UNK16__SHIFT				16
+#define VIVS_PE_RT_CONFIG_UNK16(x)				(((x) << VIVS_PE_RT_CONFIG_UNK16__SHIFT) & VIVS_PE_RT_CONFIG_UNK16__MASK)
 
 #define VIVS_CO							0x00000000
 
@@ -1053,6 +1071,24 @@ DEALINGS IN THE SOFTWARE.
 
 #define VIVS_TS_SAMPLER_CLEAR_VALUE(i0)			       (0x00001760 + 0x4*(i0))
 
+#define VIVS_TS_SAMPLER_CLEAR_VALUE2(i0)		       (0x00001780 + 0x4*(i0))
+
+#define VIVS_TS_RT(i0)					       (0x00000000 + 0x4*(i0))
+#define VIVS_TS_RT__ESIZE					0x00000004
+#define VIVS_TS_RT__LEN						0x00000008
+
+#define VIVS_TS_RT_UNK017A0(i0)				       (0x000017a0 + 0x4*(i0))
+
+#define VIVS_TS_RT_STATUS_BASE(i0)			       (0x000017c0 + 0x4*(i0))
+
+#define VIVS_TS_RT_SURFACE_BASE(i0)			       (0x000017e0 + 0x4*(i0))
+
+#define VIVS_TS_RT_CLEAR_VALUE(i0)			       (0x00001a00 + 0x4*(i0))
+
+#define VIVS_TS_RT_CLEAR_VALUE2(i0)			       (0x00001a20 + 0x4*(i0))
+
+#define VIVS_TS_RT_UNK01A40(i0)				       (0x00001a40 + 0x4*(i0))
+
 #define VIVS_YUV						0x00000000
 
 #define VIVS_YUV_UNK01678					0x00001678
@@ -1175,7 +1211,7 @@ DEALINGS IN THE SOFTWARE.
 
 #define VIVS_NTE						0x00000000
 
-#define VIVS_NTE_SAMPLER(i0)				       (0x00010000 + 0x4*(i0))
+#define VIVS_NTE_SAMPLER(i0)				       (0x00000000 + 0x4*(i0))
 #define VIVS_NTE_SAMPLER__ESIZE					0x00000004
 #define VIVS_NTE_SAMPLER__LEN					0x00000020
 
@@ -1267,6 +1303,8 @@ DEALINGS IN THE SOFTWARE.
 
 #define VIVS_NTE_SAMPLER_UNK10480(i0)			       (0x00010480 + 0x4*(i0))
 
+#define VIVS_NTE_SAMPLER_UNK10500(i0)			       (0x00010500 + 0x4*(i0))
+
 #define VIVS_NTE_SAMPLER_ADDR(i0)			       (0x00010800 + 0x40*(i0))
 #define VIVS_NTE_SAMPLER_ADDR__ESIZE				0x00000040
 #define VIVS_NTE_SAMPLER_ADDR__LEN				0x00000020
@@ -1293,9 +1331,9 @@ DEALINGS IN THE SOFTWARE.
 #define VIVS_SH_INST_MEM__ESIZE					0x00000004
 #define VIVS_SH_INST_MEM__LEN					0x00001000
 
-#define VIVS_SH_UNK0C000_MIRROR(i0)			       (0x00008000 + 0x4*(i0))
-#define VIVS_SH_UNK0C000_MIRROR__ESIZE				0x00000004
-#define VIVS_SH_UNK0C000_MIRROR__LEN				0x00001000
+#define VIVS_SH_INST_MEM_MIRROR(i0)			       (0x00008000 + 0x4*(i0))
+#define VIVS_SH_INST_MEM_MIRROR__ESIZE				0x00000004
+#define VIVS_SH_INST_MEM_MIRROR__LEN				0x00001000
 
 #define VIVS_SH_UNIFORMS(i0)				       (0x00030000 + 0x4*(i0))
 #define VIVS_SH_UNIFORMS__ESIZE					0x00000004
