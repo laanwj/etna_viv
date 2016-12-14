@@ -155,13 +155,9 @@ Other tools live in:
 
 The most useful ones, aside from the assembler and disassembler mentioned before are:
 
-- `show_egl2_log.sh` (uses `dump_cmdstream.py`, you may have to adapt this script to use another structure definition JSON depending on your kernel interface)
+- `dump_cmdstream.py` Decodes and dumps the intercepted command stream in human readable format, making use of rnndb state maps.
 
-Decodes and dumps the intercepted command stream in human readable format, making use of rnndb state maps.
-
-- `fdr_dump_mem.py`
-
-Extract areas of video memory, images, and command buffers at certain points of execution.
+- `fdr_dump_mem.py` Extract areas of video memory, images, and command buffers at certain points of execution.
 
 Vivante GPL kernel drivers
 ---------------------------

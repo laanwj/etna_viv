@@ -502,6 +502,9 @@ def main():
             if t == 0x594e4f50:
                 v = struct.unpack(ENDIAN + WORD_CHAR * 3, rec.data[4:])
                 print('[end of frame %d: %d.%09d]' % v)
+            elif t == 0x424f4c42:
+                v = struct.unpack(ENDIAN + WORD_CHAR * 4, rec.data[4:])
+                print('[driver version %d.%d.%d.%d]' % v)
 
 if __name__ == '__main__':
     main()
