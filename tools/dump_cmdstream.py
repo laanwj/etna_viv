@@ -43,6 +43,7 @@ from etnaviv.parse_rng import parse_rng_file, format_path, BitSet, Domain
 from etnaviv.dump_cmdstream_util import int_as_float, fixp_as_float
 from etnaviv.parse_command_buffer import parse_command_buffer
 from etnaviv.rng_describe_c import format_path_c, describe_c
+from etnaviv.auto_gcabi import guess_from_fdr
 
 DEBUG = False
 
@@ -313,7 +314,7 @@ def parse_arguments():
     parser.add_argument('input', metavar='INFILE', type=str, 
             help='FDR file')
     parser.add_argument('struct_file', metavar='STRUCTFILE', type=str, 
-            help='Structures definition file')
+            help='Structures definition file', default=None, nargs='?')
     parser.add_argument('--rules-file', metavar='RULESFILE', type=str, 
             help='State map definition file (rules-ng-ng)',
             default=rnndb_path('state.xml'))
@@ -383,6 +384,13 @@ CmdStreamInfo = namedtuple('CmdStreamInfo', ['opcodes', 'domain'])
 
 def main():
     args = parse_arguments()
+    
+    if args.struct_file is None:
+        args.struct_file = guess_from_fdr(args.input)
+        print('[Using struct file %s]' % args.struct_file)
+    if args.struct_file is None:
+        print('Could not determine struct file from GCABI in FDR, provide --struct-file= argument')
+
     defs = load_data_definitions(args.struct_file)
     state_xml = parse_rng_file(args.rules_file)
     state_map = state_xml.lookup_domain('VIVS')
