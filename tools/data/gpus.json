@@ -38,7 +38,62 @@
         }]
     },
     {
-        "platform": "Marvell Armada 620 (88AP2128-B0)",
+        "platform": "Marvell 88SV331x",
+        "chips": [{
+            "type": "GC530",
+            "chipModel": "0x530",
+            "chipRevision": "0x4303",
+            "chipFeatures": "0x212c66ed",
+            "chipMinorFeatures": "0x17f",
+            "streamCount": "1",
+            "registerMax": "64",
+            "threadCount": "128",
+            "shaderCoreCount": "1",
+            "vertexCacheSize": "8",
+            "vertexOutputBufferSize": "128"
+        }]
+    },
+    {
+        "platform": "Marvell Armada 610",
+        "chips": [{
+            "type": "GC860",
+            "chipModel": "0x860",
+            "chipRevision": "0x4603",
+            "chipFeatures": "0xe02c6eed",
+            "chipMinorFeatures": "0xcbf99fff",
+            "streamCount": "1",
+            "registerMax": "64",
+            "threadCount": "256",
+            "shaderCoreCount": "1",
+            "vertexCacheSize": "8",
+            "vertexOutputBufferSize": "512"
+        }]
+    },
+    {
+        "platform": "Marvell Armada 1500",
+        "chips": [{
+            "type": "GC1000",
+            "chipModel": "0x1000",
+            "chipRevision": "0x5015",
+            "chipFeatures": "0xe0286eed",
+            "chipMinorFeatures": "0xc3799eff",
+            "chipMinorFeatures1": "0x2e13b2d9",
+            "chipMinorFeatures2": "0x00100000",
+            "chipMinorFeatures3": "0x00000000",
+            "streamCount": "4",
+            "registerMax": "64",
+            "threadCount": "512",
+            "shaderCoreCount": "2",
+            "vertexCacheSize": "8",
+            "vertexOutputBufferSize": "512",
+            "pixelPipes": "1",
+            "instructionCount": "256",
+            "numConstants": "0",
+            "bufferSize": "0"
+        }]
+    },
+    {
+        "platform": "Marvell PXA2128",
         "chips": [{
             "type": "GC2000",
             "chipModel": "0x00002000",
@@ -60,22 +115,6 @@
         }]
     },
     {
-        "platform": "Marvell Armada 610",
-        "chips": [{
-            "type": "GC860",
-            "chipModel": "0x860",
-            "chipRevision": "0x4603",
-            "chipFeatures": "0xe02c6eed",
-            "chipMinorFeatures": "0xcbf99fff",
-            "streamCount": "1",
-            "registerMax": "64",
-            "threadCount": "256",
-            "shaderCoreCount": "1",
-            "vertexCacheSize": "8",
-            "vertexOutputBufferSize": "512"
-        }]
-    },
-    {
         "platform": "Ingenic JZ4770 MIPS",
         "chips": [{
             "type": "GC860",
@@ -90,22 +129,6 @@
             "shaderCoreCount": "1",
             "vertexCacheSize": "8",
             "vertexOutputBufferSize": "512"
-        }]
-    },
-    {
-        "platform": "Marvell 88SV331x",
-        "chips": [{
-            "type": "GC530",
-            "chipModel": "0x530",
-            "chipRevision": "0x4303",
-            "chipFeatures": "0x212c66ed",
-            "chipMinorFeatures": "0x17f",
-            "streamCount": "1",
-            "registerMax": "64",
-            "threadCount": "128",
-            "shaderCoreCount": "1",
-            "vertexCacheSize": "8",
-            "vertexOutputBufferSize": "128"
         }]
     },
     {
@@ -213,29 +236,6 @@
             "bufferSize": "8",
             "numVaryings": "8",
             "superTileLayout": "0"
-        }]
-    },
-    {
-        "platform": "Marvell Armada 1500",
-        "chips": [{
-            "type": "GC1000",
-            "chipModel": "0x1000",
-            "chipRevision": "0x5015",
-            "chipFeatures": "0xe0286eed",
-            "chipMinorFeatures": "0xc3799eff",
-            "chipMinorFeatures1": "0x2e13b2d9",
-            "chipMinorFeatures2": "0x00100000",
-            "chipMinorFeatures3": "0x00000000",
-            "streamCount": "4",
-            "registerMax": "64",
-            "threadCount": "512",
-            "shaderCoreCount": "2",
-            "vertexCacheSize": "8",
-            "vertexOutputBufferSize": "512",
-            "pixelPipes": "1",
-            "instructionCount": "256",
-            "numConstants": "0",
-            "bufferSize": "0"
         }]
     },
     {
