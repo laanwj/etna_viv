@@ -2,7 +2,7 @@
 '''
 Etna shader disassembler/assembler common utils.
 '''
-# Copyright (c) 2012-2016 Wladimir J. van der Laan
+# Copyright (c) 2012-2017 Wladimir J. van der Laan
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -29,6 +29,8 @@ from binascii import b2a_hex
 from collections import namedtuple 
 
 from etnaviv.parse_rng import parse_rng_file, format_path, BitSet, Domain
+from etnaviv.floatutil import int_as_float, float_as_int
+from etnaviv.asm_defs import Model
 
 # Register groups
 # t temporary
@@ -52,11 +54,62 @@ DstOperand = namedtuple('DstOperand', ['use', 'amode', 'reg', 'comps'])
 DstOperandAReg = namedtuple('DstOperandAReg', ['reg', 'comps'])
 DstOperandMem = namedtuple('DstOperandMem', ['comps'])
 SrcOperand = namedtuple('SrcOperand', ['use', 'reg', 'swiz', 'neg', 'abs', 'amode', 'rgroup'])
+# immediate source operand: only GC3000+
+SrcOperandImm = namedtuple('SrcOperandImm', ['use', 'imm'])
 TexOperand = namedtuple('TexOperand', ['id', 'amode', 'swiz'])
+# address operand to CALL/BRANCH: only GC2000
 AddrOperand = namedtuple('AddrOperand', ['addr'])
 Instruction = namedtuple('Instruction', ['op', 'cond', 'sat', 'tex', 'dst', 'src', 'addr', 'unknowns', 'linenr', 'type'])
 
-def disassemble(isa, inst, warnings):
+def extract_imm(fields, idx):
+    '''
+    Extract GC3000+ immediate operand field.
+    '''
+    if fields['SRC%i_RGROUP' % idx] != 7:
+        return None
+    rawval = (fields['SRC%i_REG' % idx] |
+              (fields['SRC%i_SWIZ' % idx] << 9) |
+              (fields['SRC%i_NEG' % idx] << 17) |
+              (fields['SRC%i_ABS' % idx] << 18) |
+              ((fields['SRC%i_AMODE' % idx] & 1) << 19))
+    conv = fields['SRC%i_AMODE' % idx] >> 1
+    if conv == 0: # f32
+        return int_as_float(rawval << 12, 32)
+    elif conv == 1: # s32
+        if rawval < 0x80000:
+            return rawval
+        else:
+            return rawval - 0x100000
+    elif conv == 2: # u32
+        return rawval
+    else:
+        return '0x%05' % rawval
+
+def set_imm(fields, idx, value):
+    '''
+    Set GC3000+ immediate operand field.
+    '''
+    if isinstance(value, float):
+        conv = 0 # f32
+        rawval = float_as_int(value, 32) >> 12 # TODO rounding?
+    elif isinstance(value, int):
+        if value < 0: # s32
+            conv = 1
+            rawval = (value + 0x100000) & 0xfffff
+        else: # u32
+            conv = 2
+            rawval = value
+    else:
+        raise ValueError('Immediate value must be float or int')
+    assert(rawval >= 0 and rawval < 0x100000)
+    fields['SRC%i_RGROUP' % idx] = 7
+    fields['SRC%i_REG' % idx] = rawval & 0x1ff
+    fields['SRC%i_SWIZ' % idx] = (rawval >> 9) & 0xff
+    fields['SRC%i_NEG' % idx] = (rawval >> 17) & 1
+    fields['SRC%i_ABS' % idx] = (rawval >> 18) & 1
+    fields['SRC%i_AMODE' % idx] = (rawval >> 19) | (conv << 1)
+
+def disassemble(isa, model, inst, warnings):
     '''Parse four 32-bit instruction words into Instruction object'''
     # Extract bit fields using ISA
     domain = isa.lookup_domain('VIV_ISA')
@@ -106,7 +159,7 @@ def disassemble(isa, inst, warnings):
             warnings.append('tex not used but fields non-zero (id=%d,amode=%d,swiz=%d)' % (tex.id,tex.amode,tex.swiz))
         tex = None
 
-    if op in [0x14, 0x16]: # CALL, BRANCH
+    if model <= Model.GC2000 and op in [0x14, 0x16]: # CALL, BRANCH
         # Address (immediate) operand takes the place of src2
         addr = AddrOperand(fields['SRC2_IMM'])
     else:
@@ -119,16 +172,25 @@ def disassemble(isa, inst, warnings):
 
     src = []
     for idx in xrange(num_src):
-        operand = SrcOperand(
-            use = fields['SRC%i_USE' % idx], reg = fields['SRC%i_REG' % idx],
-            swiz = fields['SRC%i_SWIZ' % idx], neg = fields['SRC%i_NEG' % idx],
-            abs = fields['SRC%i_ABS' % idx], amode = fields['SRC%i_AMODE' % idx],
-            rgroup = fields['SRC%i_RGROUP' % idx]
-        )
-        if not operand.use:
-            if operand.reg != 0 or operand.swiz != 0 or operand.neg != 0 or operand.abs != 0 or operand.amode != 0 or operand.rgroup != 0:
-                warnings.append('src%i not used but fields non-zero (reg=%d,swiz=%d,neg=%d,abs=%d,amode=%d,rgroup=%d)' % (idx, operand.reg, operand.swiz, operand.neg, operand.abs, operand.amode, operand.rgroup))
-            operand = None
+        if fields['SRC%i_RGROUP' % idx] == 7: # immediate argument
+            operand = SrcOperandImm(
+                use = fields['SRC%i_USE' % idx],
+                imm = extract_imm(fields, idx)
+            )
+            if not operand.use and operand.imm != 0:
+                warnings.append('src%i not used but fields non-zero (rgroup=%d,imm=%s)' % (idx, 7, operand.imm))
+                operand = None
+        else: # register argument
+            operand = SrcOperand(
+                use = fields['SRC%i_USE' % idx], reg = fields['SRC%i_REG' % idx],
+                swiz = fields['SRC%i_SWIZ' % idx], neg = fields['SRC%i_NEG' % idx],
+                abs = fields['SRC%i_ABS' % idx], amode = fields['SRC%i_AMODE' % idx],
+                rgroup = fields['SRC%i_RGROUP' % idx]
+            )
+            if not operand.use:
+                if operand.reg != 0 or operand.swiz != 0 or operand.neg != 0 or operand.abs != 0 or operand.amode != 0 or operand.rgroup != 0:
+                    warnings.append('src%i not used but fields non-zero (reg=%d,swiz=%d,neg=%d,abs=%d,amode=%d,rgroup=%d)' % (idx, operand.reg, operand.swiz, operand.neg, operand.abs, operand.amode, operand.rgroup))
+                operand = None
 
         src.append(operand)
 
@@ -174,7 +236,7 @@ def format_dst(isa, dst):
 
 def format_src(isa, src):
     '''Format source operand'''
-    if src is not None:
+    if isinstance(src, SrcOperand):
         if src.rgroup == 3: # map vX to uniform u(X+128)
             rgroup = 2
             reg = 128 + src.reg
@@ -190,6 +252,8 @@ def format_src(isa, src):
             return '|' + arg + '|'
         if src.neg:
             return '-' + arg
+    elif isinstance(src, SrcOperandImm): # gc3000 immediate
+        return str(src.imm)
     else:
         arg = 'void' # unused argument
     return arg
@@ -207,7 +271,7 @@ def format_tex(isa, tex):
 def format_addr(isa, addr):
     return '%i' % (addr.addr)
 
-def format_instruction(isa, inst):
+def format_instruction(isa, model, inst):
     '''
     Format instruction as text.
     '''

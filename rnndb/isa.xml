@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Copyright (c) 2012-2016 The Etnaviv Project
+<!-- Copyright (c) 2012-2017 The Etnaviv Project
 
  Permission is hereby granted, free of charge, to any person obtaining a
  copy of this software and associated documentation files (the "Software"),
@@ -84,7 +84,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         - SRCx_SWIZZLE contains bit 16..9
         - SRCx_NEG contains bit 17 of i
         - SRCx_ABS contains bit 18 of i
-        - SRCx_AMODE determines type conversion and sign:
+        - SRCx_AMODE determines type conversion and sign, as well as bit 19 of i:
 
          AMODE | Type| Value
          ------+-----+---------------------

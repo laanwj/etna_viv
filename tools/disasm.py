@@ -4,7 +4,7 @@ Shader disassembler.
 
 Usage: disasm.py --isa-file ../rnndb/isa.xml (vs|ps)_x.bin
 '''
-# Copyright (c) 2012-2013 Wladimir J. van der Laan
+# Copyright (c) 2012-2017 Wladimir J. van der Laan
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -33,6 +33,7 @@ from collections import namedtuple
 from etnaviv.util import rnndb_path
 from etnaviv.parse_rng import parse_rng_file, format_path, BitSet, Domain
 from etnaviv.disasm import disasm_format
+from etnaviv.asm_defs import Model
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Disassemble shader')
@@ -53,6 +54,9 @@ def parse_arguments():
     parser.add_argument('-t', dest='ifmt',
             default=False, action='store_const', const=True,
             help='Input comma-separated integers instead of binary shader')
+    parser.add_argument('-m', dest='model',
+            type=str, default='GC2000',
+            help='GPU type to disassemble for (GC2000 or GC3000, default GC3000)')
     return parser.parse_args()
 
 def do_disasm(out, isa, args, f):
@@ -68,12 +72,17 @@ def do_disasm(out, isa, args, f):
         print('Size of code must be multiple of 16.', file=sys.stderr)
         exit(1)
 
-    disasm_format(out, isa, data, args.addr, args.raw, args.cfmt)
+    disasm_format(out, isa, args.model, data, args.addr, args.raw, args.cfmt)
 
 def main():
     args = parse_arguments()
     out = sys.stdout
     isa = parse_rng_file(args.isa_file)
+    try:
+        args.model = Model.by_name[args.model.upper()]
+    except KeyError:
+        print('Unknown model identifier %s' % args.model, file=sys.stderr)
+        exit(1)
 
     if args.input == '-':
         do_disasm(out, isa, args, sys.stdin)

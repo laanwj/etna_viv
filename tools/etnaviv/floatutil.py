@@ -68,3 +68,15 @@ def int_as_float(i, size):
         # https://hg.python.org/cpython/rev/519bde9db8e0
         # return struct.unpack(b'e', struct.pack(b'H', i))[0]
         return struct.unpack(b'f', struct.pack(b'I', float16_decompress(i)))[0]
+
+def float_as_int(f, size):
+    '''Return unsigned int with binary representation of float f'''
+    if size == 32:
+        return struct.unpack(b'I', struct.pack(b'f', f))[0]
+    elif size == 64:
+        return struct.unpack(b'Q', struct.pack(b'd', f))[0]
+    elif size == 16: # half-float
+        # Future python will support this:
+        # https://hg.python.org/cpython/rev/519bde9db8e0
+        # return struct.unpack(b'H', struct.pack(b'e', i))[0]
+        return float16_compress(struct.unpack(b'I', struct.pack(b'f', f))[0])
