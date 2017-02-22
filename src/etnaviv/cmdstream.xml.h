@@ -10,7 +10,7 @@ git clone git://0x04.net/rules-ng-ng
 The rules-ng-ng source files this header was generated from are:
 - cmdstream.xml (  14313 bytes, from 2016-11-17 18:46:23)
 - copyright.xml (   1597 bytes, from 2016-10-29 07:29:22)
-- common.xml    (  23473 bytes, from 2016-12-11 10:32:13)
+- common.xml    (  23473 bytes, from 2017-01-07 14:27:54)
 
 Copyright (C) 2012-2016 by the following authors:
 - Wladimir J. van der Laan <laanwj@gmail.com>

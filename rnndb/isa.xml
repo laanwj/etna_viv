@@ -353,6 +353,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </doc>
     </value>
     <!-- OpenCL (GC2000+) -->
+    <value value="0x28" name="ADDLO"/> <!-- unverified -->
+    <value value="0x29" name="MULLO"/> <!-- unverified -->
+    <value value="0x2A" name="BARRIER"/> <!-- unverified -->
+    <value value="0x2B" name="SWIZZLE"/> <!-- unverified -->
+    <value value="0x2C" name="I2I"/> <!-- unverified -->
     <value value="0x2D" name="I2F" brief="Integer to float">
         <doc>
             dst := float(src0.x)
@@ -375,6 +380,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             On GC3000 this is a SIMD operation, with the operation applied to each component separately.
         </doc>
     </value>
+    <value value="0x2F" name="F2IRND"/> <!-- unverified -->
+    <value value="0x30" name="F2I7"/> <!-- unverified -->
     <value value="0x31" name="CMP" brief="Integer compare"/>
     <value value="0x32" name="LOAD" brief="Memory load">
         <doc>
@@ -407,6 +414,14 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             This is a scalar operation, the result is broadcasted over all active destination components.
         </doc>
     </value>
+    <value value="0x34" name="COPYSIGN"/> <!-- unverified -->
+    <value value="0x35" name="GETEXP"/> <!-- unverified -->
+    <value value="0x36" name="GETMANT"/> <!-- unverified -->
+    <value value="0x37" name="NAN"/> <!-- unverified -->
+    <value value="0x38" name="NEXTAFTER"/> <!-- unverified -->
+    <value value="0x39" name="ROUNDEVEN"/> <!-- unverified -->
+    <value value="0x3A" name="ROUNDAWAY"/> <!-- unverified -->
+    <value value="0x3B" name="IADDSAT"/> <!-- unverified -->
     <value value="0x3C" name="IMULLO0" brief="Integer multiply">
         <doc>
             dst := src0.x * src1.x
@@ -414,6 +429,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             This is a scalar operation, the result is broadcasted over all active destination components.
         </doc>
     </value>
+    <value value="0x3D" name="IMULLO1"/> <!-- unverified -->
+    <value value="0x3E" name="IMULLOSAT0"/> <!-- unverified -->
+    <value value="0x3F" name="IMULLOSAT0"/> <!-- unverified -->
     <value value="0x40" name="IMULHI0" brief="High half of the product of x and y">
         <doc>
             dst := (src0.x * src1.x) >> 32
@@ -424,6 +442,17 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             This is a scalar operation, the result is broadcasted over all active destination components.
         </doc>
     </value>
+    <value value="0x41" name="IMULHI1"/> <!-- unverified -->
+    <value value="0x42" name="IMUL0"/> <!-- unverified -->
+    <value value="0x43" name="IMUL1"/> <!-- unverified -->
+    <value value="0x44" name="IDIV0"/> <!-- unverified -->
+    <value value="0x45" name="IDIV1"/> <!-- unverified -->
+    <value value="0x46" name="IDIV2"/> <!-- unverified -->
+    <value value="0x47" name="IDIV3"/> <!-- unverified -->
+    <value value="0x48" name="IMOD0"/> <!-- unverified -->
+    <value value="0x49" name="IMOD1"/> <!-- unverified -->
+    <value value="0x4A" name="IMOD2"/> <!-- unverified -->
+    <value value="0x4B" name="IMOD3"/> <!-- unverified -->
     <value value="0x4C" name="IMADLO0" brief="Integer multiply and add">
         <doc>
             dst := src0.x * src1.x + src2.x
@@ -431,6 +460,17 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             This is a scalar operation, the result is broadcasted over all active destination components.
         </doc>
     </value>
+    <value value="0x4D" name="IMADLO1"/> <!-- unverified -->
+    <value value="0x4E" name="IMADLOSAT0"/> <!-- unverified -->
+    <value value="0x4F" name="IMADLOSAT0"/> <!-- unverified -->
+    <value value="0x50" name="IMADHI0"/> <!-- unverified -->
+    <value value="0x51" name="IMADHI1"/> <!-- unverified -->
+    <value value="0x52" name="IMADHISAT0"/> <!-- unverified -->
+    <value value="0x53" name="IMADHISAT1"/> <!-- unverified -->
+    <value value="0x54" name="HALFADD"/> <!-- unverified -->
+    <value value="0x55" name="HALFADDINC"/> <!-- unverified -->
+    <value value="0x56" name="MOVAI"/> <!-- unverified -->
+    <value value="0x57" name="IABS"/> <!-- unverified -->
     <value value="0x58" name="LEADZERO" brief="Count leading zeros">
         <doc>
             dst := clz(src0.x)
@@ -501,6 +541,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             On GC3000 this is a SIMD operation, with the operation applied to each component separately.
         </doc>
     </value>
+    <value value="0x60" name="BITSELECT"/> <!-- unverified -->
     <value value="0x61" name="POPCOUNT" brief="Population count">
         <doc>
             dst := popcount(src2)
@@ -513,6 +554,36 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             This is a SIMD operation, with the operation applied to each component separately.
         </doc>
     </value>
+    <value value="0x62" name="STOREB"/> <!-- unverified -->
+    <value value="0x63" name="RGB2YUV"/> <!-- unverified -->
+    <value value="0x64" name="DIV"/> <!-- unverified -->
+    <value value="0x65" name="ATOM_ADD"/> <!-- unverified -->
+    <value value="0x66" name="ATOM_XCHG"/> <!-- unverified -->
+    <value value="0x67" name="ATOM_CMP_XCHG"/> <!-- unverified -->
+    <value value="0x68" name="ATOM_MIN"/> <!-- unverified -->
+    <value value="0x69" name="ATOM_MAX"/> <!-- unverified -->
+    <value value="0x6A" name="ATOM_OR"/> <!-- unverified -->
+    <value value="0x6B" name="ATOM_AND"/> <!-- unverified -->
+    <value value="0x6C" name="ATOM_XOR"/> <!-- unverified -->
+    <value value="0x6D" name="BIT_REV"/> <!-- unverified -->
+    <value value="0x6E" name="BYTE_REV"/> <!-- unverified -->
+    <value value="0x6F" name="TEXLDLPCF"/> <!-- unverified -->
+    <value value="0x70" name="TEXLDGPCF"/> <!-- unverified -->
+    <value value="0x71" name="PACK"/> <!-- unverified -->
+    <value value="0x72" name="CONV"/> <!-- unverified -->
+    <value value="0x73" name="DP2"/> <!-- unverified -->
+    <value value="0x74" name="NORM_DP2"/> <!-- unverified -->
+    <value value="0x75" name="NORM_DP3"/> <!-- unverified -->
+    <value value="0x76" name="NORM_DP4"/> <!-- unverified -->
+    <value value="0x77" name="NORM_MUL"/> <!-- unverified -->
+    <value value="0x78" name="STORE_ATTR"/> <!-- unverified -->
+    <value value="0x79" name="LOAD_ATTR"/> <!-- unverified -->
+    <value value="0x7A" name="EMIT"/> <!-- unverified -->
+    <value value="0x7B" name="RESTART"/> <!-- unverified -->
+    <value value="0x7C" name="NOP7C"/> <!-- unverified -->
+    <value value="0x7D" name="NOP7D"/> <!-- unverified -->
+    <value value="0x7E" name="NOP7E"/> <!-- unverified -->
+    <value value="0x7F" name="NOP7F"/> <!-- unverified -->
 </enum>
 
 <enum name="INST_CONDITION" brief="Condition code">
