@@ -431,7 +431,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     </value>
     <value value="0x3D" name="IMULLO1"/> <!-- unverified -->
     <value value="0x3E" name="IMULLOSAT0"/> <!-- unverified -->
-    <value value="0x3F" name="IMULLOSAT0"/> <!-- unverified -->
+    <value value="0x3F" name="IMULLOSAT1"/> <!-- unverified -->
     <value value="0x40" name="IMULHI0" brief="High half of the product of x and y">
         <doc>
             dst := (src0.x * src1.x) >> 32
