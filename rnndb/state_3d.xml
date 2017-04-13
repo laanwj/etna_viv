@@ -886,8 +886,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x016B0" name="UNK016B0" value="0x00000000"/> <!-- size / 64 -->
         <reg32 offset="0x016B4" name="UNK016B4" value="0x00000000"/>
-        <reg32 offset="0x016B8" name="UNK016B8">
-            <bitfield pos="0" name="UNK0"/> <!-- Has to do with SINGLE_BUFFER feature - enabling this only resolves first pipe address -->
+        <reg32 offset="0x016B8" name="SINGLE_BUFFER">
+            <bitfield pos="0" name="ENABLE"/> <!-- Has to do with SINGLE_BUFFER feature - enabling this only resolves first pipe address -->
         </reg32>
         <reg32 offset="0x016BC" name="UNK016BC"/> <!-- has values that look like RGBA colors, such as 0xff000033 -->
         <stripe name="PIPE" length="8" stride="4"> <!-- pixelPipes > 1 -->
