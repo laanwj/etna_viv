@@ -107,7 +107,7 @@ static void *etna_pipe_create_depth_stencil_alpha_state(struct pipe_context *pip
     cs->PE_STENCIL_CONFIG =
             translate_stencil_mode(dsa.stencil[0].enabled, dsa.stencil[1].enabled) |
             VIVS_PE_STENCIL_CONFIG_MASK_FRONT(dsa.stencil[0].valuemask) |
-            VIVS_PE_STENCIL_CONFIG_WRITE_MASK(dsa.stencil[0].writemask);
+            VIVS_PE_STENCIL_CONFIG_WRITE_MASK_FRONT(dsa.stencil[0].writemask);
             /* XXX back masks in VIVS_PE_DEPTH_CONFIG_EXT? */
             /* XXX VIVS_PE_STENCIL_CONFIG_REF_FRONT comes from pipe_stencil_ref */
 
