@@ -462,7 +462,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     </value>
     <value value="0x4D" name="IMADLO1"/> <!-- unverified -->
     <value value="0x4E" name="IMADLOSAT0"/> <!-- unverified -->
-    <value value="0x4F" name="IMADLOSAT0"/> <!-- unverified -->
+    <value value="0x4F" name="IMADLOSAT1"/> <!-- unverified -->
     <value value="0x50" name="IMADHI0"/> <!-- unverified -->
     <value value="0x51" name="IMADHI1"/> <!-- unverified -->
     <value value="0x52" name="IMADHISAT0"/> <!-- unverified -->
