@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 '''
 De-tile an RGBX image.
 '''
@@ -25,6 +25,7 @@ De-tile an RGBX image.
 from __future__ import print_function, division, unicode_literals
 import argparse,struct
 from binascii import b2a_hex
+from PIL import Image
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='"Slice" memory data from execution data log stream.')
@@ -34,22 +35,44 @@ def parse_arguments():
             help='Output image')
     parser.add_argument('-w', dest='img_width', type=int,
             help='Width of image to export')
+    parser.add_argument('-r', '--raw', dest='raw',
+            default=False, action='store_true',
+            help='Raw input')
+    parser.add_argument('-t', '--tile', dest='tile',
+            default=False, action='store_true',
+            help='Tile instead of detile')
     parser.add_argument('--tile-width', dest='tile_width', type=int,
             default=4, help='Width of a tile')
     parser.add_argument('--tile-height', dest='tile_height', type=int,
             default=4, help='Height of a tile')
     return parser.parse_args()        
 
+def rgb_to_rgbx_raw(data_in):
+    out = bytearray(len(data_in)*4)
+    for i,x in enumerate(data_in):
+        out[i*4+0] = x[0]
+        out[i*4+1] = x[1]
+        out[i*4+2] = x[2]
+        out[i*4+3] = 255
+    return out
+
 def main():
     args = parse_arguments()
-    with open(args.input, 'rb') as f:
-        data = f.read()
-    
-    if args.img_width is None:
-        print('Specify width of image with -w')
-        exit(1)
-    width = args.img_width
-    height = len(data)//(width*4)
+
+    if args.raw:
+        with open(args.input, 'rb') as f:
+            data = f.read()
+        
+        if args.img_width is None:
+            print('Specify width of image with -w')
+            exit(1)
+        width = args.img_width
+        height = len(data)//(width*4)
+    else:
+        img = Image.open(args.input)
+        data = rgb_to_rgbx_raw(img.getdata())
+        width = img.width
+        height = img.height
 
     TILE_WIDTH = args.tile_width
     TILE_HEIGHT = args.tile_height
@@ -60,20 +83,24 @@ def main():
     TILES_X = width // TILE_WIDTH
     TILES_Y = height // TILE_HEIGHT
     TILES_STRIDE = TILES_X * TILE_BYTES
-    for ty in xrange(0,TILES_Y):
-        for tx in xrange(0,TILES_X):
-            for y in xrange(0, TILE_HEIGHT):
-                for x in xrange(0, TILE_WIDTH):
+    print('%dx%d %dx%d tiles' % (TILES_X,TILES_Y,TILE_WIDTH,TILE_HEIGHT))
+
+    for ty in range(0,TILES_Y):
+        for tx in range(0,TILES_X):
+            for y in range(0, TILE_HEIGHT):
+                for x in range(0, TILE_WIDTH):
                     dx = tx * TILE_WIDTH + x
                     dy = ty * TILE_HEIGHT + y
                     dst = (dy * width + dx) * PIXEL_SIZE
                     src_sup = ty * TILES_STRIDE + tx * TILE_BYTES
                     src_sub = (y * TILE_WIDTH + x) * PIXEL_SIZE
                     src = src_sup + src_sub
-                    out[dst:dst+4] = data[src:src+4] 
+                    if args.tile: # tile
+                        out[src:src+4] = data[dst:dst+4] 
+                    else:
+                        out[dst:dst+4] = data[src:src+4] 
 
-    from PIL import Image
-    img = Image.fromstring("RGBX", (width, height), str(out))
+    img = Image.frombytes("RGBX", (width, height), bytes(out))
     img = img.convert("RGB")
     img.save(args.output)
 
