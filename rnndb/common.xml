@@ -209,6 +209,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield pos="22" name="LINEAR_TEXTURE_SUPPORT"/>
         <bitfield pos="23" name="HALTI0" brief="Various features related to texturing and vertex processing">
             <doc>
+                - Texture swizzle
                 - Anisotropic texture filtering
                 - 3D texture support
                 - Texture array support
@@ -298,7 +299,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield pos="24" name="UNK24"/>
         <bitfield pos="25" name="UNK25"/>
         <bitfield pos="26" name="NEW_HZ"/>
-        <bitfield pos="27" name="UNK27"/>
+        <bitfield pos="27" name="PE_DITHER_FIX"/>
         <bitfield pos="28" name="UNK28"/>
         <bitfield pos="29" name="SH_ENHANCEMENTS3"/>
         <bitfield pos="30" name="UNK30"/>
@@ -338,7 +339,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 - FE reset vertex id
             </doc>
         </bitfield>
-        <bitfield pos="17" name="UNK17"/>
+        <bitfield pos="17" name="2D_MIRROR_EXTENSION"/>
         <bitfield pos="18" name="SMALL_MSAA"/>
         <bitfield pos="19" name="UNK19"/>
         <bitfield pos="20" name="NEW_RA"/>

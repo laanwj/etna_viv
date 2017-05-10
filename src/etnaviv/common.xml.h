@@ -8,13 +8,13 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- state.xml     (  19930 bytes, from 2017-04-14 21:49:11)
-- common.xml    (  23473 bytes, from 2017-04-14 21:49:11)
-- state_hi.xml  (  26403 bytes, from 2017-04-14 21:49:11)
-- copyright.xml (   1597 bytes, from 2017-04-14 21:48:20)
-- state_2d.xml  (  51552 bytes, from 2017-04-14 21:48:20)
-- state_3d.xml  (  66964 bytes, from 2017-04-14 21:49:11)
-- state_vg.xml  (   5975 bytes, from 2017-04-14 21:48:20)
+- state.xml     (  19930 bytes, from 2017-05-10 06:17:24)
+- common.xml    (  23529 bytes, from 2017-05-10 06:23:17)
+- state_hi.xml  (  26403 bytes, from 2017-05-10 06:17:24)
+- copyright.xml (   1597 bytes, from 2017-05-10 06:17:24)
+- state_2d.xml  (  51552 bytes, from 2017-05-10 06:17:24)
+- state_3d.xml  (  66964 bytes, from 2017-05-10 06:17:24)
+- state_vg.xml  (   5975 bytes, from 2017-05-10 06:17:24)
 
 Copyright (C) 2012-2017 by the following authors:
 - Wladimir J. van der Laan <laanwj@gmail.com>
@@ -247,7 +247,7 @@ DEALINGS IN THE SOFTWARE.
 #define chipMinorFeatures3_UNK24				0x01000000
 #define chipMinorFeatures3_UNK25				0x02000000
 #define chipMinorFeatures3_NEW_HZ				0x04000000
-#define chipMinorFeatures3_UNK27				0x08000000
+#define chipMinorFeatures3_PE_DITHER_FIX			0x08000000
 #define chipMinorFeatures3_UNK28				0x10000000
 #define chipMinorFeatures3_SH_ENHANCEMENTS3			0x20000000
 #define chipMinorFeatures3_UNK30				0x40000000
@@ -269,7 +269,7 @@ DEALINGS IN THE SOFTWARE.
 #define chipMinorFeatures4_UNK14				0x00004000
 #define chipMinorFeatures4_UNK15				0x00008000
 #define chipMinorFeatures4_HALTI2				0x00010000
-#define chipMinorFeatures4_UNK17				0x00020000
+#define chipMinorFeatures4_2D_MIRROR_EXTENSION			0x00020000
 #define chipMinorFeatures4_SMALL_MSAA				0x00040000
 #define chipMinorFeatures4_UNK19				0x00080000
 #define chipMinorFeatures4_NEW_RA				0x00100000
