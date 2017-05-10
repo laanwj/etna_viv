@@ -91,17 +91,17 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
          -->
         <!-- Extended formats -->
         <value value="17" name="R16F"/>
-        <value value="18" name="X16R16F" brief="Also usef for G16R16F"/>
-        <value value="19" name="X16B16G16R16F" brief="Also used for A16B16G16R16F"/>
+        <value value="18" name="G16R16F" brief="Also used for X16R16F"/>
+        <value value="19" name="A16B16G16R16F" brief="Also used for X16B16G16R16F"/>
         <value value="20" name="R32F" brief="Also used for R32I R32UI"/>
-        <value value="21" name="X32R32F" brief="Also used for G32R32F G32R32UI"/>
+        <value value="21" name="G32R32F" brief="Also used for X32R32F G32R32UI"/>
         <value value="22" name="A2B10G10R10" brief="Also used for X2B10G10R10"/>
         <value value="23" name="R8I" brief="Also used for R8UI"/>
-        <value value="24" name="X8R8I" brief="Also used for G8R8I X8R8UI G8R8UI"/>
-        <value value="25" name="X8B8G8R8I" brief="Also used for A8B8G8R8I X8B8G8R8UI A8B8G8R8UI"/>
+        <value value="24" name="G8R8I" brief="Also used for X8R8I X8R8UI G8R8UI"/>
+        <value value="25" name="A8B8G8R8I" brief="Also used for X8B8G8R8I X8B8G8R8UI A8B8G8R8UI"/>
         <value value="26" name="R16I" brief="Also used for R16UI"/>
-        <value value="27" name="X16R16I" brief="Also used for G16R16I X16R16UI G16R16UI"/>
-        <value value="28" name="X16B16G16R16I" brief="Also used for A16B16G16R16I X16B16G16R16UI A16B16G16R16UI"/>
+        <value value="27" name="G16R16I" brief="Also used for X16R16I X16R16UI G16R16UI"/>
+        <value value="28" name="A16B16G16R16I" brief="Also used for X16B16G16R16I X16B16G16R16UI A16B16G16R16UI"/>
         <value value="29" name="B10G11R11F"/>
         <value value="30" name="A2B10G10R10UI"/>
         <value value="31" name="G8R8"/>
@@ -150,11 +150,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="4" name="RG11_EAC"/>
         <value value="5" name="SIGNED_RG11_EAC"/>
         <value value="6" name="G8R8"/>
-        <value value="7" name="A16F" brief="Also R16F L16F"/>
-        <value value="8" name="A16L16F" brief="Also G16R16F A16R16F X16R16F"/>
+        <value value="7" name="R16F" brief="Also A16F L16F"/>
+        <value value="8" name="G16R16F" brief="Also G16R16F A16R16F X16R16F"/>
         <value value="9" name="A16B16G16R16F" brief="Also X16B16G16R16F"/>
-        <value value="10" name="A32F" brief="Also R32F L32F R32I R32UI"/>
-        <value value="11" name="A32L32F" brief="Also G32R32 FA32R32F G32R32I G32R32UI"/>
+        <value value="10" name="R32F" brief="Also R32F L32F R32I R32UI"/>
+        <value value="11" name="G32R32F" brief="Also G32R32 FA32R32F G32R32I G32R32UI"/>
         <value value="12" name="A2B10G10R10" brief="Also X2B10G10R10"/>
         <value value="13" name="SIGNED_R11_EAC"/>
         <value value="14" name="R8_SNORM"/>
