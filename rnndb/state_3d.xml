@@ -143,7 +143,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <!-- 31 read as all zeros -->
     </enum>
     <enum name="TEXTURE_FORMAT_EXT" brief="Extended texture format">
-        <value value="0" name="NONE"/>
+        <value value="0" name="NONE"/> <!-- Doubles as RGB8_ETC2_EAC -->
         <value value="1" name="RGB8_PUNCHTHROUGH_ALPHA1_ETC2"/>
         <value value="2" name="RGBA8_ETC2_EAC"/>
         <value value="3" name="R11_EAC"/>
@@ -1008,6 +1008,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <bitset name="TE_SAMPLER_LOG_SIZE" inline="yes">
         <bitfield high="9" low="0" name="WIDTH" type="fixedp"/>
         <bitfield high="19" low="10" name="HEIGHT" type="fixedp"/>
+        <bitfield pos="29" name="RGB" brief="RGB color space"/>
+        <bitfield pos="31" name="SRGB" brief="SRGB color space"/>
     </bitset>
     <bitset name="TE_SAMPLER_LOD_CONFIG" inline="yes">
         <bitfield pos="0" name="BIAS_ENABLE" brief="Enable LOD bias"/>
