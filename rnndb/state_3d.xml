@@ -179,7 +179,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     </enum>
     <enum name="TEXTURE_TYPE">
         <value value="0" name="NONE"/> <!-- 0 shows up as black -->
-        <!-- 1 crashes GPU -->
+        <value value="1" name="1D"/>
         <value value="2" name="2D"/>
         <!-- 3 crashes GPU -->
         <!-- 4 crashes GPU -->
