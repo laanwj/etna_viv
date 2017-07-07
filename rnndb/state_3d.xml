@@ -1053,6 +1053,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <reg32 offset="0x2200" name="UNK02200" value="0x00000000"/>
             <reg32 offset="0x2240" name="UNK02240" value="0x00000000"/>
             <reg32 offset="0x2400" name="LOD_ADDR" length="14" stride="0x40" type="VIVM"/> <!-- Base address, per LOD level -->
+            <reg32 offset="0x2C00" name="UNK02C00" length="14" stride="0x40"/> <!-- Looks like another per LOD value -->
         </stripe>
     </stripe>
 
