@@ -235,6 +235,14 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 
             Sets temporary register dst to the 2-log of the x component of src2).
             This is a scalar operation, the result is broadcasted over all active destination components.
+
+            Note: if HAS_FAST_TRANSCENDENTALS feature is enabled, the GPU implements a completely
+            different instruction:
+
+            dst.x * dst.y := log2(src2.x)
+
+            - x and y of the result need to be multiplied to get the result of the logarithm
+            - TEX.AMODE needs to be set to 1
         </doc>
     </value>
     <value value="0x13" name="FRC" brief="Return fractional portion">
