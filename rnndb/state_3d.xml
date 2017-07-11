@@ -1036,6 +1036,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield high="14" low="12" name="SWIZZLE_G" type="TEXTURE_SWIZZLE"/>
         <bitfield high="18" low="16" name="SWIZZLE_B" type="TEXTURE_SWIZZLE"/>
         <bitfield high="22" low="20" name="SWIZZLE_A" type="TEXTURE_SWIZZLE"/>
+        <bitfield pos="25" name="UNK25"/> <!-- Sometimes set by blob on gc3000 -->
         <bitfield high="28" low="26" name="HALIGN" type="TEXTURE_HALIGN"/>
     </bitset>
     <stripe name="TE" brief="TExture sampler states">
@@ -1072,6 +1073,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <reg32 offset="0x10400" name="UNK10400" value="0x00000000"/>
             <reg32 offset="0x10480" name="UNK10480" value="0x00000000"/>
             <reg32 offset="0x10500" name="UNK10500" value="0x00000000"/>
+            <reg32 offset="0x10700" name="UNK10700" value="0x00000000"/>
         </stripe>
         <array offset="0x10800" name="SAMPLER_ADDR" length="32" stride="64"> <!-- Per sampler -->
             <!-- length="texBlockCount"
