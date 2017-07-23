@@ -295,13 +295,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                - 0x00000011  Before loading PS uniform / code
              - OpenCL on GC2000: always 0x0
              - OpenCL on GC3000: always 0x1011
-             May be cache flushes, synchronization or toggles of some kind.
-             I've haven't observed these to have any impact on rendering nor OpenCL output
-             on GC2000/GC3000, which mean they can turn out to be a sneaky source of hangs
-             at some point if misconfigured.
+
+             It controls flushing cached uniforms, in combination with unified SH_UNIFORMS.
          -->
-        <reg32 offset="0x00860" name="NEW_UNK00860" value="0x00000000"> <!-- instructionCount > 1024 -->
-            <bitfield pos="0" name="UNK0"/>
+        <reg32 offset="0x00860" name="UNIFORM_CACHE" value="0x00000000"> <!-- instructionCount > 1024 -->
+            <bitfield pos="0" name="FLUSH"/>
             <bitfield pos="4" name="PS" brief="0 for VS, 1 for PS"/>
             <bitfield pos="12" name="UNK12"/>
         </reg32>
