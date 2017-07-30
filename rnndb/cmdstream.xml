@@ -267,6 +267,16 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <!-- CHIP_SELECT has no arguments -->
     </stripe>
 
+    <!-- Command used for instanced drawing. Although the length is the same,
+         this is interpreted differently on GC2000 and GC3000:
+
+         - The START vertex is ignored on GC2000.
+         - On GC3000, it is necessary to set state 00780 (per vertex element) for this
+           draw command to do anything visible.
+
+         Note: The blob uses only this command for drawing on GC2000+. It is likely that
+         DRAW and DRAW_INDEXED are deprecated.
+    -->
     <stripe name="DRAW_INSTANCED" varset="FE_OPCODE" variants="DRAW_INSTANCED"> <!-- size="16" -->
         <reg32 offset="0x00000" name="HEADER">
             <bitfield high="31" low="27" name="OP">
@@ -293,6 +303,14 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
              -->
             <bitfield high="31" low="0" name="INDEX" brief="Index of the first vertex to load"/>
         </reg32>
+        <!-- One word of padding (?) follows. It is possible that this word has
+             meaning on newer chips, as from GC3000 the blob starts emitting this as 0 instead of
+             simply skipping it.
+             A possibility would be "OFFSET", "Offset added to the retrieved indices", which was
+             apparently lost in transition to DRAW_INSTANCED.
+             This functionality exists in OpenGL ES 3.2 and in desktop GL 4
+             with "glDrawElementsBaseVertex".
+        -->
     </stripe>
 
 </domain>
