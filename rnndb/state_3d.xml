@@ -179,9 +179,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     </enum>
     <enum name="TEXTURE_TYPE">
         <value value="0" name="NONE"/> <!-- 0 shows up as black -->
-        <!-- 1 crashes GPU -->
+        <value value="1" name="1D"/>
         <value value="2" name="2D"/>
-        <!-- 3 crashes GPU -->
+        <value value="3" name="3D"/> <!-- Only supported if HALTI0 feature bit set -->
         <!-- 4 crashes GPU -->
         <value value="5" name="CUBE_MAP"/>
         <!-- 6 crashes GPU -->
@@ -1028,6 +1028,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             </doc>
         </bitfield>
     </bitset>
+    <bitset name="TE_SAMPLER_3D_CONFIG" inline="yes">
+        <bitfield high="13" low="0" name="DEPTH" type="uint"/>
+        <bitfield high="25" low="16" name="LOG_DEPTH" type="fixedp"/>
+        <bitfield high="29" low="28" name="WRAP" type="TEXTURE_WRAPMODE"/>
+    </bitset>
     <bitset name="TE_SAMPLER_CONFIG1" inline="yes">
         <bitfield high="4" low="0" name="FORMAT_EXT" type="TEXTURE_FORMAT_EXT"/>
         <bitfield high="10" low="8" name="SWIZZLE_R" type="TEXTURE_SWIZZLE"/>
@@ -1047,7 +1052,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <reg32 offset="0x20C0" name="LOD_CONFIG" value="0x00000000" type="TE_SAMPLER_LOD_CONFIG"/>
             <reg32 offset="0x2100" name="UNK02100" value="0x00000000"/>
             <reg32 offset="0x2140" name="UNK02140" value="0x00000000"/>
-            <reg32 offset="0x2180" name="UNK02180" value="0x00000000"/>
+            <reg32 offset="0x2180" name="3D_CONFIG" value="0x00000000" type="TE_SAMPLER_3D_CONFIG"/>
             <reg32 offset="0x21C0" name="CONFIG1" value="0x00321000" type="TE_SAMPLER_CONFIG1"/>
             <reg32 offset="0x2200" name="UNK02200" value="0x00000000"/>
             <reg32 offset="0x2240" name="UNK02240" value="0x00000000"/>
