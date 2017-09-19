@@ -8,13 +8,13 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- state.xml     (  19930 bytes, from 2017-01-07 14:27:54)
-- common.xml    (  23529 bytes, from 2017-05-10 12:36:01)
-- state_hi.xml  (  26403 bytes, from 2017-01-07 14:27:54)
-- copyright.xml (   1597 bytes, from 2016-10-29 07:29:22)
-- state_2d.xml  (  51552 bytes, from 2016-10-29 07:29:22)
-- state_3d.xml  (  67197 bytes, from 2017-07-23 10:53:21)
-- state_vg.xml  (   5975 bytes, from 2016-10-29 07:29:22)
+- state.xml     (  19930 bytes, from 2017-08-14 14:08:10)
+- common.xml    (  23529 bytes, from 2017-08-14 14:08:10)
+- state_hi.xml  (  26403 bytes, from 2017-08-14 14:08:10)
+- copyright.xml (   1597 bytes, from 2016-11-13 13:46:17)
+- state_2d.xml  (  51552 bytes, from 2016-11-13 13:46:17)
+- state_3d.xml  (  67564 bytes, from 2017-09-19 13:31:55)
+- state_vg.xml  (   5975 bytes, from 2016-11-13 13:46:17)
 
 Copyright (C) 2012-2017 by the following authors:
 - Wladimir J. van der Laan <laanwj@gmail.com>
@@ -157,7 +157,9 @@ DEALINGS IN THE SOFTWARE.
 #define TEXTURE_FILTER_LINEAR					0x00000002
 #define TEXTURE_FILTER_ANISOTROPIC				0x00000003
 #define TEXTURE_TYPE_NONE					0x00000000
+#define TEXTURE_TYPE_1D						0x00000001
 #define TEXTURE_TYPE_2D						0x00000002
+#define TEXTURE_TYPE_3D						0x00000003
 #define TEXTURE_TYPE_CUBE_MAP					0x00000005
 #define TEXTURE_WRAPMODE_REPEAT					0x00000000
 #define TEXTURE_WRAPMODE_MIRRORED_REPEAT			0x00000001
@@ -1181,7 +1183,16 @@ DEALINGS IN THE SOFTWARE.
 
 #define VIVS_TE_SAMPLER_UNK02140(i0)			       (0x00002140 + 0x4*(i0))
 
-#define VIVS_TE_SAMPLER_UNK02180(i0)			       (0x00002180 + 0x4*(i0))
+#define VIVS_TE_SAMPLER_3D_CONFIG(i0)			       (0x00002180 + 0x4*(i0))
+#define VIVS_TE_SAMPLER_3D_CONFIG_DEPTH__MASK			0x00003fff
+#define VIVS_TE_SAMPLER_3D_CONFIG_DEPTH__SHIFT			0
+#define VIVS_TE_SAMPLER_3D_CONFIG_DEPTH(x)			(((x) << VIVS_TE_SAMPLER_3D_CONFIG_DEPTH__SHIFT) & VIVS_TE_SAMPLER_3D_CONFIG_DEPTH__MASK)
+#define VIVS_TE_SAMPLER_3D_CONFIG_LOG_DEPTH__MASK		0x03ff0000
+#define VIVS_TE_SAMPLER_3D_CONFIG_LOG_DEPTH__SHIFT		16
+#define VIVS_TE_SAMPLER_3D_CONFIG_LOG_DEPTH(x)			(((x) << VIVS_TE_SAMPLER_3D_CONFIG_LOG_DEPTH__SHIFT) & VIVS_TE_SAMPLER_3D_CONFIG_LOG_DEPTH__MASK)
+#define VIVS_TE_SAMPLER_3D_CONFIG_WRAP__MASK			0x30000000
+#define VIVS_TE_SAMPLER_3D_CONFIG_WRAP__SHIFT			28
+#define VIVS_TE_SAMPLER_3D_CONFIG_WRAP(x)			(((x) << VIVS_TE_SAMPLER_3D_CONFIG_WRAP__SHIFT) & VIVS_TE_SAMPLER_3D_CONFIG_WRAP__MASK)
 
 #define VIVS_TE_SAMPLER_CONFIG1(i0)			       (0x000021c0 + 0x4*(i0))
 #define VIVS_TE_SAMPLER_CONFIG1_FORMAT_EXT__MASK		0x0000001f
