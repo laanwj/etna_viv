@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Copyright (c) 2012-2016 The Etnaviv Project
+<!-- Copyright (c) 2012-2017 The Etnaviv Project
 
  Permission is hereby granted, free of charge, to any person obtaining a
  copy of this software and associated documentation files (the "Software"),
@@ -447,8 +447,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="7" low="4" name="UNK4"/>
             <bitfield high="11" low="8" name="UNK8"/>
         </reg32>
-        <reg32 offset="0x00A80" name="VIEWPORT_UNK00A80" value="0x00000000" type="float"/>
-        <reg32 offset="0x00A84" name="VIEWPORT_UNK00A84" value="0x00000000" type="float"/>
+        <reg32 offset="0x00A80" name="VIEWPORT_UNK00A80" value="0x00000000" type="float"/> <!-- GC3000 -->
+        <reg32 offset="0x00A84" name="VIEWPORT_UNK00A84" value="0x00000000" type="float"/> <!-- GC3000: This affects point sprite rendering, blob sets this to 8192.0 -->
         <reg32 offset="0x00A88" name="FLAGS">
             <doc>
                 The Vivante driver sets these at context setup, they seem to be
