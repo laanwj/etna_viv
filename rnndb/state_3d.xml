@@ -882,12 +882,23 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="20" name="UNK20"/>
             <bitfield pos="28" name="UNK28"/>
         </reg32>
-        <reg32 offset="0x016B0" name="UNK016B0" value="0x00000000"/> <!-- size / 64 -->
+        <reg32 offset="0x016B0" name="KICKER_INPLACE" value="0x00000000" brief="Triggers an in-place resolve, where the value is the number of tiles">
+            <doc>
+                GC3000 and up: triggers an in-place resolve.
+
+                Seems the value written is the number of tiles to process.
+                After writing this value, all tiles that are not yet filled
+                according to TS will be filled in, without a copy operation.
+
+                The blob queues the following state changes afterwards:
+                    GL.FLUSH_CACHE := COLOR
+                    DUMMY.DUMMY := 0x0
+            </doc>
+        </reg32>
         <reg32 offset="0x016B4" name="UNK016B4" value="0x00000000"/>
         <reg32 offset="0x016B8" name="SINGLE_BUFFER">
             <bitfield pos="0" name="ENABLE"/> <!-- Has to do with SINGLE_BUFFER feature - enabling this only resolves first pipe address -->
         </reg32>
-        <reg32 offset="0x016BC" name="UNK016BC"/> <!-- has values that look like RGBA colors, such as 0xff000033 -->
         <stripe name="PIPE" length="8" stride="4"> <!-- pixelPipes > 1 -->
             <!-- length="pixelPipes" -->
             <reg32 offset="0x016C0" name="SOURCE_ADDR" value="0x00000000" type="VIVM"/>
@@ -947,6 +958,12 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x016A8" name="HDEPTH_CLEAR_VALUE" brief="Hierarchical depth clear value" value="0x00000000"/>
         <reg32 offset="0x016AC" name="HDEPTH_SIZE" brief="Size of hierarchical depth buffer divided by 16"/>
+        <reg32 offset="0x016BC" name="COLOR_CLEAR_VALUE_EXT" brief="Second color clear value">
+            <doc>
+                This is used along with TS.COLOR_CLEAR_VALUE to fill in tiles with a
+                64-bit pattern instead of a 32-bit pattern.
+            </doc>
+        </reg32>
         <stripe name="SAMPLER" length="8" stride="4"> <!-- Tile status for samplers -->
             <reg32 offset="0x01720" name="CONFIG" value="0x00000000">
                 <bitfield high="1" low="0" name="ENABLE"/>
