@@ -41,8 +41,8 @@ from etnaviv.dump_structure import dump_structure, print_address
 # Parse rules-ng-ng format for state space
 from etnaviv.parse_rng import parse_rng_file, format_path, BitSet, Domain
 from etnaviv.dump_cmdstream_util import int_as_float, fixp_as_float
-from etnaviv.parse_command_buffer import parse_command_buffer
-from etnaviv.rng_describe_c import format_path_c, describe_c
+from etnaviv.parse_command_buffer import parse_command_buffer,CmdStreamInfo
+from etnaviv.rng_describe_c import dump_command_buffer_c
 from etnaviv.auto_gcabi import guess_from_fdr
 
 DEBUG = False
@@ -262,20 +262,7 @@ def dump_command_buffer(f, mem, addr, end_addr, depth, state_map, cmdstream_info
 
     if options.output_c:
         f.write('\n')
-        for rec in parse_command_buffer(words, cmdstream_info):
-            if rec.state_info is not None:
-                try:
-                    path = [(state_map,None)] + state_map.lookup_address(rec.state_info.pos)
-                except KeyError:
-                    f.write('/* Warning: unknown state %05x */\n' % rec.state_info.pos)
-                else:
-                    # could pipe this to clang-format to format and break up lines etc
-                    f.write('etna_set_state(stream, %s, %s);\n' % (
-                        format_path_c(path),
-                        describe_c(path, rec.value)))
-            else:
-                # Handle other commands?
-                pass
+        dump_command_buffer_c(f, parse_command_buffer(words, cmdstream_info), state_map)
 
 def dump_context_map(f, mem, addr, end_addr, depth, state_map):
     '''
@@ -379,8 +366,6 @@ def format_addr(value):
         return 'ADDR_'+chr(65 + id)
     else:
         return 'ADDR_%i' % id
-
-CmdStreamInfo = namedtuple('CmdStreamInfo', ['opcodes', 'domain'])
 
 def main():
     args = parse_arguments()

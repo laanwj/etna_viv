@@ -1,6 +1,7 @@
 from collections import namedtuple
 CommandInfo = namedtuple('CommandInfo', ['ptr', 'value', 'op', 'payload_ofs', 'desc', 'state_info'])
 StateInfo = namedtuple('StateInfo', ['pos', 'format'])
+CmdStreamInfo = namedtuple('CmdStreamInfo', ['opcodes', 'domain'])
 
 # Number of words to ignore at start of command buffer
 # A PIPE3D command will be inserted here by the kernel if necessary
@@ -24,7 +25,7 @@ CMD_PAYLOAD_SIZES = {
     13: 0  # CHIP_SELECT
 }
 
-def parse_command_buffer(buffer_words, cmdstream_info):
+def parse_command_buffer(buffer_words, cmdstream_info, initial_padding=CMDBUF_IGNORE_INITIAL):
     '''
     Parse Vivante command buffer contents, return a sequence of 
     CommandInfo records.
@@ -33,7 +34,7 @@ def parse_command_buffer(buffer_words, cmdstream_info):
     state_base = 0
     state_count = 0
     state_format = 0
-    next_cmd = CMDBUF_IGNORE_INITIAL
+    next_cmd = initial_padding
     payload_start_ptr = 0
     payload_end_ptr = 0
     op = 0

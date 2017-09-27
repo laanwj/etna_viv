@@ -26,7 +26,7 @@ from __future__ import print_function, division, unicode_literals
 import argparse
 import os, sys, struct
 import json
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 
 from binascii import b2a_hex
 
@@ -34,7 +34,9 @@ from binascii import b2a_hex
 from etnaviv.util import rnndb_path
 from etnaviv.parse_rng import parse_rng_file, format_path, BitSet, Domain
 from etnaviv.dump_cmdstream_util import int_as_float, fixp_as_float
-from etnaviv.parse_command_buffer import parse_command_buffer
+from etnaviv.parse_command_buffer import parse_command_buffer,CmdStreamInfo
+from etnaviv.target_arch import bytes_to_words
+from etnaviv.rng_describe_c import dump_command_buffer_c, dump_command_buffer_c_raw
 
 DEBUG = False
 
@@ -61,17 +63,16 @@ def format_state(pos, value, fixp, state_map):
             desc += register.describe(value)
     return desc
 
-def dump_command_buffer(f, buf, depth, state_map):
+def dump_command_buffer(f, recs, depth, state_map):
     '''
     Dump Vivante command buffer contents in human-readable
     format.
     '''
     indent = '    ' * len(depth)
     f.write('{\n')
-    size = len(buf)
     states = [] # list of (ptr, state_addr) tuples
     ptr = 0
-    for rec in parse_command_buffer(buf):
+    for rec in recs:
         hide = False
         if rec.op == 1 and rec.payload_ofs == -1:
             if options.hide_load_state:
@@ -85,10 +86,7 @@ def dump_command_buffer(f, buf, depth, state_map):
 
         if not hide:
             f.write(indent + '    0x%08x' % rec.value)
-            if ptr != (size-1):
-                f.write(", /* %s */\n" % rec.desc)
-            else:
-                f.write("  /* %s */\n" % rec.desc)
+            f.write(", /* %s */\n" % rec.desc)
         ptr += 1
     f.write(indent + '}')
 
@@ -99,9 +97,21 @@ def parse_arguments():
     parser.add_argument('--rules-file', metavar='RULESFILE', type=str, 
             help='State map definition file (rules-ng-ng)',
             default=rnndb_path('state.xml'))
+    parser.add_argument('--cmdstream-file', metavar='CMDSTREAMFILE', type=str, 
+            help='Command stream definition file (rules-ng-ng)',
+            default=rnndb_path('cmdstream.xml'))
     parser.add_argument('-l', '--hide-load-state', dest='hide_load_state',
             default=False, action='store_const', const=True,
             help='Hide "LOAD_STATE" entries, this can make command stream a bit easier to read')
+    parser.add_argument('-b', '--binary', dest='binary',
+            default=False, action='store_const', const=True,
+            help='Input is in binary')
+    parser.add_argument('--output-c', dest='output_c',
+            default=False, action='store_const', const=True,
+            help='Print command buffer emission in C format')
+    parser.add_argument('--output-c-raw', dest='output_c_raw',
+            default=False, action='store_const', const=True,
+            help='Print command buffer emission in C raw command stream emit format')
     return parser.parse_args()        
 
 shader_num = 0
@@ -110,21 +120,38 @@ def main():
     args = parse_arguments()
     state_xml = parse_rng_file(args.rules_file)
     state_map = state_xml.lookup_domain('VIVS')
+
+    cmdstream_xml = parse_rng_file(args.cmdstream_file)
+    fe_opcode = cmdstream_xml.lookup_type('FE_OPCODE')
+    cmdstream_map = cmdstream_xml.lookup_domain('VIV_FE')
+    cmdstream_info = CmdStreamInfo(fe_opcode, cmdstream_map)
+
     global options
     options = args
     import re
 
-    with open(args.input_file,'r') as f:
-        # parse ascii
-        values = []
-        for line in f:
-            value = line.strip()
-            if value.startswith(':'):
-                value = int(value[1:9], 16)
-                values.append(value)
-
-        dump_command_buffer(sys.stdout, values, [], state_map)
-        sys.stdout.write('\n')
+    if args.binary:
+        with open(args.input_file,'rb') as f:
+            data = f.read()
+        assert((len(data) % 8)==0)
+        values = bytes_to_words(data)
+    else:
+        with open(args.input_file,'r') as f:
+            # parse ascii
+            values = []
+            for line in f:
+                value = line.strip()
+                if value.startswith(':'):
+                    value = int(value[1:9], 16)
+                    values.append(value)
+    recs = parse_command_buffer(values, cmdstream_info, initial_padding=0)
+    if args.output_c_raw:
+        dump_command_buffer_c_raw(sys.stdout, recs, state_map)
+    elif args.output_c:
+        dump_command_buffer_c(sys.stdout, recs, state_map)
+    else:
+        dump_command_buffer(sys.stdout, recs, [], state_map)
+    sys.stdout.write('\n')
 
 if __name__ == '__main__':
     main()

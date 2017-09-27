@@ -29,6 +29,8 @@ def describe_c_inner(prefix, typ, value):
         else:
             return prefix + '_' + typ.name + '(' + describe_c_inner(prefix, typ.type, value) + ')'
     elif isinstance(typ, BitSet):
+        if typ.masked: # no way to handle this right now
+            return '0x%08x' % value
         terms = (describe_c_inner(prefix, field, field.extract(value)) for field in typ.bitfields)
         terms = [t for t in terms if t is not None]
         if terms:
@@ -38,7 +40,7 @@ def describe_c_inner(prefix, typ, value):
     elif isinstance(typ, Domain):
         return '*0x%08x' % value  # address: need special handling
     elif isinstance(typ, BaseType):
-        if typ.kind == 'hex':
+        if typ.kind in {'hex','float','fixedp'}:
             return '0x%x' % value
         else:
             return '%d' % value
@@ -50,4 +52,48 @@ def describe_c(path, value):
     '''Describe state value as C expression.'''
     prefix = format_path_c(path, True)
     return describe_c_inner(prefix, path[-1][0].type, value)
+
+def dump_command_buffer_c(f, recs, state_map):
+    '''Dump parsed command buffer as C'''
+    for rec in recs:
+        if rec.state_info is not None:
+            try:
+                path = [(state_map,None)] + state_map.lookup_address(rec.state_info.pos)
+            except KeyError:
+                f.write('/* Warning: unknown state %05x */\n' % rec.state_info.pos)
+            else:
+                # could pipe this to clang-format to format and break up lines etc
+                #f.write('etna_set_state(stream, %s, %s);\n' % (
+                #    format_path_c(path),
+                #    describe_c(path, rec.value)))
+                if isinstance(path[-1][0].type, Domain):
+                    assert(not rec.state_info.format)
+                    f.write('etna_set_state_reloc(stream, %s, *0x%08x);\n' % (
+                        format_path_c(path), rec.value))
+                elif rec.state_info.format:
+                    f.write('etna_set_state_fixp(stream, %s, 0x%08x);\n' % (
+                        format_path_c(path), rec.value))
+                else:
+                    f.write('etna_set_state(stream, %s, 0x%08x);\n' % (
+                        format_path_c(path), rec.value))
+        else:
+            # Handle other commands
+            if rec.op != 1:
+                f.write('etna_cmd_stream_emit(stream, 0x%08x); /* command %s */\n' % (rec.value, rec.desc))
+
+def dump_command_buffer_c_raw(f, recs, state_map):
+    '''Dump parsed command buffer as C'''
+    for rec in recs:
+        if rec.state_info is not None:
+            try:
+                path = [(state_map,None)] + state_map.lookup_address(rec.state_info.pos)
+            except KeyError:
+                raise
+            else:
+                if isinstance(path[-1][0].type, Domain):
+                    f.write('etna_cmd_stream_reloc(stream, *0x%08x); /* %s */\n' % (rec.value, format_path_c(path)))
+                else:
+                    f.write('etna_cmd_stream_emit(stream, 0x%08x); /* %s */\n' % (rec.value, format_path_c(path)))
+        else:
+            f.write('etna_cmd_stream_emit(stream, 0x%08x); /* command %s */\n' % (rec.value, rec.desc))
 
