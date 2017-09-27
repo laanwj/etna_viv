@@ -211,7 +211,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </stripe>
         <reg32 offset="0x00700" name="UNK00700" value="0x00000000" length="16" stride="4"/>
         <reg32 offset="0x00740" name="UNK00740" value="0x00000000" length="16" stride="4"/>
-        <!-- Looks like this is set vertex element.
+        <!-- Looks like this is set per vertex element.
           It affects DRAW_INSTANCED rendering on GC3000. If the value is 0, nothing is rendered at all,
           when it is 0x3f800000 (float 1.0), things are rendered as normal.
           Other values seem to be a kind of scaling factor applied to values read from this vertex element.
