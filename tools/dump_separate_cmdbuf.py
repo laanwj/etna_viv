@@ -86,7 +86,7 @@ def dump_command_buffer(f, recs, depth, state_map):
 
         if not hide:
             f.write(indent + '    0x%08x' % rec.value)
-            f.write(", /* %s */\n" % rec.desc)
+            f.write(", /* %s */\n" % desc)
         ptr += 1
     f.write(indent + '}')
 
