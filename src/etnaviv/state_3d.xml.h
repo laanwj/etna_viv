@@ -8,13 +8,13 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- state.xml     (  19930 bytes, from 2017-08-14 14:08:10)
-- common.xml    (  23529 bytes, from 2017-08-14 14:08:10)
-- state_hi.xml  (  26403 bytes, from 2017-08-14 14:08:10)
-- copyright.xml (   1597 bytes, from 2016-11-13 13:46:17)
-- state_2d.xml  (  51552 bytes, from 2016-11-13 13:46:17)
-- state_3d.xml  (  67564 bytes, from 2017-09-19 13:31:55)
-- state_vg.xml  (   5975 bytes, from 2016-11-13 13:46:17)
+- state.xml     (  20229 bytes, from 2017-09-29 11:52:39)
+- common.xml    (  23529 bytes, from 2017-09-29 11:52:39)
+- state_hi.xml  (  26403 bytes, from 2017-03-09 15:43:43)
+- copyright.xml (   1597 bytes, from 2016-12-08 16:37:56)
+- state_2d.xml  (  51552 bytes, from 2016-12-08 16:37:56)
+- state_3d.xml  (  68429 bytes, from 2017-09-29 11:55:19)
+- state_vg.xml  (   5975 bytes, from 2016-12-08 16:37:56)
 
 Copyright (C) 2012-2017 by the following authors:
 - Wladimir J. van der Laan <laanwj@gmail.com>
@@ -412,8 +412,8 @@ DEALINGS IN THE SOFTWARE.
 #define VIVS_PA_POINT_SIZE					0x00000a1c
 
 #define VIVS_PA_SYSTEM_MODE					0x00000a28
-#define VIVS_PA_SYSTEM_MODE_UNK0				0x00000001
-#define VIVS_PA_SYSTEM_MODE_UNK4				0x00000010
+#define VIVS_PA_SYSTEM_MODE_PROVOKING_VERTEX_LAST		0x00000001
+#define VIVS_PA_SYSTEM_MODE_HALF_PIXEL_CENTER			0x00000010
 
 #define VIVS_PA_W_CLIP_LIMIT					0x00000a2c
 
@@ -987,14 +987,12 @@ DEALINGS IN THE SOFTWARE.
 #define VIVS_RS_EXTRA_CONFIG_UNK20				0x00100000
 #define VIVS_RS_EXTRA_CONFIG_UNK28				0x10000000
 
-#define VIVS_RS_UNK016B0					0x000016b0
+#define VIVS_RS_KICKER_INPLACE					0x000016b0
 
 #define VIVS_RS_UNK016B4					0x000016b4
 
 #define VIVS_RS_SINGLE_BUFFER					0x000016b8
 #define VIVS_RS_SINGLE_BUFFER_ENABLE				0x00000001
-
-#define VIVS_RS_UNK016BC					0x000016bc
 
 #define VIVS_RS_PIPE(i0)				       (0x00000000 + 0x4*(i0))
 #define VIVS_RS_PIPE__ESIZE					0x00000004
@@ -1056,6 +1054,8 @@ DEALINGS IN THE SOFTWARE.
 #define VIVS_TS_HDEPTH_CLEAR_VALUE				0x000016a8
 
 #define VIVS_TS_HDEPTH_SIZE					0x000016ac
+
+#define VIVS_TS_COLOR_CLEAR_VALUE_EXT				0x000016bc
 
 #define VIVS_TS_SAMPLER(i0)				       (0x00000000 + 0x4*(i0))
 #define VIVS_TS_SAMPLER__ESIZE					0x00000004
