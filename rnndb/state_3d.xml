@@ -399,8 +399,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00A1C" name="POINT_SIZE" value="0x00000000" type="float"/>
         <reg32 offset="0x00A28" name="SYSTEM_MODE" value="0x00000000"> <!-- D3D/OpenGL switch -->
             <doc>0x11 for OpenGL, 0x00 for D3D9</doc>
-            <bitfield pos="0" name="UNK0"/>
-            <bitfield pos="4" name="UNK4"/>
+            <bitfield pos="0" name="PROVOKING_VERTEX_LAST"/>
+            <bitfield pos="4" name="HALF_PIXEL_CENTER"/>
         </reg32>
         <reg32 offset="0x00A2C" name="W_CLIP_LIMIT" value="0x00000000"/>
         <reg32 offset="0x00A30" name="ATTRIBUTE_ELEMENT_COUNT" value="0x00000000">
