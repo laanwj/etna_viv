@@ -566,7 +566,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="13" name="WRITE_ENABLE_MASK"/>
             <bitfield pos="16" name="EARLY_Z"/>
             <bitfield pos="17" name="EARLY_Z_MASK"/>
-            <bitfield pos="18" name="UNK18"/>
+            <bitfield pos="18" name="UNK18"/> <!-- Probably depth compression, blob always enables this -->
             <bitfield pos="19" name="UNK18_MASK"/>
             <bitfield pos="20" name="ONLY_DEPTH"/>
             <bitfield pos="21" name="ONLY_DEPTH_MASK"/>
