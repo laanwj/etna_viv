@@ -337,6 +337,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 - MRT tile status buffer
                 - FE start vertex support
                 - FE reset vertex id
+                - DP2/DPx_NORM instructions
             </doc>
         </bitfield>
         <bitfield pos="17" name="2D_MIRROR_EXTENSION"/>

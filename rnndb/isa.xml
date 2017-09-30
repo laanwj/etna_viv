@@ -564,7 +564,18 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     </value>
     <value value="0x62" name="STOREB"/> <!-- unverified -->
     <value value="0x63" name="RGB2YUV"/> <!-- unverified -->
-    <value value="0x64" name="DIV"/> <!-- unverified -->
+    <value value="0x64" name="DIV"> <!-- HAS_FAST_TRANSCENDENTALS -->
+        <doc>
+            dst.x * dst.y := src1.x / src2.x
+
+            Computes the result of a floating point division between src1.x and
+            src2.x. This is supposed to have a higher precision than
+            conventional RCP followed by MUL.
+
+            - x and y of the result need to be multiplied to get the result
+            - TEX.AMODE needs to be set to 1
+        </doc>
+    </value>
     <value value="0x65" name="ATOM_ADD"/> <!-- unverified -->
     <value value="0x66" name="ATOM_XCHG"/> <!-- unverified -->
     <value value="0x67" name="ATOM_CMP_XCHG"/> <!-- unverified -->
@@ -579,7 +590,15 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <value value="0x70" name="TEXLDGPCF"/> <!-- unverified -->
     <value value="0x71" name="PACK"/> <!-- unverified -->
     <value value="0x72" name="CONV"/> <!-- unverified -->
-    <value value="0x73" name="DP2"/> <!-- unverified -->
+    <value value="0x73" name="DP2"> <!-- HALTI2 -->
+        <doc>
+            dst := src0.x * src1.x + src0.y * src1.y
+
+            Computes the component-wise floating point dot product of the first
+            two components between src0 and src1 and broadcasts the results to
+            all destination components in register dst.
+        </doc>
+    </value>
     <value value="0x74" name="NORM_DP2"/> <!-- unverified -->
     <value value="0x75" name="NORM_DP3"/> <!-- unverified -->
     <value value="0x76" name="NORM_DP4"/> <!-- unverified -->
