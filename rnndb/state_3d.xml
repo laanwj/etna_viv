@@ -1056,6 +1056,12 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield high="14" low="12" name="SWIZZLE_G" type="TEXTURE_SWIZZLE"/>
         <bitfield high="18" low="16" name="SWIZZLE_B" type="TEXTURE_SWIZZLE"/>
         <bitfield high="22" low="20" name="SWIZZLE_A" type="TEXTURE_SWIZZLE"/>
+        <bitfield pos="24" name="TEXTURE_ARRAY">
+            <doc>
+            1D array: TEXTURE_TYPE_2D
+            2D array: TEXTURE_TYPE_3D
+            </doc>
+        </bitfield>
         <bitfield pos="25" name="UNK25"/> <!-- Sometimes set by blob on gc3000 -->
         <bitfield high="28" low="26" name="HALIGN" type="TEXTURE_HALIGN"/>
     </bitset>
