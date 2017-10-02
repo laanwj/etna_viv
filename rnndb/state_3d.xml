@@ -250,7 +250,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x0080C" name="TEMP_REGISTER_CONTROL" brief="Temporary register control" value="0x00000000">
             <bitfield high="5" low="0" name="NUM_TEMPS" type="uint" brief="Number of temporary registers"/>
         </reg32>
-        <reg32 offset="0x00810" name="OUTPUT" value="0x00000000" brief="Output routing" length="4" stride="4">
+        <reg32 offset="0x00810" name="OUTPUT" value="0x00000000" brief="Output routing" length="4" stride="4"> <!-- !HALTI5 -->
             <doc>
                 Each bitfield (up to 16 in total) contains a temporary register number that
                 is used as output at the end of the shader for that varying.
@@ -260,7 +260,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="23" low="16" name="O2" type="uint"/>
             <bitfield high="31" low="24" name="O3" type="uint"/>
         </reg32>
-        <reg32 offset="0x00820" name="INPUT" value="0x00000000" brief="Input routing" length="4" stride="4">
+        <reg32 offset="0x00820" name="INPUT" value="0x00000000" brief="Input routing" length="4" stride="4"> <!-- !HALTI5 -->
             <doc>
                 Each bitfield (up to 16 in total) contains the number of a temporary register that
                 is assigned the input for that attribute at the beginning of shader execution.
@@ -297,8 +297,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
              - OpenCL on GC3000: always 0x1011
 
              It controls flushing cached uniforms, in combination with unified SH_UNIFORMS.
+
+             Vivante kernel driver calls this "DECODE_SELECT", and selects the destination for unified uniform and
+             shader code loads.
          -->
-        <reg32 offset="0x00860" name="UNIFORM_CACHE" value="0x00000000"> <!-- instructionCount > 1024 -->
+        <reg32 offset="0x00860" name="UNIFORM_CACHE" value="0x00000000"> <!-- instructionCount > 1024, !HALTI5 -->
             <bitfield pos="0" name="FLUSH"/>
             <bitfield pos="4" name="PS" brief="0 for VS, 1 for PS"/>
             <bitfield pos="12" name="UNK12"/>
@@ -322,7 +325,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                - ICACHE_CONTROL := ENABLE | FLUSH_PS
                - PS.INST_ADDR := <GPU address>
           -->
-        <reg32 offset="0x00868" name="ICACHE_CONTROL"> <!-- gc3000 -->
+        <reg32 offset="0x00868" name="ICACHE_CONTROL"> <!-- ICACHE -->
             <bitfield pos="0" name="ENABLE" brief="Enables loading of shader instructions from memory"/>
             <!-- "flush" guess is based on the Vivante driver behavior where
                  these bits are only being set before setting instruction address
@@ -330,13 +333,37 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="4" name="FLUSH_VS"/>
             <bitfield pos="5" name="FLUSH_PS"/>
         </reg32>
-        <reg32 offset="0x0086C" name="INST_ADDR" type="VIVS" brief="Memory address of shader instructions"/> <!-- gc3000 "icache" -->
+        <reg32 offset="0x0086C" name="INST_ADDR" type="VIVM" brief="Memory address of shader instructions"/> <!-- ICACHE -->
+        <reg32 offset="0x00870" name="HALTI5_UNK00870"/> <!-- HALTI5 -->
+        <!-- "new shader instruction PC registers (20 bit)" --> 
+        <reg32 offset="0x00874" name="HALTI5_UNK00874"/> <!-- HALTI5 || ICACHE "VS/PS Start/End PC register" -->
+        <reg32 offset="0x00878" name="HALTI5_UNK00878"/> <!-- !HALTI5 && ICACHE "VS/PS Start/End PC register" -->
+        <reg32 offset="0x0087C" name="HALTI5_UNK0087C"/> <!-- HALTI5 || ICACHE "VS/PS Start/End PC register" -->
+        <reg32 offset="0x00880" name="HALTI5_UNK00880"/> <!-- !HALTI5 && ICACHE "VS/PS Start/End PC register" -->
+        <reg32 offset="0x00884" name="HALTI1_UNK00884"/> <!-- HALTI1 -->
+        <reg32 offset="0x00890" name="ICACHE_UNK00890"/> <!-- !HALTI5 && ICACHE_PREFETCH -->
+        <reg32 offset="0x00898" name="HALTI5_UNK00898" length="2" stride="4"/> <!-- HALTI5 -->
+        <reg32 offset="0x008A0" name="HALTI5_UNK008A0"/> <!-- HALTI5 -->
+        <reg32 offset="0x008A8" name="HALTI5_UNK008A8"/> <!-- HALTI5 -->
+        <reg32 offset="0x008B0" name="ICACHE_INVALIDATE"> <!-- HALTI5 -->
+            <bitfield pos="0" name="UNK0"/>
+            <bitfield pos="1" name="UNK1"/>
+            <bitfield pos="2" name="UNK2"/>
+            <bitfield pos="3" name="UNK3"/>
+            <bitfield pos="4" name="UNK4"/>
+        </reg32>
+        <reg32 offset="0x008B8" name="HALTI5_UNK008B8"/> <!-- HALTI5 -->
+        <reg32 offset="0x008BC" name="HALTI5_UNK008BC"/> <!-- HALTI5 "VS/PS Start/End PC register" -->
+        <reg32 offset="0x008C0" name="HALTI5_UNK008C0" length="8" stride="4"/> <!-- HALTI5 -->
+        <reg32 offset="0x008E0" name="HALTI5_UNK008E0" length="8" stride="4"/> <!-- HALTI5 -->
         <reg32 offset="0x04000" name="INST_MEM" value="0x00000000" length="1024" stride="4"> <!-- instructionCount <= 256 -->
             <!-- length="instructionCount * 4" -->
         </reg32>
         <reg32 offset="0x05000" name="UNIFORMS" value="0x00000000" length="1024" stride="4">
             <!-- length="vertexUniforms * 4" -->
         </reg32>
+        <reg32 offset="0x15600" name="HALTI5_UNK15600"/> <!-- HALTI5, not sure this belongs under VS or TE or somewhere else -->
+        <reg32 offset="0x15604" name="HALTI5_UNK15604" type="VIVM"/> <!-- HALTI5 && ICACHE_PREFETCH -->
     </stripe>
 
     <bitset name="CL_GLOBAL_DIM" inline="yes">
@@ -377,13 +404,17 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x00924" name="UNK00924" value="0x00000000"/>
         <!-- these 3 seem to match workgroup count x/y/z-->
-        <reg32 offset="0x00940" name="UNK00940" value="0x00000000"/>
-        <reg32 offset="0x00944" name="UNK00944" value="0x00000000"/>
-        <reg32 offset="0x00948" name="UNK00948" value="0x00000000"/>
+        <reg32 offset="0x00940" name="UNK00940" value="0x00000000"/> <!-- SHADER_ENHANCEMENTS2 -->
+        <reg32 offset="0x00944" name="UNK00944" value="0x00000000"/> <!-- SHADER_ENHANCEMENTS2 -->
+        <reg32 offset="0x00948" name="UNK00948" value="0x00000000"/> <!-- SHADER_ENHANCEMENTS2 -->
         <!-- these 3 seem to match workgroup size x/y/z-->
-        <reg32 offset="0x0094C" name="UNK0094C" value="0x00000000"/>
-        <reg32 offset="0x00950" name="UNK00950" value="0x00000000"/>
-        <reg32 offset="0x00954" name="UNK00954" value="0x00000000"/>
+        <reg32 offset="0x0094C" name="UNK0094C" value="0x00000000"/> <!-- SHADER_ENHANCEMENTS2 -->
+        <reg32 offset="0x00950" name="UNK00950" value="0x00000000"/> <!-- SHADER_ENHANCEMENTS2 -->
+        <reg32 offset="0x00954" name="UNK00954" value="0x00000000"/> <!-- SHADER_ENHANCEMENTS2 -->
+
+        <reg32 offset="0x00958" name="HALTI5_UNK00958"/> <!-- HALTI5 -->
+        <reg32 offset="0x0095C" name="HALTI5_UNK0095C"/> <!-- HALTI5 -->
+        <reg32 offset="0x00960" name="HALTI5_UNK00960"/> <!-- HALTI5 -->
     </stripe>
 
     <stripe name="PA" brief="Primitive assembly states">
@@ -397,6 +428,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00A14" name="VIEWPORT_OFFSET_Z" value="0x00000000" type="float"/>
         <reg32 offset="0x00A18" name="LINE_WIDTH" value="0x00000000" type="float" brief="Half of line width in pixels"/>
         <reg32 offset="0x00A1C" name="POINT_SIZE" value="0x00000000" type="float"/>
+        <reg32 offset="0x00A24" name="UNK00A24"/> <!-- GC400 dummy draw -->
         <reg32 offset="0x00A28" name="SYSTEM_MODE" value="0x00000000"> <!-- D3D/OpenGL switch -->
             <doc>0x11 for OpenGL, 0x00 for D3D9</doc>
             <bitfield pos="0" name="PROVOKING_VERTEX_LAST"/>
@@ -440,7 +472,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x00A38" name="WIDE_LINE_WIDTH0" value="0x00000000" type="float" brief="Line width, used when PA.CONFIG.WIDE_LINE set"/>
         <reg32 offset="0x00A3C" name="WIDE_LINE_WIDTH1" value="0x00000000" type="float" brief="Another line width, used when PA.CONFIG.WIDE_LINE set"/>
-        <reg32 offset="0x00A40" name="SHADER_ATTRIBUTES" value="0x00000000" length="10" stride="4">
+        <reg32 offset="0x00A40" name="SHADER_ATTRIBUTES" value="0x00000000" length="10" stride="4"> <!-- !HALTI5 -->
             <doc>Flags word per shader attribute. I suspect that these determine the type of interpolation
                 (color, perspective, linear, ...).</doc>
             <bitfield high="0" low="0" name="BYPASS_FLAT" brief="Bypass flat shading for this varying"/>
@@ -467,6 +499,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 otherwise (gc2000).
             </doc>
 	</reg32>
+        <reg32 offset="0x00A90" name="HALTI5_UNK00A90" length="4" stride="4"/> <!-- HALTI5 -->
+        <reg32 offset="0x00AA8" name="HALTI5_UNK00AA8"/> <!-- HALTI5 -->
     </stripe>
 
     <stripe name="SE" brief="Setup Engine states">
@@ -489,18 +523,20 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 
     <stripe name="RA" brief="Raster states">
         <doc>Configuration for the rasterizer. This mainly controls multisampling.</doc>
-        <reg32 offset="0x00E00" name="CONTROL" value="0x00000001">
+        <reg32 offset="0x00E00" name="CONTROL" value="0x000000F1">
             <bitfield pos="0" name="UNK0"/>
             <bitfield pos="1" name="LAST_VARYING_2X" brief="Last varying has 1 or 2 components"></bitfield>
         </reg32>
         <reg32 offset="0x00E04" name="MULTISAMPLE_UNK00E04" value="0x00000000"/>
-        <reg32 offset="0x00E08" name="EARLY_DEPTH" value="0x00000031" brief="Early depth control"/>
-        <reg32 offset="0x00E0C" name="UNK00E0C" value="0x00000000"/>
+        <reg32 offset="0x00E08" name="EARLY_DEPTH" value="0x17000031" brief="Early depth control"/>
+        <reg32 offset="0x00E0C" name="UNK00E0C" value="0x00000000"/> <!-- HALTI2 -->
         <reg32 offset="0x00E10" name="MULTISAMPLE_UNK00E10" value="0x00000000" length="4" stride="4"/>
         <reg32 offset="0x00E20" name="HDEPTH_CONTROL">
             <bitfield pos="0" name="UNK0"/>
             <bitfield high="14" low="12" name="COMPARE" type="COMPARE_FUNC"/>
         </reg32>
+        <reg32 offset="0x00E24" name="UNK00E24"/>
+        <reg32 offset="0x00E34" name="HALTI5_UNK00E34"/> <!-- HALTI5 -->
         <reg32 offset="0x00E40" name="CENTROID_TABLE" value="0x00000000" length="16" stride="4"/>
     </stripe>
 
@@ -526,18 +562,93 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="31" low="16" name="HIGH" brief="Index of last PS instruction"/>
         </reg32>
         <!-- The following is used with unified uniforms (SH_UNIFORM_*) -->
-        <reg32 offset="0x01024" name="UNIFORM_BASE" brief="Offset applied to PS uniform loads (granularity is 4-vectors)"/>
-        <reg32 offset="0x01028" name="INST_ADDR" type="VIVS" brief="Memory address of shader instructions"/> <!-- gc3000 "icache" -->
+        <reg32 offset="0x01024" name="UNIFORM_BASE" brief="Offset applied to PS uniform loads (granularity is 4-vectors)"/> <!-- -->
+        <reg32 offset="0x01028" name="INST_ADDR" type="VIVM" brief="Memory address of shader instructions"/> <!-- ICACHE -->
+        <reg32 offset="0x0102C" name="UNK0102C"/> <!-- numRT == 8 -->
         <reg32 offset="0x01030" name="CONTROL_EXT">
             <!-- Not used for multiple render targets -->
             <bitfield high="1" low="0" name="COLOR_OUTPUT_COUNT" brief="Number of outputs minus one"/>
         </reg32>
+        <reg32 offset="0x01034" name="UNK01034"/>
+        <reg32 offset="0x01038" name="UNK01038"/> <!-- numRT == 8 -->
+        <reg32 offset="0x0103C" name="HALTI3_UNK0103C" value="0x76543210"/> <!-- HALTI3 kernel driver puts this under "pixel engine states" -->
+        <reg32 offset="0x01040" name="UNK01040" length="2" stride="4"/> <!-- HALTI2 -->
+        <reg32 offset="0x0104C" name="ICACHE_UNK0104C" type="VIVM"/> <!-- !HALTI5 && ICACHE_PREFETCH -->
+        <reg32 offset="0x01054" name="HALTI4_UNK01054"/> <!-- HALTI4 -->
+        <reg32 offset="0x01058" name="HALTI5_UNK01058"/> <!-- HALTI5 -->
+        <reg32 offset="0x01080" name="HALTI5_UNK01080" length="4" stride="4"/> <!-- HALTI5 -->
+        <reg32 offset="0x01090" name="HALTI5_UNK01090"/> <!-- HALTI5 "VS/PS Start/End PC register" -->
+        <reg32 offset="0x01094" name="HALTI5_UNK01094" type="VIVM"/> <!-- HALTI5 && ICACHE_PREFETCH -->
+        <reg32 offset="0x01098" name="HALTI5_UNK01098"/> <!-- HALTI5 -->
         <reg32 offset="0x06000" name="INST_MEM" value="0x00000000" length="1024" stride="4"> <!-- instructionCount <= 256 -->
             <!-- length="instructionCount * 4" -->
         </reg32>
         <reg32 offset="0x07000" name="UNIFORMS" value="0x00000000" length="1024" stride="4">
             <!-- length="fragmentUniforms * 4" -->
         </reg32>
+    </stripe>
+
+    <stripe name="GS" brief="Geometry Shader states"> <!-- GEOMETRY_SHADER -->
+        <doc>The Geometry shader to use is configured here</doc>
+        <reg32 offset="0x01100" name="UNK01100"/>
+        <reg32 offset="0x01104" name="UNK01104" value="0x00000001"/>
+        <reg32 offset="0x01108" name="UNK01108" value="0x01000001"/>
+        <reg32 offset="0x0110C" name="UNK0110C"/>
+        <reg32 offset="0x01110" name="UNK01110"/>
+        <reg32 offset="0x01114" name="UNK01114" type="VIVM"/>
+        <reg32 offset="0x0111C" name="UNK0111C"/>
+        <reg32 offset="0x01120" name="UNK01120" length="8" stride="4"/>
+        <reg32 offset="0x01140" name="UNK01140"/>
+        <reg32 offset="0x01144" name="UNK01144"/>
+        <reg32 offset="0x01148" name="UNK01148"/>
+        <reg32 offset="0x0114C" name="UNK0114C"/>
+        <reg32 offset="0x01154" name="UNK01154"/>
+    </stripe>
+
+    <stripe name="TCS" brief="Tesselation C Shader states"> <!-- TESSELATION_SHADER -->
+        <doc>?</doc>
+        <reg32 offset="0x007C0" name="UNK007C0" value="0x00000003"/>
+
+        <reg32 offset="0x14A00" name="UNK14A00"/>
+        <reg32 offset="0x14A04" name="UNK14A04"/>
+        <reg32 offset="0x14A08" name="UNK14A08" type="VIVM"/>
+        <reg32 offset="0x14A10" name="UNK14A10"/>
+        <reg32 offset="0x14A14" name="UNK14A14"/>
+        <reg32 offset="0x14A18" name="UNK14A18"/>
+        <reg32 offset="0x14A1C" name="UNK14A1C"/>
+        <reg32 offset="0x14A20" name="UNK14A20" length="8" stride="4"/>
+        <reg32 offset="0x14A40" name="UNK14A40"/>
+        <reg32 offset="0x14A44" name="UNK14A44"/>
+        <reg32 offset="0x14A4C" name="UNK14A4C"/>
+    </stripe>
+
+    <stripe name="TES" brief="Tesselation E Shader states"> <!-- TESSELATION_SHADER -->
+        <doc>?</doc>
+        <reg32 offset="0x14B00" name="UNK14B00"/>
+        <reg32 offset="0x14B04" name="UNK14B04"/>
+        <reg32 offset="0x14B08" name="UNK14B08"/>
+        <reg32 offset="0x14B0C" name="UNK14B0C" type="VIVM"/>
+        <reg32 offset="0x14B14" name="UNK14B14"/>
+        <reg32 offset="0x14B18" name="UNK14B18"/>
+        <reg32 offset="0x14B1C" name="UNK14B1C"/>
+        <reg32 offset="0x14B20" name="UNK14B20"/>
+        <reg32 offset="0x14B24" name="UNK14B24"/>
+        <reg32 offset="0x14B2C" name="UNK14B2C"/>
+        <reg32 offset="0x14B34" name="UNK14B34"/>
+        <reg32 offset="0x14B40" name="UNK14B40" length="8" stride="4"/>
+    </stripe>
+
+    <stripe name="TFB" brief="HW TFB states"> <!-- HW_TFB -->
+        <doc>TFB = transform feedback?</doc>
+        <reg32 offset="0x1C000" name="UNK1C000"/>
+        <reg32 offset="0x1C008" name="UNK1C008" type="VIVM"/>
+        <reg32 offset="0x1C00C" name="FLUSH"/> <!-- Flush writes 0x12345678 here -->
+        <reg32 offset="0x1C014" name="UNK1C014" type="VIVM"/>
+        <reg32 offset="0x1C040" name="UNK1C040" type="VIVM" length="4" stride="4"/>
+        <reg32 offset="0x1C080" name="UNK1C080" length="4" stride="4"/>
+        <reg32 offset="0x1C0C0" name="UNK1C0C0" length="4" stride="4"/>
+        <reg32 offset="0x1C100" name="UNK1C100" length="4" stride="4"/>
+        <reg32 offset="0x1C800" name="UNK1C800" length="512" stride="4"/> <!-- 128*4 -->
     </stripe>
 
     <stripe name="PE" brief="Pixel Engine states">
@@ -684,6 +795,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <reg32 offset="0x1480" name="DEPTH_ADDR" value="0x00000000" type="VIVM"/>
             <reg32 offset="0x1500" name="ADDR_UNK01500" value="0x00000000" type="VIVM"/>
             <reg32 offset="0x1520" name="ADDR_UNK01520" value="0x00000000" type="VIVM"/>
+            <reg32 offset="0x1540" name="ADDR_UNK01540" value="0x00000000" type="VIVM"/>
         </stripe>
         <reg32 offset="0x014A0" name="STENCIL_CONFIG_EXT" value="0x00000000" masked="yes">
             <bitfield high="7" low="0" name="REF_BACK" brief="glStencilFunc ref (GL_BACK)"/>
@@ -720,11 +832,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="27" name="UNK24_MASK"/>
         </reg32>
         <reg32 offset="0x014A8" name="DITHER" value="0xFFFFFFFF" length="2"/>
-        <reg32 offset="0x014B0" name="ALPHA_COLOR_EXT0" value="0x00000000" brief="High-precision alpha blend color"> <!--gc3000?-->
+        <reg32 offset="0x014B0" name="ALPHA_COLOR_EXT0" value="0x00000000" brief="High-precision alpha blend color"> <!--HALF_FLOAT_PIPE-->
             <bitfield high="15" low="0" name="B" type="float"/> <!-- 16-bit float --> 
             <bitfield high="31" low="16" name="G" type="float"/> <!-- 16-bit float -->
         </reg32>
-        <reg32 offset="0x014B4" name="ALPHA_COLOR_EXT1" value="0x00000000" brief="High-precision alpha blend color"> <!--gc3000?-->
+        <reg32 offset="0x014B4" name="ALPHA_COLOR_EXT1" value="0x00000000" brief="High-precision alpha blend color"> <!--HALF_FLOAT_PIPE-->
             <bitfield high="15" low="0" name="R" type="float"/> <!-- 16-bit float -->
             <bitfield high="31" low="16" name="A" type="float"/> <!-- 16-bit float -->
         </reg32>
@@ -732,6 +844,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="7" low="0" name="MASK_BACK" brief="glStencilFunc mask (GL_BACK)"/>
             <bitfield high="15" low="8" name="WRITE_MASK_BACK" brief="glStencilMask (GL_BACK)"/>
         </reg32>
+        <reg32 offset="0x014BC" name="HALTI3_UNK014BC"/> <!-- HALTI3 -->
+        <reg32 offset="0x014C0" name="HALTI4_UNK014C0"/> <!-- HALTI4 -->
+        <reg32 offset="0x014C4" name="ROBUSTNESS_UNK014C4"/> <!-- ROBUSTNESS -->
         <reg32 offset="0x01580" name="UNK01580" value="0x00000000" length="3" stride="4"/>
         <!-- Multiple render targets (color attachments).
              These figure output 1..N as index 0..N-1.
@@ -744,6 +859,15 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <!-- Likely per-output format flags -->
             <bitfield high="31" low="16" name="UNK16"/>
         </reg32>
+
+        <!-- Probably extra per-RT state -->
+        <reg32 offset="0x14920" name="HALTI5_UNK14920" length="7" stride="4"/> <!-- HALTI5 -->
+        <reg32 offset="0x14940" name="HALTI5_UNK14940" length="7" stride="4"/> <!-- HALTI5 -->
+        <reg32 offset="0x14960" name="HALTI5_UNK14960" length="7" stride="4"/> <!-- HALTI5 -->
+        <reg32 offset="0x14980" name="HALTI5_UNK14980" length="7" stride="4"/> <!-- HALTI5 -->
+        <reg32 offset="0x149A0" name="HALTI5_UNK149A0" length="7" stride="4"/> <!-- HALTI5 -->
+
+        <reg32 offset="0x149C0" name="ROBUSTNESS_UNK149C0" length="8" stride="4"/> <!-- ROBUSTNESS -->
     </stripe>
 
     <stripe name="CO" brief="Compose states">
@@ -761,6 +885,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x03040" name="UNK03040"/>
         <reg32 offset="0x03044" name="UNK03044"/>
         <reg32 offset="0x03048" name="UNK03048"/>
+        <reg32 offset="0x0304C" name="ICACHE_UNK0304C"/> <!-- ICACHE -->
         <stripe name="SAMPLER" length="8" stride="4">
             <reg32 offset="0x03060" name="UNK03060"/>
             <reg32 offset="0x03080" name="UNK03080"/>
@@ -915,7 +1040,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         Tile status block contains information about the tiles to be resolved.
         It is used by the PE (to read/update tile status) as well as the RS (to read tile status for source).
         </doc>
-        <reg32 offset="0x01650" name="FLUSH_CACHE" brief="Flush resolve cache" value="0x00000000">
+        <reg32 offset="0x01650" name="FLUSH_CACHE" brief="Flush resolve cache" value="0x00000000"> <!-- FC_FLUSH_STALL -->
             <bitfield pos="0" name="FLUSH" brief="Flush tile status cache"/>
         </reg32>
         <reg32 offset="0x01654" name="MEM_CONFIG" brief="Memory configuration" value="0x00200000">
@@ -944,6 +1069,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             </bitfield>
             <bitfield pos="12" name="UNK12"/> <!-- likely has to do with hdepth HDEPTH_FAST_CLEAR? -->
             <bitfield pos="13" name="HDEPTH_AUTO_DISABLE" brief="Auto disable fast clear for hdepth"/>
+            <bitfield pos="21" name="UNK21"/> <!-- Set by default in new context w/ Vivante kernel driver -->
         </reg32>
         <reg32 offset="0x01658" name="COLOR_STATUS_BASE" brief="Color tile status base address" value="0x00000000" type="VIVM"/>
         <reg32 offset="0x0165C" name="COLOR_SURFACE_BASE" brief="Color surface base address" value="0x00000000" type="VIVM"/>
@@ -972,16 +1098,17 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <reg32 offset="0x01740" name="STATUS_BASE" value="0x00000000" type="VIVM"/>
             <reg32 offset="0x01760" name="CLEAR_VALUE" value="0x00000000"/>
             <!-- New on GC3000 - seems simply a second copy of CLEAR_VALUE -->
-            <reg32 offset="0x01780" name="CLEAR_VALUE2" value="0x00000000"/>
+            <reg32 offset="0x01780" name="CLEAR_VALUE2" value="0x00000000"/> <!-- HALTI2 -->
         </stripe>
         <!-- Multiple render targets (color attachments) -->
-        <stripe name="RT" length="8" stride="4">
+        <stripe name="RT" length="8" stride="4"> <!-- HALTI2 -->
             <reg32 offset="0x017A0" name="UNK017A0"/>
             <reg32 offset="0x017C0" name="STATUS_BASE" type="VIVS"/>
             <reg32 offset="0x017E0" name="SURFACE_BASE" type="VIVS"/>
             <reg32 offset="0x01A00" name="CLEAR_VALUE"/>
             <reg32 offset="0x01A20" name="CLEAR_VALUE2"/>
             <reg32 offset="0x01A40" name="UNK01A40"/>
+            <reg32 offset="0x01A80" name="HALTI3_UNK01A80"/> <!-- HALTI3 -->
         </stripe>
     </stripe>
 
@@ -1080,7 +1207,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <reg32 offset="0x2200" name="UNK02200" value="0x00000000"/>
             <reg32 offset="0x2240" name="UNK02240" value="0x00000000"/>
             <reg32 offset="0x2400" name="LOD_ADDR" length="14" stride="0x40" type="VIVM"/> <!-- Base address, per LOD level -->
-            <reg32 offset="0x2C00" name="UNK02C00" length="14" stride="0x40"/> <!-- Looks like another per LOD value -->
+            <reg32 offset="0x2C00" name="LINEAR_STRIDE" length="14" stride="0x40"/> <!-- TEXTURE_LINEAR -->
         </stripe>
     </stripe>
 
@@ -1098,8 +1225,19 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <reg32 offset="0x10380" name="CONFIG1" value="0x00321000" type="TE_SAMPLER_CONFIG1"/>
             <reg32 offset="0x10400" name="UNK10400" value="0x00000000"/>
             <reg32 offset="0x10480" name="UNK10480" value="0x00000000"/>
-            <reg32 offset="0x10500" name="UNK10500" value="0x00000000"/>
-            <reg32 offset="0x10700" name="UNK10700" value="0x00000000"/>
+            <reg32 offset="0x10500" name="ASTC_UNK10500"/> <!-- ASTC -->
+            <reg32 offset="0x10580" name="ASTC_UNK10580"/> <!-- ASTC -->
+            <reg32 offset="0x10600" name="ASTC_UNK10600"/> <!-- ASTC -->
+            <reg32 offset="0x10600" name="ASTC_UNK10680"/> <!-- ASTC -->
+            <reg32 offset="0x10700" name="BASELOD" value="0x00000F00"/> <!-- TEX_BASELOD -->
+            <reg32 offset="0x10780" name="UNK10780" value="0x00030000"/> <!-- HALTI3 || TX_SUPPORT_DEC -->
+            <reg32 offset="0x11000" name="FRAC_UNK11000"/> <!-- TX_FRAC_PRECISION_6BIT -->
+            <reg32 offset="0x11080" name="FRAC_UNK11080"/> <!-- TX_FRAC_PRECISION_6BIT -->
+            <reg32 offset="0x11100" name="FRAC_UNK11100"/> <!-- TX_FRAC_PRECISION_6BIT -->
+            <reg32 offset="0x11180" name="FRAC_UNK11180"/> <!-- TX_FRAC_PRECISION_6BIT -->
+            <reg32 offset="0x11200" name="HALTI4_UNK11200"/> <!-- HALTI4 -->
+            <reg32 offset="0x11280" name="HALTI4_UNK11280"/> <!-- HALTI4 -->
+            <reg32 offset="0x11300" name="FRAC_UNK11300"/> <!-- TX_FRAC_PRECISION_6BIT -->
         </stripe>
         <array offset="0x10800" name="SAMPLER_ADDR" length="32" stride="64"> <!-- Per sampler -->
             <!-- length="texBlockCount"
@@ -1107,8 +1245,27 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
              -->
             <reg32 offset="0" name="LOD" length="14" stride="4" type="VIVM"/> <!-- Base address, per LOD level -->
         </array>
-        <reg32 offset="0x12000" name="UNK12000" value="0x00000000" length="256" stride="4"/> <!-- chipMinorFeatures2 bit 15 set -->
-        <reg32 offset="0x12400" name="UNK12400" value="0x00000000" length="256" stride="4"/> <!-- chipMinorFeatures2 bit 15 set -->
+        <reg32 offset="0x12000" name="UNK12000" value="0x00000000" length="256" stride="4"/> <!-- TX_FILTER -->
+        <reg32 offset="0x12400" name="UNK12400" value="0x00000000" length="256" stride="4"/> <!-- TX_FILTER -->
+
+        <reg32 offset="0x14C00" name="HALTI3_UNK14C00" length="16" stride="4"/> <!-- HALTI3 -->
+        <reg32 offset="0x14C40" name="DESCRIPTOR_UNK14C40"/> <!-- TX_DESCRIPTOR -->
+        <stripe name="DESCRIPTOR" length="128" stride="4"> <!-- TX_DESCRIPTOR -->
+            <reg32 offset="0x15800" name="MIRROR_UNK15C00"/> <!-- MIRROR of 15C00 -->
+            <reg32 offset="0x15A00" name="MIRROR_UNK15E00"/> <!-- MIRROR of 15E00 -->
+            <reg32 offset="0x15C00" name="UNK15C00"/>
+            <reg32 offset="0x15E00" name="UNK15E00"/>
+            <reg32 offset="0x16000" name="MIRROR_UNK16C00"/> <!-- MIRROR of 16C00 -->
+            <reg32 offset="0x16200" name="MIRROR_UNK16E00"/> <!-- MIRROR of 16E00 -->
+            <reg32 offset="0x16400" name="MIRROR_UNK17000"/> <!-- MIRROR of 17000 -->
+            <reg32 offset="0x16600" name="MIRROR_UNK17200"/> <!-- MIRROR of 17200 -->
+            <reg32 offset="0x16800" name="MIRROR_UNK17400"/> <!-- MIRROR of 17400 -->
+            <reg32 offset="0x16C00" name="UNK16C00"/>
+            <reg32 offset="0x16E00" name="UNK16E00"/>
+            <reg32 offset="0x17000" name="UNK17000"/>
+            <reg32 offset="0x17200" name="UNK17200"/>
+            <reg32 offset="0x17400" name="UNK17400"/>
+        </stripe>
     </stripe>
 
     <stripe name="SH" brief="Unified shader instruction memory">
@@ -1116,12 +1273,19 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             1024 shader instructions (different areas are used based on these cases).</doc>
         <reg32 offset="0x20000" name="UNK20000" value="0x00000000" length="8192" stride="4"> <!-- instructionCount > 1024 -->
             <!-- length="instructionCount * 4" -->
+            <!-- this unified instruction memory "needs SELECT bit to steer" according to Vivante kernel driver -->
         </reg32>
         <reg32 offset="0x0C000" name="INST_MEM" value="0x00000000" length="4096" stride="4"> <!-- 256 > instructionCount > 1024 -->
             <!-- length="instructionCount * 4" -->
+            <!-- this unified instruction memory "is steered by base address" according to Vivante kernel driver,
+                 which uses this range to write VS instructions
+            -->
         </reg32>
         <reg32 offset="0x08000" name="INST_MEM_MIRROR" value="0x00000000" length="4096" stride="4"> <!-- 256 > instructionCount > 1024 -->
             <!-- length="instructionCount * 4" -->
+            <!-- this unified instruction memory "is steered by base address" according to Vivante kernel driver,
+                 which uses this range to write PS instructions
+            -->
         </reg32>
         <!-- Unified uniforms area. On hardware that uses unified uniforms
              (signified by feature bit ?), both the VS and PS uniforms share this single state
@@ -1130,6 +1294,12 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
              value before loading these.
           -->
         <reg32 offset="0x30000" name="UNIFORMS" value="0x00000000" length="2048" stride="4">
+            <!-- length="?" -->
+        </reg32>
+        <reg32 offset="0x34000" name="HALTI5_UNIFORMS_MIRROR" length="2048" stride="4"> <!-- HALTI5 -->
+            <!-- length="?" -->
+        </reg32>
+        <reg32 offset="0x36000" name="HALTI5_UNIFORMS" length="2048" stride="4"> <!-- HALTI5 -->
             <!-- length="?" -->
         </reg32>
     </stripe>

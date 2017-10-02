@@ -83,7 +83,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <doc>DMA engine. This is the frontend from the CPU to the GPU, and
             takes care of parsing the command stream and loading states, as well as loading
             vertex streams.</doc>
-        <reg32 offset="0x00600" name="VERTEX_ELEMENT_CONFIG" value="0x00000000" length="16" stride="4">
+        <reg32 offset="0x00600" name="VERTEX_ELEMENT_CONFIG" value="0x00000000" length="16" stride="4"> <!-- !HALTI5 -->
             <!-- length="attrCount" where attrCount, the number of attributes,
                  is 16 if chipMinorFeatures1 bit 23 set, otherwise 12.
              -->
@@ -209,14 +209,30 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <reg32 offset="0x00680" name="BASE_ADDR" value="0x00000000" type="VIVM"/>
             <reg32 offset="0x006A0" name="CONTROL" value="0x00000000" type="FE_VERTEX_STREAM_CONTROL"/>
         </stripe>
-        <reg32 offset="0x00700" name="UNK00700" value="0x00000000" length="16" stride="4"/>
-        <reg32 offset="0x00740" name="UNK00740" value="0x00000000" length="16" stride="4"/>
-        <!-- Looks like this is set per vertex element.
-          It affects DRAW_INSTANCED rendering on GC3000. If the value is 0, nothing is rendered at all,
-          when it is 0x3f800000 (float 1.0), things are rendered as normal.
-          Other values seem to be a kind of scaling factor applied to values read from this vertex element.
-         -->
-        <reg32 offset="0x00780" name="UNK00780" value="0x3F800000" length="16" stride="4" type="float"/>
+        <stripe name="GENERIC_ATTRIB" length="16" stride="4"> <!-- !HALTI5-->
+            <reg32 offset="0x006C0" name="UNK006C0"/>
+            <reg32 offset="0x00700" name="UNK00700" value="0x00000000"/>
+            <reg32 offset="0x00740" name="UNK00740" value="0x00000000"/>
+            <!-- Looks like this is set per vertex element.
+              It affects DRAW_INSTANCED rendering on GC3000. If the value is 0, nothing is rendered at all,
+              when it is 0x3f800000 (float 1.0), things are rendered as normal.
+              Other values seem to be a kind of scaling factor applied to values read from this vertex element.
+             -->
+            <reg32 offset="0x00780" name="UNK00780" value="0x3F800000" type="float"/> <!-- !HALTI5 -->
+        </stripe>
+        <reg32 offset="0x007C4" name="HALTI5_UNK007C4"/> <!-- HALTI5 -->
+        <reg32 offset="0x007D0" name="HALTI5_UNK007D0" length="2" stride="4"/> <!-- HALTI5 -->
+        <reg32 offset="0x007D8" name="HALTI5_UNK007D8"/> <!-- HALTI5 -->
+        <!-- Asynchronous command execution -->
+        <reg32 offset="0x007DC" name="DESC_START"/> <!-- HALTI5 -->
+        <reg32 offset="0x007E0" name="DESC_END"/> <!-- HALTI5 -->
+        <reg32 offset="0x007E4" name="DESC_AVAIL" brief="Number of descriptors available"> <!-- HALTI5 -->
+            <bitfield high="6" low="0" name="COUNT"/>
+        </reg32>
+        <!-- Fencing -->
+        <reg32 offset="0x007E8" name="FENCE_WAIT_DATA_LOW" brief="Lower 64 bit of fence data"/> <!-- HALTI5, FENCE_WAIT command checks against this -->
+        <reg32 offset="0x007F4" name="FENCE_WAIT_DATA_HIGH" brief="Upper 64 bit of fence data"/> <!-- HALTI5 -->
+        <reg32 offset="0x007F8" name="ROBUSTNESS_UNK007F8" type="VIVM"/> <!-- ROBUSTNESS -->
     </stripe>
 
     <stripe name="GL" brief="Global states">
@@ -246,10 +262,13 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <doc>
                 Warning: setting the `TEXTUREVS` bit seems to result in crashes when rendering directly afterwards.
                 Even adding a PE to FE semaphore afterwards or dummy state loads does not fix this.
+                note: The Vivante kernel driver always flushes VST in a separate command.
                 </doc>
             </bitfield>
             <bitfield pos="5" name="SHADER_L1"/>
             <bitfield pos="6" name="SHADER_L2"/>
+            <bitfield pos="10" name="UNK10"/>
+            <bitfield pos="11" name="UNK11"/>
         </reg32>
         <reg32 offset="0x03810" name="FLUSH_MMU" brief="Flush the virtual address lookup cache inside the MC">
             <bitfield pos="0" name="FLUSH_FEMMU" brief="Flush the FE address translation caches"/>
@@ -277,7 +296,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <doc>Number of components for all varyings together, rounded to a multiple of 2.</doc>
             <bitfield high="7" low="0" name="NUM"/>
         </reg32>
-        <reg32 offset="0x03820" name="VARYING_NUM_COMPONENTS" brief="Number of components in varyings" value="0x00000000">
+        <reg32 offset="0x03820" name="VARYING_NUM_COMPONENTS" brief="Number of components in varyings" value="0x00000000"> <!-- !HALTI5 -->
             <doc>Number of components per varying (PS).</doc>
             <bitfield high="2" low="0" name="VAR0"/>
             <bitfield high="6" low="4" name="VAR1"/>
@@ -288,7 +307,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="26" low="24" name="VAR6"/>
             <bitfield high="30" low="28" name="VAR7"/>
         </reg32>
-        <reg32 offset="0x03828" name="VARYING_COMPONENT_USE" brief="Varying component usage" value="0x00000000" length="2" stride="4">
+        <reg32 offset="0x03828" name="VARYING_COMPONENT_USE" brief="Varying component usage" value="0x00000000" length="2" stride="4"> <!-- !HALTI5 -->
             <doc>2 bits per varying component, 16 components per 32-bit word.</doc>
             <bitfield high="1" low="0" name="COMP0" type="VARYING_COMPONENT_USE"/>
             <bitfield high="3" low="2" name="COMP1" type="VARYING_COMPONENT_USE"/>
@@ -307,8 +326,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="29" low="28" name="COMP14" type="VARYING_COMPONENT_USE"/>
             <bitfield high="31" low="30" name="COMP15" type="VARYING_COMPONENT_USE"/>
         </reg32>
-        <reg32 offset="0x03834" name="UNK03834" value="0x00000000"/>
-        <reg32 offset="0x03838" name="UNK03838" value="0x00000000"/>
+        <reg32 offset="0x0382C" name="UNK0382C"/> <!-- !HALTI5 -->
+        <reg32 offset="0x03834" name="UNK03834" value="0x00000000"/> <!-- !HALTI5 -->
+        <reg32 offset="0x03838" name="UNK03838" value="0x00000000"/> <!-- !HALTI5 -->
         <reg32 offset="0x0384C" name="API_MODE" brief="API mode" value="0x00000000">
             <value value="0" name="OPENGL"/>
             <value value="1" name="OPENVG"/>
@@ -320,8 +340,23 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             Likely this register is not used by the hardware, but only by debugging software.
             </doc>
         </reg32>
-        <reg32 offset="0x03854" name="UNK03854"/>
+        <reg32 offset="0x03854" name="UNK03854"/> <!-- !HALTI5 -->
+        <reg32 offset="0x03860" name="BUG_FIXES" value="0x00000006"/> <!-- BUG_FIXES18 -->
+        <reg32 offset="0x03868" name="FENCE_OUT_ADDRESS"/> <!-- HALTI5 -->
+        <reg32 offset="0x0386C" name="FENCE_OUT_DATA_LOW"/> <!-- HALTI5 -->
+        <reg32 offset="0x03884" name="HALTI5_UNK03884"/> <!-- HALTI5 -->
+        <reg32 offset="0x03888" name="HALTI5_UNK03888"/> <!-- HALTI5 -->
+        <reg32 offset="0x0388C" name="GS_UNK0388C"/> <!-- GEOMETRY_SHADER -->
+        <reg32 offset="0x03898" name="FENCE_OUT_DATA_HIGH"/> <!-- HALTI5, triggers fence write? -->
+        <reg32 offset="0x038A0" name="GS_UNK038A0" length="8" stride="4"/> <!-- GEOMETRY_SHADER -->
+        <reg32 offset="0x038C0" name="HALTI5_UNK038C0" length="16" stride="4"/> <!-- feature HALTI5 -->
+        <reg32 offset="0x03900" name="SECURITY_UNK3900"/> <!-- SECURITY -->
+        <reg32 offset="0x03904" name="SECURITY_UNK3904"/> <!-- SECURITY -->
         <reg32 offset="0x03A00" name="UNK03A00"/>
+        <reg32 offset="0x03A04" name="UNK03A04"/>
+        <reg32 offset="0x03A08" name="UNK03A08"/>
+        <reg32 offset="0x03A0C" name="UNK03A0C"/> <!-- MULTI_CORE_BLOCK_SET_CONFIG2 -->
+        <reg32 offset="0x03A10" name="UNK03A10"/> <!-- MULTI_CORE_BLOCK_SET_CONFIG2 -->
         <reg32 offset="0x03C00" name="STALL_TOKEN">
             <bitfield high="4" low="0" name="FROM" type="SYNC_RECIPIENT"/>
             <bitfield high="12" low="8" name="TO" type="SYNC_RECIPIENT"/>
@@ -332,11 +367,26 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 
     <!-- These are used on (at least) gc3000 for extra vertex attribute information -->
     <stripe name="NFE">
-        <stripe name="VERTEX_STREAMS" length="16" stride="4"> <!-- streamCount > 1 -->
-            <reg32 offset="0x14600" name="BASE_ADDR" value="0x00000000" type="VIVS"/>
+        <stripe name="VERTEX_STREAMS" length="16" stride="4"> <!-- streamCount > 1 || HALTI2 -->
+            <reg32 offset="0x14600" name="BASE_ADDR" value="0x00000000" type="VIVM"/>
             <reg32 offset="0x14640" name="CONTROL" value="0x00000000" type="FE_VERTEX_STREAM_CONTROL"/>
             <reg32 offset="0x14680" name="UNK14680" value="0x00000000"/>
+            <reg32 offset="0x146C0" name="ROBUSTNESS_UNK146C0" type="VIVM"/> <!-- ROBUSTNESS -->
         </stripe>
+        <reg32 offset="0x17800" name="HALTI5_UNK17800" length="32" stride="4"/> <!-- HALTI5 -->
+        <reg32 offset="0x17880" name="HALTI5_UNK17880" length="32" stride="4"/> <!-- HALTI5 -->
+        <reg32 offset="0x17900" name="HALTI5_UNK17900" length="32" stride="4"/> <!-- HALTI5 -->
+        <reg32 offset="0x17980" name="HALTI5_UNK17980" length="32" stride="4"/> <!-- HALTI5 -->
+        <reg32 offset="0x17A00" name="HALTI5_UNK17A00" value="0x3F800000" length="32" stride="4"/> <!-- HALTI5 -->
+        <reg32 offset="0x17A80" name="HALTI5_UNK17A80" length="32" stride="4"/> <!-- HALTI5 -->
+    </stripe>
+
+    <stripe name="BLT" brief="Blit engine"> <!-- BLT_ENGINE -->
+        <doc>Asynchronous blit engine states</doc>
+        <reg32 offset="0x140A4" name="FENCE_OUT_ADDRESS"/>
+        <reg32 offset="0x140A8" name="FENCE_OUT_DATA_LOW"/>
+        <reg32 offset="0x140B4" name="FENCE_OUT_DATA_HIGH"/>
+        <reg32 offset="0x140B8" name="FENCE_OUT"/>
     </stripe>
 
     <stripe name="DUMMY" brief="/dev/null">

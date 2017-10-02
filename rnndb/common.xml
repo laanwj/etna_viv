@@ -87,6 +87,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="0x0800" name="GC800"/> <!-- 3D graphics, 1 core -->
         <value value="0x0860" name="GC860"/>
         <value value="0x0880" name="GC880"/>
+        <value value="0x0900" name="GC900"/>
         <value value="0x1000" name="GC1000"/> <!-- 3D graphics, 2 cores -->
         <value value="0x1500" name="GC1500"/>
         <value value="0x2000" name="GC2000"/> <!-- 3D graphics, 4 cores -->
@@ -98,6 +99,16 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="0x5000" name="GC5000"/>
         <value value="0x5200" name="GC5200"/>
         <value value="0x6400" name="GC6400"/>
+        <value value="0x7000" name="GC7000"/>
+        <value value="0x7400" name="GC7400"/>
+        <value value="0x8000" name="GC8000"/>
+        <value value="0x8100" name="GC8100"/>
+        <value value="0x8200" name="GC8200"/>
+        <value value="0x8400" name="GC8400"/>
+        <!-- Around GC2/3000, chip ID started to diverge from branded product ID
+             in many cases. For example the GC7000nano has chip ID 400, whereas
+             GC7000nanoultra has chip ID 600.
+         -->
     </enum>
 
     <!-- GPU feature words.
@@ -180,13 +191,13 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield pos="0" name="RSUV_SWIZZLE" brief="Resolve UV swizzle"/>
         <bitfield pos="1" name="V2_COMPRESSION" brief="V2 compression"/>
         <bitfield pos="2" name="VG_DOUBLE_BUFFER" brief="Double buffering support for VG (second TS-->VG semaphore is present)"/>
-        <bitfield pos="3" name="EXTRA_EVENT_STATES"/>
-        <bitfield pos="4" name="NO_STRIPING_NEEDED"/>
+        <bitfield pos="3" name="EXTRA_EVENT_STATES"/> <!-- BugFixes1 -->
+        <bitfield pos="4" name="NO_STRIPING_NEEDED"/><!-- BugFiles2 -->
         <bitfield pos="5" name="TEXTURE_STRIDE" brief="Texture has stride and memory addressing"/>
         <bitfield pos="6" name="BUG_FIXES3"/>
         <bitfield pos="7" name="AUTO_DISABLE" brief="Correct auto-disable count"/>
         <bitfield pos="8" name="AUTO_RESTART_TS"/>
-        <bitfield pos="9" name="DISABLE_PE_GATING"/>
+        <bitfield pos="9" name="DISABLE_PE_GATING"/> <!-- BugFixes4 -->
         <bitfield pos="10" name="L2_WINDOWING"/>
         <bitfield pos="11" name="HALF_FLOAT" brief="Supports 16-bit floating point type"/>
         <bitfield pos="12" name="PIXEL_DITHER"/>
@@ -249,7 +260,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield pos="12" name="RGB888"/>
         <bitfield pos="13" name="TX__YUV_ASSEMBLER"/>
         <bitfield pos="14" name="DYNAMIC_FREQUENCY_SCALING" brief="This feature doesn't apply for 2D cores"/>
-        <bitfield pos="15" name="EXTRA_TEXTURE_STATE" brief="Extra texture state (0x12000)"/>
+        <bitfield pos="15" name="TX_FILTER" brief="Extra texture state (0x12000)"/>
         <bitfield pos="16" name="FULL_DIRECTFB"/>
         <bitfield pos="17" name="2D_TILING" brief="2D tiling, YUV blit and one-pass filter blit"/>
         <bitfield pos="18" name="THREAD_WALKER_IN_PS"/>
@@ -263,7 +274,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield pos="26" name="2D_420_L2CACHE"/>
         <bitfield pos="27" name="BUG_FIXES7"/>
         <bitfield pos="28" name="2D_NO_INDEX8_BRUSH"/>
-        <bitfield pos="29" name="TEXTURE_TILED_READ" brief="Tiled read also available with COMPOSITION"/>
+        <bitfield pos="29" name="TEXTURE_TILED_READ" brief="Texture tile status, tiled read also available with COMPOSITION"/>
         <bitfield pos="30" name="DECOMPRESS_Z16"/>
         <bitfield pos="31" name="BUG_FIXES8">
             <doc>
@@ -294,35 +305,35 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield pos="19" name="TX_ENHANCEMENTS1"/>
         <bitfield pos="20" name="SH_ENHANCEMENTS1" brief="Shader has atomic"/>
         <bitfield pos="21" name="SH_ENHANCEMENTS2" brief="Has RTNE"/>
-        <bitfield pos="22" name="UNK22"/>
-        <bitfield pos="23" name="2D_FC_SOURCE"/> <!-- 2D_CC_NOAA_SOURCE -->
-        <bitfield pos="24" name="UNK24"/>
-        <bitfield pos="25" name="UNK25"/>
+        <bitfield pos="22" name="PE_ENHANCEMENTS1"/>
+        <bitfield pos="23" name="2D_FC_SOURCE"/> <!-- 2D_CC_NOAA_SOURCE also: DEEnhancements2 -->
+        <bitfield pos="24" name="BUG_FIXES_14"/>
+        <bitfield pos="25" name="POWER_OPTIMIZATIONS_0"/>
         <bitfield pos="26" name="NEW_HZ"/>
-        <bitfield pos="27" name="PE_DITHER_FIX"/>
-        <bitfield pos="28" name="UNK28"/>
+        <bitfield pos="27" name="PE_DITHER_FIX"/> <!-- also: BugFixes15 -->
+        <bitfield pos="28" name="DE_ENHANCEMENTS3"/>
         <bitfield pos="29" name="SH_ENHANCEMENTS3"/>
-        <bitfield pos="30" name="UNK30"/>
-        <bitfield pos="31" name="UNK31"/>
+        <bitfield pos="30" name="SH_ENHANCEMENTS4"/>
+        <bitfield pos="31" name="TX_ENHANCEMENTS2"/>
     </bitset>
     <bitset name="chipMinorFeatures4"> <!-- ETNA_GPU_FEATURES_5 -->
-        <bitfield pos="0" name="UNK0"/>
+        <bitfield pos="0" name="FE_ENHANCEMENTS1"/>
         <bitfield pos="1" name="PE_ENHANCEMENTS2"/>
-        <bitfield pos="2" name="FRUSTUM_CLIP_FIX"/>
-        <bitfield pos="3" name="UNK3"/>
-        <bitfield pos="4" name="UNK4"/>
-        <bitfield pos="5" name="2D_GAMMA"/>
-        <bitfield pos="6" name="SINGLE_BUFFER" brief="Supports rendering into single buffer with multiple pixel pipes"/>
-        <bitfield pos="7" name="UNK7"/>
-        <bitfield pos="8" name="UNK8"/>
-        <bitfield pos="9" name="UNK9"/>
-        <bitfield pos="10" name="UNK10"/>
-        <bitfield pos="11" name="TX_LERP_PRECISION_FIX"/>
+        <bitfield pos="2" name="FRUSTUM_CLIP_FIX"/> <!-- also: PAEnhancements1 -->
+        <bitfield pos="3" name="DE_NO_GAMMA"/>
+        <bitfield pos="4" name="PA_ENHANCEMENTS_2"/>
+        <bitfield pos="5" name="2D_GAMMA"/> <!-- also: DEEnhancements4 -->
+        <bitfield pos="6" name="SINGLE_BUFFER" brief="Supports rendering into single buffer with multiple pixel pipes"/> <!-- also: PEEnhancements3 -->
+        <bitfield pos="7" name="HI_ENHANCEMENTS_1"/>
+        <bitfield pos="8" name="TX_ENHANCEMENTS_3"/>
+        <bitfield pos="9" name="SH_ENHANCEMENTS_5"/>
+        <bitfield pos="10" name="FE_ENHANCEMENTS_2"/>
+        <bitfield pos="11" name="TX_LERP_PRECISION_FIX"/> <!-- also: BugFixes16 -->
         <!-- 2D_SUPER_TILE_VERSION is available if either 2D_COLOR_SPACE_CONVERSION or 2D_COLOR_SPACE_CONVERSION set -->
-        <bitfield pos="12" name="2D_COLOR_SPACE_CONVERSION" brief="Color space conversion - 2D supertile version also available if set"/>
-        <bitfield pos="13" name="TEXTURE_ASTC"/>
-        <bitfield pos="14" name="UNK14"/>
-        <bitfield pos="15" name="UNK15"/>
+        <bitfield pos="12" name="2D_COLOR_SPACE_CONVERSION" brief="Color space conversion - 2D supertile version also available if set"/> <!-- also: DeEnhancements5 -->
+        <bitfield pos="13" name="TEXTURE_ASTC"/> <!-- also: TxEnhancements4 -->
+        <bitfield pos="14" name="PE_ENHANCEMENTS_4"/>
+        <bitfield pos="15" name="MC_ENHANCEMENTS_1"/>
         <bitfield pos="16" name="HALTI2">
             <doc>
                 - Primitive restart
@@ -342,30 +353,30 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </bitfield>
         <bitfield pos="17" name="2D_MIRROR_EXTENSION"/>
         <bitfield pos="18" name="SMALL_MSAA"/>
-        <bitfield pos="19" name="UNK19"/>
+        <bitfield pos="19" name="BUG_FIXES_17"/>
         <bitfield pos="20" name="NEW_RA"/>
         <bitfield pos="21" name="2D_OPF_YUV_OUTPUT"/>
         <bitfield pos="22" name="2D_MULTI_SOURCE_BLT_EX2" brief="Also determines 2D_POST_FLIP"/>
-        <bitfield pos="23" name="NO_USER_CSC"/>
-        <bitfield pos="24" name="ZFIXES"/> <!-- PA_FARZCLIPPING_FIX and ZSCALE_FIX -->
+        <bitfield pos="23" name="NO_USER_CSC"/> <!-- CSCV1 -->
+        <bitfield pos="24" name="ZFIXES"/> <!-- PA_FARZCLIPPING_FIX and ZSCALE_FIX also: PAEnhancements3 -->
         <bitfield pos="25" name="BUG_FIXES18"/>
         <bitfield pos="26" name="2D_COMPRESSION"/>
         <bitfield pos="27" name="PROBE"/>
-        <bitfield pos="28" name="UNK28"/>
+        <bitfield pos="28" name="MEDIUM_PRECISION"/>
         <bitfield pos="29" name="2D_SUPER_TILE_VERSION"/>
-        <bitfield pos="30" name="UNK30"/>
-        <bitfield pos="31" name="UNK31"/>
+        <bitfield pos="30" name="BUG_FIXES19"/>
+        <bitfield pos="31" name="SH_ENHANCEMENTS6"/>
     </bitset>
     <bitset name="chipMinorFeatures5"> <!-- ETNA_GPU_FEATURES_6 -->
-        <bitfield pos="0" name="UNK0"/>
-        <bitfield pos="1" name="UNK1"/>
-        <bitfield pos="2" name="UNK2"/>
-        <bitfield pos="3" name="UNK3"/>
+        <bitfield pos="0" name="SH_ENHANCEMENTS7"/>
+        <bitfield pos="1" name="BUG_FIXES20"/>
+        <bitfield pos="2" name="DE_ADDRESS_40"/>
+        <bitfield pos="3" name="MINI_MMU_FIX"/>
         <bitfield pos="4" name="EEZ"/>
-        <bitfield pos="5" name="UNK5"/>
-        <bitfield pos="6" name="UNK6"/>
-        <bitfield pos="7" name="UNK7"/>
-        <bitfield pos="8" name="UNK8"/>
+        <bitfield pos="5" name="BUG_FIXES21"/>
+        <bitfield pos="6" name="EXTRA_VG_CAPS"/>
+        <bitfield pos="7" name="MULTI_SRC_V15"/>
+        <bitfield pos="8" name="BUG_FIXES22"/>
         <bitfield pos="9" name="HALTI3" brief="Extra states at 0x890, 0x104C, 0x14BC, 0x1A80, and 0x10780">
             <doc>
                 - Integer signext fix
@@ -381,10 +392,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 - SH instruction prefetch
             </doc>
         </bitfield>
-        <bitfield pos="10" name="UNK10"/>
+        <bitfield pos="10" name="TESSELATION_SHADERS"/>
         <bitfield pos="11" name="2D_ONE_PASS_FILTER_TAP"/>
-        <bitfield pos="12" name="UNK12"/>
-        <bitfield pos="13" name="SEPARATE_SRC_DST"/>
+        <bitfield pos="12" name="MULTI_SRC_V2_STR_QUAD"/>
+        <bitfield pos="13" name="SEPARATE_SRC_DST"/> <!-- Separate source and destination cache -->
         <bitfield pos="14" name="HALTI4">
             <doc>
                 - Texture ASTC fix
@@ -393,24 +404,44 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 - Tex cache flush fix
             </doc>
         </bitfield>
-        <bitfield pos="15" name="UNK15"/>
+        <bitfield pos="15" name="RA_WRITE_DEPTH"/>
         <bitfield pos="16" name="ANDROID_ONLY"/>
         <bitfield pos="17" name="HAS_PRODUCTID"/>
-        <bitfield pos="18" name="UNK18"/>
-        <bitfield pos="19" name="UNK19"/>
-        <bitfield pos="20" name="PE_DITHER_FIX2"/>
-        <bitfield pos="21" name="UNK21"/>
-        <bitfield pos="22" name="UNK22"/>
-        <bitfield pos="23" name="UNK23"/>
-        <bitfield pos="24" name="UNK24"/>
-        <bitfield pos="25" name="UNK25"/>
-        <bitfield pos="26" name="UNK26"/>
+        <bitfield pos="18" name="TX_SUPPORT_DEC"/>
+        <bitfield pos="19" name="S8_MSAA_COMPRESSION"/>
+        <bitfield pos="20" name="PE_DITHER_FIX2"/> <!-- also: BugFixesIn544 -->
+        <bitfield pos="21" name="L2_CACHE_REMOVE"/>
+        <bitfield pos="22" name="FE_ALLOW_RND_VTX_CNT"/>
+        <bitfield pos="23" name="CUBE_MAP_FL28"/>
+        <bitfield pos="24" name="TX_6BIT_FRAC"/>
+        <bitfield pos="25" name="FE_ALLOW_STALL_PREFETCH_ENG"/>
+        <bitfield pos="26" name="THIRD_PARTY_COMPRESSION"/>
         <bitfield pos="27" name="RS_DEPTHSTENCIL_NATIVE_SUPPORT" brief="Likely indicates that the RS can work with depth/stencil format(s)"/>
-        <bitfield pos="28" name="V2_MSAA_COMP_FIX"/>
-        <bitfield pos="29" name="UNK29"/>
-        <bitfield pos="30" name="UNK30"/>
-        <bitfield pos="31" name="UNK31"/>
+        <bitfield pos="28" name="V2_MSAA_COMP_FIX"/> <!-- also: MSAACoherencyCheck -->
+        <bitfield pos="29" name="HALTI5">
+            <doc>
+                - Many new state registers, and old state registers moved="the Vulkan update?"
+                - 64-bit fences for inter-pipe sync
+                - Texture cache flush fix (another!)
+                - Texture descriptors
+                - USC
+            </doc>
+        </bitfield>
+        <bitfield pos="30" name="EVIS" brief="OpenVX instruction set"/>
+        <bitfield pos="31" name="BLT_ENGINE" brief="Blit engine"/>
     </bitset>
+    <bitset name="chipMinorFeatures6"> <!-- ETNA_GPU_FEATURES_7 -->
+        <bitfield pos="0" name="BUG_FIXES_23"/>
+        <bitfield pos="1" name="BUG_FIXES_24"/>
+        <bitfield pos="2" name="DEC"/>
+        <bitfield pos="3" name="VS_TILE_NV12"/>
+        <bitfield pos="4" name="VS_TILE_NV12_10BIT"/>
+    </bitset>
+    <!-- After this, Vivante stopped using feature bits in favor of a feature
+         database in the driver.
+         This database is indexed by chip ID, revision, product ID, eco ID and
+         customer ID.
+      -->
 
 </database>
 

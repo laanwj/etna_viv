@@ -42,6 +42,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <value value="11" name="RETURN"/>
     <value value="12" name="DRAW_INSTANCED" brief="Draw instanced 3D primitives"/> <!-- feature HALTI0 -->
     <value value="13" name="CHIP_SELECT" brief="Chip select mask"/>
+    <value value="15" name="WAIT_FENCE" brief="?"/> <!-- HALTI5 -->
+    <value value="19" name="SNAP_PAGES" brief="?"/> <!-- SNAPPAGE_CMD && SNAPPAGE_CMD_FIX -->
 </enum>
 
 <enum name="PRIMITIVE_TYPE">
@@ -313,6 +315,31 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         -->
     </stripe>
 
+    <!-- Wait for 64-bit fence represented by state 0x007E8 and 0x007F4 at the specified address.
+    -->
+    <stripe name="WAIT_FENCE" varset="FE_OPCODE" variants="WAIT_FENCE"> <!-- HALTI5 -->
+        <reg32 offset="0x00000" name="HEADER">
+            <bitfield high="31" low="27" name="OP">
+                <value value="15" name="WAIT_FENCE"/>
+            </bitfield>
+            <bitfield high="17" low="16" name="UNK16"/>
+            <bitfield high="15" low="0" name="WAITCOUNT"/>
+        </reg32>
+        <reg32 offset="0x00004" name="ADDRESS"/>
+    </stripe>
+
+    <!-- This command is queued on flush in the Vivante kernel driver if the hardware
+         supports it.
+    -->
+    <stripe name="SNAP_PAGES" varset="FE_OPCODE" variants="SNAP_PAGES"> <!-- SNAPPAGE_CMD && SNAPPAGE_CMD_FIX -->
+        <reg32 offset="0x00000" name="HEADER">
+            <bitfield high="31" low="27" name="OP">
+                <value value="19" name="SNAP_PAGES"/>
+            </bitfield>
+            <bitfield high="4" low="0" name="UNK0"/>
+        </reg32>
+        <!-- No arguments -->
+    </stripe>
 </domain>
 
 </database>

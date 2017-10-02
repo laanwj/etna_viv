@@ -155,12 +155,17 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="8" low="4" name="VARYINGS_COUNT"/>
             <bitfield high="2" low="0" name="GPU_CORE_COUNT"/>
         </reg32>
+        <reg32 offset="0x00090" name="COMPRESSION_FLAGS">
+            <bitfield pos="6" name="DEC300"/>
+        </reg32>
         <reg32 offset="0x00094" name="CHIP_MINOR_FEATURE_4" type="chipMinorFeatures4" brief="Chip minor features 4"/>
         <reg32 offset="0x0009C" name="CHIP_SPECS_4" brief="Chip specifications 4">
             <bitfield high="16" low="12" name="STREAM_COUNT" brief="When zero, use stream count from CHIP_SPECS"/>
         </reg32>
         <reg32 offset="0x000A0" name="CHIP_MINOR_FEATURE_5" type="chipMinorFeatures5" brief="Chip minor features 5"/>
         <reg32 offset="0x000A8" name="CHIP_PRODUCT_ID" brief="Chip product ID"/>
+        <reg32 offset="0x000D4" name="BLT_INTR" brief="Async blit interrupt read"/> <!-- ASYNC_BLIT -->
+        <reg32 offset="0x000EC" name="AUXBIT"/> <!-- ConfigurePolicyID in Vivante kernel driver -->
     </stripe>
 
     <!-- This block exists at 0x00200 for GC300 models with chipRevision < 0x2000 -->
@@ -261,6 +266,14 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             </bitfield>
         </reg32>
         <reg32 offset="0x00190" name="EXCEPTION_ADDR" length="4"/>
+        <reg32 offset="0x001A4" name="PROFILE_BLT_READ"/> <!-- Blit engine debug register read -->
+        <reg32 offset="0x001AC" name="UNK001AC"/> <!-- SECURITY || ROBUSTNESS -->
+        <reg32 offset="0x001C0" name="AXI_POLICY" length="8" stride="4">
+            <doc>
+                AXI config per policy ID, ConfigurePolicyID in Vivante kernel driver.
+                This allows setting different AXI configurations for different pages in the MMU.
+            </doc>
+        </reg32>
     </stripe>
 
     <stripe name="MC" brief="Memory Controller">
@@ -370,6 +383,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <value value="8" name="CACHE_HIT_TEXEL_COUNT"/>
                 <value value="9" name="CACHE_MISS_TEXEL_COUNT"/>
                 <value value="15" name="RESET"/>
+                <!-- 0x80 - 0x9f TPG -->
+                <!-- 0xa0 - 0xbf TFB -->
+                <!-- 0xc0 - 0xff USC -->
             </bitfield>
         </reg32>
         <reg32 offset="0x00478" name="PROFILE_CONFIG2">
@@ -378,7 +394,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 PROFILE_xx_READ registers. Selecting counter 15 resets
                 all the counters of that unit.
             </doc>
-            <bitfield high="7" low="0" name="MC">
+            <bitfield high="7" low="0" name="MC"> <!-- Also selects L2 -->
                 <value value="1" name="TOTAL_READ_REQ_8B_FROM_PIPELINE"/>
                 <value value="2" name="TOTAL_READ_REQ_8B_FROM_IP"/>
                 <value value="3" name="TOTAL_WRITE_REQ_8B_FROM_PIPELINE"/>
@@ -390,6 +406,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <value value="2" name="AXI_CYCLES_WRITE_DATA_STALLED"/>
                 <value value="15" name="RESET"/>
             </bitfield>
+            <bitfield high="31" low="24" name="BLT">
+                <value value="0" name="UNK0"/>
+            </bitfield>
         </reg32>
         <reg32 offset="0x0047C" name="PROFILE_CONFIG3"/>
         <reg32 offset="0x00480" name="BUS_CONFIG">
@@ -397,7 +416,12 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <bitfield high="7" low="4" name="TX_BUS_CONFIG" brief="not sure about the width"/>
         </reg32>
         <reg32 offset="0x00554" name="START_COMPOSITION" brief="Kick off composition engine"/>
-        <reg32 offset="0x00558" name="128B_MERGE"/>
+        <reg32 offset="0x00558" name="FLAGS">
+                <bitfield pos="0" name="128B_MERGE"/>
+                <bitfield pos="27" name="TPCV11_COMPRESSION"/>
+        </reg32>
+        <reg32 offset="0x0055C" name="L2_CACHE_CONFIG"/>
+        <reg32 offset="0x00564" name="PROFILE_L2_READ"/>
     </stripe>
 </domain>
 
