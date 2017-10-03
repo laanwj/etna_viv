@@ -27,7 +27,7 @@ import argparse,struct
 from binascii import b2a_hex
 
 # Parse execution data log files
-from etnaviv.parse_fdr import ENDIAN, WORD_SPEC, ADDR_SPEC, ADDR_CHAR, WORD_CHAR, FDRLoader, Event
+from etnaviv.parse_fdr import ENDIAN, WORD_SPEC, WORD_CHAR, FDRLoader, Event
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='"Slice" memory data from execution data log stream.')

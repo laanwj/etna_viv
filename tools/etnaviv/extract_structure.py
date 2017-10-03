@@ -26,7 +26,8 @@ from __future__ import print_function, division, unicode_literals
 import struct
 from collections import namedtuple, OrderedDict
 
-from parse_fdr import ENDIAN, WORD_SPEC, ADDR_SPEC, ADDR_CHAR, WORD_CHAR, FDRLoader, Event
+import target_arch as arch
+from parse_fdr import FDRLoader, Event
 
 # struct character for specific bytesize/encoding combos
 STRUCT_ENCODING_CHAR = {
@@ -90,7 +91,7 @@ def extract_structure(mem, addr, defs, root, parent=None, resolver=ResolverBase(
                 value = extract_structure(mem, offset, defs, member['type'], s, resolver)
             else:
                 try:
-                    xaddr = ADDR_SPEC.unpack(mem[offset:offset + ADDR_SPEC.size])[0]
+                    xaddr = arch.ADDR_SPEC.unpack(mem[offset:offset + arch.ADDR_SPEC.size])[0]
                     value = Pointer(member['type'], xaddr, member['indirection'])
                 except IndexError:
                     value = UNRESOLVED
@@ -104,10 +105,10 @@ def extract_structure(mem, addr, defs, root, parent=None, resolver=ResolverBase(
         except IndexError:
             return UNRESOLVED
         try:
-            char = ENDIAN+STRUCT_ENCODING_CHAR[byte_size,encoding]
+            char = arch.ENDIAN+STRUCT_ENCODING_CHAR[byte_size,encoding]
         except KeyError:
             try:
-                char = ENDIAN+STRUCT_BASE_CHAR[byte_size,None]
+                char = arch.ENDIAN+STRUCT_BASE_CHAR[byte_size,None]
             except KeyError:
                 return None
         value = struct.unpack(char, data)[0] 

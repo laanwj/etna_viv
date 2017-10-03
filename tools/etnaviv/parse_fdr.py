@@ -28,13 +28,18 @@ from collections import namedtuple
 from bisect import bisect_right
 from binascii import b2a_hex
 
-from etnaviv.target_arch import ENDIAN, WORD_SPEC, ADDR_SPEC, ADDR_CHAR, WORD_CHAR, MAGIC_CHAR, SHORT_STRING_SIZE_CHAR, RECTYPE_CHAR, SHORT_STRING_SIZE_SPEC
+import etnaviv.target_arch as arch
 
 # fdr data structures definition
-HDR_SPEC = struct.Struct(ENDIAN + MAGIC_CHAR + WORD_CHAR)
-RECTYPE_SPEC = struct.Struct(ENDIAN + RECTYPE_CHAR)
-RANGE_SPEC = struct.Struct(ENDIAN + ADDR_CHAR + ADDR_CHAR)
-FDR_MAGIC = 0x8e1aaa8f
+def update_arch(n):
+    global HDR_SPEC, RECTYPE_SPEC, RANGE_SPEC
+    arch.update_addr_size(n)
+    HDR_SPEC = struct.Struct(arch.ENDIAN + arch.MAGIC_CHAR + arch.WORD_CHAR)
+    RECTYPE_SPEC = struct.Struct(arch.ENDIAN + arch.RECTYPE_CHAR)
+    RANGE_SPEC = struct.Struct(arch.ENDIAN + arch.ADDR_CHAR + arch.ADDR_CHAR)
+
+FDR_MAGIC32 = 0x8e1aaa8f
+FDR_MAGIC64 = 0x8e1aaa90
 FDR_VERSION = 1
 
 DEBUG = False
@@ -54,7 +59,7 @@ def read_spec(f, spec):
     return spec.unpack(f.read(spec.size))
 
 def read_short_string(f):
-    (size,) = read_spec(f, SHORT_STRING_SIZE_SPEC)
+    (size,) = read_spec(f, arch.SHORT_STRING_SIZE_SPEC)
     return f.read(size)
 
 Event = namedtuple('Event', ['event_type', 'parameters'])
@@ -75,10 +80,15 @@ class FDRLoader(object):
     (or not up to date at the time of this event).
     '''
     def __init__(self, input_file):
+        update_arch(32)
         self.f = open(input_file, 'rb')
         magic,version = read_spec(self.f, HDR_SPEC)
-        if magic != FDR_MAGIC:
-            raise ValueError('Magic value %08x not recognized (should be %08x)' % (magic, FDR_MAGIC))
+        if magic != FDR_MAGIC32 and magic != FDR_MAGIC64:
+            raise ValueError('Magic value %08x not recognized)' % (magic))
+        if magic == FDR_MAGIC64:
+            update_arch(64)
+        else:
+            update_arch(32)
         if version != FDR_VERSION:
             raise ValueError('Version %08x not recognized (should be %08x)' % (version, FDR_VERSION))
 
@@ -136,12 +146,12 @@ class FDRLoader(object):
                 #self.updated_ranges.remove((addr_start, addr_end))
             elif rt == RTYPE.EVENT:
                 event_type = read_short_string(f)
-                num_parameters, = read_spec(f, WORD_SPEC)
+                num_parameters, = read_spec(f, arch.WORD_SPEC)
                 parameters = {}
                 for i in range(num_parameters):
                     par = Parameter(
                             name=read_short_string(f), 
-                            value=read_spec(f, ADDR_SPEC)[0])
+                            value=read_spec(f, arch.ADDR_SPEC)[0])
                     parameters[par.name] = par
 
                 parstr = ' '.join([('%s=0x%x' % par) for par in parameters.itervalues()])
@@ -152,7 +162,7 @@ class FDRLoader(object):
                 yield Event(event_type, parameters)
                 self._flush_temps()
             elif rt == RTYPE.COMMENT:
-                size, = read_spec(f, ADDR_SPEC)
+                size, = read_spec(f, arch.ADDR_SPEC)
                 comment = f.read(size)
                 if DEBUG:
                     print('COMMENT')

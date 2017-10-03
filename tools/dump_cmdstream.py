@@ -31,7 +31,7 @@ from collections import defaultdict, namedtuple
 from binascii import b2a_hex
 
 from etnaviv.util import rnndb_path
-from etnaviv.target_arch import bytes_to_words, ENDIAN, WORD_SPEC, ADDR_SPEC, ADDR_CHAR, WORD_CHAR
+from etnaviv.target_arch import bytes_to_words, ENDIAN, WORD_SPEC, WORD_CHAR
 # Parse execution data log files
 from etnaviv.parse_fdr import FDRLoader, Event, Comment
 # Extract C structures from memory

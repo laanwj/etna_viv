@@ -33,13 +33,23 @@ ENDIAN = LITTLE_ENDIAN
 RECTYPE_CHAR = b'B' # always 8 bit
 MAGIC_CHAR = b'I' # always 32 bit
 WORD_CHAR = b'I' # 32 bit
-ADDR_CHAR = b'I' # 32/64 bit
 SHORT_STRING_SIZE_CHAR = b'B' # always 8 bit
 
 # struct specifiers for decoding
 WORD_SPEC = struct.Struct(ENDIAN + WORD_CHAR)
-ADDR_SPEC = struct.Struct(ENDIAN + ADDR_CHAR)
 SHORT_STRING_SIZE_SPEC = struct.Struct(ENDIAN + SHORT_STRING_SIZE_CHAR)
+
+def update_addr_size(s):
+    global ADDR_CHAR,ADDR_SPEC
+    if s == 32:
+        ADDR_CHAR = b'I'
+    elif s == 64:
+        ADDR_CHAR = b'Q'
+    else:
+        assert(0)
+    ADDR_SPEC = struct.Struct(ENDIAN + ADDR_CHAR)
+
+update_addr_size(32)
 
 # low-level encoding/decoding
 if (ENDIAN == LITTLE_ENDIAN and sys.byteorder == 'little') or (ENDIAN == BIG_ENDIAN and sys.byteorder == 'big'):
