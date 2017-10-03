@@ -42,12 +42,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="5" name="RA" brief="Raster"/>
         <value value="7" name="PE" brief="Pixel Engine"/>
         <value value="11" name="DE" brief="Drawing Engine"/>
-        <value value="15" name="VG" brief="VG Engine"/>
-        <value value="16" name="TESSELATOR" brief="VG Tesselator"/>
-        <value value="17" name="VG2" brief="VG Engine 2"/>
-        <value value="18" name="TESSELATOR2" brief="VG Tesselator 2"/>
-        <value value="19" name="VG3" brief="VG Engine 3"/>
-        <value value="20" name="TESSELATOR3" brief="VG Tesselator 3"/>
+        <value value="16" name="BLT" brief="BLT Engine"/>
     </enum>
     <enum name="ENDIAN_MODE" brief="Byte swap configuration">
         <value value="0" name="NO_SWAP" brief="No endian swap"/>

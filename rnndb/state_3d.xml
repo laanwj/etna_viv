@@ -341,6 +341,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x0087C" name="HALTI5_UNK0087C"/> <!-- HALTI5 || ICACHE "VS/PS Start/End PC register" -->
         <reg32 offset="0x00880" name="HALTI5_UNK00880"/> <!-- !HALTI5 && ICACHE "VS/PS Start/End PC register" -->
         <reg32 offset="0x00884" name="HALTI1_UNK00884"/> <!-- HALTI1 -->
+        <reg32 offset="0x0088C" name="UNK0088C"/> <!-- related to 0x01048 -->
         <reg32 offset="0x00890" name="ICACHE_UNK00890"/> <!-- !HALTI5 && ICACHE_PREFETCH -->
         <reg32 offset="0x00898" name="HALTI5_UNK00898" length="2" stride="4"/> <!-- HALTI5 -->
         <reg32 offset="0x008A0" name="HALTI5_UNK008A0"/> <!-- HALTI5 -->
@@ -363,7 +364,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <!-- length="vertexUniforms * 4" -->
         </reg32>
         <reg32 offset="0x15600" name="HALTI5_UNK15600"/> <!-- HALTI5, not sure this belongs under VS or TE or somewhere else -->
-        <reg32 offset="0x15604" name="HALTI5_UNK15604" type="VIVM"/> <!-- HALTI5 && ICACHE_PREFETCH -->
+        <reg32 offset="0x15604" name="HALTI5_UNK15604"/> <!-- HALTI5 && ICACHE_PREFETCH -->
     </stripe>
 
     <bitset name="CL_GLOBAL_DIM" inline="yes">
@@ -573,6 +574,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x01038" name="UNK01038"/> <!-- numRT == 8 -->
         <reg32 offset="0x0103C" name="HALTI3_UNK0103C" value="0x76543210"/> <!-- HALTI3 kernel driver puts this under "pixel engine states" -->
         <reg32 offset="0x01040" name="UNK01040" length="2" stride="4"/> <!-- HALTI2 -->
+        <reg32 offset="0x01048" name="UNK01048"/> <!-- related to 0x0088C -->
         <reg32 offset="0x0104C" name="ICACHE_UNK0104C" type="VIVM"/> <!-- !HALTI5 && ICACHE_PREFETCH -->
         <reg32 offset="0x01054" name="HALTI4_UNK01054"/> <!-- HALTI4 -->
         <reg32 offset="0x01058" name="HALTI5_UNK01058"/> <!-- HALTI5 -->
@@ -1069,6 +1071,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             </bitfield>
             <bitfield pos="12" name="UNK12"/> <!-- likely has to do with hdepth HDEPTH_FAST_CLEAR? -->
             <bitfield pos="13" name="HDEPTH_AUTO_DISABLE" brief="Auto disable fast clear for hdepth"/>
+            <bitfield pos="14" name="UNK14"/> <!-- Sometimes set on GC7000L -->
             <bitfield pos="21" name="UNK21"/> <!-- Set by default in new context w/ Vivante kernel driver -->
         </reg32>
         <reg32 offset="0x01658" name="COLOR_STATUS_BASE" brief="Color tile status base address" value="0x00000000" type="VIVM"/>
@@ -1250,10 +1253,14 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 
         <reg32 offset="0x14C00" name="HALTI3_UNK14C00" length="16" stride="4"/> <!-- HALTI3 -->
         <reg32 offset="0x14C40" name="DESCRIPTOR_UNK14C40"/> <!-- TX_DESCRIPTOR -->
+        <reg32 offset="0x14C48" name="DESCRIPTOR_INVALIDATE" brief="Writing here invalidates a texture descriptor"> <!-- TX_DESCRIPTOR -->
+            <bitfield low="0" high="8" name="IDX"/> <!-- Which descriptor to invalidate -->
+            <bitfield pos="29" name="UNK29"/> <!-- Always set by blob -->
+        </reg32>
         <stripe name="DESCRIPTOR" length="128" stride="4"> <!-- TX_DESCRIPTOR -->
-            <reg32 offset="0x15800" name="MIRROR_UNK15C00"/> <!-- MIRROR of 15C00 -->
+            <reg32 offset="0x15800" name="MIRROR_UNK15C00" type="VIVM"/> <!-- MIRROR of 15C00 -->
             <reg32 offset="0x15A00" name="MIRROR_UNK15E00"/> <!-- MIRROR of 15E00 -->
-            <reg32 offset="0x15C00" name="UNK15C00"/>
+            <reg32 offset="0x15C00" name="UNK15C00" type="VIVM"/>
             <reg32 offset="0x15E00" name="UNK15E00"/>
             <reg32 offset="0x16000" name="MIRROR_UNK16C00"/> <!-- MIRROR of 16C00 -->
             <reg32 offset="0x16200" name="MIRROR_UNK16E00"/> <!-- MIRROR of 16E00 -->

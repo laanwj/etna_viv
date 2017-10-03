@@ -214,6 +214,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00004" name="TOKEN">
             <bitfield high="4" low="0" name="FROM" type="SYNC_RECIPIENT"/>
             <bitfield high="12" low="8" name="TO" type="SYNC_RECIPIENT"/>
+            <bitfield low="28" high="29" name="UNK28"/>
         </reg32>
     </stripe>
 
