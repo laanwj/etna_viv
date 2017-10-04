@@ -145,8 +145,8 @@ Command stream interception
 A significant part of reverse engineering was done by intercepting command streams while running GL demos
 and examples.
 
-Command stream interception functionality moved to the [libvivhook](https://github.com/etnaviv/libvivhook)
-repository.
+Command stream interception functionality (`libvivhook` and `viv_interpose.so`) moved to the [libvivhook](https://github.com/etnaviv/libvivhook)
+repository. The tools to parse and dump intercepted command streams will remain in this repository.
 
 Command stream dumper
 ----------------------

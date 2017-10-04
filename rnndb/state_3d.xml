@@ -105,6 +105,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="29" name="B10G11R11F"/>
         <value value="30" name="A2B10G10R10UI"/>
         <value value="31" name="G8R8"/>
+        <value value="35" name="R8"/>
     </enum>
     <enum name="TEXTURE_FORMAT" brief="Texture format">
         <value value="0" name="NONE"/> <!-- reads as all zeros -->
@@ -774,10 +775,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="17" name="OVERWRITE_MASK"/>
             <bitfield pos="20" name="SUPER_TILED" brief="64x64 alignment"/>
             <bitfield pos="21" name="SUPER_TILED_MASK"/>
-            <!-- Vivante driver on GC2000/GC3000 specifies output format here and sets
+            <!-- Vivante driver on GC2000/GC3000/GC7000 specifies output format here and sets
                  FORMAT to 0 and FORMAT_MASK to 1.
               -->
-            <bitfield high="29" low="24" name="FORMAT_EXT" type="RS_FORMAT"/>
+            <bitfield high="30" low="24" name="FORMAT_EXT" type="RS_FORMAT"/>
             <bitfield pos="31" name="FORMAT_EXT_MASK"/>
         </reg32>
         <reg32 offset="0x01430" name="COLOR_ADDR" value="0x00000000" type="VIVM"/> <!-- pixelPipes == 1 -->
@@ -832,6 +833,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="23" name="UNK20_MASK"/>
             <bitfield high="26" low="24" name="UNK24"/> <!-- Sampling related (set on GC3000 but not GC2000) -->
             <bitfield pos="27" name="UNK24_MASK"/>
+            <bitfield pos="30" name="UNK31_MASK"/>
+            <bitfield pos="31" name="UNK31"/>
         </reg32>
         <reg32 offset="0x014A8" name="DITHER" value="0xFFFFFFFF" length="2"/>
         <reg32 offset="0x014B0" name="ALPHA_COLOR_EXT0" value="0x00000000" brief="High-precision alpha blend color"> <!--HALF_FLOAT_PIPE-->
@@ -1097,21 +1100,22 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <reg32 offset="0x01720" name="CONFIG" value="0x00000000">
                 <bitfield high="1" low="0" name="ENABLE"/>
                 <bitfield high="7" low="4" name="FORMAT"/>
+                <bitfield high="13" low="11" name="UNK11"/>
             </reg32>
             <reg32 offset="0x01740" name="STATUS_BASE" value="0x00000000" type="VIVM"/>
             <reg32 offset="0x01760" name="CLEAR_VALUE" value="0x00000000"/>
             <!-- New on GC3000 - seems simply a second copy of CLEAR_VALUE -->
             <reg32 offset="0x01780" name="CLEAR_VALUE2" value="0x00000000"/> <!-- HALTI2 -->
+            <reg32 offset="0x01A80" name="SURFACE_BASE" type="VIVM"/> <!-- HALTI3 -->
         </stripe>
         <!-- Multiple render targets (color attachments) -->
         <stripe name="RT" length="8" stride="4"> <!-- HALTI2 -->
             <reg32 offset="0x017A0" name="UNK017A0"/>
-            <reg32 offset="0x017C0" name="STATUS_BASE" type="VIVS"/>
-            <reg32 offset="0x017E0" name="SURFACE_BASE" type="VIVS"/>
+            <reg32 offset="0x017C0" name="STATUS_BASE" type="VIVM"/>
+            <reg32 offset="0x017E0" name="SURFACE_BASE" type="VIVM"/>
             <reg32 offset="0x01A00" name="CLEAR_VALUE"/>
             <reg32 offset="0x01A20" name="CLEAR_VALUE2"/>
             <reg32 offset="0x01A40" name="UNK01A40"/>
-            <reg32 offset="0x01A80" name="HALTI3_UNK01A80"/> <!-- HALTI3 -->
         </stripe>
     </stripe>
 

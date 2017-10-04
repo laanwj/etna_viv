@@ -268,8 +268,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             </bitfield>
             <bitfield pos="5" name="SHADER_L1"/>
             <bitfield pos="6" name="SHADER_L2"/>
-            <bitfield pos="10" name="UNK10"/>
+            <bitfield pos="10" name="UNK10"/> <!-- New bits for GC7000 at least -->
             <bitfield pos="11" name="UNK11"/>
+            <bitfield pos="12" name="DESCRIPTOR_UNK12"/> <!-- Texture descriptor related -->
+            <bitfield pos="13" name="DESCRIPTOR_UNK13"/>
         </reg32>
         <reg32 offset="0x03810" name="FLUSH_MMU" brief="Flush the virtual address lookup cache inside the MC">
             <bitfield pos="0" name="FLUSH_FEMMU" brief="Flush the FE address translation caches"/>
@@ -349,7 +351,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x03888" name="HALTI5_UNK03888"/> <!-- HALTI5 -->
         <reg32 offset="0x0388C" name="GS_UNK0388C"/> <!-- GEOMETRY_SHADER -->
         <reg32 offset="0x03898" name="FENCE_OUT_DATA_HIGH"/> <!-- HALTI5, triggers fence write? -->
-        <reg32 offset="0x0389C" name="UNK0389C"/>
+        <reg32 offset="0x0389C" name="SHADER_INDEX"/> <!-- increases with 3 for each new shader combination used? -->
         <reg32 offset="0x038A0" name="GS_UNK038A0" length="8" stride="4"/> <!-- GEOMETRY_SHADER -->
         <reg32 offset="0x038C0" name="HALTI5_UNK038C0" length="16" stride="4"/> <!-- feature HALTI5 -->
         <reg32 offset="0x03900" name="SECURITY_UNK3900"/> <!-- SECURITY -->
