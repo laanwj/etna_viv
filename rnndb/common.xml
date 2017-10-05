@@ -103,6 +103,18 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <!-- Around GC2/3000, chip ID started to diverge from branded product ID
              in many cases. For example the GC7000nano has chip ID 400, whereas
              GC7000nanoultra has chip ID 600.
+
+             The HALTIx feature bits are the best measure of gross rendering
+             architecture, here are various models grouped by that. Feature bit
+             HALTIx implies that HALTIy y<x are set:
+
+             no HALTI0   <GC1000 except GC880, GC7000nanolite
+             HALTI0      GC880/GC2000, GC7000TM
+             HALTI1      GC900/GC4000, GC7000UL
+             HALTI2      GC2000+/GC2500/GC3000/GC5000/GC6400
+             HALTI3      N/A
+             HALTI4      Some GC7000L/GC7000/GC7400
+             HALTI5      Some GC7000L/other GC7000*/GC8x00*
          -->
     </enum>
 
