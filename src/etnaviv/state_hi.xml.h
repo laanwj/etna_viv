@@ -8,13 +8,13 @@ http://0x04.net/cgit/index.cgi/rules-ng-ng
 git clone git://0x04.net/rules-ng-ng
 
 The rules-ng-ng source files this header was generated from are:
-- state.xml     (  20229 bytes, from 2017-09-29 11:52:39)
-- common.xml    (  23529 bytes, from 2017-09-29 11:52:39)
-- state_hi.xml  (  26403 bytes, from 2017-03-09 15:43:43)
-- copyright.xml (   1597 bytes, from 2016-12-08 16:37:56)
-- state_2d.xml  (  51552 bytes, from 2016-12-08 16:37:56)
-- state_3d.xml  (  68429 bytes, from 2017-09-29 11:55:19)
-- state_vg.xml  (   5975 bytes, from 2016-12-08 16:37:56)
+- state.xml     (  26245 bytes, from 2017-10-05 21:32:06)
+- common.xml    (  26135 bytes, from 2017-10-05 21:20:32)
+- state_hi.xml  (  27733 bytes, from 2017-10-05 21:20:32)
+- copyright.xml (   1597 bytes, from 2016-11-13 13:46:17)
+- state_2d.xml  (  51552 bytes, from 2016-11-13 13:46:17)
+- state_3d.xml  (  80819 bytes, from 2017-10-05 21:20:32)
+- state_vg.xml  (   5975 bytes, from 2016-11-13 13:46:17)
 
 Copyright (C) 2012-2017 by the following authors:
 - Wladimir J. van der Laan <laanwj@gmail.com>
@@ -219,6 +219,9 @@ DEALINGS IN THE SOFTWARE.
 #define VIVS_HI_CHIP_SPECS_3_GPU_CORE_COUNT__SHIFT		0
 #define VIVS_HI_CHIP_SPECS_3_GPU_CORE_COUNT(x)			(((x) << VIVS_HI_CHIP_SPECS_3_GPU_CORE_COUNT__SHIFT) & VIVS_HI_CHIP_SPECS_3_GPU_CORE_COUNT__MASK)
 
+#define VIVS_HI_COMPRESSION_FLAGS				0x00000090
+#define VIVS_HI_COMPRESSION_FLAGS_DEC300			0x00000040
+
 #define VIVS_HI_CHIP_MINOR_FEATURE_4				0x00000094
 
 #define VIVS_HI_CHIP_SPECS_4					0x0000009c
@@ -229,6 +232,10 @@ DEALINGS IN THE SOFTWARE.
 #define VIVS_HI_CHIP_MINOR_FEATURE_5				0x000000a0
 
 #define VIVS_HI_CHIP_PRODUCT_ID					0x000000a8
+
+#define VIVS_HI_BLT_INTR					0x000000d4
+
+#define VIVS_HI_AUXBIT						0x000000ec
 
 #define VIVS_PM							0x00000000
 
@@ -317,6 +324,14 @@ DEALINGS IN THE SOFTWARE.
 #define VIVS_MMUv2_EXCEPTION_ADDR(i0)			       (0x00000190 + 0x4*(i0))
 #define VIVS_MMUv2_EXCEPTION_ADDR__ESIZE			0x00000004
 #define VIVS_MMUv2_EXCEPTION_ADDR__LEN				0x00000004
+
+#define VIVS_MMUv2_PROFILE_BLT_READ				0x000001a4
+
+#define VIVS_MMUv2_UNK001AC					0x000001ac
+
+#define VIVS_MMUv2_AXI_POLICY(i0)			       (0x000001c0 + 0x4*(i0))
+#define VIVS_MMUv2_AXI_POLICY__ESIZE				0x00000004
+#define VIVS_MMUv2_AXI_POLICY__LEN				0x00000008
 
 #define VIVS_MC							0x00000000
 
@@ -457,6 +472,9 @@ DEALINGS IN THE SOFTWARE.
 #define VIVS_MC_PROFILE_CONFIG2_HI_AXI_CYCLES_WRITE_REQUEST_STALLED	0x00000100
 #define VIVS_MC_PROFILE_CONFIG2_HI_AXI_CYCLES_WRITE_DATA_STALLED	0x00000200
 #define VIVS_MC_PROFILE_CONFIG2_HI_RESET			0x00000f00
+#define VIVS_MC_PROFILE_CONFIG2_BLT__MASK			0xff000000
+#define VIVS_MC_PROFILE_CONFIG2_BLT__SHIFT			24
+#define VIVS_MC_PROFILE_CONFIG2_BLT_UNK0			0x00000000
 
 #define VIVS_MC_PROFILE_CONFIG3					0x0000047c
 
@@ -470,7 +488,13 @@ DEALINGS IN THE SOFTWARE.
 
 #define VIVS_MC_START_COMPOSITION				0x00000554
 
-#define VIVS_MC_128B_MERGE					0x00000558
+#define VIVS_MC_FLAGS						0x00000558
+#define VIVS_MC_FLAGS_128B_MERGE				0x00000001
+#define VIVS_MC_FLAGS_TPCV11_COMPRESSION			0x08000000
+
+#define VIVS_MC_L2_CACHE_CONFIG					0x0000055c
+
+#define VIVS_MC_PROFILE_L2_READ					0x00000564
 
 
 #endif /* STATE_HI_XML */
