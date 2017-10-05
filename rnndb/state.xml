@@ -310,6 +310,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="26" low="24" name="VAR6"/>
             <bitfield high="30" low="28" name="VAR7"/>
         </reg32>
+        <reg32 offset="0x03824" name="OCCLUSION_QUERY_ADDR" value="0x00000000" type="VIVM">
+            <doc>Writing the address where to store the result will enable occlusion query.</doc>
+        </reg32>
         <reg32 offset="0x03828" name="VARYING_COMPONENT_USE" brief="Varying component usage" value="0x00000000" length="2" stride="4"> <!-- !HALTI5 -->
             <doc>2 bits per varying component, 16 components per 32-bit word.</doc>
             <bitfield high="1" low="0" name="COMP0" type="VARYING_COMPONENT_USE"/>
@@ -330,6 +333,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="31" low="30" name="COMP15" type="VARYING_COMPONENT_USE"/>
         </reg32>
         <reg32 offset="0x0382C" name="UNK0382C"/> <!-- !HALTI5 -->
+        <reg32 offset="0x03830" name="OCCLUSION_QUERY_CONTROL">
+            <doc>Write some value to this register to disable occlusion query.</doc>
+        </reg32>
         <reg32 offset="0x03834" name="UNK03834" value="0x00000000"/> <!-- !HALTI5 -->
         <reg32 offset="0x03838" name="UNK03838" value="0x00000000"/> <!-- !HALTI5 -->
         <reg32 offset="0x0384C" name="API_MODE" brief="API mode" value="0x00000000">
