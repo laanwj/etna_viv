@@ -33,7 +33,7 @@ def parse_mmt_file(f):
         ch = f.read(1)
         if ch == b'':
             return
-        elif ch == b'=': 
+        elif ch == b'=' or ch == b'-':  # Comment
             s = b''
             while True: # read until \n
                 ch = f.read(1)
