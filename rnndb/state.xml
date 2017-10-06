@@ -58,6 +58,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 </domain>
 
 <import file="common.xml"/>
+<import file="common_3d.xml"/>
 <import file="state_hi.xml"/>
 <import file="state_2d.xml"/>
 <import file="state_3d.xml"/>

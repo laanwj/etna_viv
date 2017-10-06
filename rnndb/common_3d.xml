@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright (c) 2012-2017 The Etnaviv Project
+
+ Permission is hereby granted, free of charge, to any person obtaining a
+ copy of this software and associated documentation files (the "Software"),
+ to deal in the Software without restriction, including without limitation
+ the rights to use, copy, modify, merge, publish, distribute, sub license,
+ and/or sell copies of the Software, and to permit persons to whom the
+ Software is furnished to do so, subject to the following conditions:
+
+ The above copyright notice and this permission notice (including the
+ next paragraph) shall be included in all copies or substantial portions
+ of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL
+ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ DEALINGS IN THE SOFTWARE.
+-->
+<database xmlns="http://nouveau.freedesktop.org/"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
+<!-- Shared enums and type definitions for 3D rendering.
+
+     This currently consists of texture state bits shared between the texture descriptor
+     and texture states.
+  -->
+
+    <enum name="TEXTURE_FORMAT" brief="Texture format">
+        <value value="0" name="NONE"/> <!-- reads as all zeros -->
+        <value value="1" name="A8"/>
+        <value value="2" name="L8"/>
+        <value value="3" name="I8"/>
+        <value value="4" name="A8L8"/>
+        <value value="5" name="A4R4G4B4"/>
+        <value value="6" name="X4R4G4B4"/>
+        <value value="7" name="A8R8G8B8"/>
+        <value value="8" name="X8R8G8B8"/>
+        <value value="9" name="A8B8G8R8"/>
+        <value value="10" name="X8B8G8R8"/>
+        <value value="11" name="R5G6B5"/>
+        <value value="12" name="A1R5G5B5"/>
+        <value value="13" name="X1R5G5B5"/>
+        <value value="14" name="YUY2" brief="YUV 4:2:2"/>
+        <value value="15" name="UYVY" brief="YUV 4:2:2 (Alt macropixel ordering)"/>
+        <value value="16" name="D16"/>
+        <value value="17" name="D24S8"/>
+        <!-- 18 reads as all ones -->
+        <value value="19" name="DXT1" brief="S3 Block Compression 1">
+            <doc>DXT1 compressed textures are stored untiled.</doc>
+        </value>
+        <value value="20" name="DXT2_DXT3" brief="S3 Block Compression 2">
+            <doc>DXT2/3 compressed textures are stored untiled.</doc>
+        </value>
+        <value value="21" name="DXT4_DXT5" brief="S3 Block Compression 3">
+            <doc>DXT4/DXT5 compressed textures are stored untiled.</doc>
+        </value>
+        <!-- 22-29 read as all zeros -->
+        <value value="29" name="E5B9G9R9" brief="Shared exponent format"/>
+        <value value="30" name="ETC1" brief="Ericsson Texture Compression">
+            <doc>ETC compressed textures are stored untiled.</doc>
+        </value>
+        <!-- 31 read as all zeros -->
+    </enum>
+    <enum name="TEXTURE_FORMAT_EXT" brief="Extended texture format">
+        <value value="0" name="NONE"/> <!-- Doubles as RGB8_ETC2_EAC -->
+        <value value="1" name="RGB8_PUNCHTHROUGH_ALPHA1_ETC2"/>
+        <value value="2" name="RGBA8_ETC2_EAC"/>
+        <value value="3" name="R11_EAC"/>
+        <value value="4" name="RG11_EAC"/>
+        <value value="5" name="SIGNED_RG11_EAC"/>
+        <value value="6" name="G8R8"/>
+        <value value="7" name="R16F" brief="Also A16F L16F"/>
+        <value value="8" name="G16R16F" brief="Also G16R16F A16R16F X16R16F"/>
+        <value value="9" name="A16B16G16R16F" brief="Also X16B16G16R16F"/>
+        <value value="10" name="R32F" brief="Also R32F L32F R32I R32UI"/>
+        <value value="11" name="G32R32F" brief="Also G32R32 FA32R32F G32R32I G32R32UI"/>
+        <value value="12" name="A2B10G10R10" brief="Also X2B10G10R10"/>
+        <value value="13" name="SIGNED_R11_EAC"/>
+        <value value="14" name="R8_SNORM"/>
+        <value value="15" name="G8R8_SNORM"/>
+        <value value="16" name="X8B8G8R8_SNORM"/>
+        <value value="17" name="A8B8G8R8_SNORM"/>
+        <value value="20" name="ASTC" brief="ASTC compressed texture"/>
+        <value value="21" name="R8I" brief="Also R8UI"/>
+        <value value="22" name="G8R8I" brief="Also X8R8I X8R8UI G8R8UI"/>
+        <value value="23" name="A8B8G8R8I" brief="Also X8B8G8R8I X8B8G8R8UI A8B8G8R8UI"/>
+        <value value="24" name="R16I" brief="Also R16UI"/>
+        <value value="25" name="G16R16I" brief="Also X16R16I X16R16UI G16R16UI"/>
+        <value value="26" name="A16B16G16R16I" brief="Also X16B16G16R16I X16B16G16R16UI A16B16G16R16UI"/>
+        <value value="27" name="B10G11R11F"/>
+        <value value="28" name="A2B10G10R10UI"/>
+    </enum>
+    <enum name="TEXTURE_FILTER">
+        <value value="0" name="NONE"/>
+        <value value="1" name="NEAREST"/>
+        <value value="2" name="LINEAR"/>
+        <value value="3" name="ANISOTROPIC"/><!-- Only supported if HALTI0 feature bit set -->
+    </enum>
+    <enum name="TEXTURE_TYPE">
+        <value value="0" name="NONE"/> <!-- 0 shows up as black -->
+        <value value="1" name="1D"/>
+        <value value="2" name="2D"/>
+        <value value="3" name="3D"/> <!-- Only supported if HALTI0 feature bit set -->
+        <!-- 4 crashes GPU -->
+        <value value="5" name="CUBE_MAP"/>
+        <!-- 6 crashes GPU -->
+        <!-- 7 crashes GPU -->
+    </enum>
+    <enum name="TEXTURE_WRAPMODE">
+        <value value="0" name="REPEAT"/>
+        <value value="1" name="MIRRORED_REPEAT"/>
+        <value value="2" name="CLAMP_TO_EDGE"/>
+        <value value="3" name="CLAMP_TO_BORDER"/>
+    </enum>
+    <enum name="TEXTURE_FACE">
+        <doc>Offset into texture memory for cube map face</doc>
+        <value value="0" name="POS_X"/>
+        <value value="1" name="NEG_X"/>
+        <value value="2" name="POS_Y"/>
+        <value value="3" name="NEG_Y"/>
+        <value value="4" name="POS_Z"/>
+        <value value="5" name="NEG_Z"/>
+    </enum>
+    <enum name="TEXTURE_SWIZZLE">
+        <!-- Matches Gallium3D PIPE_SWIZZLE -->
+        <value value="0" name="RED"/>
+        <value value="1" name="GREEN"/>
+        <value value="2" name="BLUE"/>
+        <value value="3" name="ALPHA"/>
+        <value value="4" name="ZERO"/>
+        <value value="5" name="ONE"/>
+    </enum>
+    <enum name="TEXTURE_HALIGN">
+        <value value="0" name="FOUR"/>
+        <value value="1" name="SIXTEEN"/>
+        <value value="2" name="SUPER_TILED"/>
+        <value value="3" name="SPLIT_TILED"/>
+        <value value="4" name="SPLIT_SUPER_TILED"/>
+    </enum>
+
+    <!-- register descriptions shared between TE.SAMPLER and NTE.SAMPLER 
+         and texture descriptors
+    -->
+    <bitset name="TE_SAMPLER_CONFIG0" inline="yes">
+        <bitfield high="2" low="0" name="TYPE" type="TEXTURE_TYPE"/>
+        <bitfield high="4" low="3" name="UWRAP" type="TEXTURE_WRAPMODE"/>
+        <bitfield high="6" low="5" name="VWRAP" type="TEXTURE_WRAPMODE"/>
+        <bitfield high="8" low="7" name="MIN" type="TEXTURE_FILTER" brief="Filter for minimization"/>
+        <bitfield high="10" low="9" name="MIP" type="TEXTURE_FILTER" brief="Filter for filtering between mipmap levels">
+            To disable mipmapping, set this to NONE as well as set the minimum and maximum LOD level to 0..0.
+        </bitfield>
+        <bitfield high="12" low="11" name="MAG" type="TEXTURE_FILTER" brief="Filter for magnification"/>
+        <bitfield high="17" low="13" name="FORMAT" type="TEXTURE_FORMAT"/>
+        <bitfield high="19" low="19" name="ROUND_UV"/>
+        <bitfield high="23" low="22" name="ENDIAN" type="ENDIAN_MODE"/>
+        <bitfield high="31" low="24" name="ANISOTROPY" type="fixedp">
+            <doc>Logarithm of size of anisotropic filter, in 3.5 format.</doc>
+        </bitfield>
+    </bitset>
+    <bitset name="TE_SAMPLER_SIZE" inline="yes">
+        <bitfield high="15" low="0" name="WIDTH" type="uint"/>
+        <bitfield high="31" low="16" name="HEIGHT" type="uint"/>
+    </bitset>
+    <bitset name="TE_SAMPLER_LOG_SIZE" inline="yes">
+        <bitfield high="9" low="0" name="WIDTH" type="fixedp"/>
+        <bitfield high="19" low="10" name="HEIGHT" type="fixedp"/>
+        <bitfield pos="29" name="RGB" brief="RGB color space"/>
+        <bitfield pos="31" name="SRGB" brief="SRGB color space"/>
+    </bitset>
+    <bitset name="TE_SAMPLER_LOD_CONFIG" inline="yes">
+        <bitfield pos="0" name="BIAS_ENABLE" brief="Enable LOD bias"/>
+        <bitfield high="10" low="1" name="MAX" type="fixedp" brief="Maximum LOD level">
+            <doc>
+            This fixed-point value is the maximum LOD level. It can be a fractional value, up to the number of defined mipmaps.
+            </doc>
+        </bitfield>
+        <bitfield high="20" low="11" name="MIN" type="fixedp" brief="Minimum LOD level">
+            <doc>
+            This fixed-point value is the minimum LOD level. It can be a fractional value.
+            </doc>
+        </bitfield>
+        <bitfield high="30" low="21" name="BIAS" type="fixedp" brief="LOD bias">
+            <doc>
+            This fixed-point value is added to the computed LOD level when BIAS_ENABLE is on.
+            It appears that it can also be negative by using two's complement arithmetic.
+            </doc>
+        </bitfield>
+    </bitset>
+    <bitset name="TE_SAMPLER_3D_CONFIG" inline="yes">
+        <bitfield high="13" low="0" name="DEPTH" type="uint"/>
+        <bitfield high="25" low="16" name="LOG_DEPTH" type="fixedp"/>
+        <bitfield high="29" low="28" name="WRAP" type="TEXTURE_WRAPMODE"/>
+    </bitset>
+    <bitset name="TE_SAMPLER_CONFIG1" inline="yes">
+        <bitfield high="4" low="0" name="FORMAT_EXT" type="TEXTURE_FORMAT_EXT"/>
+        <bitfield high="10" low="8" name="SWIZZLE_R" type="TEXTURE_SWIZZLE"/>
+        <bitfield high="14" low="12" name="SWIZZLE_G" type="TEXTURE_SWIZZLE"/>
+        <bitfield high="18" low="16" name="SWIZZLE_B" type="TEXTURE_SWIZZLE"/>
+        <bitfield high="22" low="20" name="SWIZZLE_A" type="TEXTURE_SWIZZLE"/>
+        <bitfield pos="23" name="CACHE_MODE"/>
+        <bitfield pos="24" name="TEXTURE_ARRAY">
+            <doc>
+            1D array: TEXTURE_TYPE_2D
+            2D array: TEXTURE_TYPE_3D
+            </doc>
+        </bitfield>
+        <bitfield pos="25" name="UNK25"/> <!-- Sometimes set by blob on gc3000 -->
+        <bitfield high="28" low="26" name="HALIGN" type="TEXTURE_HALIGN"/>
+    </bitset>
+    <bitset name="TE_SAMPLER_LOG_SIZE_EXT" inline="yes" brief="Log size in 8.8 fixed point">
+        <bitfield high="15" low="0" name="WIDTH" type="fixedp"/>
+        <bitfield high="31" low="16" name="HEIGHT" type="fixedp"/>
+    </bitset>
+
+</database>
+
+
