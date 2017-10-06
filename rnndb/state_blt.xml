@@ -32,20 +32,41 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 <domain name="VIVS" brief="GPU state">
 
     <stripe name="BLT" brief="Blit engine"> <!-- BLT_ENGINE -->
-        <doc>Blit engine states</doc>
-        <reg32 offset="0x14000" name="UNK14000" type="VIVM"/>
-        <reg32 offset="0x14008" name="UNK14008"/>
+        <doc>
+            Blit engine (also "resolve v2") states.
+
+            BLT operations:
+            - Fill
+            - Copy
+            - In-place resolve
+            - Compute mipmaps
+
+            Note: It looks like no assumption can be made that any of this
+            state is retained between operations. All relevant state must be
+            programmed every time.
+        </doc>
+        <reg32 offset="0x14000" name="SRC_ADDR" type="VIVM"/>
+        <reg32 offset="0x14008" name="SRC_STRIDE">
+            <bitfield high="19" low="0" name="STRIDE"/>
+            <bitfield high="31" low="20" name="UNK20"/>
+        </reg32>
         <reg32 offset="0x1400C" name="UNK1400C"/>
-        <reg32 offset="0x14010" name="UNK14010" type="VIVM"/>
+        <reg32 offset="0x14010" name="SRC_TS" type="VIVM"/>
         <reg32 offset="0x14014" name="UNK14014"/>
-        <reg32 offset="0x14018" name="UNK14018" type="VIVM"/>
-        <reg32 offset="0x14020" name="UNK14020" type="VIVM"/>
-        <reg32 offset="0x14024" name="UNK14024"/>
+        <reg32 offset="0x14018" name="DEST_ADDR" type="VIVM"/>
+        <reg32 offset="0x14020" name="DEST_TS" type="VIVM"/>
+        <reg32 offset="0x14024" name="DEST_STRIDE">
+            <bitfield high="19" low="0" name="STRIDE"/>
+            <bitfield high="31" low="20" name="UNK20"/>
+        </reg32>
         <reg32 offset="0x14028" name="UNK14028"/>
         <reg32 offset="0x1402C" name="UNK1402C"/>
-        <reg32 offset="0x14030" name="UNK14030"/>
-        <reg32 offset="0x14034" name="UNK14034"/>
-        <reg32 offset="0x14038" name="UNK14038"/>
+        <reg32 offset="0x14030" name="SRC_SIZE">
+            <bitfield high="15" low="0" name="WIDTH" type="uint"/>
+            <bitfield high="31" low="16" name="HEIGHT" type="uint"/>
+        </reg32>
+        <reg32 offset="0x14034" name="SRC_TS_CLEAR_VALUE0"/>
+        <reg32 offset="0x14038" name="SRC_TS_CLEAR_VALUE1"/>
         <reg32 offset="0x1403C" name="UNK1403C"/>
         <reg32 offset="0x14040" name="UNK14040"/>
         <reg32 offset="0x14044" name="UNK14044"/>
@@ -62,11 +83,33 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x140A4" name="FENCE_OUT_ADDRESS" type="VIVM"/>
         <reg32 offset="0x140A8" name="FENCE_OUT_DATA_LOW"/>
         <reg32 offset="0x140AC" name="UNK140AC"/>
+        <reg32 offset="0x140B0" name="UNK140B0"/>
         <reg32 offset="0x140B4" name="FENCE_OUT_DATA_HIGH"/>
         <reg32 offset="0x140B8" name="ENABLE">
-            <bitfield pos="0" name="ENABLE"/>
+            <bitfield pos="0" name="ENABLE" brief="Enable BLT engine">
+                <doc>
+                    It looks like it needs to be enabled during any use of the engine, and
+                    disabled otherwise:
+                    - This is set to 1 before usage of the BLT engine and programming the
+                    registers, and set to 0 after programming the registers.
+                    - It is also set to 1 before waiting on the BLT engine through a semaphore,
+                    and reset afterwards.
+                </doc>
+            </bitfield>
         </reg32>
         <reg32 offset="0x140BC" name="UNK140BC"/>
+        <!-- Multiple different color surfaces (+strides?) can be specified here.
+             I suspect that this is used for mipmap generation.
+         -->
+        <stripe name="MIP" length="13" stride="4">
+            <reg32 offset="0x140C0" name="ADDR" type="VIVM"/>
+            <reg32 offset="0x14300" name="STRIDE"/>
+        </stripe>
+        <!-- These two, encountered while tracing SashaWillems "indirectdraw" Vulkan demo,
+             immediately follow the MIP state for the 13 mipmaps.
+          -->
+        <reg32 offset="0x140F4" name="UNK140F4" type="VIVM"/>
+        <reg32 offset="0x14334" name="UNK14334" type="VIVM"/> <!-- Encountered while tracing SashaWillems "indirectdraw" Vulkan demo -->
     </stripe>
 
 </domain>

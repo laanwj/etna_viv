@@ -353,7 +353,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x03854" name="UNK03854"/> <!-- !HALTI5 -->
         <reg32 offset="0x03860" name="BUG_FIXES" value="0x00000006"/> <!-- BUG_FIXES18 -->
-        <reg32 offset="0x03868" name="FENCE_OUT_ADDRESS"/> <!-- HALTI5 -->
+        <reg32 offset="0x03868" name="FENCE_OUT_ADDRESS" type="VIVM"/> <!-- HALTI5 -->
         <reg32 offset="0x0386C" name="FENCE_OUT_DATA_LOW"/> <!-- HALTI5 -->
         <reg32 offset="0x03884" name="HALTI5_UNK03884"/> <!-- HALTI5 -->
         <reg32 offset="0x03888" name="HALTI5_UNK03888"/> <!-- HALTI5 -->

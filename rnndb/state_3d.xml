@@ -469,7 +469,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x01058" name="HALTI5_UNK01058"/> <!-- HALTI5 -->
         <reg32 offset="0x01080" name="HALTI5_UNK01080" length="4" stride="4"/> <!-- HALTI5 -->
         <reg32 offset="0x01090" name="HALTI5_UNK01090"/> <!-- HALTI5 "VS/PS Start/End PC register" -->
-        <reg32 offset="0x01094" name="HALTI5_UNK01094" type="VIVM"/> <!-- HALTI5 && ICACHE_PREFETCH -->
+        <reg32 offset="0x01094" name="HALTI5_UNK01094"/> <!-- HALTI5 && ICACHE_PREFETCH -->
         <reg32 offset="0x01098" name="HALTI5_UNK01098"/> <!-- HALTI5 -->
         <reg32 offset="0x06000" name="INST_MEM" value="0x00000000" length="1024" stride="4"> <!-- instructionCount <= 256 -->
             <!-- length="instructionCount * 4" -->
@@ -1081,6 +1081,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x14C40" name="DESCRIPTOR_UNK14C40"> <!-- TX_DESCRIPTOR -->
             <bitfield pos="0" name="UNK0"/> <!-- Always enabled by gc7000 blob -->
         </reg32>
+        <reg32 offset="0x14C44" name="UNK14C44"/> <!-- Encountered while tracing SashaWillems "indirectdraw" Vulkan demo -->
         <reg32 offset="0x14C48" name="DESCRIPTOR_INVALIDATE" brief="Writing here invalidates a texture descriptor"> <!-- TX_DESCRIPTOR -->
             <doc>
                 This state is written, once per descriptor, when the contents of a specific descriptor have changed

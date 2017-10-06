@@ -93,6 +93,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="26" name="A16B16G16R16I" brief="Also X16B16G16R16I X16B16G16R16UI A16B16G16R16UI"/>
         <value value="27" name="B10G11R11F"/>
         <value value="28" name="A2B10G10R10UI"/>
+        <value value="33" name="R8"/> <!-- Dedicated format for R8 on GC7000? -->
     </enum>
     <enum name="TEXTURE_FILTER">
         <value value="0" name="NONE"/>
@@ -196,7 +197,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield high="29" low="28" name="WRAP" type="TEXTURE_WRAPMODE"/>
     </bitset>
     <bitset name="TE_SAMPLER_CONFIG1" inline="yes">
-        <bitfield high="4" low="0" name="FORMAT_EXT" type="TEXTURE_FORMAT_EXT"/>
+        <bitfield high="5" low="0" name="FORMAT_EXT" type="TEXTURE_FORMAT_EXT"/>
         <bitfield high="10" low="8" name="SWIZZLE_R" type="TEXTURE_SWIZZLE"/>
         <bitfield high="14" low="12" name="SWIZZLE_G" type="TEXTURE_SWIZZLE"/>
         <bitfield high="18" low="16" name="SWIZZLE_B" type="TEXTURE_SWIZZLE"/>
