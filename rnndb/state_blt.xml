@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright (c) 2017 The Etnaviv Project
+
+ Permission is hereby granted, free of charge, to any person obtaining a
+ copy of this software and associated documentation files (the "Software"),
+ to deal in the Software without restriction, including without limitation
+ the rights to use, copy, modify, merge, publish, distribute, sub license,
+ and/or sell copies of the Software, and to permit persons to whom the
+ Software is furnished to do so, subject to the following conditions:
+
+ The above copyright notice and this permission notice (including the
+ next paragraph) shall be included in all copies or substantial portions
+ of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL
+ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ DEALINGS IN THE SOFTWARE.
+-->
+<database xmlns="http://nouveau.freedesktop.org/"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
+
+<import file="copyright.xml"/>
+
+<!-- Vivante GCxxxx render states and registers overview:
+     BLT engine state. Based on reverse engineering, guesswork and experimentation.
+  -->
+<domain name="VIVS" brief="GPU state">
+
+    <stripe name="BLT" brief="Blit engine"> <!-- BLT_ENGINE -->
+        <doc>Blit engine states</doc>
+        <reg32 offset="0x14000" name="UNK14000" type="VIVM"/>
+        <reg32 offset="0x14008" name="UNK14008"/>
+        <reg32 offset="0x1400C" name="UNK1400C"/>
+        <reg32 offset="0x14010" name="UNK14010" type="VIVM"/>
+        <reg32 offset="0x14014" name="UNK14014"/>
+        <reg32 offset="0x14018" name="UNK14018" type="VIVM"/>
+        <reg32 offset="0x14020" name="UNK14020" type="VIVM"/>
+        <reg32 offset="0x14024" name="UNK14024"/>
+        <reg32 offset="0x14028" name="UNK14028"/>
+        <reg32 offset="0x1402C" name="UNK1402C"/>
+        <reg32 offset="0x14030" name="UNK14030"/>
+        <reg32 offset="0x14034" name="UNK14034"/>
+        <reg32 offset="0x14038" name="UNK14038"/>
+        <reg32 offset="0x1403C" name="UNK1403C"/>
+        <reg32 offset="0x14040" name="UNK14040"/>
+        <reg32 offset="0x14044" name="UNK14044"/>
+        <reg32 offset="0x14048" name="UNK14048"/>
+        <reg32 offset="0x1404C" name="UNK1404C"/>
+        <reg32 offset="0x14050" name="UNK14050"/>
+        <reg32 offset="0x14054" name="UNK14054"/>
+        <reg32 offset="0x14058" name="UNK14058"/>
+        <reg32 offset="0x1405C" name="UNK1405C"/>
+        <reg32 offset="0x14060" name="UNK14060"/>
+        <reg32 offset="0x14064" name="UNK14064"/>
+        <reg32 offset="0x1409C" name="UNK1409C"/>
+        <reg32 offset="0x140A0" name="UNK140A0"/>
+        <reg32 offset="0x140A4" name="FENCE_OUT_ADDRESS" type="VIVM"/>
+        <reg32 offset="0x140A8" name="FENCE_OUT_DATA_LOW"/>
+        <reg32 offset="0x140AC" name="UNK140AC"/>
+        <reg32 offset="0x140B4" name="FENCE_OUT_DATA_HIGH"/>
+        <reg32 offset="0x140B8" name="ENABLE">
+            <bitfield pos="0" name="ENABLE"/>
+        </reg32>
+        <reg32 offset="0x140BC" name="UNK140BC"/>
+    </stripe>
+
+</domain>
+
+</database>
+
+
