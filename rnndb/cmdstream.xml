@@ -303,17 +303,13 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <!-- This appears to be ignored on i.MX6 GC2000, and only
                  ever emitted by Vivante driver as non-zero for GC3000.
                  Probably determined by HALTI2 feature bit.
+
+                 When INDEXED=1 this is the "Offset added to the retrieved indices", e.g.
+                 basevertex from glDrawElementsBaseVertexExt.
              -->
             <bitfield high="31" low="0" name="INDEX" brief="Index of the first vertex to load"/>
         </reg32>
-        <!-- One word of padding (?) follows. It is possible that this word has
-             meaning on newer chips, as from GC3000 the blob starts emitting this as 0 instead of
-             simply skipping it.
-             A possibility would be "OFFSET", "Offset added to the retrieved indices", which was
-             apparently lost in transition to DRAW_INSTANCED.
-             This functionality exists in OpenGL ES 3.2 and in desktop GL 4
-             with "glDrawElementsBaseVertex".
-        -->
+        <!-- One word of padding follows. -->
     </stripe>
 
     <!-- Wait for 64-bit fence represented by state 0x007E8 and 0x007F4 at the specified address.
