@@ -22,7 +22,10 @@ CMD_PAYLOAD_SIZES = {
     10: 3, # CALL
     11: 0, # RETURN
     12: 2, # DRAW_INSTANCED
-    13: 0  # CHIP_SELECT
+    13: 0, # CHIP_SELECT
+    15: 1, # WAIT_FENCE
+    16: 1, # DRAW_INDIRECT
+    19: 0, # SNAP_PAGES
 }
 
 def parse_command_buffer(buffer_words, cmdstream_info, initial_padding=CMDBUF_IGNORE_INITIAL):

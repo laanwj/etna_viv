@@ -43,6 +43,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <value value="12" name="DRAW_INSTANCED" brief="Draw instanced 3D primitives"/> <!-- feature HALTI0 -->
     <value value="13" name="CHIP_SELECT" brief="Chip select mask"/>
     <value value="15" name="WAIT_FENCE" brief="?"/> <!-- HALTI5 -->
+    <value value="16" name="DRAW_INDIRECT" brief="Draw indirect"/>
     <value value="19" name="SNAP_PAGES" brief="?"/> <!-- SNAPPAGE_CMD && SNAPPAGE_CMD_FIX -->
 </enum>
 
@@ -321,6 +322,19 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             </bitfield>
             <bitfield high="17" low="16" name="UNK16"/>
             <bitfield high="15" low="0" name="WAITCOUNT"/>
+        </reg32>
+        <reg32 offset="0x00004" name="ADDRESS"/>
+    </stripe>
+
+    <!-- Draw indirect, according to structure in memory.
+    -->
+    <stripe name="DRAW_INDIRECT" varset="FE_OPCODE" variants="DRAW_INDIRECT">
+        <reg32 offset="0x00000" name="HEADER">
+            <bitfield high="31" low="27" name="OP">
+                <value value="16" name="DRAW_INDIRECT"/>
+            </bitfield>
+            <bitfield pos="8" name="UNK8"/>
+            <bitfield high="3" low="0" name="TYPE" type="PRIMITIVE_TYPE"/>
         </reg32>
         <reg32 offset="0x00004" name="ADDRESS"/>
     </stripe>
