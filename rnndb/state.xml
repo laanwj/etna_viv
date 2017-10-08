@@ -80,6 +80,23 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield high="23" low="16" name="VERTEX_DIVISOR" brief="glVertexAttribDivisor"/>
     </bitset>
 
+    <!-- Vertex element data type -->
+    <enum name="FE_DATA_TYPE">
+        <value value="0" name="BYTE"/>
+        <value value="1" name="UNSIGNED_BYTE"/>
+        <value value="2" name="SHORT"/>
+        <value value="3" name="UNSIGNED_SHORT"/>
+        <value value="4" name="INT"/>
+        <value value="5" name="UNSIGNED_INT"/>
+        <value value="8" name="FLOAT"/> <!-- Also used for int using glVertexAttribIPointer -->
+        <value value="9" name="HALF_FLOAT"/>
+        <value value="11" name="FIXED" brief="16.16 fixed point"/>
+        <value value="12" name="INT_10_10_10_2"/>
+        <value value="13" name="UNSIGNED_INT_10_10_10_2"/>
+        <value value="14" name="BYTE_I"/> <!-- Signed or unsigned byte using glVertexAttribIPointer -->
+        <value value="15" name="SHORT_I"/> <!-- Signed or unsigned short using glVertexAttribIPointer -->
+    </enum>
+
     <!-- State ranges -->
     <stripe name="FE" brief="Fetch Engine"> <!-- Also known as Front End or DMA engine -->
         <doc>DMA engine. This is the frontend from the CPU to the GPU, and
@@ -89,19 +106,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <!-- length="attrCount" where attrCount, the number of attributes,
                  is 16 if chipMinorFeatures1 bit 23 set, otherwise 12.
              -->
-            <bitfield high="3" low="0" name="TYPE" brief="Data type">
-                <value value="0" name="BYTE"/>
-                <value value="1" name="UNSIGNED_BYTE"/>
-                <value value="2" name="SHORT"/>
-                <value value="3" name="UNSIGNED_SHORT"/>
-                <value value="4" name="INT"/>
-                <value value="5" name="UNSIGNED_INT"/>
-                <value value="8" name="FLOAT"/>
-                <value value="9" name="HALF_FLOAT"/>
-                <value value="11" name="FIXED" brief="16.16 fixed point"/>
-                <value value="12" name="INT_10_10_10_2"/>
-                <value value="13" name="UNSIGNED_INT_10_10_10_2"/>
-            </bitfield>
+            <bitfield high="3" low="0" name="TYPE" type="FE_DATA_TYPE" brief="Data type"/>
             <bitfield high="5" low="4" name="ENDIAN" type="ENDIAN_MODE"/>
             <bitfield pos="7" name="NONCONSECUTIVE" brief="Enable when this is not consecutive to next element, or it is the last element"/>
             <bitfield high="10" low="8" name="STREAM" brief="Source stream number"/>
@@ -215,12 +220,13 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <reg32 offset="0x006C0" name="UNK006C0"/>
             <reg32 offset="0x00700" name="UNK00700" value="0x00000000"/>
             <reg32 offset="0x00740" name="UNK00740" value="0x00000000"/>
-            <!-- Looks like this is set per vertex element.
-              It affects DRAW_INSTANCED rendering on GC3000. If the value is 0, nothing is rendered at all,
-              when it is 0x3f800000 (float 1.0), things are rendered as normal.
-              Other values seem to be a kind of scaling factor applied to values read from this vertex element.
-             -->
-            <reg32 offset="0x00780" name="UNK00780" value="0x3F800000" type="float"/> <!-- !HALTI5 -->
+            <reg32 offset="0x00780" name="SCALE" value="0x3F800000" type="float"> <!-- !HALTI5 -->
+                <doc>
+                    Affects DRAW_INSTANCED rendering on GC3000/GC7000.
+                    - 0x00000001 for integer types
+                    - 0x3F800000 for float types
+                </doc>
+            </reg32>
         </stripe>
         <reg32 offset="0x007C4" name="HALTI5_UNK007C4"/> <!-- HALTI5 -->
         <reg32 offset="0x007D0" name="HALTI5_UNK007D0" length="2" stride="4"/> <!-- HALTI5 -->
@@ -377,20 +383,39 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
     </stripe>
 
-    <!-- These are used on (at least) gc3000 for extra vertex attribute information -->
     <stripe name="NFE">
+        <!-- These are used on (at least) gc3000 and gc7000 for extra vertex attribute information -->
         <stripe name="VERTEX_STREAMS" length="16" stride="4"> <!-- streamCount > 1 || HALTI2 -->
             <reg32 offset="0x14600" name="BASE_ADDR" value="0x00000000" type="VIVM"/>
             <reg32 offset="0x14640" name="CONTROL" value="0x00000000" type="FE_VERTEX_STREAM_CONTROL"/>
             <reg32 offset="0x14680" name="UNK14680" value="0x00000000"/>
             <reg32 offset="0x146C0" name="ROBUSTNESS_UNK146C0" type="VIVM"/> <!-- ROBUSTNESS -->
         </stripe>
-        <reg32 offset="0x17800" name="HALTI5_UNK17800" length="32" stride="4"/> <!-- HALTI5 -->
-        <reg32 offset="0x17880" name="HALTI5_UNK17880" length="32" stride="4"/> <!-- HALTI5 -->
-        <reg32 offset="0x17900" name="HALTI5_UNK17900" length="32" stride="4"/> <!-- HALTI5 -->
-        <reg32 offset="0x17980" name="HALTI5_UNK17980" length="32" stride="4"/> <!-- HALTI5 -->
-        <reg32 offset="0x17A00" name="HALTI5_UNK17A00" value="0x3F800000" length="32" stride="4"/> <!-- HALTI5 -->
-        <reg32 offset="0x17A80" name="HALTI5_UNK17A80" length="32" stride="4"/> <!-- HALTI5 -->
+        <stripe name="GENERIC_ATTRIB" length="32" stride="4"> <!-- HALTI5 -->
+            <reg32 offset="0x17800" name="CONFIG0">
+                <bitfield high="3" low="0" name="TYPE" type="FE_DATA_TYPE" brief="Data type"/>
+                <bitfield high="5" low="4" name="ENDIAN" type="ENDIAN_MODE"/>
+                <!-- NONCONSECUTIVE field moved to CONFIG1 for HALTI5 -->
+                <bitfield high="10" low="8" name="STREAM" brief="Source stream number"/>
+                <bitfield high="13" low="12" name="NUM" brief="Number of elements">
+                    <doc>Wraps around (1=1,2=2,3=3,4=0)</doc>
+                </bitfield>
+                <bitfield high="15" low="14" name="NORMALIZE" brief="Normalize to 0..1">
+                    <value value="0" name="OFF"/>
+                    <value value="2" name="ON"/>
+                </bitfield>
+                <bitfield high="23" low="16" name="START" brief="Starting offset of element data"/>
+                <!-- END field moved to CONFIG1 for HALTI5 -->
+            </reg32>
+            <reg32 offset="0x17880" name="UNK17880"/>
+            <reg32 offset="0x17900" name="UNK17900"/>
+            <reg32 offset="0x17980" name="UNK17980"/>
+            <reg32 offset="0x17A00" name="SCALE" value="0x3F800000" type="float"/>
+            <reg32 offset="0x17A80" name="CONFIG1">
+                <bitfield high="7" low="0" name="END" brief="End offset of element data minus start of this consecutive stretch"/>
+                <bitfield pos="11" name="NONCONSECUTIVE" brief="Enable when this is not consecutive to next element, or it is the last element"/>
+            </reg32>
+        </stripe>
     </stripe>
 
     <stripe name="DUMMY" brief="/dev/null">
