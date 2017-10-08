@@ -183,7 +183,35 @@ def dump_shader(f, name, states, start, end, tracking):
         pos += 4
     dump_buf(f, name, code, tracking)
 
-def dump_command_buffer(f, mem, addr, end_addr, depth, state_map, cmdstream_info, tracking):
+def dump_texture_descriptor(f, mem, depth, gpu_addr, tracking, txdesc_map):
+    '''
+    Print contents of a texture descriptor.
+    '''
+    indent = '    ' * len(depth)
+    logical = tracking.meminfo_gpu_to_cpu(gpu_addr)
+    if logical is None: # No CPU address known, can't dump
+        return
+    try:
+        descriptor = bytes_to_words(mem[logical:logical+0xa0])
+    except IndexError:
+        return # Address not in fdr, well, forget it
+    f.write(indent + '/*\n')
+    for i,value in enumerate(descriptor):
+        try:
+            path = txdesc_map.lookup_address(i*4)
+            pathstring = format_path(path)
+            register = path[-1][0]
+            if isinstance(register.type, Domain):
+                desc = tracking.format_addr(value)
+            else:
+                desc = register.describe(value)
+        except KeyError:
+            pathstring = ''
+            desc = ''
+        f.write('%s  [%02x] %s: 0x%08x %s\n' % (indent, i*4, pathstring, value, desc))
+    f.write(indent + '*/\n')
+
+def dump_command_buffer(f, mem, addr, end_addr, depth, state_map, cmdstream_info, tracking, txdesc_map):
     '''
     Dump Vivante command buffer contents in human-readable
     format.
@@ -193,6 +221,7 @@ def dump_command_buffer(f, mem, addr, end_addr, depth, state_map, cmdstream_info
     states = [] # list of (ptr, state_addr) tuples
     words = bytes_to_words(mem[addr:end_addr])
     size = (end_addr - addr)//4
+    texture_descriptors_dumped = set()
     for rec in parse_command_buffer(words, cmdstream_info):
         hide = False
         if rec.op == 1 and rec.payload_ofs == -1:
@@ -210,6 +239,13 @@ def dump_command_buffer(f, mem, addr, end_addr, depth, state_map, cmdstream_info
                 f.write(", /* %s */\n" % desc)
             else:
                 f.write("  /* %s */\n" % desc)
+
+        if rec.state_info is not None:
+            # Texture descriptor? Dump every texture descriptor only once, inline.
+            if rec.state_info.pos >= 0x15C00 and rec.state_info.pos < 0x15E00 and not rec.value in texture_descriptors_dumped:
+                dump_texture_descriptor(f, mem, depth + [None], rec.value, tracking, txdesc_map)
+                texture_descriptors_dumped.add(rec.value)
+
     f.write(indent + '}')
     if options.list_address_states:
         # Print addresses; useful for making a re-play program
@@ -287,6 +323,9 @@ def parse_arguments():
     parser.add_argument('--output-c', dest='output_c',
             default=False, action='store_const', const=True,
             help='Print command buffer emission in C format')
+    parser.add_argument('--txdesc-file', metavar='TXDESCFILE', type=str, 
+            help='Texture descriptionp definition file (rules-ng-ng)',
+            default=rnndb_path('texdesc_3d.xml'))
     return parser.parse_args()        
 
 def patch_member_pointer(struct, name, ptrtype):
@@ -392,6 +431,16 @@ class DriverState:
             # Must have been released and unlocked
             assert(self.nodes[dead].released and not self.nodes[dead].locked)
             del self.nodes[dead]
+
+    def meminfo_gpu_to_cpu(self, addr):
+        '''
+        Convert a GPU address to a CPU address if possible,
+        or return None.
+        '''
+        info = self.meminfo_by_address(addr)
+        if info is not None and info[0].memory is not None:
+            return info[0].memory + info[1]
+        return None
 
     def node_assign_name(self, meminfo):
         '''
@@ -522,8 +571,9 @@ def main():
     fe_opcode = cmdstream_xml.lookup_type('FE_OPCODE')
     cmdstream_map = cmdstream_xml.lookup_domain('VIV_FE')
     cmdstream_info = CmdStreamInfo(fe_opcode, cmdstream_map)
-    #print(fe_opcode.values_by_value[1].name)
-    #print(format_path(cmdstream_map.lookup_address(0,('LOAD_STATE','FE_OPCODE'))))
+
+    txdesc_xml = parse_rng_file(args.txdesc_file)
+    txdesc_map = txdesc_xml.lookup_domain('TEXDESC')
 
     fdr = FDRLoader(args.input)
     global options
@@ -565,7 +615,7 @@ def main():
                 f.write('&(uint32[])0x%x' % (ptr.addr))
                 dump_command_buffer(f, fdr, ptr.addr + parent.members['startOffset'].value, 
                          ptr.addr + parent.members['offset'].value,
-                         depth, state_map, cmdstream_info, tracking)
+                         depth, state_map, cmdstream_info, tracking, txdesc_map)
                 return
 
         print_address(f, ptr, depth)
