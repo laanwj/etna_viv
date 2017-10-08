@@ -2,7 +2,7 @@
 '''
 Parse execution data log stream.
 '''
-# Copyright (c) 2012-2013 Wladimir J. van der Laan
+# Copyright (c) 2012-2017 Wladimir J. van der Laan
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -44,6 +44,7 @@ from etnaviv.dump_cmdstream_util import int_as_float, fixp_as_float
 from etnaviv.parse_command_buffer import parse_command_buffer,CmdStreamInfo
 from etnaviv.rng_describe_c import dump_command_buffer_c
 from etnaviv.auto_gcabi import guess_from_fdr
+from etnaviv.counter import Counter
 
 DEBUG = False
 
@@ -122,21 +123,6 @@ class HalResolver(ResolverBase):
             fields_in.difference_update(['prev','next','patchHead','patchTail'])
 
         return fields_in
-
-class Counter(object):
-    '''Count unique values'''
-    def __init__(self):
-        self.d = {}
-        self.c = 0
-
-    def __getitem__(self, key):
-        try:
-            return self.d[key]
-        except KeyError:
-            rv = self.c
-            self.d[key] = rv
-            self.c += 1
-            return rv
 
 COMPS = 'xyzw'
 def format_state(pos, value, fixp, state_map):
