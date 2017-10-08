@@ -213,6 +213,13 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                - VS.INST_ADDR := <GPU address>
                - ICACHE_CONTROL := ENABLE | FLUSH_PS
                - PS.INST_ADDR := <GPU address>
+
+             ICACHE invalidate (from kernel driver):
+
+               [0x860]=0
+               [0x868]=0x11
+               [0x860]=1
+               [0x868]=0x21
           -->
         <reg32 offset="0x00868" name="ICACHE_CONTROL"> <!-- ICACHE -->
             <bitfield pos="0" name="ENABLE" brief="Enables loading of shader instructions from memory"/>
