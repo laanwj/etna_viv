@@ -354,6 +354,7 @@ class DriverState:
         self.nodes = {} # Video memory nodes
         # defs is not currently used, but is passed to allow customizing
         # parsing based on driver structure definitions.
+        self.per_memtype = defaultdict(Counter)
 
     def thread_name(self, rec):
         return '[thread %i]' % self.thread_id[rec.parameters['thread'].value]
@@ -392,6 +393,17 @@ class DriverState:
             assert(self.nodes[dead].released and not self.nodes[dead].locked)
             del self.nodes[dead]
 
+    def node_assign_name(self, meminfo):
+        '''
+        Assign a human-readable "variable" name to a node.
+        '''
+        seq = self.per_memtype[meminfo.type][meminfo.node]
+        if seq < 26:
+            n = chr(65 + seq)
+        else:
+            n = '%i' % seq
+        meminfo.name = 'ADDR_%s_%s' % (meminfo.type, n)
+
     def format_addr(self, value):
         '''
         Return description for a GPU address.
@@ -401,7 +413,10 @@ class DriverState:
         info = self.meminfo_by_address(value)
         if info is None:
             return '(WILD_ADDR)'
-        return 'ADDR_%s_0x%x+0x%x' % (info[0].type, info[0].node, info[1])
+        if info[1]:
+            return '%s+0x%x' % (info[0].name, info[1])
+        else:
+            return info[0].name
 
     def new_shader_id(self):
         rv = self.shader_num
@@ -440,6 +455,7 @@ class DriverState:
             flag = gcin.members['flag'].value,
             pool = strip_prefix(gcin.members['pool'].name, 'gcvPOOL_'))
         assert(meminfo.node not in self.nodes)
+        self.node_assign_name(meminfo)
         self.nodes[meminfo.node] = meminfo
 
     def handle_WrapUserMemory(self, gcin, gcout):
@@ -454,6 +470,7 @@ class DriverState:
         assert(meminfo.node not in self.nodes)
         meminfo.address = meminfo.physicalAddress = out_desc['physical'].value
         meminfo.memory = out_desc['logical'].addr
+        self.node_assign_name(meminfo)
         self.nodes[meminfo.node] = meminfo
 
         self.meminfo_collision_detection(meminfo)
