@@ -33,6 +33,7 @@ DATAPATH=os.path.join(BASEPATH, "tools", "data")
 BY_VERSION={
     (5,0,11,25762): 'gcs_hal_interface_imx6_v5_0_11_p4_25762.json',
     (5,0,11,41671): 'gcs_hal_interface_imx6_v5_0_11_p8_41671.json',
+    (6,2,3,129602): 'gcs_hal_interface_imx8_v6.2.3.129602.json',
 
 }
 
