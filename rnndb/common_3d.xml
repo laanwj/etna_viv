@@ -94,6 +94,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="27" name="B10G11R11F"/>
         <value value="28" name="A2B10G10R10UI"/>
         <value value="33" name="R8"/> <!-- Dedicated format for R8 on GC7000? -->
+        <value value="34" name="D24S8"/> <!-- GC7000 -->
+        <value value="35" name="R32I"/> <!-- GC7000 -->
+        <value value="36" name="G32R32I"/> <!-- GC7000 -->
+        <value value="37" name="AYUV"/> <!-- GC7000 -->
     </enum>
     <enum name="TEXTURE_FILTER">
         <value value="0" name="NONE"/>

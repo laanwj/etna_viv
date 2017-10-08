@@ -90,6 +90,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
              they're useful or just alternative names for formats in range 0..7
          -->
         <!-- Extended formats -->
+        <value value="16" name="A8"/> <!-- GC7000 -->
         <value value="17" name="R16F"/>
         <value value="18" name="G16R16F" brief="Also used for X16R16F"/>
         <value value="19" name="A16B16G16R16F" brief="Also used for X16B16G16R16F"/>
@@ -105,7 +106,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="29" name="B10G11R11F"/>
         <value value="30" name="A2B10G10R10UI"/>
         <value value="31" name="G8R8"/>
-        <value value="35" name="R8"/>
+        <value value="35" name="R8"/> <!-- GC7000 -->
     </enum>
     <enum name="LOGIC_OP" brief="LogicOp">
         <value value="0" name="CLEAR"/>
