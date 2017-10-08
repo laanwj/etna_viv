@@ -155,13 +155,16 @@ def format_state(pos, value, fixp, state_map, tracking):
                 desc += register.describe(value)
     return desc
 
-def dump_buf(f, name, data, tracking):
+def dump_buf(f, name, data, tracking, raw=False):
     '''Dump array of 32-bit words to disk (format will always be little-endian binary).'''
     shader_num = tracking.new_shader_id()
     filename = '%s_%i.bin' % (name, shader_num)
     with open(filename, 'wb') as g:
-        for word in data:
-            g.write(struct.pack('<I', word))
+        if raw:
+            g.write(data)
+        else:
+            for word in data:
+                g.write(struct.pack('<I', word))
     f.write('/* [dumped %s to %s] */ ' % (name, filename))
 
 def dump_shader(f, name, states, start, end, tracking):
@@ -182,6 +185,21 @@ def dump_shader(f, name, states, start, end, tracking):
         code.append(states[pos])
         pos += 4
     dump_buf(f, name, code, tracking)
+
+def dump_shader_icache(f, mem, name, gpu_addr, start, end, tracking):
+    '''Dump binary shader code to disk, from memory'''
+    f.write('/* DUMP %s gpu_addr 0x%08x start 0x%08x end 0x%08x */ ' % (name, gpu_addr, start, end))
+    logical = tracking.meminfo_gpu_to_cpu(gpu_addr)
+    if logical is None: # No CPU address known, can't dump
+        f.write('/* No logical address found, not able to dump */\n')
+        return
+    drange = (logical+start*16, logical+end*16)
+    try:
+        code = mem[drange[0]:drange[1]]
+    except (KeyError, IndexError):
+        f.write('/* Data range %x-%x is not in FDR, not able to dump */\n' % drange)
+        return
+    dump_buf(f, name, code, tracking, True)
 
 def dump_texture_descriptor(f, mem, depth, gpu_addr, tracking, txdesc_map):
     '''
@@ -278,6 +296,14 @@ def dump_command_buffer(f, mem, addr, end_addr, depth, state_map, cmdstream_info
         dump_shader(f, 'ps', state_by_pos, 0x09000, 0x0A000, tracking)
         dump_shader(f, 'vs', state_by_pos, 0x0C000, 0x0D000, tracking) # gc2000
         dump_shader(f, 'ps', state_by_pos, 0x0D000, 0x0E000, tracking) # XXX this offset is probably variable (gc2000)
+        try:
+            dump_shader_icache(f, mem, 'vs', state_by_pos[0x0086C], state_by_pos[0x00874], state_by_pos[0x008BC], tracking)
+        except KeyError:
+            pass
+        try:
+            dump_shader_icache(f, mem, 'ps', state_by_pos[0x01028], state_by_pos[0x0087C], state_by_pos[0x01090], tracking)
+        except KeyError:
+            pass
 
     if options.dump_cmdbufs:
         dump_buf(f, 'cmd', words, tracking)
