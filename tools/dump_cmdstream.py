@@ -249,38 +249,6 @@ def dump_command_buffer(f, mem, addr, end_addr, depth, state_map, cmdstream_info
         f.write('\n')
         dump_command_buffer_c(f, parse_command_buffer(words, cmdstream_info), state_map)
 
-def dump_context_map(f, mem, addr, end_addr, depth, state_map):
-    '''
-    Dump Vivante context map.
-    '''
-    indent = '    ' * len(depth)
-    f.write('{\n')
-    state_base = 0
-    state_count = 0
-    state_format = 0
-    next_cmd = 0
-    payload_start_ptr = 0
-    payload_end_ptr = 0
-    op = 0
-    size = (end_addr - addr)//4
-    ptr = 0
-    while ptr < size:
-        hide = False
-        (value,) = WORD_SPEC.unpack(mem[addr+ptr*4:addr+ptr*4+4])
-        if value != 0:
-            f.write(indent + '    {0x%x, 0x%05X}' % (value, ptr*4))
-            try:
-                path = state_map.lookup_address(ptr*4)
-                desc = format_path(path)
-            except KeyError:
-                desc = ''
-            if ptr != (size-1):
-                f.write(", /* %s */\n" % desc)
-            else:
-                f.write("  /* %s */\n" % desc)
-        ptr += 1
-    f.write(indent + '}')
-
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Parse execution data log stream.')
     parser.add_argument('input', metavar='INFILE', type=str, 
@@ -299,9 +267,6 @@ def parse_arguments():
     parser.add_argument('--show-state-map', dest='show_state_map',
             default=False, action='store_const', const=True,
             help='Expand state map from context (verbose!)')
-    parser.add_argument('--show-context-commands', dest='show_context_commands',
-            default=False, action='store_const', const=True,
-            help='Expand context command buffer (verbose!)')
     parser.add_argument('--show-context-buffer', dest='show_context_buffer',
             default=False, action='store_const', const=True,
             help='Expand context CPU buffer (verbose!)')
@@ -412,7 +377,7 @@ def main():
     def handle_pointer(f, ptr, depth):
         parent = depth[-1][0]
         field = depth[-1][1]
-        if ptr.type in ['_gcoCMDBUF','_gcoCONTEXT','_gcsQUEUE']:
+        if ptr.type in ['_gcoCMDBUF','_gcsQUEUE']:
             s = extract_structure(fdr, ptr.addr, defs, ptr.type, resolver=resolver)
             f.write('&(%s)0x%x' % (ptr.type,ptr.addr))
             dump_structure(f, s, handle_pointer, handle_comment, depth)
@@ -425,25 +390,6 @@ def main():
                          ptr.addr + parent.members['offset'].value,
                          depth, state_map, cmdstream_info, tracking)
                 return
-            if parent.type['name'] == '_gcoCONTEXT' and options.show_context_commands:
-                f.write('&(uint32[])0x%x' % (ptr.addr))
-                dump_command_buffer(f, fdr, ptr.addr, 
-                         ptr.addr + parent.members['bufferSize'].value,
-                         depth, state_map, cmdstream_info, tracking)
-                return
-        elif parent.type['name'] == '_gcoCONTEXT' and field == 'map' and ptr.addr != 0 and options.show_state_map:
-            f.write('&(uint32[])0x%x' % (ptr.addr))
-            dump_context_map(f, fdr, ptr.addr, 
-                     ptr.addr + parent.members['stateCount'].value*4,
-                     depth, state_map)
-            return
-        elif parent.type['name'] == '_gcoCONTEXT' and field == 'buffer' and ptr.addr != 0 and options.show_context_buffer:
-            # Equivalent to gcoCONTEXT.map
-            f.write('&(uint32[])0x%x' % (ptr.addr))
-            dump_command_buffer(f, fdr, ptr.addr, 
-                     ptr.addr + parent.members['bufferSize'].value,
-                     depth, state_map, cmdstream_info)
-            return
 
         print_address(f, ptr, depth)
 
