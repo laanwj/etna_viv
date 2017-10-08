@@ -547,6 +547,9 @@ def main():
         elif parent_type == '_gcsHAL_LOCK_VIDEO_MEMORY':
             if field == 'address': # annotate addresses with unique identifier
                 return tracking.format_addr(val.value)
+        elif parent_type == '_gcsUSER_MEMORY_DESC':
+            if field == 'physical': # annotate addresses with unique identifier
+                return tracking.format_addr(val.value)
 
     def handle_pointer(f, ptr, depth):
         parent = depth[-1][0]
