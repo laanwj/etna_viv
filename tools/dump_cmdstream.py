@@ -125,7 +125,7 @@ class HalResolver(ResolverBase):
         return fields_in
 
 COMPS = 'xyzw'
-def format_state(pos, value, fixp, state_map):
+def format_state(pos, value, fixp, state_map, tracking):
     try:
         path = state_map.lookup_address(pos)
         path_str = format_path(path)
@@ -145,22 +145,21 @@ def format_state(pos, value, fixp, state_map):
             register = path[-1][0]
             desc += ' := '
             if isinstance(register.type, Domain):
-                desc += format_addr(value)
+                desc += tracking.format_addr(value)
             else:
                 desc += register.describe(value)
     return desc
 
-def dump_buf(f, name, data):
+def dump_buf(f, name, data, tracking):
     '''Dump array of 32-bit words to disk (format will always be little-endian binary).'''
-    global shader_num
+    shader_num = tracking.new_shader_id()
     filename = '%s_%i.bin' % (name, shader_num)
     with open(filename, 'wb') as g:
         for word in data:
             g.write(struct.pack('<I', word))
     f.write('/* [dumped %s to %s] */ ' % (name, filename))
-    shader_num += 1
 
-def dump_shader(f, name, states, start, end):
+def dump_shader(f, name, states, start, end, tracking):
     '''Dump binary shader code to disk'''
     dump = False
 
@@ -177,9 +176,9 @@ def dump_shader(f, name, states, start, end):
     while pos < end and (pos in states):
         code.append(states[pos])
         pos += 4
-    dump_buf(f, name, code)
+    dump_buf(f, name, code, tracking)
 
-def dump_command_buffer(f, mem, addr, end_addr, depth, state_map, cmdstream_info):
+def dump_command_buffer(f, mem, addr, end_addr, depth, state_map, cmdstream_info, tracking):
     '''
     Dump Vivante command buffer contents in human-readable
     format.
@@ -196,7 +195,7 @@ def dump_command_buffer(f, mem, addr, end_addr, depth, state_map, cmdstream_info
                 hide = True
         if rec.state_info is not None:
             states.append((rec.ptr, rec.state_info.pos, rec.state_info.format, rec.value))
-            desc = format_state(rec.state_info.pos, rec.value, rec.state_info.format, state_map)
+            desc = format_state(rec.state_info.pos, rec.value, rec.state_info.format, state_map, tracking)
         else:
             desc = rec.desc
 
@@ -236,15 +235,15 @@ def dump_command_buffer(f, mem, addr, end_addr, depth, state_map, cmdstream_info
         for (ptr, pos, state_format, value) in states:
             state_by_pos[pos]=value
         # 0x04000 and 0x06000 contain shader instructions
-        dump_shader(f, 'vs', state_by_pos, 0x04000, 0x05000)
-        dump_shader(f, 'ps', state_by_pos, 0x06000, 0x07000)
-        dump_shader(f, 'vs', state_by_pos, 0x08000, 0x09000) # gc3000
-        dump_shader(f, 'ps', state_by_pos, 0x09000, 0x0A000)
-        dump_shader(f, 'vs', state_by_pos, 0x0C000, 0x0D000) # gc2000
-        dump_shader(f, 'ps', state_by_pos, 0x0D000, 0x0E000) # XXX this offset is probably variable (gc2000)
+        dump_shader(f, 'vs', state_by_pos, 0x04000, 0x05000, tracking)
+        dump_shader(f, 'ps', state_by_pos, 0x06000, 0x07000, tracking)
+        dump_shader(f, 'vs', state_by_pos, 0x08000, 0x09000, tracking) # gc3000
+        dump_shader(f, 'ps', state_by_pos, 0x09000, 0x0A000, tracking)
+        dump_shader(f, 'vs', state_by_pos, 0x0C000, 0x0D000, tracking) # gc2000
+        dump_shader(f, 'ps', state_by_pos, 0x0D000, 0x0E000, tracking) # XXX this offset is probably variable (gc2000)
 
     if options.dump_cmdbufs:
-        dump_buf(f, 'cmd', words)
+        dump_buf(f, 'cmd', words, tracking)
 
     if options.output_c:
         f.write('\n')
@@ -338,20 +337,34 @@ def load_data_definitions(struct_file):
 
     return d
 
-vidmem_addr = Counter() # Keep track of video memories
-shader_num = 0
+class DriverState:
+    '''
+    Track current driver state.
+    '''
+    def __init__(self):
+        self.vidmem_addr = Counter() # Keep track of video memories
+        self.shader_num = 0
+        self.thread_id = Counter()
 
-def format_addr(value):
-    '''
-    Return unique identifier for an address.
-    '''
-    # XXX this only works if exact addresses are used; offsets into buffers
-    # are not currently recognized as such but labeled as unique new addresses
-    id = vidmem_addr[value]
-    if id < 26:
-        return 'ADDR_'+chr(65 + id)
-    else:
-        return 'ADDR_%i' % id
+    def thread_name(self, rec):
+        return '[thread %i]' % self.thread_id[rec.parameters['thread'].value]
+
+    def format_addr(self, value):
+        '''
+        Return unique identifier for an address.
+        '''
+        # XXX this only works if exact addresses are used; offsets into buffers
+        # are not currently recognized as such but labeled as unique new addresses
+        id = self.vidmem_addr[value]
+        if id < 26:
+            return 'ADDR_'+chr(65 + id)
+        else:
+            return 'ADDR_%i' % id
+
+    def new_shader_id(self):
+        rv = self.shader_num
+        self.shader_num += 1
+        return rv
 
 def main():
     args = parse_arguments()
@@ -394,7 +407,7 @@ def main():
                 return ' '.join(active_feat)
         elif parent_type == '_gcsHAL_LOCK_VIDEO_MEMORY':
             if field == 'address': # annotate addresses with unique identifier
-                return format_addr(val.value)
+                return tracking.format_addr(val.value)
 
     def handle_pointer(f, ptr, depth):
         parent = depth[-1][0]
@@ -410,13 +423,13 @@ def main():
                 f.write('&(uint32[])0x%x' % (ptr.addr))
                 dump_command_buffer(f, fdr, ptr.addr + parent.members['startOffset'].value, 
                          ptr.addr + parent.members['offset'].value,
-                         depth, state_map, cmdstream_info)
+                         depth, state_map, cmdstream_info, tracking)
                 return
             if parent.type['name'] == '_gcoCONTEXT' and options.show_context_commands:
                 f.write('&(uint32[])0x%x' % (ptr.addr))
                 dump_command_buffer(f, fdr, ptr.addr, 
                          ptr.addr + parent.members['bufferSize'].value,
-                         depth, state_map, cmdstream_info)
+                         depth, state_map, cmdstream_info, tracking)
                 return
         elif parent.type['name'] == '_gcoCONTEXT' and field == 'map' and ptr.addr != 0 and options.show_state_map:
             f.write('&(uint32[])0x%x' % (ptr.addr))
@@ -435,14 +448,11 @@ def main():
         print_address(f, ptr, depth)
 
     f = sys.stdout
-    thread_id = Counter()
-
-    def thread_name(rec):
-        return '[thread %i]' % thread_id[rec.parameters['thread'].value]
+    tracking = DriverState()
 
     for seq,rec in enumerate(fdr):
         if isinstance(rec, Event): # Print events as they appear in the fdr
-            f.write(('[seq %i] ' % seq) + thread_name(rec) + ' ')
+            f.write(('[seq %i] ' % seq) + tracking.thread_name(rec) + ' ')
             params = rec.parameters
             if rec.event_type == 'MMAP_AFTER':
                 f.write('mmap addr=0x%08x length=0x%08x prot=0x%08x flags=0x%08x offset=0x%08x = 0x%08x\n' % (
