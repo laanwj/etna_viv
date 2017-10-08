@@ -28,8 +28,6 @@ import os, sys, struct
 import json
 from collections import defaultdict, namedtuple
 
-from binascii import b2a_hex
-
 from etnaviv.util import rnndb_path
 from etnaviv.target_arch import bytes_to_words, ENDIAN, WORD_SPEC, WORD_CHAR
 # Parse execution data log files
@@ -158,7 +156,7 @@ def format_state(pos, value, fixp, state_map, tracking):
 def dump_buf(f, name, data, tracking, raw=False):
     '''Dump array of 32-bit words to disk (format will always be little-endian binary).'''
     shader_num = tracking.new_shader_id()
-    filename = '%s_%i.bin' % (name, shader_num)
+    filename = '%03i_%s.bin' % (shader_num, name)
     with open(filename, 'wb') as g:
         if raw:
             g.write(data)
