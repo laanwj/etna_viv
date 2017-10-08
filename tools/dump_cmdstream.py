@@ -249,7 +249,6 @@ def dump_command_buffer(f, mem, addr, end_addr, depth, state_map, cmdstream_info
     f.write(indent + '}')
     if options.list_address_states:
         # Print addresses; useful for making a re-play program
-        #f.write('\n' + indent + 'GPU addresses {\n')
         uniqaddr = defaultdict(list)
         for (ptr, pos, state_format, value) in states:
             try:
@@ -258,16 +257,13 @@ def dump_command_buffer(f, mem, addr, end_addr, depth, state_map, cmdstream_info
                 continue
             type = path[-1][0].type
             if isinstance(type, Domain): # type Domain refers to another memory space
-                #f.write(indent)
-                addrname = format_addr(value)
-                #f.write('    {0x%x,0x%05X}, /* %s = 0x%08x (%s) */\n' % (ptr, pos, format_path(path), value, addrname))
+                addrname = tracking.format_addr(value)
                 uniqaddr[value].append(ptr)
 
-        #f.write(indent + '},')
         f.write('\n' + indent + 'Grouped GPU addresses {\n')
         for (value, ptrs) in uniqaddr.iteritems():
             lvalues = ' = '.join([('cmdbuf[0x%x]' % ptr) for ptr in ptrs])
-            f.write(indent + '    ' + lvalues + ' = ' + format_addr(value) + ('; /* 0x%x */' % value) + '\n')
+            f.write(indent + '    ' + lvalues + ' = ' + tracking.format_addr(value) + ('; /* 0x%x */' % value) + '\n')
 
         f.write(indent + '}')
 
