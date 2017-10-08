@@ -45,6 +45,8 @@ from etnaviv.parse_command_buffer import parse_command_buffer,CmdStreamInfo
 from etnaviv.rng_describe_c import dump_command_buffer_c
 from etnaviv.auto_gcabi import guess_from_fdr
 from etnaviv.counter import Counter
+from etnaviv.stringutil import strip_prefix
+from etnaviv.rangeutil import ranges_overlap_exclusive
 
 DEBUG = False
 
@@ -67,6 +69,14 @@ CMDS_NO_OUTPUT = [
 'gcvHAL_EVENT_COMMIT'
 ]
 
+def command_to_field(enum):
+    '''convert to camelcase: FOO_BAR to FooBar'''
+    enum = strip_prefix(enum, 'gcvHAL_').split('_')
+    field = ''.join(s[0] + s[1:].lower() for s in enum)
+    if field == 'EventCommit':
+        field = 'Event' # exception to the rule...
+    return field
+
 class HalResolver(ResolverBase):
     '''
     Data type resolver for HAL interface commands.
@@ -84,12 +94,7 @@ class HalResolver(ResolverBase):
             if ((self.dir == 'in' and enum in CMDS_NO_INPUT) or
                 (self.dir == 'out' and enum in CMDS_NO_OUTPUT)):
                 return {} # no need to show input
-            enum = enum[7:].split('_')
-            # convert to camelcase FOO_BAR to FooBar
-            field = ''.join(s[0] + s[1:].lower() for s in enum)
-            if field == 'EventCommit':
-                field = 'Event' # exception to the rule...
-            return {field}
+            return {command_to_field(enum)}
         elif name == '_gcsHAL_INTERFACE':
             # these fields contains uninitialized garbage
             fields_in.difference_update(['handle', 'pid'])
@@ -302,34 +307,186 @@ def load_data_definitions(struct_file):
 
     return d
 
+class MemNodeInfo:
+    def __init__(self, node, bytes, alignment, type, flag, pool):
+        self.node = node
+        self.bytes = bytes
+        self.alignment = alignment
+        self.type = type
+        self.flag = flag
+        self.pool = pool
+
+        self.released = False
+        self.locked = False
+        self.cacheable = None
+        self.address = None # GPU address
+        self.memory = None # Logical CPU address
+        self.physicalAddress = None # Physical address
+
+    def lock(self, cacheable, address, memory, physicalAddress):
+        self.locked = True
+        self.cacheable = cacheable
+        self.address = address
+        self.memory = memory
+        self.physicalAddress = physicalAddress
+
+    def unlock(self):
+        self.locked = False
+        self.memory = None # CPU mem is unmapped immediately
+        # Don't throw away GPU address here. See comment for
+        # handle_ReleaseVideoMemory for reasoning.
+
+    def __repr__(self):
+        return 'MemNodeInfo(node=%s, bytes=%s, alignment=%s, type=%s, flag=%s, pool=%s)' % (
+                repr(self.node),
+                repr(self.bytes), repr(self.alignment), repr(self.type), repr(self.flag), repr(self.pool)
+                )
+
 class DriverState:
     '''
     Track current driver state.
+    Might want to have driver-version specific subclasses at some point...
     '''
-    def __init__(self):
-        self.vidmem_addr = Counter() # Keep track of video memories
+    def __init__(self, defs):
         self.shader_num = 0
         self.thread_id = Counter()
+        self.saved_input = {} # Saved ioctl state per thread
+        self.nodes = {} # Video memory nodes
+        # defs is not currently used, but is passed to allow customizing
+        # parsing based on driver structure definitions.
 
     def thread_name(self, rec):
         return '[thread %i]' % self.thread_id[rec.parameters['thread'].value]
 
+    def meminfo_by_address(self, value):
+        '''
+        Look up memory info and offset by GPU address.
+        '''
+        for (node, meminfo) in self.nodes.items():
+            if meminfo.address is None:
+                continue
+            if value >= meminfo.address and value < (meminfo.address + meminfo.bytes):
+                return (meminfo, value - meminfo.address)
+        return None
+
+    def meminfo_collision_detection(self, spec):
+        '''
+        Find collisions with existing meminfo.
+        '''
+        collided = set()
+
+        for (node, meminfo) in self.nodes.items():
+            if meminfo is spec:
+                continue
+            # By GPU address
+            if spec.address is not None and meminfo.address is not None:
+                if ranges_overlap_exclusive((spec.address, spec.address + spec.bytes), (meminfo.address, meminfo.address + meminfo.bytes)):
+                    collided.add(meminfo.node)
+            # By CPU address
+            if spec.memory is not None and meminfo.memory is not None:
+                if ranges_overlap_exclusive((spec.memory, spec.memory + spec.bytes), (meminfo.memory, meminfo.memory + meminfo.bytes)):
+                    assert(0) # This should never happen, CPU addresses are released immediately not delayed
+
+        for dead in collided:
+            # Must have been released and unlocked
+            assert(self.nodes[dead].released and not self.nodes[dead].locked)
+            del self.nodes[dead]
+
     def format_addr(self, value):
         '''
-        Return unique identifier for an address.
+        Return description for a GPU address.
         '''
-        # XXX this only works if exact addresses are used; offsets into buffers
-        # are not currently recognized as such but labeled as unique new addresses
-        id = self.vidmem_addr[value]
-        if id < 26:
-            return 'ADDR_'+chr(65 + id)
-        else:
-            return 'ADDR_%i' % id
+        if value == 0:
+            return 'NULL'
+        info = self.meminfo_by_address(value)
+        if info is None:
+            return '(WILD_ADDR)'
+        return 'ADDR_%s_0x%x+0x%x' % (info[0].type, info[0].node, info[1])
 
     def new_shader_id(self):
         rv = self.shader_num
         self.shader_num += 1
         return rv
+
+    def handle_gcin(self, thread, ifin):
+        '''
+        Handle ioctl input.
+        '''
+        assert(thread not in self.saved_input)
+        self.saved_input[thread] = ifin
+
+    def handle_gcout(self, thread, ifout):
+        '''
+        Handle ioctl output, and dispatch command.
+        '''
+        ifin = self.saved_input[thread]
+        del self.saved_input[thread]
+        assert(ifin.members['command'].name == ifout.members['command'].name)
+
+        def dummy(ifin, ifout):
+            pass
+        field = command_to_field(ifin.members['command'].name)
+        getattr(self, 'handle_' + field, dummy)(
+                ifin.members['u'].members.get(field), 
+                ifout.members['u'].members.get(field))
+
+    # Handlers for specific driver commands
+    def handle_AllocateLinearVideoMemory(self, gcin, gcout):
+        meminfo = MemNodeInfo(
+            node = gcout.members['node'].value,
+            bytes = gcin.members['bytes'].value,
+            alignment = gcin.members['alignment'].value,
+            type = strip_prefix(gcin.members['type'].name, 'gcvSURF_'),
+            flag = gcin.members['flag'].value,
+            pool = strip_prefix(gcin.members['pool'].name, 'gcvPOOL_'))
+        assert(meminfo.node not in self.nodes)
+        self.nodes[meminfo.node] = meminfo
+
+    def handle_WrapUserMemory(self, gcin, gcout):
+        out_desc = gcout.members['desc'].members
+        meminfo = MemNodeInfo(
+            node = gcout.members['node'].value,
+            bytes = out_desc['size'].value,
+            alignment = 4096, # TODO target page size, if we care
+            type = 'USER',
+            flag = out_desc['flag'].value,
+            pool = 'USER')
+        assert(meminfo.node not in self.nodes)
+        meminfo.address = meminfo.physicalAddress = out_desc['physical'].value
+        meminfo.memory = out_desc['logical'].addr
+        self.nodes[meminfo.node] = meminfo
+
+        self.meminfo_collision_detection(meminfo)
+
+    def handle_ReleaseVideoMemory(self, gcin, gcout):
+        # Don't actually delete from the structure here, it seems the blob
+        # does use-after-release in quite a few cases. This might be correct
+        # (async - after the next event?) or not, but we want to be able to
+        # print useful information nevertheless.
+        # Cleanup happens in meminfo_collision_detection.
+        try:
+            self.nodes[gcin.members['node'].value].released = True
+        except KeyError:
+            return # Don't care
+
+    def handle_LockVideoMemory(self, gcin, gcout):
+        try:
+            meminfo = self.nodes[gcin.members['node'].value]
+        except KeyError:
+            return # Don't care
+        meminfo.lock(gcin.members['cacheable'].value,
+                gcout.members['address'].value,
+                gcout.members['memory'].value,
+                gcout.members['physicalAddress'].value)
+
+        self.meminfo_collision_detection(meminfo)
+
+    def handle_UnlockVideoMemory(self, gcin, gcout):
+        try:
+            meminfo = self.nodes[gcin.members['node'].value]
+        except KeyError:
+            return # Don't care
+        meminfo.unlock()
 
 def main():
     args = parse_arguments()
@@ -394,7 +551,7 @@ def main():
         print_address(f, ptr, depth)
 
     f = sys.stdout
-    tracking = DriverState()
+    tracking = DriverState(defs)
 
     for seq,rec in enumerate(fdr):
         if isinstance(rec, Event): # Print events as they appear in the fdr
@@ -414,6 +571,7 @@ def main():
                     f.write('in=')
                     resolver = HalResolver('in')
                     s = extract_structure(fdr, inout[0], defs, '_gcsHAL_INTERFACE', resolver=resolver)
+                    tracking.handle_gcin(rec.parameters['thread'].value, s)
                     dump_structure(f, s, handle_pointer, handle_comment)
                     f.write('\n')
                 else:
@@ -425,6 +583,7 @@ def main():
                     f.write('out=')
                     resolver = HalResolver('out')
                     s = extract_structure(fdr, inout[2], defs, '_gcsHAL_INTERFACE', resolver=resolver)
+                    tracking.handle_gcout(rec.parameters['thread'].value, s)
                     dump_structure(f, s, handle_pointer, handle_comment)
                     f.write('\n')
                     f.write('/* ================================================ */\n')
