@@ -50,7 +50,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="19" low="0" name="STRIDE"/>
             <bitfield high="31" low="20" name="UNK20"/>
         </reg32>
-        <reg32 offset="0x1400C" name="UNK1400C"/>
+        <reg32 offset="0x1400C" name="SRC_CONFIG">
+            <bitfield pos="1" name="DEC400"/> <!-- off when VIV_DISABLE_DEC400 -->
+        </reg32>
         <reg32 offset="0x14010" name="SRC_TS" type="VIVM"/>
         <reg32 offset="0x14014" name="UNK14014"/>
         <reg32 offset="0x14018" name="DEST_ADDR" type="VIVM"/>
@@ -59,7 +61,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="19" low="0" name="STRIDE"/>
             <bitfield high="31" low="20" name="UNK20"/>
         </reg32>
-        <reg32 offset="0x14028" name="UNK14028"/>
+        <reg32 offset="0x14028" name="DST_CONFIG">
+            <bitfield pos="1" name="DEC400"/>
+        </reg32>
         <reg32 offset="0x1402C" name="UNK1402C"/>
         <reg32 offset="0x14030" name="SRC_SIZE">
             <bitfield high="15" low="0" name="WIDTH" type="uint"/>

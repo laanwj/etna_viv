@@ -955,13 +955,17 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="4" name="DEPTH_AUTO_DISABLE" brief="Auto disable fast clear for depth"/>
             <bitfield pos="5" name="COLOR_AUTO_DISABLE" brief="Auto disable fast clear for color"/>
             <bitfield pos="6" name="DEPTH_COMPRESSION" brief="Enable depth compression"/>
-            <bitfield pos="7" name="MSAA" brief="This bit is enabled when MSAA samples >= 2">
+            <bitfield pos="7" name="COLOR_COMPRESSION" brief="Enable color compression">
                 <doc>
-                    The main bits for switching MSAA in rendering are in register #0x03818, these bits
-                    in the TS memory configuration appear to affect the writing of tiles in a minor way.
+                    The type of color compression used depends on the GPU. On older GPUs the color compression
+                    was a lossy format, specifically used when MSAA was enabled.
+
+                    On GC7000 this field and COLOR_COMPRESSION_FORMAT seem to be set based on DEC400 enable/disable;
+                    if VIV_DISABLE_DEC400, this is set to 0 and MSAA_FORMAT also 0.
+                    If DEC400 enabled, this is (sometimes) set to 1 and COLOR_COMPRESSION_FORMAT is 3.
                 </doc>
             </bitfield>
-            <bitfield high="11" low="8" name="MSAA_FORMAT">
+            <bitfield high="11" low="8" name="COLOR_COMPRESSION_FORMAT">
                 <value value="0" name="A4R4G4B4"/>
                 <value value="1" name="A1R5G5B5"/>
                 <value value="2" name="R5G6B5"/>
