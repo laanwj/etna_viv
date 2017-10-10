@@ -206,19 +206,37 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield high="14" low="12" name="SWIZZLE_G" type="TEXTURE_SWIZZLE"/>
         <bitfield high="18" low="16" name="SWIZZLE_B" type="TEXTURE_SWIZZLE"/>
         <bitfield high="22" low="20" name="SWIZZLE_A" type="TEXTURE_SWIZZLE"/>
-        <bitfield pos="23" name="CACHE_MODE"/>
+        <bitfield pos="23" name="CACHE_MODE">
+            <value value="0" name="128"/> <!-- let's assume this is in bits -->
+            <value value="1" name="256"/>
+        </bitfield>
         <bitfield pos="24" name="TEXTURE_ARRAY">
             <doc>
             1D array: TEXTURE_TYPE_2D
             2D array: TEXTURE_TYPE_3D
             </doc>
         </bitfield>
-        <bitfield pos="25" name="UNK25"/> <!-- Sometimes set by blob on gc3000 -->
+        <bitfield pos="25" name="UNK25"/> <!-- Sometimes set by blob on gc3000, apparently always set on gc7000 -->
         <bitfield high="28" low="26" name="HALIGN" type="TEXTURE_HALIGN"/>
     </bitset>
     <bitset name="TE_SAMPLER_LOG_SIZE_EXT" inline="yes" brief="Log size in 8.8 fixed point">
         <bitfield high="15" low="0" name="WIDTH" type="fixedp"/>
         <bitfield high="31" low="16" name="HEIGHT" type="fixedp"/>
+    </bitset>
+    <bitset name="TE_SAMPLER_BASELOD" inline="yes"> <!-- This is not TE_SAMPLER_LOD_CONFIG, it configures a LOD range instead of a bias -->
+        <bitfield pos="23" name="UNK23"/> <!-- set by blob on gc3000, not gc7000 -->
+        <bitfield high="3" low="0" name="BASELOD"/>
+        <bitfield high="11" low="8" name="MAXLOD"/>
+    </bitset>
+    <bitset name="TE_SAMPLER_CONFIG2"> <!-- contains SAMPLER_MODE -->
+        <bitfield pos="16" name="UNK16"/> <!-- always set? -->
+        <bitfield pos="17" name="UNK17"/> <!-- always set? -->
+        <bitfield pos="18" name="UNK18"/>
+        <bitfield pos="19" name="UNK19"/>
+        <bitfield pos="23" name="UNK23"/>
+    </bitset>
+    <bitset name="TE_SAMPLER_CONFIG3">
+        <bitfield pos="3" name="MSAA"/>
     </bitset>
 
 </database>

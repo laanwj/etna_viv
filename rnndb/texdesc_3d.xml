@@ -46,14 +46,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <reg32 offset="0x5c" name="ASTC1"/>
     <reg32 offset="0x60" name="ASTC2"/>
     <reg32 offset="0x64" name="ASTC3"/>
-    <reg32 offset="0x68" name="LOD"> <!-- This is not TE_SAMPLER_LOD_CONFIG, it configures a LOD range instead of a bias -->
-        <bitfield high="3" low="0" name="BASELOD"/>
-        <bitfield high="11" low="8" name="MAXLOD"/>
-    </reg32>
-    <reg32 offset="0x6c" name="CONFIG2"/> <!-- contains SAMPLE_MODE -->
-    <reg32 offset="0x70" name="CONFIG3">
-        <bitfield pos="3" name="MSAA"/>
-    </reg32>
+    <reg32 offset="0x68" name="BASELOD" type="TE_SAMPLER_BASELOD"/>
+    <reg32 offset="0x6c" name="CONFIG2" type="TE_SAMPLER_CONFIG2"/>
+    <reg32 offset="0x70" name="CONFIG3" type="TE_SAMPLER_CONFIG3"/>
     <reg32 offset="0x74" name="LOG_SIZE_EXT" type="TE_SAMPLER_LOG_SIZE_EXT"/>
     <reg32 offset="0x78" name="VOLUME"/>
     <reg32 offset="0x7c" name="SLICE"/>
