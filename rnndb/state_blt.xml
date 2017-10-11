@@ -56,6 +56,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             - Copy
             - In-place resolve
             - Compute mipmaps
+            - YUV tiling
 
             Note: It looks like no assumption can be made that any of this
             state is retained between operations. All relevant state must be
@@ -103,10 +104,32 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <value value="1" name="CLEAR_IMAGE"/>
                 <value value="2" name="COPY_IMAGE"/>
                 <value value="3" name="COPY_BUFFER"/>
+                <value value="5" name="YUV_TILE"/> <!-- Used for glTexDirectVIV -->
                 <value value="6" name="GEN_MIPMAPS"/>
             </bitfield>
         </reg32>
         <reg32 offset="0x14064" name="UNK14064"/>
+
+        <!-- The following are used with YUV tiling -->
+        <stripe name="YUV">
+            <reg32 offset="0x1406C" name="CONFIG">
+                <doc>
+                 0x001 YV12, I420
+                 0x011 NV12
+                 0x111 NV21
+                </doc>
+            </reg32>
+            <reg32 offset="0x14070" name="UNK14070"/>
+            <reg32 offset="0x14074" name="SRC_YADDR" type="VIVM"/>
+            <reg32 offset="0x14078" name="SRC_YSTRIDE"/>
+            <reg32 offset="0x1407C" name="SRC_UADDR" type="VIVM"/>
+            <reg32 offset="0x14080" name="SRC_USTRIDE"/>
+            <reg32 offset="0x14084" name="SRC_VADDR" type="VIVM"/>
+            <reg32 offset="0x14088" name="SRC_VSTRIDE"/>
+            <reg32 offset="0x1408C" name="DEST_ADDR" type="VIVM"/>
+            <reg32 offset="0x14090" name="DEST_STRIDE"/>
+        </stripe>
+
         <reg32 offset="0x1409C" name="UNK1409C"/>
         <reg32 offset="0x140A0" name="UNK140A0"/>
         <reg32 offset="0x140A4" name="FENCE_OUT_ADDRESS" type="VIVM"/>
