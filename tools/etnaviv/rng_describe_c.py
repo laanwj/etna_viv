@@ -1,4 +1,5 @@
 from etnaviv.parse_rng import BitField, BaseType, Enum, BitSet, Domain
+from etnaviv.parse_command_buffer import PLO_INITIAL_PAD
 
 def format_path_c(path, only_prefix=False):
     '''Format path into state space as C string'''
@@ -58,6 +59,9 @@ def _format_addr_default(x):
 def dump_command_buffer_c(f, recs, state_map, format_addr=_format_addr_default):
     '''Dump parsed command buffer as C'''
     for rec in recs:
+        if rec.payload_ofs == PLO_INITIAL_PAD:
+            continue
+
         if rec.state_info is not None:
             try:
                 path = [(state_map,None)] + state_map.lookup_address(rec.state_info.pos)

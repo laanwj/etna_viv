@@ -28,6 +28,10 @@ CMD_PAYLOAD_SIZES = {
     19: 0, # SNAP_PAGES
 }
 
+PLO_CMD = -1
+PLO_PAD = -2
+PLO_INITIAL_PAD = -3
+
 def parse_command_buffer(buffer_words, cmdstream_info, initial_padding=CMDBUF_IGNORE_INITIAL):
     '''
     Parse Vivante command buffer contents, return a sequence of 
@@ -45,7 +49,7 @@ def parse_command_buffer(buffer_words, cmdstream_info, initial_padding=CMDBUF_IG
     for value in buffer_words:
         state_info = None
         if ptr >= next_cmd:
-            payload_ofs = -1
+            payload_ofs = PLO_CMD
             op = value >> 27
             payload_start_ptr = payload_end_ptr = ptr + 1
             try:
@@ -87,7 +91,10 @@ def parse_command_buffer(buffer_words, cmdstream_info, initial_padding=CMDBUF_IG
                     desc = '  ' + opinfo[-1][0].name + ' ' + opinfo[-1][0].describe(value)
         else:
             desc = "PAD"
-            payload_ofs = -2 # padding
+            if ptr < initial_padding:
+                payload_ofs = PLO_INITIAL_PAD # initial padding
+            else:
+                payload_ofs = PLO_PAD # padding
         yield CommandInfo(ptr, value, op, payload_ofs, desc, state_info)
         ptr += 1
 
