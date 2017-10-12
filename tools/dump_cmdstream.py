@@ -308,7 +308,8 @@ def dump_command_buffer(f, mem, addr, end_addr, depth, state_map, cmdstream_info
 
     if options.output_c:
         f.write('\n')
-        dump_command_buffer_c(f, parse_command_buffer(words, cmdstream_info), state_map)
+        dump_command_buffer_c(f, parse_command_buffer(words, cmdstream_info), state_map,
+                tracking.format_addr)
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Parse execution data log stream.')

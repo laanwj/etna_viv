@@ -53,7 +53,9 @@ def describe_c(path, value):
     prefix = format_path_c(path, True)
     return describe_c_inner(prefix, path[-1][0].type, value)
 
-def dump_command_buffer_c(f, recs, state_map):
+def _format_addr_default(x):
+    return '*0x%08x' % x
+def dump_command_buffer_c(f, recs, state_map, format_addr=_format_addr_default):
     '''Dump parsed command buffer as C'''
     for rec in recs:
         if rec.state_info is not None:
@@ -68,8 +70,8 @@ def dump_command_buffer_c(f, recs, state_map):
                 #    describe_c(path, rec.value)))
                 if isinstance(path[-1][0].type, Domain):
                     assert(not rec.state_info.format)
-                    f.write('etna_set_state_reloc(stream, %s, *0x%08x);\n' % (
-                        format_path_c(path), rec.value))
+                    f.write('etna_set_state_reloc(stream, %s, %s);\n' % (
+                        format_path_c(path), format_addr(rec.value)))
                 elif rec.state_info.format:
                     f.write('etna_set_state_fixp(stream, %s, 0x%08x);\n' % (
                         format_path_c(path), rec.value))
