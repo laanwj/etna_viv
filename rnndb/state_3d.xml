@@ -233,7 +233,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x0086C" name="INST_ADDR" type="VIVM" brief="Memory address of shader instructions"/> <!-- ICACHE -->
         <reg32 offset="0x00870" name="HALTI5_UNK00870"/> <!-- HALTI5 -->
         <!-- "new shader instruction PC registers (20 bit)" --> 
-        <reg32 offset="0x00874" name="RANGE_LOW"/> <!-- HALTI5 || ICACHE -->
+        <reg32 offset="0x00874" name="NEWRANGE_LOW"/> <!-- HALTI5 || ICACHE -->
         <reg32 offset="0x00878" name="HALTI5_UNK00878"/> <!-- !HALTI5 && ICACHE "VS/PS Start/End PC register" -->
         <reg32 offset="0x00880" name="HALTI5_UNK00880"/> <!-- !HALTI5 && ICACHE "VS/PS Start/End PC register" -->
         <reg32 offset="0x00884" name="HALTI1_UNK00884"/> <!-- HALTI1 -->
@@ -250,7 +250,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="4" name="UNK4"/>
         </reg32>
         <reg32 offset="0x008B8" name="HALTI5_UNK008B8"/> <!-- HALTI5 -->
-        <reg32 offset="0x008BC" name="RANGE_HIGH"/> <!-- HALTI5 -->
+        <reg32 offset="0x008BC" name="NEWRANGE_HIGH"/> <!-- HALTI5 -->
         <reg32 offset="0x008C0" name="HALTI5_UNK008C0" length="8" stride="4"/> <!-- HALTI5 -->
         <reg32 offset="0x008E0" name="HALTI5_UNK008E0" length="8" stride="4"/> <!-- HALTI5 -->
         <reg32 offset="0x04000" name="INST_MEM" value="0x00000000" length="1024" stride="4"> <!-- instructionCount <= 256 -->
@@ -475,8 +475,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x01054" name="HALTI4_UNK01054"/> <!-- HALTI4 -->
         <reg32 offset="0x01058" name="HALTI5_UNK01058"/> <!-- HALTI5 -->
         <reg32 offset="0x01080" name="HALTI5_UNK01080" length="4" stride="4"/> <!-- HALTI5 -->
-        <reg32 offset="0x0087C" name="RANGE_LOW"/> <!-- HALTI5 || ICACHE -->
-        <reg32 offset="0x01090" name="RANGE_HIGH"/> <!-- HALTI5 -->
+        <reg32 offset="0x0087C" name="NEWRANGE_LOW"/> <!-- HALTI5 || ICACHE -->
+        <reg32 offset="0x01090" name="NEWRANGE_HIGH"/> <!-- HALTI5 -->
         <reg32 offset="0x01094" name="HALTI5_UNK01094"/> <!-- HALTI5 && ICACHE_PREFETCH -->
         <reg32 offset="0x01098" name="HALTI5_UNK01098"/> <!-- HALTI5 -->
         <reg32 offset="0x06000" name="INST_MEM" value="0x00000000" length="1024" stride="4"> <!-- instructionCount <= 256 -->
