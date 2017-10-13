@@ -965,13 +965,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                     If DEC400 enabled, this is (sometimes) set to 1 and COLOR_COMPRESSION_FORMAT is 3.
                 </doc>
             </bitfield>
-            <bitfield high="11" low="8" name="COLOR_COMPRESSION_FORMAT">
-                <value value="0" name="A4R4G4B4"/>
-                <value value="1" name="A1R5G5B5"/>
-                <value value="2" name="R5G6B5"/>
-                <value value="3" name="A8R8G8B8"/>
-                <value value="4" name="X8R8G8B8"/>
-            </bitfield>
+            <bitfield high="11" low="8" name="COLOR_COMPRESSION_FORMAT" type="COLOR_COMPRESSION_FORMAT"/>
             <bitfield pos="12" name="UNK12"/> <!-- likely has to do with hdepth HDEPTH_FAST_CLEAR? -->
             <bitfield pos="13" name="HDEPTH_AUTO_DISABLE" brief="Auto disable fast clear for hdepth"/>
             <bitfield pos="14" name="UNK14"/> <!-- Sometimes set on GC7000L -->

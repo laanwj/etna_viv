@@ -239,6 +239,14 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield pos="3" name="MSAA"/>
     </bitset>
 
+    <enum name="COLOR_COMPRESSION_FORMAT"> <!-- TS and BLT color compression format -->
+        <value value="0" name="A4R4G4B4"/>
+        <value value="1" name="A1R5G5B5"/>
+        <value value="2" name="R5G6B5"/>
+        <value value="3" name="A8R8G8B8"/>
+        <value value="4" name="X8R8G8B8"/>
+    </enum>
+
 </database>
 
 
