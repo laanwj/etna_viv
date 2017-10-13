@@ -47,6 +47,28 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="0x24" name="R8G8"/>
     </enum>
 
+    <bitset name="BLT_IMAGE_CONFIG">
+        <bitfield pos="0" name="TS"/> <!-- enable tile status -->
+        <bitfield pos="1" name="COMPRESSION"/> <!-- off when VIV_DISABLE_DEC400 -->
+        <bitfield high="7" low="4" name="COMPRESSION_FORMAT" type="COLOR_COMPRESSION_FORMAT"/>
+        <bitfield pos="8" name="UNK8"/> <!-- affects coloring, possibly SRGB -->
+        <!-- Not sure why there's another set of what looks like swizzles here.
+             Setting them doesn't seem to have any effect on at least COPY_IMAGE.
+         -->
+        <bitfield high="10" low="9" name="SWIZ_R" type="TEXTURE_SWIZZLE"/>
+        <bitfield high="12" low="11" name="SWIZ_G" type="TEXTURE_SWIZZLE"/>
+        <bitfield high="14" low="13" name="SWIZ_B" type="TEXTURE_SWIZZLE"/>
+        <bitfield high="16" low="15" name="SWIZ_A" type="TEXTURE_SWIZZLE"/>
+        <bitfield pos="17" name="CACHE_MODE">
+            <value value="0" name="128"/>
+            <value value="1" name="256"/>
+        </bitfield>
+        <bitfield pos="19" name="FLIP_Y"/> <!-- only works on DEST -->
+        <bitfield pos="21" name="FROM_SUPERTILED"/>
+        <bitfield pos="22" name="UNK22"/> <!-- also affects tiling - set on IMAGE_COPY on DEST -->
+        <bitfield pos="26" name="TO_SUPERTILED"/>
+    </bitset>
+
     <stripe name="BLT" brief="Blit engine"> <!-- BLT_ENGINE -->
         <doc>
             Blit engine (also "resolve v2") states.
@@ -68,11 +90,13 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="28" low="21" name="FORMAT" type="BLT_FORMAT"/>
             <bitfield high="30" low="29" name="TILING" type="BLT_TILING"/>
         </reg32>
-        <reg32 offset="0x1400C" name="SRC_CONFIG">
-            <bitfield pos="1" name="DEC400"/> <!-- off when VIV_DISABLE_DEC400 -->
-        </reg32>
+        <reg32 offset="0x1400C" name="SRC_CONFIG" type="BLT_IMAGE_CONFIG"/>
         <reg32 offset="0x14010" name="SRC_TS" type="VIVM"/>
-        <reg32 offset="0x14014" name="UNK14014"/>
+        <reg32 offset="0x14014" name="SRC_POS">
+            <!-- In pixels, does not need to be tile-aligned. -->
+            <bitfield high="15" low="0" name="X" type="uint"/>
+            <bitfield high="31" low="16" name="Y" type="uint"/>
+        </reg32>
         <reg32 offset="0x14018" name="DEST_ADDR" type="VIVM"/>
         <reg32 offset="0x14020" name="DEST_TS" type="VIVM"/>
         <reg32 offset="0x14024" name="DEST_STRIDE">
@@ -80,25 +104,36 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="28" low="21" name="FORMAT" type="BLT_FORMAT"/>
             <bitfield high="30" low="29" name="TILING" type="BLT_TILING"/>
         </reg32>
-        <reg32 offset="0x14028" name="DEST_CONFIG">
-            <bitfield pos="1" name="DEC400"/>
+        <reg32 offset="0x14028" name="DEST_CONFIG" type="BLT_IMAGE_CONFIG"/>
+        <reg32 offset="0x1402C" name="DEST_POS"> <!-- used with COPY_IMAGE and CLEAR_IMAGE -->
+            <!-- In pixels, does not need to be tile-aligned. -->
+            <bitfield high="15" low="0" name="X" type="uint"/>
+            <bitfield high="31" low="16" name="Y" type="uint"/>
         </reg32>
-        <reg32 offset="0x1402C" name="UNK1402C"/>
-        <reg32 offset="0x14030" name="SRC_SIZE">
+        <reg32 offset="0x14030" name="IMAGE_SIZE"> <!-- used with COPY_IMAGE and CLEAR_IMAGE -->
             <bitfield high="15" low="0" name="WIDTH" type="uint"/>
             <bitfield high="31" low="16" name="HEIGHT" type="uint"/>
         </reg32>
         <reg32 offset="0x14034" name="SRC_TS_CLEAR_VALUE0"/>
         <reg32 offset="0x14038" name="SRC_TS_CLEAR_VALUE1"/>
-        <reg32 offset="0x1403C" name="CLEAR_COLOR_UNK1403C"/> <!-- used with CLEAR_IMAGE -->
-        <reg32 offset="0x14040" name="CLEAR_COLOR_UNK14040"/> <!-- used with CLEAR_IMAGE -->
-        <reg32 offset="0x14044" name="CLEAR_COLOR_UNK14044"/> <!-- used with CLEAR_IMAGE -->
-        <reg32 offset="0x14048" name="CLEAR_COLOR_UNK14048"/> <!-- used with CLEAR_IMAGE -->
-        <reg32 offset="0x1404C" name="UNK1404C"/>
-        <reg32 offset="0x14050" name="UNK14050"/>
+        <reg32 offset="0x1403C" name="DEST_TS_CLEAR_VALUE0"/> <!-- used with CLEAR_IMAGE -->
+        <reg32 offset="0x14040" name="DEST_TS_CLEAR_VALUE1"/> <!-- used with CLEAR_IMAGE -->
+        <reg32 offset="0x14044" name="CLEAR_COLOR0"/> <!-- used with CLEAR_IMAGE -->
+        <reg32 offset="0x14048" name="CLEAR_COLOR1"/> <!-- used with CLEAR_IMAGE -->
+
+        <!-- The next two states are set to 0xffffffff with CLEAR_IMAGE 
+             and do not seem to have any immediately visible effect when
+             changed. My guess it that they have to do with dithering.
+         -->
+        <reg32 offset="0x1404C" name="UNK1404C"/> <!-- used with CLEAR_IMAGE -->
+        <reg32 offset="0x14050" name="UNK14050"/> <!-- used with CLEAR_IMAGE -->
+
         <reg32 offset="0x14054" name="BUFFER_SIZE"/> <!-- used with COPY_BUFFER -->
-        <reg32 offset="0x14058" name="UNK14058"/>
-        <reg32 offset="0x1405C" name="UNK1405C"/>
+
+        <!-- Same as 1404C and 14050 but for COPY_IMAGE? -->
+        <reg32 offset="0x14058" name="UNK14058"/> <!-- used with COPY_IMAGE -->
+        <reg32 offset="0x1405C" name="UNK1405C"/> <!-- used with COPY_IMAGE -->
+
         <reg32 offset="0x14060" name="COMMAND">
             <bitfield high="3" low="0" name="COMMAND">
                 <value value="1" name="CLEAR_IMAGE"/>
@@ -108,7 +143,13 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <value value="6" name="GEN_MIPMAPS"/>
             </bitfield>
         </reg32>
-        <reg32 offset="0x14064" name="UNK14064"/>
+        <reg32 offset="0x14064" name="CONFIG">
+            <bitfield high="2" low="1" name="SRC_ENDIAN" type="ENDIAN_MODE"/>
+            <bitfield high="4" low="3" name="DEST_ENDIAN" type="ENDIAN_MODE"/>
+            <bitfield pos="5" name="UNK5"/> <!-- messes up tiling -->
+            <bitfield pos="6" name="UNK6"/> <!-- messes up tiling too -->
+            <bitfield high="9" low="7" name="CLEAR_BPP"/> <!-- bytes per pixel-1, on CLEAR -->
+        </reg32>
 
         <!-- The following are used with YUV tiling -->
         <stripe name="YUV">
@@ -154,10 +195,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 	    <bitfield high="5" low="3" name="SRC_G" type="TEXTURE_SWIZZLE"/>
 	    <bitfield high="8" low="6" name="SRC_B" type="TEXTURE_SWIZZLE"/>
 	    <bitfield high="11" low="9" name="SRC_A" type="TEXTURE_SWIZZLE"/>
-	    <bitfield high="14" low="12" name="DST_R" type="TEXTURE_SWIZZLE"/>
-	    <bitfield high="17" low="15" name="DST_G" type="TEXTURE_SWIZZLE"/>
-	    <bitfield high="20" low="18" name="DST_B" type="TEXTURE_SWIZZLE"/>
-	    <bitfield high="23" low="21" name="DST_A" type="TEXTURE_SWIZZLE"/>
+	    <bitfield high="14" low="12" name="DEST_R" type="TEXTURE_SWIZZLE"/>
+	    <bitfield high="17" low="15" name="DEST_G" type="TEXTURE_SWIZZLE"/>
+	    <bitfield high="20" low="18" name="DEST_B" type="TEXTURE_SWIZZLE"/>
+	    <bitfield high="23" low="21" name="DEST_A" type="TEXTURE_SWIZZLE"/>
 	</reg32>
         <!-- Multiple different color surfaces (+strides?) can be specified here.
              I suspect that this is used for mipmap generation.
