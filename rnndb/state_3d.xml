@@ -1106,7 +1106,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                     See texdesc_3d.xml for the layout of texture descriptors.
                 </doc>
             </reg32>
-            <reg32 offset="0x15E00" name="TX_CTRL"/>
+            <reg32 offset="0x15E00" name="TX_CTRL">
+                <bitfield high="1" low="0" name="TS_ENABLE"/> <!-- Set to 3 if texture TS, 0 otherwise -->
+                <bitfield high="4" low="2" name="TS_INDEX" brief="Index in TS.SAMPLER[...]"/>
+            </reg32>
             <reg32 offset="0x16000" name="SAMP_CTRL0_MIRROR"/> <!-- MIRROR of 16C00 -->
             <reg32 offset="0x16200" name="SAMP_CTRL1_MIRROR"/> <!-- MIRROR of 16E00 -->
             <reg32 offset="0x16400" name="SAMP_LOD_MINMAX_MIRROR"/> <!-- MIRROR of 17000 -->
