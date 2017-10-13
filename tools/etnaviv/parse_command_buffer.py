@@ -32,7 +32,10 @@ PLO_CMD = -1
 PLO_PAD = -2
 PLO_INITIAL_PAD = -3
 
-def parse_command_buffer(buffer_words, cmdstream_info, initial_padding=CMDBUF_IGNORE_INITIAL):
+def _describe(t, v):
+    return t.describe(v)
+
+def parse_command_buffer(buffer_words, cmdstream_info, initial_padding=CMDBUF_IGNORE_INITIAL, describe=_describe):
     '''
     Parse Vivante command buffer contents, return a sequence of 
     CommandInfo records.
@@ -88,7 +91,7 @@ def parse_command_buffer(buffer_words, cmdstream_info, initial_padding=CMDBUF_IG
                 except KeyError:
                     pass
                 else:
-                    desc = '  ' + opinfo[-1][0].name + ' ' + opinfo[-1][0].describe(value)
+                    desc = '  ' + opinfo[-1][0].name + ' ' + describe(opinfo[-1][0], value)
         else:
             desc = "PAD"
             if ptr < initial_padding:

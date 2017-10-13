@@ -127,8 +127,19 @@ class HalResolver(ResolverBase):
 
         return fields_in
 
+class ValueDumper:
+    '''Callable that dumps register values (special handling for addresses).'''
+    def __init__(self, tracking):
+        self.tracking = tracking
+
+    def __call__(self, register, value):
+        if isinstance(register.type, Domain):
+            return self.tracking.format_addr(value)
+        else:
+            return register.describe(value)
+
 COMPS = 'xyzw'
-def format_state(pos, value, fixp, state_map, tracking):
+def format_state(pos, value, fixp, state_map, describe):
     try:
         path = state_map.lookup_address(pos)
         path_str = format_path(path)
@@ -146,11 +157,7 @@ def format_state(pos, value, fixp, state_map, tracking):
             desc += ' := %f (%s)' % (int_as_float(value), spec)
         elif path is not None:
             register = path[-1][0]
-            desc += ' := '
-            if isinstance(register.type, Domain):
-                desc += tracking.format_addr(value)
-            else:
-                desc += register.describe(value)
+            desc += ' := ' + describe(register, value)
     return desc
 
 def dump_buf(f, name, data, tracking, raw=False):
@@ -212,15 +219,13 @@ def dump_texture_descriptor(f, mem, depth, gpu_addr, tracking, txdesc_map):
     except IndexError:
         return # Address not in fdr, well, forget it
     f.write(indent + '/*\n')
+    describe = ValueDumper(tracking)
     for i,value in enumerate(descriptor):
         try:
             path = txdesc_map.lookup_address(i*4)
             pathstring = format_path(path)
             register = path[-1][0]
-            if isinstance(register.type, Domain):
-                desc = tracking.format_addr(value)
-            else:
-                desc = register.describe(value)
+            desc = describe(register, value)
         except KeyError:
             pathstring = ''
             desc = ''
@@ -238,14 +243,15 @@ def dump_command_buffer(f, mem, addr, end_addr, depth, state_map, cmdstream_info
     words = bytes_to_words(mem[addr:end_addr])
     size = (end_addr - addr)//4
     texture_descriptors_dumped = set()
-    for rec in parse_command_buffer(words, cmdstream_info):
+    describe = ValueDumper(tracking)
+    for rec in parse_command_buffer(words, cmdstream_info, describe=describe):
         hide = False
         if rec.op == 1 and rec.payload_ofs == -1:
             if options.hide_load_state:
                 hide = True
         if rec.state_info is not None:
             states.append((rec.ptr, rec.state_info.pos, rec.state_info.format, rec.value))
-            desc = format_state(rec.state_info.pos, rec.value, rec.state_info.format, state_map, tracking)
+            desc = format_state(rec.state_info.pos, rec.value, rec.state_info.format, state_map, describe)
         else:
             desc = rec.desc
 
