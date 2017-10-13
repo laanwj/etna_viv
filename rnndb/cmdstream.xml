@@ -202,7 +202,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <value value="8" name="LINK" brief="Transfer control flow"/>
             </bitfield>
         </reg32>
-        <reg32 offset="0x00004" name="ADDRESS">
+        <reg32 offset="0x00004" name="ADDRESS" type="VIVM">
         </reg32>
     </stripe>
 
@@ -231,7 +231,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <value value="10" name="CALL"/>
             </bitfield>
         </reg32>
-        <reg32 offset="0x00004" name="ADDRESS"/>
+        <reg32 offset="0x00004" name="ADDRESS" type="VIVM"/>
         <reg32 offset="0x00008" name="RETURN_PREFETCH" brief="Number of 64-bit words to fetch after a Return has been issued"/>
         <reg32 offset="0x0000C" name="RETURN_ADDRESS"/>
     </stripe>
@@ -323,7 +323,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="17" low="16" name="UNK16"/>
             <bitfield high="15" low="0" name="WAITCOUNT"/>
         </reg32>
-        <reg32 offset="0x00004" name="ADDRESS"/>
+        <reg32 offset="0x00004" name="ADDRESS" type="VIVM"/>
     </stripe>
 
     <!-- Draw indirect, according to structure in memory.
@@ -336,7 +336,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="8" name="UNK8"/>
             <bitfield high="3" low="0" name="TYPE" type="PRIMITIVE_TYPE"/>
         </reg32>
-        <reg32 offset="0x00004" name="ADDRESS"/>
+        <reg32 offset="0x00004" name="ADDRESS" type="VIVM"/>
     </stripe>
 
     <!-- This command is queued on flush in the Vivante kernel driver if the hardware

@@ -450,5 +450,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
          customer ID.
       -->
 
+<domain name="VIVM" brief="GPU memory domain">
+</domain>
+
 </database>
 

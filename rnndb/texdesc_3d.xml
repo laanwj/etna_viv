@@ -28,9 +28,6 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 <import file="common.xml"/>
 <import file="common_3d.xml"/>
 
-<domain name="VIVM" brief="GPU memory domain">
-</domain>
-
 <!-- Vivante GCxxxx render states and registers overview:
      Texture descriptor memory layout.
   -->

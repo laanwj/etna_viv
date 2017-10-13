@@ -54,8 +54,6 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
          Generally the chip feature flags are used to distinguish functionality, as well as the specs, and not the model
          and revision. Unlike NV which parametrizes everything on the model, for GC this is done only for bugfixes.
 -->
-<domain name="VIVM" brief="GPU memory domain">
-</domain>
 
 <import file="common.xml"/>
 <import file="common_3d.xml"/>
