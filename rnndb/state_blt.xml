@@ -33,13 +33,18 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 
     <enum name="BLT_TILING">
         <value value="0" name="LINEAR"/>
-        <value value="3" name="SUPERTILED"/>
+        <!-- Curiously, there seems to be no difference between SUPER_TILED and TILED
+             on this hardware (GC7000). I think the only difference are alignment/stride
+             constraints.
+         -->
+        <value value="3" name="SUPER_TILED"/>
     </enum>
     <enum name="BLT_FORMAT">
 	<!-- Yet another format enumeration, on first sight it looks like the
              PE/RS formats but I don't think it's the same - for example R8G8 differs
           -->
         <value value="0x01" name="A4R4G4B4"/>
+        <value value="0x05" name="X8R8G8B8"/>
         <value value="0x06" name="A8R8G8B8"/>
         <value value="0x1c" name="A16R16G16B16"/>
         <value value="0x22" name="R8G8B8"/> <!-- now that's old-school -->
@@ -59,14 +64,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield high="12" low="11" name="SWIZ_G" type="TEXTURE_SWIZZLE"/>
         <bitfield high="14" low="13" name="SWIZ_B" type="TEXTURE_SWIZZLE"/>
         <bitfield high="16" low="15" name="SWIZ_A" type="TEXTURE_SWIZZLE"/>
-        <bitfield pos="17" name="CACHE_MODE">
-            <value value="0" name="128"/>
-            <value value="1" name="256"/>
-        </bitfield>
+        <bitfield pos="17" name="CACHE_MODE" type="TS_CACHE_MODE"/>
         <bitfield pos="19" name="FLIP_Y"/> <!-- only works on DEST -->
-        <bitfield pos="21" name="FROM_SUPERTILED"/>
+        <bitfield pos="21" name="FROM_SUPER_TILED"/>
         <bitfield pos="22" name="UNK22"/> <!-- also affects tiling - set on IMAGE_COPY on DEST -->
-        <bitfield pos="26" name="TO_SUPERTILED"/>
+        <bitfield pos="26" name="TO_SUPER_TILED"/>
     </bitset>
 
     <stripe name="BLT" brief="Blit engine"> <!-- BLT_ENGINE -->
@@ -74,17 +76,26 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             Blit engine (also "resolve v2") states.
 
             BLT operations:
-            - Fill
-            - Copy
+            - Fill/Clear image (glClear)
+            - Copy image (texture uploading, framebuffer blit)
+            - Copy buffer (glBuffer(Sub)Data)
             - In-place resolve
-            - Compute mipmaps
-            - YUV tiling
+            - Compute mipmaps (glGenerateMipmap)
+            - YUV tiling, convert various planar YUV formats to tiled YUV for
+              texturing (glTexDirectVIV)
 
             Note: It looks like no assumption can be made that any of this
             state is retained between operations. All relevant state must be
             programmed every time.
         </doc>
-        <reg32 offset="0x14000" name="SRC_ADDR" type="VIVM"/>
+        <reg32 offset="0x14000" name="SRC_ADDR" type="VIVM">
+            <doc>
+                SRC_ADDR is used for COPY_IMAGE, CLEAR_IMAGE, COPY_BUFFER,
+                GEN_MIPMAPS operations (YUV_TILE has its own source address
+                register).
+                For COPY_BUFFER there appear to be no alignment requirements.
+            </doc>
+        </reg32>
         <reg32 offset="0x14008" name="SRC_STRIDE">
             <bitfield high="19" low="0" name="STRIDE"/>
             <bitfield high="28" low="21" name="FORMAT" type="BLT_FORMAT"/>
@@ -97,7 +108,17 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="15" low="0" name="X" type="uint"/>
             <bitfield high="31" low="16" name="Y" type="uint"/>
         </reg32>
-        <reg32 offset="0x14018" name="DEST_ADDR" type="VIVM"/>
+        <reg32 offset="0x14018" name="DEST_ADDR" type="VIVM">
+            <doc>
+                DEST_ADDR is used for COPY_IMAGE, CLEAR_IMAGE and COPY_BUFFER operations.
+                (YUV_TILE and GEN_MIPMAPS have their own desination address registers)
+                For COPY_BUFFER there appear to be no alignment requirements.
+            </doc>
+        </reg32>
+        <!-- Destination TS appears to only be used for clears.
+             Image copies do not appear to use any destination TS.
+             The blob driver does a copy-to-itself before copying to an image with TS.
+         -->
         <reg32 offset="0x14020" name="DEST_TS" type="VIVM"/>
         <reg32 offset="0x14024" name="DEST_STRIDE">
             <bitfield high="19" low="0" name="STRIDE"/>
@@ -121,12 +142,12 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x14044" name="CLEAR_COLOR0"/> <!-- used with CLEAR_IMAGE -->
         <reg32 offset="0x14048" name="CLEAR_COLOR1"/> <!-- used with CLEAR_IMAGE -->
 
-        <!-- The next two states are set to 0xffffffff with CLEAR_IMAGE 
-             and do not seem to have any immediately visible effect when
-             changed. My guess it that they have to do with dithering.
+        <!-- The following influence which bits are cleared of the target:
+             Clear depth and stencil: 0xffffffff
+             Clear just depth: 0xffffff00
          -->
-        <reg32 offset="0x1404C" name="UNK1404C"/> <!-- used with CLEAR_IMAGE -->
-        <reg32 offset="0x14050" name="UNK14050"/> <!-- used with CLEAR_IMAGE -->
+        <reg32 offset="0x1404C" name="CLEAR_BITS0"/> <!-- used with CLEAR_IMAGE -->
+        <reg32 offset="0x14050" name="CLEAR_BITS1"/> <!-- used with CLEAR_IMAGE -->
 
         <reg32 offset="0x14054" name="BUFFER_SIZE"/> <!-- used with COPY_BUFFER -->
 
@@ -139,6 +160,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <value value="1" name="CLEAR_IMAGE"/>
                 <value value="2" name="COPY_IMAGE"/>
                 <value value="3" name="COPY_BUFFER"/>
+                <value value="4" name="INPLACE"/>
                 <value value="5" name="YUV_TILE"/> <!-- Used for glTexDirectVIV -->
                 <value value="6" name="GEN_MIPMAPS"/>
             </bitfield>
@@ -149,7 +171,17 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="5" name="UNK5"/> <!-- messes up tiling -->
             <bitfield pos="6" name="UNK6"/> <!-- messes up tiling too -->
             <bitfield high="9" low="7" name="CLEAR_BPP"/> <!-- bytes per pixel-1, on CLEAR -->
+            <bitfield pos="10" name="INPLACE_CACHE_MODE" type="TS_CACHE_MODE"/>
+            <bitfield pos="11" name="INPLACE_BOTH" brief="Use both dest TS clear values, interleaved"/>
+            <bitfield high="17" low="15" name="INPLACE_BPP">
+                <value value="0" name="1"/>
+                <value value="1" name="2"/>
+                <value value="2" name="4"/>
+                <value value="3" name="8"/>
+                <value value="4" name="16"/>
+            </bitfield>
         </reg32>
+        <reg32 offset="0x14068" name="INPLACE_TILE_COUNT" brief="Tile count for INPLACE operation"/>
 
         <!-- The following are used with YUV tiling -->
         <stripe name="YUV">
@@ -176,7 +208,15 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x140A4" name="FENCE_OUT_ADDRESS" type="VIVM"/>
         <reg32 offset="0x140A8" name="FENCE_OUT_DATA_LOW"/>
         <reg32 offset="0x140AC" name="SET_COMMAND"/> <!-- blob writes 3 here before and after setting COMMAND -->
-        <reg32 offset="0x140B0" name="UNK140B0"/>
+        <reg32 offset="0x140B0" name="MIPMAP_CONFIG">
+            <bitfield high="4" low="0" name="NUM">
+                <doc>
+                Total number of levels, so number of filled MIP slots plus one.
+                Do not set this to 0 or 1, this will never finish and crash the GPU.
+                </doc>
+            </bitfield>
+            <bitfield pos="5" name="UNK5"/>
+        </reg32>
         <reg32 offset="0x140B4" name="FENCE_OUT_DATA_HIGH"/>
         <reg32 offset="0x140B8" name="ENABLE">
             <bitfield pos="0" name="ENABLE" brief="Enable BLT engine">

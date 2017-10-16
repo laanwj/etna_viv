@@ -47,7 +47,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="14" name="YUY2" brief="YUV 4:2:2"/>
         <value value="15" name="UYVY" brief="YUV 4:2:2 (Alt macropixel ordering)"/>
         <value value="16" name="D16"/>
-        <value value="17" name="D24S8"/>
+        <value value="17" name="D24X8"/> <!-- Sampling ignores stencil part -->
         <!-- 18 reads as all ones -->
         <value value="19" name="DXT1" brief="S3 Block Compression 1">
             <doc>DXT1 compressed textures are stored untiled.</doc>
@@ -146,6 +146,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="3" name="SPLIT_TILED"/>
         <value value="4" name="SPLIT_SUPER_TILED"/>
     </enum>
+    <enum name="TS_CACHE_MODE" brief="Bytes per TS tile">
+        <value value="0" name="128"/>
+        <value value="1" name="256"/>
+    </enum>
 
     <!-- register descriptions shared between TE.SAMPLER and NTE.SAMPLER 
          and texture descriptors
@@ -206,10 +210,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield high="14" low="12" name="SWIZZLE_G" type="TEXTURE_SWIZZLE"/>
         <bitfield high="18" low="16" name="SWIZZLE_B" type="TEXTURE_SWIZZLE"/>
         <bitfield high="22" low="20" name="SWIZZLE_A" type="TEXTURE_SWIZZLE"/>
-        <bitfield pos="23" name="CACHE_MODE">
-            <value value="0" name="128"/> <!-- let's assume this is in bits -->
-            <value value="1" name="256"/>
-        </bitfield>
+        <bitfield pos="23" name="CACHE_MODE" type="TS_CACHE_MODE"/>
         <bitfield pos="24" name="TEXTURE_ARRAY">
             <doc>
             1D array: TEXTURE_TYPE_2D
@@ -245,6 +246,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="2" name="R5G6B5"/>
         <value value="3" name="A8R8G8B8"/>
         <value value="4" name="X8R8G8B8"/>
+        <value value="5" name="D24S8"/>
     </enum>
 
 </database>
