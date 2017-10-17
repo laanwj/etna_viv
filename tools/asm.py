@@ -35,7 +35,7 @@ from etnaviv.parse_rng import parse_rng_file, format_path, BitSet, Domain
 from etnaviv.asm_common import DstOperand, DstOperandAReg, DstOperandMem, SrcOperand, SrcOperandImm, TexOperand, AddrOperand, Instruction, AMODES, COMPS, RGROUPS, set_imm
 from etnaviv.asm_common import disassemble, format_instruction
 from etnaviv.disasm import disasm_format
-from etnaviv.asm_defs import Model
+from etnaviv.asm_defs import Model, Flags, Dialect
 
 reg_re = re.compile('^(i|t|u|a|tex|\?4\?|\?5\?|\?6\?|\?7\?)(\d+)(\[.*?\])?(\.[\_xyzw]{1,4})?$')
 mem_re = re.compile('^mem(\.[\_xyzw]{1,4})?$')
@@ -84,7 +84,7 @@ def is_imm(s):
     else:
         return True
 
-def assemble(isa, model, inst, warnings):
+def assemble(isa, dialect, inst, warnings):
     fields = {}
     fields['OPCODE'] = inst.op & 0x3F
     fields['OPCODE_BIT6'] = (inst.op >> 6) & 0x01
@@ -156,9 +156,9 @@ class Assembler(object):
     linenr = 0
     instructions = None
     source = None
-    def __init__(self, isa, model):
+    def __init__(self, isa, dialect):
         self.isa = isa
-        self.model = model
+        self.dialect = dialect
         self.errors = []
         self.instructions = []
         self.source = []
@@ -297,7 +297,7 @@ class Assembler(object):
                 else:
                     src.append(None)
             elif label_re.match(operand): # label (interpreted as immediate on gc3000+, as branch destination on gc2000)
-                if self.model <= Model.GC2000:
+                if self.dialect.model <= Model.GC2000:
                     if idx == 3: # last operand (proxy for "is branch destination?")
                         addr = AddrOperand(addr = operand) # will resolve labels later
                     else:
@@ -306,7 +306,7 @@ class Assembler(object):
                 else:
                     src.append(SrcOperandImm(use=1, imm=operand)) # will resolve labels later
             elif is_imm(operand): # immediate or direct address
-                if self.model <= Model.GC2000:
+                if self.dialect.model <= Model.GC2000:
                     if idx == 3: # last operand
                         addr = AddrOperand(addr = int(operand))
                     else:
@@ -320,9 +320,11 @@ class Assembler(object):
         num_operands = 1 + len(src) + (addr is not None)
         if num_operands != 4:
             self.errors.append((self.linenr, 'Invalid number of operands (%i)' % num_operands))
+        # TODO: sel
+        sel = None
         inst_out = Instruction(op=op,
             cond=cond,sat=sat,type=type_,
-            tex=tex,dst=dst,src=src,addr=addr,unknowns={},linenr=self.linenr)
+            tex=tex,dst=dst,src=src,addr=addr,sel=None,unknowns={},linenr=self.linenr)
         self.instructions.append(inst_out)
         return inst_out
 
@@ -343,10 +345,10 @@ class Assembler(object):
                 if isinstance(src, SrcOperandImm) and isinstance(src.imm, (str,unicode)):
                     inst.src[i] = src._replace(imm=self.labels[src.imm])
 
-            inst_out = assemble(self.isa, self.model, inst, warnings)
+            inst_out = assemble(self.isa, self.dialect, inst, warnings)
             rv.append(inst_out)
             # sanity check: disassemble and see if the instruction matches
-            dis_i = disassemble(self.isa, self.model, inst_out, warnings)
+            dis_i = disassemble(self.isa, self.dialect, inst_out, warnings)
             if not compare_inst(inst, dis_i, warnings):
                 # Assembly did not match disassembly, print details
                 warnings.append('%08x %08x %08x %08x %s' % (
@@ -367,8 +369,8 @@ def compare_inst(a,b,warnings):
             match = False
     return match
 
-def do_asm(out, isa, args, f):
-    asm = Assembler(isa, args.model)
+def do_asm(out, isa, dialect, args, f):
+    asm = Assembler(isa, dialect)
     errors = []
     for linenr, line in enumerate(f):
         line = line.rstrip('\n')
@@ -388,7 +390,7 @@ def do_asm(out, isa, args, f):
             with open(args.bin_out, 'wb') as f:
                 f.write(data)
         else: # no binary output, print as C-ish ASCII through disassembler
-            disasm_format(out, isa, args.model, data, opt_addr=args.addr, opt_raw=False, opt_cfmt=True)
+            disasm_format(out, isa, dialect, data, opt_addr=args.addr, opt_raw=False, opt_cfmt=True)
     else:
         exit(1)
 
@@ -412,6 +414,9 @@ def parse_arguments():
     parser.add_argument('-m', dest='model',
             type=str, default='GC2000',
             help='GPU type to assemble for (GC2000 or GC3000, default GC3000)')
+    parser.add_argument('--isa-flags', dest='isa_flags',
+            type=str, default='',
+            help=('ISA flags, comma separated (available: %s)' % Flags.available()))
     return parser.parse_args()        
 
 def main():
@@ -419,16 +424,22 @@ def main():
     out = sys.stdout
     isa = parse_rng_file(args.isa_file)
     try:
-        args.model = Model.by_name[args.model.upper()]
+        model = Model.by_name[args.model.upper()]
     except KeyError:
         print('Unknown model identifier %s' % args.model, file=sys.stderr)
         exit(1)
+    try:
+        flags = Flags.from_str(args.isa_flags)
+    except KeyError:
+        print('Unknown ISA flag identifier %s' % args.isa_flags, file=sys.stderr)
+        exit(1)
+    dialect = Dialect(model, flags)
 
     if args.input == '-':
-        do_asm(out, isa, args, sys.stdin)
+        do_asm(out, isa, dialect, args, sys.stdin)
     else:
         with open(args.input, 'rb') as f:
-            do_asm(out, isa, args, f)
+            do_asm(out, isa, dialect, args, f)
 
 if __name__ == '__main__':
     main()

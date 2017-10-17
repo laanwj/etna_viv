@@ -444,6 +444,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x01008" name="INPUT_COUNT" value="0x00000000">
             <bitfield high="3" low="0" name="COUNT" type="uint" brief="Number of PS inputs"/>
             <bitfield high="12" low="8" name="UNK8" type="uint"/>
+            <bitfield pos="16" name="DUAL16" brief="Enable dual-16 mode for PS"/>
         </reg32>
         <reg32 offset="0x0100C" name="TEMP_REGISTER_CONTROL" brief="Temporary register control" value="0x00000000">
             <bitfield high="5" low="0" name="NUM_TEMPS" type="uint" brief="Number of temporary registers"/>

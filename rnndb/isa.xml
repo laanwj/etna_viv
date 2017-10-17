@@ -103,6 +103,37 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
           for an instruction to have multiple immediates values, one for each source argument,
           of different conversion types. This can be useful for the STORE instruction
           to store a fixed value at a fixed offset.
+
+        Dual-16 mode
+        -----------------
+
+        Some GPUs support dual-16 mode for the pixel shader. The Vivante driver uses this
+        when only mediump/lowp precision is used. This changes the execution mode of the
+        fragment mode to process two 16 bit values at once. The interpretation of instructions
+        is changed.
+
+        Bits 13 and 24 of the third instruction word (SEL_BIT0 and SEL_BIT1) can be used to
+        make an instruction run on only one half of the threads. This is used for sampling
+        textures. For example,
+
+           void main()
+           {
+               gl_FragColor = 3.0 * vVaryingColor * texture2D(in_texture, coord);\n"
+           }
+
+        Gets assembled to
+
+           0: texld.s0   t3, tex0, th1.xyyy, void, void
+           1: texld.s1   t3, tex0, th1.zwww, void, void
+           2: mul        t1, u0.xxxx, t2, void
+           3: mul        t1, t1, t3, void
+
+        Full-precision register accesses can be done by using the register group th
+        instead of t.
+
+        There might be other ISA restrictions as well. For example, the blob refuses to
+        generate immediate values.
+
     </doc>
     <value value="0x00" name="NOP" brief="No operation"/>
     <value value="0x01" name="ADD" brief="Add">
@@ -701,6 +732,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <bitfield high="31" low="27" name="TEX_ID" brief="Texture sampler id"/>
 </reg32>
 <reg32 offset="0x00004" name="WORD_1">
+    <!-- TEX_AMODE is also: rounding mode for ALU instructions -->
     <bitfield high="2" low="0" name="TEX_AMODE" type="INST_AMODE" brief="Texture addressing mode"/>
     <bitfield high="10" low="3" name="TEX_SWIZ" type="INST_SWIZ" brief="Texture swizzle">
         <doc>This swizzle is applied to the components of the value fetched from the texture.</doc>
@@ -747,11 +779,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <!-- operand 2 -->
     <bitfield high="3" low="3" name="SRC2_USE" brief="Source operand 2 used"/>
     <bitfield high="12" low="4" name="SRC2_REG" brief="Source operand 2 register"/>
-    <bitfield high="13" low="13" name="UNK3_13"/>
+    <bitfield high="13" low="13" name="SEL_BIT0"/> <!-- Select instruction for subset of threads in dual-16 mode -->
     <bitfield high="21" low="14" name="SRC2_SWIZ" type="INST_SWIZ" brief="Source operand 2 swizzle"/>
     <bitfield high="22" low="22" name="SRC2_NEG" brief="Source operand 2 negate"/>
     <bitfield high="23" low="23" name="SRC2_ABS" brief="Source operand 2 absolute"/>
-    <bitfield high="24" low="24" name="UNK3_24"/>
+    <bitfield high="24" low="24" name="SEL_BIT1"/> <!-- Select instruction for subset of threads in dual-16 mode  -->
     <bitfield high="27" low="25" name="SRC2_AMODE" type="INST_AMODE" brief="Source operand 2 addressing mode"/>
     <bitfield high="30" low="28" name="SRC2_RGROUP" type="INST_RGROUP" brief="Source operand 2 register group"/>
     <bitfield high="31" low="31" name="UNK3_31"/>

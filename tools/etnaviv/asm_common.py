@@ -30,15 +30,16 @@ from collections import namedtuple
 
 from etnaviv.parse_rng import parse_rng_file, format_path, BitSet, Domain
 from etnaviv.floatutil import int_as_float, float_as_int
-from etnaviv.asm_defs import Model
+from etnaviv.asm_defs import Model, Flags
 
 # Register groups
 # t temporary
 # u uniform 0..127
 # v uniform 127..255 (this is rewritten to u in format_src)
+# th temporary (high precision), used in DUAL16 mode
 #  others are unknown
 # rgroup 7 is used for immediate values on gc3000
-RGROUPS = ['t', 'i', 'u', 'v', '?4?', '?5?', '?6?', '?7?']
+RGROUPS = ['t', 'i', 'u', 'v', 'th', '?5?', '?6?', '?7?']
 # Addressing modes
 AMODES = ['', 'a.x', 'a.y', 'a.z', 'a.w', '?5?', '?6?', '?7?']
 # components
@@ -59,7 +60,7 @@ SrcOperandImm = namedtuple('SrcOperandImm', ['use', 'imm'])
 TexOperand = namedtuple('TexOperand', ['id', 'amode', 'swiz'])
 # address operand to CALL/BRANCH: only GC2000
 AddrOperand = namedtuple('AddrOperand', ['addr'])
-Instruction = namedtuple('Instruction', ['op', 'cond', 'sat', 'tex', 'dst', 'src', 'addr', 'unknowns', 'linenr', 'type'])
+Instruction = namedtuple('Instruction', ['op', 'cond', 'sat', 'tex', 'dst', 'src', 'addr', 'sel', 'unknowns', 'linenr', 'type'])
 
 def extract_imm(fields, idx):
     '''
@@ -109,7 +110,7 @@ def set_imm(fields, idx, value):
     fields['SRC%i_ABS' % idx] = (rawval >> 18) & 1
     fields['SRC%i_AMODE' % idx] = (rawval >> 19) | (conv << 1)
 
-def disassemble(isa, model, inst, warnings):
+def disassemble(isa, dialect, inst, warnings):
     '''Parse four 32-bit instruction words into Instruction object'''
     # Extract bit fields using ISA
     domain = isa.lookup_domain('VIV_ISA')
@@ -159,7 +160,7 @@ def disassemble(isa, model, inst, warnings):
             warnings.append('tex not used but fields non-zero (id=%d,amode=%d,swiz=%d)' % (tex.id,tex.amode,tex.swiz))
         tex = None
 
-    if model <= Model.GC2000 and op in [0x14, 0x16]: # CALL, BRANCH
+    if dialect.model <= Model.GC2000 and op in [0x14, 0x16]: # CALL, BRANCH
         # Address (immediate) operand takes the place of src2
         addr = AddrOperand(fields['SRC2_IMM'])
     else:
@@ -197,20 +198,29 @@ def disassemble(isa, model, inst, warnings):
     # Type
     type_ = (fields['TYPE_BIT2'] << 2) | fields['TYPE_BIT01']
 
+    # Thread selector
+    if dialect.flags & Flags.DUAL16:
+        sel = (fields['SEL_BIT1']<<1) | fields['SEL_BIT0']
+    else:
+        sel = None
+
     # Unknown fields -- will warn if these are not 0
     unknowns = [
-        ('bit_3_24', fields['UNK3_24']),
         ('bit_3_31', fields['UNK3_31'])
     ]
-    if addr is None: # bit13 may be set if immediate operand 2
-        unknowns.append(('bit_3_13', fields['UNK3_13']))
+
+    if not (dialect.flags & Flags.DUAL16):
+        unknowns.append(('bit_3_24', fields['SEL_BIT1']))
+        if addr is None: # bit13 may be set if addr (old style immediate) operand 2
+            unknowns.append(('bit_3_13', fields['SEL_BIT0']))
+
     # verify that all bits in unknown are 0
     for (name,value) in unknowns:
         if value != 0:
             warnings.append('!%s=%i!' % (name,value))
     return Instruction(op=op,
             cond=fields['COND'],sat=fields['SAT'],type=type_,
-            tex=tex,dst=dst,src=src,addr=addr,unknowns=unknowns,linenr=None)
+            tex=tex,dst=dst,src=src,addr=addr,sel=sel,unknowns=unknowns,linenr=None)
 
 def format_dst(isa, dst):
     '''Format destination operand'''
@@ -271,7 +281,7 @@ def format_tex(isa, tex):
 def format_addr(isa, addr):
     return '%i' % (addr.addr)
 
-def format_instruction(isa, model, inst):
+def format_instruction(isa, dialect, inst):
     '''
     Format instruction as text.
     '''
@@ -284,6 +294,8 @@ def format_instruction(isa, model, inst):
         atoms.append(isa.types['INST_TYPE'].describe(inst.type))
     if inst.sat:
         atoms.append('SAT')
+    if inst.sel: # Thread selector
+        atoms.append('S%d' % (inst.sel - 1))
     opcode = '.'.join(atoms)
 
     args.append(format_dst(isa, inst.dst))

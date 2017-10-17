@@ -33,7 +33,7 @@ from collections import namedtuple
 from etnaviv.util import rnndb_path
 from etnaviv.parse_rng import parse_rng_file, format_path, BitSet, Domain
 from etnaviv.disasm import disasm_format
-from etnaviv.asm_defs import Model
+from etnaviv.asm_defs import Model, Flags, Dialect
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Disassemble shader')
@@ -57,9 +57,12 @@ def parse_arguments():
     parser.add_argument('-m', dest='model',
             type=str, default='GC2000',
             help='GPU type to disassemble for (GC2000 or GC3000, default GC3000)')
+    parser.add_argument('--isa-flags', dest='isa_flags',
+            type=str, default='',
+            help=('ISA flags (available: %s)' % Flags.available()))
     return parser.parse_args()
 
-def do_disasm(out, isa, args, f):
+def do_disasm(out, isa, dialect, args, f):
     if not args.ifmt:
         data = f.read()
     else: # 0x00841001, 0x00202800, 0x80000000, 0x00000038
@@ -72,23 +75,29 @@ def do_disasm(out, isa, args, f):
         print('Size of code must be multiple of 16.', file=sys.stderr)
         exit(1)
 
-    disasm_format(out, isa, args.model, data, args.addr, args.raw, args.cfmt)
+    disasm_format(out, isa, dialect, data, args.addr, args.raw, args.cfmt)
 
 def main():
     args = parse_arguments()
     out = sys.stdout
     isa = parse_rng_file(args.isa_file)
     try:
-        args.model = Model.by_name[args.model.upper()]
+        model = Model.by_name[args.model.upper()]
     except KeyError:
         print('Unknown model identifier %s' % args.model, file=sys.stderr)
         exit(1)
+    try:
+        flags = Flags.from_str(args.isa_flags)
+    except KeyError:
+        print('Unknown ISA flag identifier %s' % args.isa_flags, file=sys.stderr)
+        exit(1)
+    dialect = Dialect(model, flags)
 
     if args.input == '-':
-        do_disasm(out, isa, args, sys.stdin)
+        do_disasm(out, isa, dialect, args, sys.stdin)
     else:
         with open(args.input, 'rb') as f:
-            do_disasm(out, isa, args, f)
+            do_disasm(out, isa, dialect, args, f)
 
 if __name__ == '__main__':
     main()

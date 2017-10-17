@@ -32,4 +32,33 @@ class Model:
         GC3000:'GC3000',
     }
 
+class Flags:
+    '''GPU dialect flags'''
+    NONE = 0
+    DUAL16 = 1
 
+    by_name = {
+        'DUAL16':DUAL16,
+    }
+    by_idx = {
+        DUAL16:'DUAL16',
+    }
+
+    @classmethod
+    def from_str(cls, s):
+        if not s:
+            return 0
+        rv = 0
+        for atom in s.split(','):
+            rv |= cls.by_name[atom.upper()]
+        return rv
+
+    @classmethod
+    def available(cls):
+        return ','.join(cls.by_name.keys())
+
+class Dialect:
+    '''ISA dialect'''
+    def __init__(self, model, flags):
+        self.model = model
+        self.flags = flags
