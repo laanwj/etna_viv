@@ -716,6 +716,11 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <value value="6" name="U32"/><!--    1    1    0  -->
     <value value="7" name="U8"/> <!--    1    1    1  -->
 </enum>
+<enum name="INST_ROUND_MODE">
+    <value value="0" name="DEFAULT"/>
+    <value value="1" name="RTZ"/>
+    <value value="2" name="RTNE"/>
+</enum>
 
 <!-- The four instruction words. Vivante has a fixed-size, predictable instruction format
      with explicit inputs and outputs. This does simplify code generation,
@@ -734,6 +739,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 <reg32 offset="0x00004" name="WORD_1">
     <!-- TEX_AMODE is also: rounding mode for ALU instructions -->
     <bitfield high="2" low="0" name="TEX_AMODE" type="INST_AMODE" brief="Texture addressing mode"/>
+    <bitfield high="1" low="0" name="RMODE" type="INST_ROUND_MODE" brief="Rounding mode"/>
+    <bitfield pos="2" name="PMODE" brief="Pack mode"/>
     <bitfield high="10" low="3" name="TEX_SWIZ" type="INST_SWIZ" brief="Texture swizzle">
         <doc>This swizzle is applied to the components of the value fetched from the texture.</doc>
     </bitfield>
