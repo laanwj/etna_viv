@@ -67,7 +67,7 @@ def update_mappings(states, state_to_info, cmd_to_info):
         elif ann.cat == 'state':
             state_to_info.add((ann.ofs, info))
 
-def dump_states(states):
+def dump_states(states, show_depth):
     cmdbuf = reconstruct_cmdbuf(states)
     ptr = 0 
     for (ann, (value,info)) in zip(annotate_command_buffer(s[0] for s in cmdbuf), cmdbuf):
@@ -82,6 +82,9 @@ def dump_states(states):
         if value is not None:
             value_str = '%08x' % value
         print('{:08x} {} {} {}'.format(ptr, value_str, pad_right(desc,10), format_loc(info[0]) if info else None))
+        if show_depth and info is not None:
+            for line in info[1:]:
+                print('                             {}'.format(format_loc(line),a=ATTRS))
         ptr += 1
 
 LocInfo = namedtuple('LocInfo', ['basename', 'offset', 'func', 'meta'])
@@ -142,7 +145,7 @@ def dump_mmt_file(f, verbose, show_depth, as_json):
     for states in mmt_state_blocks(mmt_file_states(f)):
         if verbose:
             print()
-            dump_states(states)
+            dump_states(states, show_depth)
         update_mappings(states, state_to_info, cmd_to_info)
 
     if not as_json:

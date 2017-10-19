@@ -226,6 +226,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 </doc>
             </reg32>
         </stripe>
+        <!-- 007C4 is vertex attribute related -->
         <reg32 offset="0x007C4" name="HALTI5_UNK007C4"/> <!-- HALTI5 -->
         <reg32 offset="0x007D0" name="HALTI5_UNK007D0" length="2" stride="4"/> <!-- HALTI5 -->
         <reg32 offset="0x007D8" name="HALTI5_UNK007D8"/> <!-- HALTI5 -->
@@ -305,16 +306,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <doc>Number of components for all varyings together, rounded to a multiple of 2.</doc>
             <bitfield high="7" low="0" name="NUM"/>
         </reg32>
-        <reg32 offset="0x03820" name="VARYING_NUM_COMPONENTS" brief="Number of components in varyings" value="0x00000000"> <!-- !HALTI5 -->
+        <reg32 offset="0x03820" name="VARYING_NUM_COMPONENTS" type="VARYING_NUM_COMPONENTS" brief="Number of components in varyings" value="0x00000000"> <!-- !HALTI5 -->
             <doc>Number of components per varying (PS).</doc>
-            <bitfield high="2" low="0" name="VAR0"/>
-            <bitfield high="6" low="4" name="VAR1"/>
-            <bitfield high="10" low="8" name="VAR2"/>
-            <bitfield high="14" low="12" name="VAR3"/>
-            <bitfield high="18" low="16" name="VAR4"/>
-            <bitfield high="22" low="20" name="VAR5"/>
-            <bitfield high="26" low="24" name="VAR6"/>
-            <bitfield high="30" low="28" name="VAR7"/>
         </reg32>
         <reg32 offset="0x03824" name="OCCLUSION_QUERY_ADDR" value="0x00000000" type="VIVM">
             <doc>Writing the address where to store the result will enable occlusion query.</doc>
@@ -363,7 +356,13 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x03888" name="HALTI5_UNK03888"/> <!-- HALTI5 -->
         <reg32 offset="0x0388C" name="GS_UNK0388C"/> <!-- GEOMETRY_SHADER -->
         <reg32 offset="0x03898" name="FENCE_OUT_DATA_HIGH"/> <!-- HALTI5, triggers fence write? -->
-        <reg32 offset="0x0389C" name="SHADER_INDEX"/> <!-- increases with 3 for each new shader combination used? -->
+        <reg32 offset="0x0389C" name="SHADER_INDEX" brief="Shader index for debugging/profiling">
+            <doc>
+                The blob increases this value with 3 for each new shader combination used.
+                It does not actually affect rendering.
+                Probably this state is read out by vivante's profiling tools.
+            </doc>
+        </reg32>
         <reg32 offset="0x038A0" name="GS_UNK038A0" length="8" stride="4"/> <!-- GEOMETRY_SHADER -->
         <reg32 offset="0x038C0" name="HALTI5_UNK038C0" length="16" stride="4"/> <!-- feature HALTI5 -->
         <reg32 offset="0x03900" name="SECURITY_UNK3900"/> <!-- SECURITY -->

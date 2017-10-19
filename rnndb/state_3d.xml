@@ -127,6 +127,17 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <value value="15" name="SET"/>
     </enum>
 
+    <bitset name="VARYING_NUM_COMPONENTS">
+        <bitfield high="2" low="0" name="VAR0"/>
+        <bitfield high="6" low="4" name="VAR1"/>
+        <bitfield high="10" low="8" name="VAR2"/>
+        <bitfield high="14" low="12" name="VAR3"/>
+        <bitfield high="18" low="16" name="VAR4"/>
+        <bitfield high="22" low="20" name="VAR5"/>
+        <bitfield high="26" low="24" name="VAR6"/>
+        <bitfield high="30" low="28" name="VAR7"/>
+    </bitset>
+
     <stripe name="VS" brief="Vertex shader states">
         <doc>The vertex shader to be used for 3D rendering is configured here.</doc>
         <reg32 offset="0x00800" name="END_PC" value="0x00000000" brief="End instruction number">
@@ -194,7 +205,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00860" name="UNIFORM_CACHE" value="0x00000000"> <!-- instructionCount > 1024, !HALTI5 -->
             <bitfield pos="0" name="FLUSH"/>
             <bitfield pos="4" name="PS" brief="0 for VS, 1 for PS"/>
-            <bitfield pos="12" name="UNK12"/>
+            <bitfield pos="12" name="RTNE_ROUNDING"/> <!-- HALTI5 has this bit in state 0x15600 -->
         </reg32>
         <!-- The following is used with unified uniforms (SH_UNIFORM_*) -->
         <reg32 offset="0x00864" name="UNIFORM_BASE" brief="Offset applied to VS uniform loads (granularity is 4-vectors)"/>
@@ -237,7 +248,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x00878" name="HALTI5_UNK00878"/> <!-- !HALTI5 && ICACHE "VS/PS Start/End PC register" -->
         <reg32 offset="0x00880" name="HALTI5_UNK00880"/> <!-- !HALTI5 && ICACHE "VS/PS Start/End PC register" -->
         <reg32 offset="0x00884" name="HALTI1_UNK00884"/> <!-- HALTI1 -->
-        <reg32 offset="0x0088C" name="UNK0088C"/> <!-- related to 0x01048 -->
+        <reg32 offset="0x0088C" name="ICACHE_PREFETCH" brief="Trigger icache prefetch"/>
         <reg32 offset="0x00890" name="ICACHE_UNK00890"/> <!-- !HALTI5 && ICACHE_PREFETCH -->
         <reg32 offset="0x00898" name="HALTI5_UNK00898" length="2" stride="4"/> <!-- HALTI5 -->
         <reg32 offset="0x008A0" name="HALTI5_UNK008A0"/> <!-- HALTI5 -->
@@ -251,6 +262,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x008B8" name="HALTI5_UNK008B8"/> <!-- HALTI5 -->
         <reg32 offset="0x008BC" name="NEWRANGE_HIGH"/> <!-- HALTI5 -->
+        <!-- 008C0 is vertex attribute related -->
         <reg32 offset="0x008C0" name="HALTI5_UNK008C0" length="8" stride="4"/> <!-- HALTI5 -->
         <reg32 offset="0x008E0" name="HALTI5_UNK008E0" length="8" stride="4"/> <!-- HALTI5 -->
         <reg32 offset="0x04000" name="INST_MEM" value="0x00000000" length="1024" stride="4"> <!-- instructionCount <= 256 -->
@@ -259,8 +271,8 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x05000" name="UNIFORMS" value="0x00000000" length="1024" stride="4">
             <!-- length="vertexUniforms * 4" -->
         </reg32>
-        <reg32 offset="0x15600" name="HALTI5_UNK15600"/> <!-- HALTI5, not sure this belongs under VS or TE or somewhere else -->
-        <reg32 offset="0x15604" name="HALTI5_UNK15604"/> <!-- HALTI5 && ICACHE_PREFETCH -->
+        <!-- same as 0x01094 for PS -->
+        <reg32 offset="0x15604" name="ICACHE_COUNT" brief="Number of instructions minus one"/> <!-- HALTI5 && ICACHE_PREFETCH -->
     </stripe>
 
     <bitset name="CL_GLOBAL_DIM" inline="yes">
@@ -387,7 +399,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <!-- Below state basically breaks the Z buffer when enabled in Mesa driver -
                  should be coupled with a change in shaders.
              -->
-            <bitfield pos="30" name="ZCONVERT_BYPASS"/> <!-- set on gc3000 -->
+            <bitfield pos="30" name="ZCONVERT_BYPASS"/> <!-- set on gc3000 and gc7000 -->
         </reg32>
         <reg32 offset="0x00A8C" name="ZFARCLIPPING" value="0x00000000">
             <doc>
@@ -396,7 +408,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 otherwise (gc2000).
             </doc>
 	</reg32>
-        <reg32 offset="0x00A90" name="HALTI5_UNK00A90" length="4" stride="4"/> <!-- HALTI5 -->
+        <!-- Looks like the blob writes the same values here as to 01080+x, at least in
+             many cases. Might be varying num components (which used to be in GL).
+         -->
+        <reg32 offset="0x00A90" name="VARYING_NUM_COMPONENTS" type="VARYING_NUM_COMPONENTS" length="4" stride="4"/> <!-- HALTI5 -->
         <reg32 offset="0x00AA8" name="HALTI5_UNK00AA8"/> <!-- HALTI5 -->
     </stripe>
 
@@ -469,16 +484,29 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x01034" name="UNK01034"/>
         <reg32 offset="0x01038" name="UNK01038"/> <!-- numRT == 8 -->
+        <!-- Following value pattern looks like a swizzle -->
         <reg32 offset="0x0103C" name="HALTI3_UNK0103C" value="0x76543210"/> <!-- HALTI3 kernel driver puts this under "pixel engine states" -->
         <reg32 offset="0x01040" name="UNK01040" length="2" stride="4"/> <!-- HALTI2 -->
-        <reg32 offset="0x01048" name="UNK01048"/> <!-- related to 0x0088C -->
+        <reg32 offset="0x01048" name="ICACHE_PREFETCH" brief="Trigger icache prefetch"/>
         <reg32 offset="0x0104C" name="ICACHE_UNK0104C" type="VIVM"/> <!-- !HALTI5 && ICACHE_PREFETCH -->
-        <reg32 offset="0x01054" name="HALTI4_UNK01054"/> <!-- HALTI4 -->
+        <reg32 offset="0x01054" name="MSAA_CONFIG"> <!-- HALTI4 -->
+            <!-- Multisampling related masked state.
+                 6fffffff SAMPLE_COVERAGE
+                 f70fffff SAMPLE_COVERAGE_VALUE
+                 fff6ffff ?
+                 ffff6fff ALPHA_TO_COVERAGE
+                 fffff6ff SAMPLE_MASK
+                 ffffff7f ?
+             -->
+        </reg32>
         <reg32 offset="0x01058" name="HALTI5_UNK01058"/> <!-- HALTI5 -->
-        <reg32 offset="0x01080" name="HALTI5_UNK01080" length="4" stride="4"/> <!-- HALTI5 -->
+        <!-- Looks like the blob writes the same values here as to 00A90+x, at least in
+             many cases. Might be varying num components (which used to be in GL).
+         -->
+        <reg32 offset="0x01080" name="VARYING_NUM_COMPONENTS" type="VARYING_NUM_COMPONENTS" length="4" stride="4"/> <!-- HALTI5 -->
         <reg32 offset="0x0087C" name="NEWRANGE_LOW"/> <!-- HALTI5 || ICACHE -->
         <reg32 offset="0x01090" name="NEWRANGE_HIGH"/> <!-- HALTI5 -->
-        <reg32 offset="0x01094" name="HALTI5_UNK01094"/> <!-- HALTI5 && ICACHE_PREFETCH -->
+        <reg32 offset="0x01094" name="ICACHE_COUNT" brief="Number of instructions minus one"/> <!-- HALTI5 && ICACHE_PREFETCH -->
         <reg32 offset="0x01098" name="HALTI5_UNK01098"/> <!-- HALTI5 -->
         <reg32 offset="0x06000" name="INST_MEM" value="0x00000000" length="1024" stride="4"> <!-- instructionCount <= 256 -->
             <!-- length="instructionCount * 4" -->
@@ -496,6 +524,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x0110C" name="UNK0110C"/>
         <reg32 offset="0x01110" name="UNK01110"/>
         <reg32 offset="0x01114" name="UNK01114" type="VIVM"/>
+        <reg32 offset="0x01118" name="ICACHE_PREFETCH" brief="Trigger icache prefetch"/>
         <reg32 offset="0x0111C" name="UNK0111C"/>
         <reg32 offset="0x01120" name="UNK01120" length="8" stride="4"/>
         <reg32 offset="0x01140" name="UNK01140"/>
@@ -512,6 +541,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x14A00" name="UNK14A00"/>
         <reg32 offset="0x14A04" name="UNK14A04"/>
         <reg32 offset="0x14A08" name="UNK14A08" type="VIVM"/>
+        <reg32 offset="0x14A0C" name="ICACHE_PREFETCH" brief="Trigger icache prefetch"/>
         <reg32 offset="0x14A10" name="UNK14A10"/>
         <reg32 offset="0x14A14" name="UNK14A14"/>
         <reg32 offset="0x14A18" name="UNK14A18"/>
@@ -528,6 +558,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x14B04" name="UNK14B04"/>
         <reg32 offset="0x14B08" name="UNK14B08"/>
         <reg32 offset="0x14B0C" name="UNK14B0C" type="VIVM"/>
+        <reg32 offset="0x14B10" name="ICACHE_PREFETCH" brief="Trigger icache prefetch"/>
         <reg32 offset="0x14B14" name="UNK14B14"/>
         <reg32 offset="0x14B18" name="UNK14B18"/>
         <reg32 offset="0x14B1C" name="UNK14B1C"/>
@@ -746,7 +777,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="7" low="0" name="MASK_BACK" brief="glStencilFunc mask (GL_BACK)"/>
             <bitfield high="15" low="8" name="WRITE_MASK_BACK" brief="glStencilMask (GL_BACK)"/>
         </reg32>
-        <reg32 offset="0x014BC" name="HALTI3_UNK014BC"/> <!-- HALTI3 -->
+        <reg32 offset="0x014BC" name="MEM_CONFIG">
+            <bitfield pos="24" name="COLOR_CACHE_MODE" type="TS_CACHE_MODE"/>
+            <bitfield pos="26" name="DEPTH_CACHE_MODE" type="TS_CACHE_MODE"/>
+        </reg32>
         <reg32 offset="0x014C0" name="HALTI4_UNK014C0"/> <!-- HALTI4 -->
         <reg32 offset="0x014C4" name="ROBUSTNESS_UNK014C4"/> <!-- ROBUSTNESS -->
         <reg32 offset="0x01580" name="UNK01580" value="0x00000000" length="3" stride="4"/>
@@ -962,7 +996,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                     was a lossy format, specifically used when MSAA was enabled.
 
                     On GC7000 this field and COLOR_COMPRESSION_FORMAT seem to be set based on DEC400 enable/disable;
-                    if VIV_DISABLE_DEC400, this is set to 0 and MSAA_FORMAT also 0.
+                    if VIV_DISABLE_DEC400, this is set to 0 and COLOR_COMPRESSION_FORMAT also 0.
                     If DEC400 enabled, this is (sometimes) set to 1 and COLOR_COMPRESSION_FORMAT is 3.
                 </doc>
             </bitfield>
@@ -1145,9 +1179,17 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </stripe>
     </stripe>
 
-    <stripe name="SH" brief="Unified shader instruction memory">
+    <stripe name="SH" brief="General shader unit state">
         <doc>Shader instruction memory on new hardware that supports more than 256, or more than
             1024 shader instructions (different areas are used based on these cases).</doc>
+        <reg32 offset="0x15600" name="CONFIG"> <!-- HALTI5 -->
+            <!-- This state replaces state 00860 on HALTI5, although it loses
+                 the various flushing bits, and it's different enough to have its own bit
+                 definitions.
+             -->
+            <bitfield pos="1" name="RTNE_ROUNDING" brief="Default rounding"/>
+            <bitfield pos="2" name="DUAL16" brief="Dual-16 mode"/> <!-- Also PS.INPUT_COUNT bit 16 -->
+        </reg32>
         <reg32 offset="0x20000" name="UNK20000" value="0x00000000" length="8192" stride="4"> <!-- instructionCount > 1024 -->
             <!-- length="instructionCount * 4" -->
             <!-- this unified instruction memory "needs SELECT bit to steer" according to Vivante kernel driver -->

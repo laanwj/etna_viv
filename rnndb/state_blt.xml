@@ -215,7 +215,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 Do not set this to 0 or 1, this will never finish and crash the GPU.
                 </doc>
             </bitfield>
-            <bitfield pos="5" name="UNK5"/>
+            <bitfield pos="5" name="UNK5"/> <!-- affects filtering, the blob always sets it -->
         </reg32>
         <reg32 offset="0x140B4" name="FENCE_OUT_DATA_HIGH"/>
         <reg32 offset="0x140B8" name="ENABLE">
