@@ -353,6 +353,9 @@ def parse_arguments():
     parser.add_argument('--txdesc-file', metavar='TXDESCFILE', type=str, 
             help='Texture descriptionp definition file (rules-ng-ng)',
             default=rnndb_path('texdesc_3d.xml'))
+    parser.add_argument('-s', '--summary', dest='summary',
+            default=False, action='store_const', const=True,
+            help='Crude summary: for now, show only submitted command buffers')
     return parser.parse_args()        
 
 def patch_member_pointer(struct, name, ptrtype):
@@ -652,9 +655,12 @@ def main():
 
     for seq,rec in enumerate(fdr):
         if isinstance(rec, Event): # Print events as they appear in the fdr
-            f.write(('[seq %i] ' % seq) + tracking.thread_name(rec) + ' ')
+            if not args.summary:
+                f.write(('[seq %i] ' % seq) + tracking.thread_name(rec) + ' ')
             params = rec.parameters
-            if rec.event_type == 'MMAP_AFTER':
+            if rec.event_type == 'MMAP_BEFORE': # ignore
+                pass
+            elif rec.event_type == 'MMAP_AFTER':
                 f.write('mmap addr=0x%08x length=0x%08x prot=0x%08x flags=0x%08x offset=0x%08x = 0x%08x\n' % (
                     params['addr'].value, params['length'].value, params['prot'].value, params['flags'].value, params['offset'].value, 
                     params['ret'].value))
@@ -665,25 +671,29 @@ def main():
                 if params['request'].value == IOCTL_GCHAL_INTERFACE:
                     ptr = params['ptr'].value
                     inout = vivante_ioctl_data_t.unpack(fdr[ptr:ptr+vivante_ioctl_data_t.size])
-                    f.write('in=')
+                    if not args.summary:
+                        f.write('in=')
                     resolver = HalResolver('in')
                     s = extract_structure(fdr, inout[0], defs, '_gcsHAL_INTERFACE', resolver=resolver)
                     tracking.handle_gcin(rec.parameters['thread'].value, s)
-                    dump_structure(f, s, handle_pointer, handle_comment)
-                    f.write('\n')
+                    if not args.summary or s.members['command'].name == 'gcvHAL_COMMIT':
+                        dump_structure(f, s, handle_pointer, handle_comment)
+                        f.write('\n')
                 else:
                     f.write('Unknown Vivante ioctl %i\n' % rec.parameters['request'].value)
             elif rec.event_type == 'IOCTL_AFTER':
                 if params['request'].value == IOCTL_GCHAL_INTERFACE:
                     ptr = params['ptr'].value
                     inout = vivante_ioctl_data_t.unpack(fdr[ptr:ptr+vivante_ioctl_data_t.size])
-                    f.write('out=')
+                    if not args.summary:
+                        f.write('out=')
                     resolver = HalResolver('out')
                     s = extract_structure(fdr, inout[2], defs, '_gcsHAL_INTERFACE', resolver=resolver)
                     tracking.handle_gcout(rec.parameters['thread'].value, s)
-                    dump_structure(f, s, handle_pointer, handle_comment)
-                    f.write('\n')
-                    f.write('/* ================================================ */\n')
+                    if not args.summary:
+                        dump_structure(f, s, handle_pointer, handle_comment)
+                        f.write('\n')
+                        f.write('/* ================================================ */\n')
                 else:
                     f.write('Unknown Vivante ioctl %i\n' % rec.parameters['request'].value)
             else:
