@@ -373,6 +373,7 @@ def load_data_definitions(struct_file):
     for struct in d.values():
         if struct['kind'] == 'structure_type':
             patch_member_pointer(struct, 'logical', 'void')
+            patch_member_pointer(struct, 'queue', '_gcsQUEUE')
 
     return d
 

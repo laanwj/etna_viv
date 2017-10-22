@@ -6510,6 +6510,25 @@
         ],
         "name": "_gcsPROFILER_NEW_COUNTERS_PART2"
     },
+    "_gcsQUEUE": {
+        "byte_size": 408,
+        "kind": "structure_type",
+        "members": [
+            {
+                "indirection": 0,
+                "name": "next",
+                "offset": 0,
+                "type": "long long unsigned int"
+            },
+            {
+                "indirection": 0,
+                "name": "iface",
+                "offset": 8,
+                "type": "_gcsHAL_INTERFACE"
+            }
+        ],
+        "name": "_gcsQUEUE"
+    },
     "_gcsUSER_MEMORY_DESC": {
         "byte_size": 88,
         "kind": "structure_type",
