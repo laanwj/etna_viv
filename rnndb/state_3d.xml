@@ -242,7 +242,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="5" name="FLUSH_PS"/>
         </reg32>
         <reg32 offset="0x0086C" name="INST_ADDR" type="VIVM" brief="Memory address of shader instructions"/> <!-- ICACHE -->
-        <reg32 offset="0x00870" name="HALTI5_UNK00870"/> <!-- HALTI5 -->
+        <reg32 offset="0x00870" name="HALTI5_OUTPUT_COUNT"> <!-- HALTI5 -->
+            <bitfield high="9" low="0" name="COUNT"/> <!-- Same as VS.OUTPUT_COUNT -->
+	    <bitfield high="18" low="8" name="B"/> <!-- = COUNT*0x10 -->
+	</reg32>
         <!-- "new shader instruction PC registers (20 bit)" --> 
         <reg32 offset="0x00874" name="NEWRANGE_LOW"/> <!-- HALTI5 || ICACHE -->
         <reg32 offset="0x00878" name="HALTI5_UNK00878"/> <!-- !HALTI5 && ICACHE "VS/PS Start/End PC register" -->
@@ -251,8 +254,13 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x0088C" name="ICACHE_PREFETCH" brief="Trigger icache prefetch"/>
         <reg32 offset="0x00890" name="ICACHE_UNK00890"/> <!-- !HALTI5 && ICACHE_PREFETCH -->
         <reg32 offset="0x00898" name="HALTI5_UNK00898" length="2" stride="4"/> <!-- HALTI5 -->
-        <reg32 offset="0x008A0" name="HALTI5_UNK008A0"/> <!-- HALTI5 -->
-        <reg32 offset="0x008A8" name="HALTI5_UNK008A8"/> <!-- HALTI5 -->
+        <reg32 offset="0x008A0" name="HALTI5_UNK008A0"> <!-- HALTI5 -->
+            <!-- Various tweaking parameters regarding VS outputs? -->
+            <bitfield high="5" low="0" name="A"/> <!-- 0xe -->
+            <bitfield high="18" low="12" name="B"/> <!-- 0x10 -->
+            <bitfield high="28" low="20" name="C"/> <!-- 0x110 / output_count -->
+	</reg32>
+        <reg32 offset="0x008A8" name="SAMPLER_BASE" brief="Offset value applied to sampler index from VS"/> <!-- HALTI5 -->
         <reg32 offset="0x008B0" name="ICACHE_INVALIDATE"> <!-- HALTI5 -->
             <bitfield pos="0" name="UNK0"/>
             <bitfield pos="1" name="UNK1"/>
@@ -262,9 +270,20 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <reg32 offset="0x008B8" name="HALTI5_UNK008B8"/> <!-- HALTI5 -->
         <reg32 offset="0x008BC" name="NEWRANGE_HIGH"/> <!-- HALTI5 -->
-        <!-- 008C0 is vertex attribute related -->
-        <reg32 offset="0x008C0" name="HALTI5_UNK008C0" length="8" stride="4"/> <!-- HALTI5 -->
-        <reg32 offset="0x008E0" name="HALTI5_UNK008E0" length="8" stride="4"/> <!-- HALTI5 -->
+        <reg32 offset="0x008C0" name="HALTI5_INPUT" length="8" stride="4"> <!-- HALTI5 -->
+            <!-- See VS.INPUT for description of fields -->
+            <bitfield high="7" low="0" name="I0" type="uint"/>
+            <bitfield high="15" low="8" name="I1" type="uint"/>
+            <bitfield high="23" low="16" name="I2" type="uint"/>
+            <bitfield high="31" low="24" name="I3" type="uint"/>
+        </reg32>
+        <reg32 offset="0x008E0" name="HALTI5_OUTPUT" length="8" stride="4"> <!-- HALTI5 -->
+            <!-- See VS.OUTPUT for description of fields -->
+            <bitfield high="7" low="0" name="O0" type="uint"/>
+            <bitfield high="15" low="8" name="O1" type="uint"/>
+            <bitfield high="23" low="16" name="O2" type="uint"/>
+            <bitfield high="31" low="24" name="O3" type="uint"/>
+        </reg32>
         <reg32 offset="0x04000" name="INST_MEM" value="0x00000000" length="1024" stride="4"> <!-- instructionCount <= 256 -->
             <!-- length="instructionCount * 4" -->
         </reg32>
@@ -412,7 +431,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
              many cases. Might be varying num components (which used to be in GL).
          -->
         <reg32 offset="0x00A90" name="VARYING_NUM_COMPONENTS" type="VARYING_NUM_COMPONENTS" length="4" stride="4"/> <!-- HALTI5 -->
-        <reg32 offset="0x00AA8" name="HALTI5_UNK00AA8"/> <!-- HALTI5 -->
+        <reg32 offset="0x00AA8" name="VS_OUTPUT_COUNT" brief="Looks like a duplicate of VS output count"/> <!-- HALTI5 -->
     </stripe>
 
     <stripe name="SE" brief="Setup Engine states">
@@ -482,7 +501,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <!-- Not used for multiple render targets -->
             <bitfield high="1" low="0" name="COLOR_OUTPUT_COUNT" brief="Number of outputs minus one"/>
         </reg32>
-        <reg32 offset="0x01034" name="UNK01034"/>
+        <reg32 offset="0x01034" name="UNK01034"/> <!-- always 0x3f? -->
         <reg32 offset="0x01038" name="UNK01038"/> <!-- numRT == 8 -->
         <!-- Following value pattern looks like a swizzle -->
         <reg32 offset="0x0103C" name="HALTI3_UNK0103C" value="0x76543210"/> <!-- HALTI3 kernel driver puts this under "pixel engine states" -->
@@ -499,7 +518,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                  ffffff7f ?
              -->
         </reg32>
-        <reg32 offset="0x01058" name="HALTI5_UNK01058"/> <!-- HALTI5 -->
+        <reg32 offset="0x01058" name="SAMPLER_BASE" brief="Offset value applied to sampler index from PS"/> <!-- HALTI5 -->
         <!-- Looks like the blob writes the same values here as to 00A90+x, at least in
              many cases. Might be varying num components (which used to be in GL).
          -->
@@ -590,7 +609,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             Each group of state flags has a masking flag that when set prevents overwriting the flags in that group.
             These will be called FOO_MASK if the state to be masked is called FOO.
         </doc>
-        <reg32 offset="0x01400" name="DEPTH_CONFIG" value="0x00000000" masked="yes">
+        <reg32 offset="0x01400" name="DEPTH_CONFIG" value="0x00000000">
             <bitfield high="1" low="0" name="DEPTH_MODE">
                 <value value="0" name="NONE"/>
                 <value value="1" name="Z" brief="Z-buffer"/>
@@ -612,7 +631,16 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="19" name="UNK18_MASK"/>
             <bitfield pos="20" name="ONLY_DEPTH"/>
             <bitfield pos="21" name="ONLY_DEPTH_MASK"/>
-            <bitfield pos="24" name="DISABLE_ZS" brief="Completely disables writing to depth stencil buffer"/>
+            <bitfield pos="24" name="DISABLE_ZS">
+                <doc>
+                    Completely disabled writing to depth stencil buffer on older hardware.
+
+                    On GC7000+ this bit does something else and needs to be always enabled,
+                    otherwise rendering with TS-backed depth buffer tends to crash.
+                    (it might actually be the new bit for supertiling, a similar move
+                    that happened in PE.COLOR_FORMAT with SUPER_TILED_NEW)
+                </doc>
+            </bitfield>
             <bitfield pos="25" name="DISABLE_ZS_MASK"/>
             <bitfield pos="26" name="SUPER_TILED"/>
             <bitfield pos="27" name="SUPER_TILED_MASK"/>
@@ -694,14 +722,15 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="30" low="28" name="EQ_ALPHA" type="BLEND_EQ"/>
             <bitfield pos="31" name="EQ_ALPHA_MASK"/>
         </reg32>
-        <reg32 offset="0x0142C" name="COLOR_FORMAT" value="0x00000000" masked="yes">
+        <reg32 offset="0x0142C" name="COLOR_FORMAT" value="0x00000000">
             <bitfield high="3" low="0" name="FORMAT" type="RS_FORMAT"/>
             <bitfield pos="4" name="FORMAT_MASK"/>
             <bitfield high="11" low="8" name="COMPONENTS" type="RGBA_BITS" brief="glColorMask"/>
+            <bitfield pos="13" name="SUPER_TILED_NEW"/> <!-- GC7000 uses this to determine whether to supertile -->
             <bitfield pos="12" name="COMPONENTS_MASK"/>
             <bitfield pos="16" name="OVERWRITE" brief="Set to 1 when destination fully overwritten, so no alpha blending and masked components"/>
             <bitfield pos="17" name="OVERWRITE_MASK"/>
-            <bitfield pos="20" name="SUPER_TILED" brief="64x64 alignment"/>
+            <bitfield pos="20" name="SUPER_TILED"/>
             <bitfield pos="21" name="SUPER_TILED_MASK"/>
             <!-- Vivante driver on GC2000/GC3000/GC7000 specifies output format here and sets
                  FORMAT to 0 and FORMAT_MASK to 1.
