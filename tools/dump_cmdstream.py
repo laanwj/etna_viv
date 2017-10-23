@@ -631,6 +631,9 @@ def main():
         elif parent_type == '_gcsUSER_MEMORY_DESC':
             if field == 'physical': # annotate addresses with unique identifier
                 return tracking.format_addr(val.value)
+        if field == 'node':
+            if val.value in tracking.nodes:
+                return tracking.nodes[val.value].name
 
     def handle_pointer(f, ptr, depth):
         parent = depth[-1][0]
