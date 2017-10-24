@@ -374,6 +374,7 @@ def load_data_definitions(struct_file):
         if struct['kind'] == 'structure_type':
             patch_member_pointer(struct, 'logical', 'void')
             patch_member_pointer(struct, 'queue', '_gcsQUEUE')
+            patch_member_pointer(struct, 'next', '_gcsQUEUE')
 
     return d
 
@@ -631,6 +632,9 @@ def main():
         elif parent_type == '_gcsUSER_MEMORY_DESC':
             if field == 'physical': # annotate addresses with unique identifier
                 return tracking.format_addr(val.value)
+        elif parent_type == '_gcsHAL_SIGNAL':
+            if field == 'signal':
+                return 'id = %d' % val.value
         if field == 'node':
             if val.value in tracking.nodes:
                 return tracking.nodes[val.value].name
