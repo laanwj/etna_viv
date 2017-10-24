@@ -1205,6 +1205,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             </reg32>
             <reg32 offset="0x17200" name="SAMP_LOD_BIAS">
                 <bitfield high="15" low="0" name="BIAS" type="fixedp"/>
+                <bitfield pos="16" name="ENABLE"/>
             </reg32>
             <reg32 offset="0x17400" name="UNK17400"/>
         </stripe>
