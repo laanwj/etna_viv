@@ -367,7 +367,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="7" low="0" name="UNK0"/>
             <bitfield high="15" low="8" name="COUNT"/>
         </reg32>
-        <reg32 offset="0x00A34" name="CONFIG" value="0x00000000" brief="Primitive assembly state flags" masked="yes">
+        <reg32 offset="0x00A34" name="CONFIG" value="0x00000000" brief="Primitive assembly state flags">
             <doc>
             These can be set either per group of bits, or all at once, by using masking flags.
             Each group of state flags has a masking flag that prevents overwriting the flags in that group.
@@ -1188,10 +1188,12 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                     To disable mipmapping, set this to NONE as well as set the minimum and maximum LOD level to 0..0.
                 </bitfield>
                 <bitfield high="14" low="13" name="MAG" type="TEXTURE_FILTER" brief="Filter for magnification"/>
-                <bitfield pos="21" name="UNK21"/> <!-- always set? -->
+                <bitfield pos="21" name="UNK21"/> <!-- always set? not setting this causes MMU errors -->
+                <bitfield pos="22" name="UNK22"/> <!-- setting causes MMU errors -->
                 <bitfield pos="23" name="UNK23"/> <!-- seems related to texture format -->
 	    </reg32>
             <reg32 offset="0x16E00" name="SAMP_CTRL1">
+                <!-- None of these have any, or at least much of an effect with plain 2D BGRA textures -->
                 <bitfield pos="1" name="UNK1"/> <!-- always set? -->
                 <bitfield pos="2" name="SRGB"/> <!-- SRGB conversion? -->
                 <bitfield pos="3" name="UNK3"/>
