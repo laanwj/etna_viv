@@ -353,7 +353,12 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x03868" name="FENCE_OUT_ADDRESS" type="VIVM"/> <!-- HALTI5 -->
         <reg32 offset="0x0386C" name="FENCE_OUT_DATA_LOW"/> <!-- HALTI5 -->
         <reg32 offset="0x03884" name="HALTI5_UNK03884"/> <!-- HALTI5 -->
-        <reg32 offset="0x03888" name="HALTI5_UNK03888"/> <!-- HALTI5 -->
+        <reg32 offset="0x03888" name="HALTI5_SH_SPECIALS"> <!-- HALTI5 -->
+            <bitfield high="6" low="0" name="VS_PSIZE_OUT"/> <!-- output slot (after permutation) * 4 -->
+            <bitfield high="14" low="8" name="PS_PCOORD_IN"/> <!-- component idx in varyings -->
+            <bitfield high="22" low="16" name="UNK16"/> <!-- Probably other named PS inputs -->
+            <bitfield high="31" low="24" name="UNK24"/>
+        </reg32>
         <reg32 offset="0x0388C" name="GS_UNK0388C"/> <!-- GEOMETRY_SHADER -->
         <reg32 offset="0x03898" name="FENCE_OUT_DATA_HIGH"/> <!-- HALTI5, triggers fence write? -->
         <reg32 offset="0x0389C" name="SHADER_INDEX" brief="Shader index for debugging/profiling">
