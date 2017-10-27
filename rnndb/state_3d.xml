@@ -241,7 +241,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield pos="4" name="FLUSH_VS"/>
             <bitfield pos="5" name="FLUSH_PS"/>
         </reg32>
-        <reg32 offset="0x0086C" name="INST_ADDR" type="VIVM" brief="Memory address of shader instructions"/> <!-- ICACHE -->
+        <reg32 offset="0x0086C" name="INST_ADDR" type="VIVM" brief="Memory address of shader instructions, must be aligned to 0x100"/> <!-- ICACHE -->
         <reg32 offset="0x00870" name="HALTI5_OUTPUT_COUNT"> <!-- HALTI5 -->
             <bitfield high="9" low="0" name="COUNT"/> <!-- Same as VS.OUTPUT_COUNT -->
 	    <bitfield high="18" low="8" name="B"/> <!-- = COUNT*0x10 -->
@@ -262,6 +262,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 	</reg32>
         <reg32 offset="0x008A8" name="SAMPLER_BASE" brief="Offset value applied to sampler index from VS"/> <!-- HALTI5 -->
         <reg32 offset="0x008B0" name="ICACHE_INVALIDATE"> <!-- HALTI5 -->
+            <doc>Kernel driver writes value with all 5 bits set to here to flush ICACHE.</doc>
             <bitfield pos="0" name="UNK0"/>
             <bitfield pos="1" name="UNK1"/>
             <bitfield pos="2" name="UNK2"/>
@@ -495,7 +496,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </reg32>
         <!-- The following is used with unified uniforms (SH_UNIFORM_*) -->
         <reg32 offset="0x01024" name="UNIFORM_BASE" brief="Offset applied to PS uniform loads (granularity is 4-vectors)"/> <!-- -->
-        <reg32 offset="0x01028" name="INST_ADDR" type="VIVM" brief="Memory address of shader instructions"/> <!-- ICACHE -->
+        <reg32 offset="0x01028" name="INST_ADDR" type="VIVM" brief="Memory address of shader instructions, must be aligned to 0x100"/> <!-- ICACHE -->
         <reg32 offset="0x0102C" name="UNK0102C"/> <!-- numRT == 8 -->
         <reg32 offset="0x01030" name="CONTROL_EXT">
             <!-- Not used for multiple render targets -->
@@ -592,7 +593,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <doc>TFB = transform feedback?</doc>
         <reg32 offset="0x1C000" name="UNK1C000"/>
         <reg32 offset="0x1C008" name="UNK1C008" type="VIVM"/>
-        <reg32 offset="0x1C00C" name="FLUSH"/> <!-- Flush writes 0x12345678 here -->
+        <reg32 offset="0x1C00C" name="FLUSH"/> <!-- Flush writes 0x12345678 here in kernel driver -->
         <reg32 offset="0x1C014" name="UNK1C014" type="VIVM"/>
         <reg32 offset="0x1C040" name="UNK1C040" type="VIVM" length="4" stride="4"/>
         <reg32 offset="0x1C080" name="UNK1C080" length="4" stride="4"/>
@@ -1151,7 +1152,10 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <reg32 offset="0x14C40" name="DESCRIPTOR_UNK14C40"> <!-- TX_DESCRIPTOR -->
             <bitfield pos="0" name="UNK0"/> <!-- Always enabled by gc7000 blob -->
         </reg32>
-        <reg32 offset="0x14C44" name="UNK14C44"/> <!-- Encountered while tracing SashaWillems "indirectdraw" Vulkan demo -->
+        <reg32 offset="0x14C44" name="DESCRIPTOR_FLUSH">
+            <doc>Kernel driver writes here to flush the TX descriptor cache</doc>
+            <bitfield high="31" low="28" name="UNK28"/>
+        </reg32>
         <reg32 offset="0x14C48" name="DESCRIPTOR_INVALIDATE" brief="Writing here invalidates a texture descriptor"> <!-- TX_DESCRIPTOR -->
             <doc>
                 This state is written, once per descriptor, when the contents of a specific descriptor have changed

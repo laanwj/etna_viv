@@ -254,11 +254,16 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="4" low="0" name="EVENT_ID"/>
             <bitfield pos="5" name="FROM_FE"/>
             <bitfield pos="6" name="FROM_PE"/>
+            <bitfield pos="7" name="FROM_BLT"/>
             <bitfield high="12" low="8" name="SOURCE" brief="Event source (GC320)"/>
         </reg32>
         <reg32 offset="0x03808" name="SEMAPHORE_TOKEN" brief="A sempahore state arms the semaphore in the destination">
             <bitfield high="4" low="0" name="FROM" type="SYNC_RECIPIENT"/>
             <bitfield high="12" low="8" name="TO" type="SYNC_RECIPIENT"/>
+            <!-- This is 0 usually, I've only seen it as 3 after
+                 COPY_BUFFER of vertex data, syncing FE to BLT.
+                 (followed by GL.FLUSH_CACHE with bit 10=1,bit 11=1)
+             -->
             <bitfield low="28" high="29" name="UNK28"/>
         </reg32>
         <reg32 offset="0x0380C" name="FLUSH_CACHE" brief="Flush the current pipe">
@@ -275,7 +280,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             </bitfield>
             <bitfield pos="5" name="SHADER_L1"/>
             <bitfield pos="6" name="SHADER_L2"/>
-            <bitfield pos="10" name="UNK10"/> <!-- New bits for GC7000 at least -->
+            <bitfield pos="10" name="UNK10"/> <!-- New bits for GC7000 at least: BLT related? -->
             <bitfield pos="11" name="UNK11"/>
             <bitfield pos="12" name="DESCRIPTOR_UNK12"/> <!-- Texture descriptor related -->
             <bitfield pos="13" name="DESCRIPTOR_UNK13"/>
