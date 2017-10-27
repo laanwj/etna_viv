@@ -378,6 +378,23 @@ def load_data_definitions(struct_file):
 
     return d
 
+def extract_meta(fdr, defs, resolver, ifin):
+    '''Extract metadata for ifin, for tracking'''
+    field = command_to_field(ifin.members['command'].name)
+    gcin = ifin.members['u'].members.get(field)
+    if field in {'Commit', 'Event'}:
+        queue = gcin.members['queue'].addr
+        # Extract queue
+        q = []
+        while queue:
+            s = extract_structure(fdr, queue, defs, '_gcsQUEUE', resolver=resolver)
+            if s.members['next'] is UNRESOLVED: # Queue is not in fdr
+                break
+            q.append(s)
+            queue = s.members['next'].addr
+        return q
+    return None
+
 class MemNodeInfo:
     def __init__(self, node, bytes, alignment, type, flag, pool):
         self.node = node
@@ -454,6 +471,7 @@ class DriverState:
             if spec.address is not None and meminfo.address is not None:
                 if ranges_overlap_exclusive((spec.address, spec.address + spec.bytes), (meminfo.address, meminfo.address + meminfo.bytes)):
                     collided.add(meminfo.node)
+                    print('WARNING: GPU address collision of node 0x%x (%s) with new node 0x%x (%s)' % (meminfo.node, meminfo.name, spec.node, spec.name))
             # By CPU address
             if spec.memory is not None and meminfo.memory is not None:
                 if ranges_overlap_exclusive((spec.memory, spec.memory + spec.bytes), (meminfo.memory, meminfo.memory + meminfo.bytes)):
@@ -504,30 +522,39 @@ class DriverState:
         self.shader_num += 1
         return rv
 
-    def handle_gcin(self, thread, ifin):
+    def handle_gcin(self, thread, ifin, ifin_meta):
         '''
         Handle ioctl input.
         '''
         assert(thread not in self.saved_input)
-        self.saved_input[thread] = ifin
+        self.saved_input[thread] = ifin, ifin_meta
 
     def handle_gcout(self, thread, ifout):
         '''
         Handle ioctl output, and dispatch command.
         '''
-        ifin = self.saved_input[thread]
+        ifin,ifin_meta = self.saved_input[thread]
         del self.saved_input[thread]
         assert(ifin.members['command'].name == ifout.members['command'].name)
 
-        def dummy(ifin, ifout):
+        def dummy(ifin, ifout, ifin_meta):
             pass
         field = command_to_field(ifin.members['command'].name)
         getattr(self, 'handle_' + field, dummy)(
                 ifin.members['u'].members.get(field), 
-                ifout.members['u'].members.get(field))
+                ifout.members['u'].members.get(field),
+                ifin_meta)
+
+    def process_queue(self, queue):
+        '''Handle "event queue"'''
+        for rec in queue:
+            ifin = rec.members['iface']
+            field = command_to_field(ifin.members['command'].name)
+            getattr(self, 'handle_queue_' + field, lambda i: None)(
+                    ifin.members['u'].members.get(field))
 
     # Handlers for specific driver commands
-    def handle_AllocateLinearVideoMemory(self, gcin, gcout):
+    def handle_AllocateLinearVideoMemory(self, gcin, gcout, ifin_meta):
         meminfo = MemNodeInfo(
             node = gcout.members['node'].value,
             bytes = gcin.members['bytes'].value,
@@ -539,7 +566,7 @@ class DriverState:
         self.node_assign_name(meminfo)
         self.nodes[meminfo.node] = meminfo
 
-    def handle_WrapUserMemory(self, gcin, gcout):
+    def handle_WrapUserMemory(self, gcin, gcout, ifin_meta):
         out_desc = gcout.members['desc'].members
         meminfo = MemNodeInfo(
             node = gcout.members['node'].value,
@@ -556,18 +583,20 @@ class DriverState:
 
         self.meminfo_collision_detection(meminfo)
 
-    def handle_ReleaseVideoMemory(self, gcin, gcout):
+    def handle_ReleaseVideoMemory(self, gcin, gcout, ifin_meta):
         # Don't actually delete from the structure here, it seems the blob
         # does use-after-release in quite a few cases. This might be correct
         # (async - after the next event?) or not, but we want to be able to
         # print useful information nevertheless.
-        # Cleanup happens in meminfo_collision_detection.
+        # Cleanup happens in handle_queue_UnlockVideoMemory
         try:
-            self.nodes[gcin.members['node'].value].released = True
+            node = self.nodes[gcin.members['node'].value]
+            assert(not node.locked)
+            node.released = True
         except KeyError:
             return # Don't care
 
-    def handle_LockVideoMemory(self, gcin, gcout):
+    def handle_LockVideoMemory(self, gcin, gcout, ifin_meta):
         try:
             meminfo = self.nodes[gcin.members['node'].value]
         except KeyError:
@@ -579,12 +608,27 @@ class DriverState:
 
         self.meminfo_collision_detection(meminfo)
 
-    def handle_UnlockVideoMemory(self, gcin, gcout):
+    def handle_UnlockVideoMemory(self, gcin, gcout, ifin_meta):
         try:
             meminfo = self.nodes[gcin.members['node'].value]
         except KeyError:
-            return # Don't care
+            assert(0)
         meminfo.unlock()
+
+    def handle_queue_UnlockVideoMemory(self, gcin):
+        try:
+            # Real deletion happens here
+            del self.nodes[gcin.members['node'].value]
+        except KeyError:
+            assert(0)
+
+    def handle_Commit(self, gcin, gcout, ifin_meta):
+        '''Process queue data from gcin'''
+        self.process_queue(ifin_meta)
+
+    def handle_Event(self, gcin, gcout, ifin_meta):
+        '''Process queue data from gcin'''
+        self.process_queue(ifin_meta)
 
 def main():
     args = parse_arguments()
@@ -683,7 +727,7 @@ def main():
                         f.write('in=')
                     resolver = HalResolver('in')
                     s = extract_structure(fdr, inout[0], defs, '_gcsHAL_INTERFACE', resolver=resolver)
-                    tracking.handle_gcin(rec.parameters['thread'].value, s)
+                    tracking.handle_gcin(rec.parameters['thread'].value, s, extract_meta(fdr, defs, resolver, s))
                     if not args.summary or s.members['command'].name == 'gcvHAL_COMMIT':
                         dump_structure(f, s, handle_pointer, handle_comment)
                         f.write('\n')
