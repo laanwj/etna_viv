@@ -63,23 +63,29 @@ def format_state(pos, value, fixp, state_map):
             desc += register.describe(value)
     return desc
 
-def dump_command_buffer(f, recs, depth, state_map):
+def dump_command_buffer(f, recs, depth, state_map, addrs, tgtaddrs):
     '''
     Dump Vivante command buffer contents in human-readable
     format.
     '''
     indent = '    ' * len(depth)
     f.write('{\n')
-    states = [] # list of (ptr, state_addr) tuples
     ptr = 0
     for rec in recs:
         hide = False
+        if addrs is not None:
+            if addrs[ptr] in tgtaddrs:
+                f.write('\x1b[1;31m')
+            f.write('[0x0%08x]' % addrs[ptr])
+            if addrs[ptr] in tgtaddrs:
+                f.write('*')
+            else:
+                f.write(' ')
         if rec.op == 1 and rec.payload_ofs == -1:
             if options.hide_load_state:
                 hide = True
 
         if rec.state_info is not None:
-            states.append((rec.ptr, rec.state_info.pos, rec.state_info.format, rec.value))
             desc = format_state(rec.state_info.pos, rec.value, rec.state_info.format, state_map)
         else:
             desc = rec.desc
@@ -87,6 +93,7 @@ def dump_command_buffer(f, recs, depth, state_map):
         if not hide:
             f.write(indent + '    0x%08x' % rec.value)
             f.write(", /* %s */\n" % desc)
+        f.write('\x1b[0m')
         ptr += 1
     f.write(indent + '}')
 
@@ -106,6 +113,9 @@ def parse_arguments():
     parser.add_argument('-b', '--binary', dest='binary',
             default=False, action='store_const', const=True,
             help='Input is in binary')
+    parser.add_argument('-g', '--galcore', dest='galcore',
+            default=False, action='store_const', const=True,
+            help='Input is in galcore dmesg format')
     parser.add_argument('--output-c', dest='output_c',
             default=False, action='store_const', const=True,
             help='Print command buffer emission in C format')
@@ -131,26 +141,53 @@ def main():
     import re
 
     if args.binary:
+        # Binary format
         with open(args.input_file,'rb') as f:
             data = f.read()
         assert((len(data) % 8)==0)
         values = bytes_to_words(data)
-    else:
+        addrs = None
+        tgtaddrs = None
+    elif args.galcore:
+        # Vivante kernel format
+        values = []
+        addrs = []
+        tgtaddrs = set()
         with open(args.input_file,'r') as f:
-            # parse ascii
-            values = []
+            for line in f:
+                #value = line.strip()
+                #if value.startswith(':'):
+                #    value = int(value[1:9], 16)
+                #    values.append(value)
+                m = re.search('DMA Address 0x([0-9A-F]{8})', line)
+                if m:
+                    tgtaddrs.add(int(m.group(1), 16))
+                m = re.search('([0-9A-F]{8}) : (([0-9A-F]{8} )*[0-9A-F]{8})$', line)
+                # [  309.029521] 3FD84000 : 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+                if m:
+                    addr = int(m.group(1), 16)
+                    for i,d in enumerate(m.group(2).split(' ')):
+                        addrs.append(addr + i*4)
+                        values.append(int(d, 16))
+    else:
+        # old etnaviv ASCII format
+        values = []
+        addrs = None
+        tgtaddrs = None
+        with open(args.input_file,'r') as f:
             for line in f:
                 value = line.strip()
                 if value.startswith(':'):
                     value = int(value[1:9], 16)
                     values.append(value)
+
     recs = parse_command_buffer(values, cmdstream_info, initial_padding=0)
     if args.output_c_raw:
         dump_command_buffer_c_raw(sys.stdout, recs, state_map)
     elif args.output_c:
         dump_command_buffer_c(sys.stdout, recs, state_map)
     else:
-        dump_command_buffer(sys.stdout, recs, [], state_map)
+        dump_command_buffer(sys.stdout, recs, [], state_map, addrs, tgtaddrs)
     sys.stdout.write('\n')
 
 if __name__ == '__main__':
