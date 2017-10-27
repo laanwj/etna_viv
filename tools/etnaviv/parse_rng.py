@@ -150,8 +150,9 @@ class BaseType(Type):
     HEX = 'hex'
     FLOAT = 'float'
     FIXEDP = 'fixedp'
+    FIXEDPS = 'fixedps'
 
-    TYPES = {INT, UINT, BOOLEAN, HEX, FLOAT, FIXEDP}
+    TYPES = {INT, UINT, BOOLEAN, HEX, FLOAT, FIXEDP, FIXEDPS}
 
     kind = None
 
@@ -177,6 +178,10 @@ class BaseType(Type):
         elif self.kind == 'float':
             return '%f' % int_as_float(value, self.size)
         elif self.kind == 'fixedp':
+            return '%f' % (value/(1<<(self.size//2)))
+        elif self.kind == 'fixedps':
+            if value > (1<<self.size)//2:
+                value -= (1<<self.size)
             return '%f' % (value/(1<<(self.size//2)))
 
 class EnumValue(RNNObject):
