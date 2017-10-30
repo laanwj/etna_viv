@@ -52,8 +52,9 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <reg32 offset="0x80" name="BORDER_COLOR"/>
     <reg32 offset="0x84" name="3D_CONFIG" type="TE_SAMPLER_3D_CONFIG"/>
     <reg32 offset="0x88" name="LOG_SIZE" type="TE_SAMPLER_LOG_SIZE">
-        <!-- WIDTH and HEIGHT don't seem to be actually filled in, so I think
-             this is retained only for the extra state bits.
+        <!-- Completely ignored on GC7000L? -
+             the LOG_SIZE bits moved to LOG_SIZE_EXT and the RGB/SRGB bits to
+             sampler state.
          -->
     </reg32>
     <reg32 offset="0x8c" name="BORDER_COLOR_R" type="float"/>

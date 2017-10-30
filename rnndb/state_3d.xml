@@ -408,8 +408,20 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="7" low="4" name="UNK4"/>
             <bitfield high="11" low="8" name="UNK8"/>
         </reg32>
-        <reg32 offset="0x00A80" name="VIEWPORT_UNK00A80" value="0x00000000" type="float"/> <!-- GC3000 -->
-        <reg32 offset="0x00A84" name="VIEWPORT_UNK00A84" value="0x00000000" type="float"/> <!-- GC3000: This affects point sprite rendering, blob sets this to 8192.0 -->
+        <reg32 offset="0x00A80" name="VIEWPORT_UNK00A80" value="0x00000000" type="float">
+            <doc>
+            Blob sets this based on size of the viewport or render target
+            256 x 256   -> 1.526625e-05 ~= 1/65504
+            1920 x 1080 -> 1.144968e-04 ~= 1/8734
+            Works out to 5.96337734375e-08 * width.
+            I have not yet found any visual indication of what it does.
+            </doc>
+        </reg32>
+        <reg32 offset="0x00A84" name="VIEWPORT_UNK00A84" value="0x00000000" type="float"> <!-- GC3000: This affects point sprite rendering, blob sets this to 8192.0 -->
+            <doc>
+            I found that lower values than 8192 scale the point size down.
+            </doc>
+        </reg32>
         <reg32 offset="0x00A88" name="FLAGS">
             <doc>
                 The Vivante driver sets these at context setup, they seem to be
@@ -807,7 +819,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <bitfield high="7" low="0" name="MASK_BACK" brief="glStencilFunc mask (GL_BACK)"/>
             <bitfield high="15" low="8" name="WRITE_MASK_BACK" brief="glStencilMask (GL_BACK)"/>
         </reg32>
-        <reg32 offset="0x014BC" name="MEM_CONFIG">
+        <reg32 offset="0x014BC" name="MEM_CONFIG"> <!-- HALTI3 -->
             <bitfield pos="24" name="COLOR_CACHE_MODE" type="TS_CACHE_MODE"/>
             <bitfield pos="26" name="DEPTH_CACHE_MODE" type="TS_CACHE_MODE"/>
         </reg32>
@@ -1194,12 +1206,12 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
                 <bitfield high="14" low="13" name="MAG" type="TEXTURE_FILTER" brief="Filter for magnification"/>
                 <bitfield pos="21" name="UNK21"/> <!-- always set? not setting this causes MMU errors -->
                 <bitfield pos="22" name="UNK22"/> <!-- setting causes MMU errors -->
-                <bitfield pos="23" name="UNK23"/> <!-- seems related to texture format -->
+                <bitfield pos="23" name="RGB" brief="RGB color space"/> <!-- a la TE_SAMPLER_LOG_SIZE.RGB -->
 	    </reg32>
             <reg32 offset="0x16E00" name="SAMP_CTRL1">
                 <!-- None of these have any, or at least much of an effect with plain 2D BGRA textures -->
                 <bitfield pos="1" name="UNK1"/> <!-- always set? -->
-                <bitfield pos="2" name="SRGB"/> <!-- SRGB conversion? -->
+                <bitfield pos="2" name="SRGB" brief="SRGB color space"/> <!-- a la TE_SAMPLER_LOG_SIZE.RRGB -->
                 <bitfield pos="3" name="UNK3"/>
                 <bitfield high="5" low="4" name="UNK4"/>
             </reg32>

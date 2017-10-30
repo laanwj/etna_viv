@@ -392,7 +392,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
 
     <stripe name="NFE">
         <!-- These are used on (at least) gc3000 and gc7000 for extra vertex attribute information -->
-        <stripe name="VERTEX_STREAMS" length="16" stride="4"> <!-- streamCount > 1 || HALTI2 -->
+        <stripe name="VERTEX_STREAMS" length="16" stride="4"> <!-- streamCount > 8 || HALTI2 -->
             <reg32 offset="0x14600" name="BASE_ADDR" value="0x00000000" type="VIVM"/>
             <reg32 offset="0x14640" name="CONTROL" value="0x00000000" type="FE_VERTEX_STREAM_CONTROL"/>
             <reg32 offset="0x14680" name="UNK14680" value="0x00000000"/>
