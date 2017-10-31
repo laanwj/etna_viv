@@ -370,11 +370,13 @@ def load_data_definitions(struct_file):
     # post-patch for missing pointers
     # these are really pointers, however the kernel interface changed them to 64-bit integers
     patch_member_pointer(d['_gcsHAL_COMMIT'], 'commandBuffer', '_gcoCMDBUF')
+    def_has_queue = '_gcsQUEUE' in d
     for struct in d.values():
         if struct['kind'] == 'structure_type':
             patch_member_pointer(struct, 'logical', 'void')
-            patch_member_pointer(struct, 'queue', '_gcsQUEUE')
-            patch_member_pointer(struct, 'next', '_gcsQUEUE')
+            if def_has_queue:
+                patch_member_pointer(struct, 'queue', '_gcsQUEUE')
+                patch_member_pointer(struct, 'next', '_gcsQUEUE')
 
     return d
 
@@ -382,7 +384,7 @@ def extract_meta(fdr, defs, resolver, ifin):
     '''Extract metadata for ifin, for tracking'''
     field = command_to_field(ifin.members['command'].name)
     gcin = ifin.members['u'].members.get(field)
-    if field in {'Commit', 'Event'}:
+    if field in {'Commit', 'Event'} and '_gcsQUEUE' in defs:
         queue = gcin.members['queue'].addr
         # Extract queue
         q = []
@@ -547,6 +549,8 @@ class DriverState:
 
     def process_queue(self, queue):
         '''Handle "event queue"'''
+        if queue is None:
+            return
         for rec in queue:
             ifin = rec.members['iface']
             field = command_to_field(ifin.members['command'].name)
@@ -617,8 +621,9 @@ class DriverState:
 
     def handle_queue_UnlockVideoMemory(self, gcin):
         try:
-            # Real deletion happens here
-            del self.nodes[gcin.members['node'].value]
+            if self.nodes[gcin.members['node'].value].released:
+                # Real deletion happens here, if the node was released
+                del self.nodes[gcin.members['node'].value]
         except KeyError:
             assert(0)
 
