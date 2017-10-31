@@ -171,7 +171,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <bitfield pos="9" name="RENDERTARGET_8K" brief="8Kx8K render target support"/>
         <bitfield pos="10" name="2BITPERTILE" brief="Two status bits per tile (instead of four)"/>
         <bitfield pos="11" name="SEPARATE_TILE_STATUS_WHEN_INTERLEAVED" brief="Use 2 separate tile status buffers in interleaved mode"/>
-        <bitfield pos="12" name="SUPER_TILED" brief="32x32 super tile is available"/>
+        <bitfield pos="12" name="SUPER_TILED" brief="Super tile is available"/>
         <bitfield pos="13" name="VG_20" brief="Major updates to VG pipe (TS buffer tiling, state masking)"/>
         <bitfield pos="14" name="TS_EXTENDED_COMMANDS" brief="New commands added to the VG tessellator"/>
         <bitfield pos="15" name="COMPRESSION_FIFO_FIXED"/>

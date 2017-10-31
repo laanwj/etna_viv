@@ -39,7 +39,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
     <reg32 offset="0x4c" name="CONFIG1" type="TE_SAMPLER_CONFIG1"/>
     <reg32 offset="0x50" name="CONTROL_YUV"/>
     <reg32 offset="0x54" name="STRIDE_YUV"/>
-    <reg32 offset="0x58" name="ASTC0"/>
+    <reg32 offset="0x58" name="ASTC0" type="TE_SAMPLER_ASTC0"/>
     <reg32 offset="0x5c" name="ASTC1"/>
     <reg32 offset="0x60" name="ASTC2"/>
     <reg32 offset="0x64" name="ASTC3"/>

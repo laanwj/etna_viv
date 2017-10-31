@@ -1137,7 +1137,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
             <reg32 offset="0x10380" name="CONFIG1" value="0x00321000" type="TE_SAMPLER_CONFIG1"/>
             <reg32 offset="0x10400" name="UNK10400" value="0x00000000"/>
             <reg32 offset="0x10480" name="UNK10480" value="0x00000000"/>
-            <reg32 offset="0x10500" name="ASTC0"/> <!-- ASTC -->
+            <reg32 offset="0x10500" name="ASTC0" type="TE_SAMPLER_ASTC0"/> <!-- ASTC -->
             <reg32 offset="0x10580" name="ASTC1"/> <!-- ASTC -->
             <reg32 offset="0x10600" name="ASTC2"/> <!-- ASTC -->
             <reg32 offset="0x10600" name="ASTC3"/> <!-- ASTC -->
