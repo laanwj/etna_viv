@@ -1070,7 +1070,16 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         <stripe name="SAMPLER" length="8" stride="4"> <!-- Tile status for samplers -->
             <reg32 offset="0x01720" name="CONFIG" value="0x00000000">
                 <bitfield high="1" low="0" name="ENABLE"/>
-                <bitfield high="7" low="4" name="FORMAT"/>
+                <bitfield high="7" low="4" name="FORMAT">
+                    <value value="0" name="A4R4G4B4"/>
+                    <value value="1" name="A1R5G5B5"/>
+                    <value value="2" name="R5G6B5"/>
+                    <value value="3" name="A8R8G8B8"/>
+                    <value value="4" name="X8R8G8B8"/>
+                    <value value="5" name="D24X8"/>
+                    <value value="8" name="D16"/>
+                    <value value="15" name="RAW"/> <!-- Unsure - used for R8G8 and A2B10G10R10 and integer formats -->
+                </bitfield>
                 <bitfield high="13" low="11" name="UNK11"/>
             </reg32>
             <reg32 offset="0x01740" name="STATUS_BASE" value="0x00000000" type="VIVM"/>

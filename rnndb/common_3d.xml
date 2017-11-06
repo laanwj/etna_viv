@@ -220,6 +220,7 @@ xsi:schemaLocation="http://nouveau.freedesktop.org/ rules-ng.xsd">
         </bitfield>
         <bitfield pos="25" name="UNK25"/> <!-- Sometimes set by blob on gc3000, apparently always set on gc7000 -->
         <bitfield high="28" low="26" name="HALIGN" type="TEXTURE_HALIGN"/>
+        <bitfield pos="30" name="USE_TS"/> <!-- Use texture TS? -->
     </bitset>
     <bitset name="TE_SAMPLER_LOG_SIZE_EXT" inline="yes" brief="Log size in 8.8 fixed point">
         <bitfield high="15" low="0" name="WIDTH" type="fixedp"/>
